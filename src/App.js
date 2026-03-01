@@ -10,7 +10,7 @@ import Users from './Users';
 import Login from './Login';
 import Signup from './Signup';
 import Prestart from './Prestart';
-import AssetPage from './AssetPage';
+import AssetPage from './Assetpage';
 import { supabase } from './supabase';
 
 function App() {
