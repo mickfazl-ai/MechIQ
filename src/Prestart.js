@@ -98,28 +98,59 @@ function Prestart({ userRole }) {
   };
 
   const handleSubmit = async () => {
-    if (!form.asset || !form.operator_name) { alert('Please select an asset and enter operator name'); return; }
-    const defects_found = Object.values(form.responses).some(r => r.status === 'Defect');
-    const { error } = await supabase.from('form_submissions').insert([{
-      company_id: userRole.company_id,
-      template_id: selectedTemplate.id,
-      asset: form.asset,
-      operator_name: form.operator_name,
-      site_area: form.site_area,
-      hrs_start: form.hrs_start,
-      date: form.date,
-      notes: form.notes,
-      responses: form.responses,
-      operator_signature: signatureData,
-      defects_found
-    }]);
-    if (error) { alert('Error: ' + error.message); return; }
-    fetchSubmissions();
-    setView('list');
-    setForm({ asset: '', operator_name: '', site_area: '', hrs_start: '', date: new Date().toISOString().split('T')[0], notes: '', responses: {} });
-    setSignatureData('');
-    alert('Prestart submitted successfully!');
-  };
+  if (!form.asset || !form.operator_name) { alert('Please select an asset and enter operator name'); return; }
+  const defects_found = Object.values(form.responses).some(r => r.status === 'Defect');
+  const { data: submission, error } = await supabase.from('form_submissions').insert([{
+    company_id: userRole.company_id,
+    template_id: selectedTemplate.id,
+    asset: form.asset,
+    operator_name: form.operator_name,
+    site_area: form.site_area,
+    hrs_start: form.hrs_start,
+    date: form.date,
+    notes: form.notes,
+    responses: form.responses,
+    operator_signature: signatureData,
+    defects_found
+  }]).select().single();
+  if (error) { alert('Error: ' + error.message); return; }
+
+  // Auto-create work orders for each defect found
+  if (defects_found && submission) {
+    const defectItems = [];
+    selectedTemplate.sections.forEach((section, si) => {
+      section.items.forEach(item => {
+        const key = `${si}_${item}`;
+        const resp = form.responses[key];
+        if (resp?.status === 'Defect') {
+          defectItems.push(`${item}${resp.comment ? ': ' + resp.comment : ''}`);
+        }
+      });
+    });
+    if (defectItems.length > 0) {
+      await supabase.from('work_orders').insert([{
+        company_id: userRole.company_id,
+        asset: form.asset,
+        defect_description: defectItems.join('\n'),
+        priority: 'High',
+        status: 'Open',
+        source: 'prestart',
+        prestart_id: submission.id,
+        comments: `Auto-generated from prestart by ${form.operator_name} on ${form.date}`
+      }]);
+    }
+  }
+
+  fetchSubmissions();
+  setView('list');
+  setForm({ asset: '', operator_name: '', site_area: '', hrs_start: '', date: new Date().toISOString().split('T')[0], notes: '', responses: {} });
+  setSignatureData('');
+  if (defects_found) {
+    alert('Prestart submitted. ⚠️ Defects found — a Work Order has been automatically created!');
+  } else {
+    alert('Prestart submitted successfully! ✓');
+  }
+};
 
   const exportPDF = (submission) => {
     const doc = new jsPDF();
