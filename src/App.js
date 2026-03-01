@@ -9,6 +9,7 @@ import Reports from './Reports';
 import Users from './Users';
 import Login from './Login';
 import Signup from './Signup';
+import Prestart from './Prestart';
 import { supabase } from './supabase';
 
 function App() {
@@ -58,6 +59,7 @@ function App() {
       case 'assets': return <Assets userRole={userRole} />;
       case 'downtime': return <Downtime userRole={userRole} />;
       case 'maintenance': return <Maintenance userRole={userRole} />;
+      case 'prestart': return <Prestart userRole={userRole} />;
       case 'reports':
         if (userRole?.role === 'technician') {
           return <div style={{padding:'20px'}}><h2>Access Denied</h2><p style={{color:'#a0b0b0', marginTop:'10px'}}>You don't have permission to view reports.</p></div>;

@@ -8,6 +8,7 @@ function Navbar({ currentPage, setCurrentPage, onLogout, session, userRole }) {
     { id: 'assets', label: 'Assets', roles: ['admin', 'supervisor', 'technician'] },
     { id: 'downtime', label: 'Downtime', roles: ['admin', 'supervisor', 'technician'] },
     { id: 'maintenance', label: 'Maintenance', roles: ['admin', 'supervisor', 'technician'] },
+    { id: 'prestart', label: 'Prestarts', roles: ['admin', 'supervisor', 'technician'] },
     { id: 'reports', label: 'Reports', roles: ['admin', 'supervisor'] },
     { id: 'users', label: 'Users', roles: ['admin'] },
   ];
@@ -16,7 +17,7 @@ function Navbar({ currentPage, setCurrentPage, onLogout, session, userRole }) {
     setCurrentPage(id);
     setMenuOpen(false);
   };
-console.log('Current userRole:', userRole);
+
   const visibleItems = menuItems.filter(item =>
     item.roles.includes(userRole?.role || 'technician')
   );
