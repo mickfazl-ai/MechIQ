@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from './supabase';
 
-function Assets({ userRole }) {
+function Assets({ userRole, onViewAsset }) {
   const [assets, setAssets] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
@@ -15,11 +15,7 @@ function Assets({ userRole }) {
 
   const fetchAssets = async () => {
     setLoading(true);
-    const { data, error } = await supabase
-      .from('assets')
-      .select('*')
-      .eq('company_id', userRole.company_id)
-      .order('created_at', { ascending: false });
+    const { data, error } = await supabase.from('assets').select('*').eq('company_id', userRole.company_id).order('created_at', { ascending: false });
     if (error) console.log('Error fetching assets:', error);
     else setAssets(data);
     setLoading(false);
@@ -27,9 +23,7 @@ function Assets({ userRole }) {
 
   const handleAdd = async () => {
     if (newAsset.name && newAsset.type && newAsset.location) {
-      const { error } = await supabase
-        .from('assets')
-        .insert([{ ...newAsset, company_id: userRole.company_id }]);
+      const { error } = await supabase.from('assets').insert([{ ...newAsset, company_id: userRole.company_id }]);
       if (error) alert('Error: ' + error.message);
       else {
         fetchAssets();
@@ -91,18 +85,21 @@ function Assets({ userRole }) {
         <table className="data-table">
           <thead>
             <tr>
+              <th>Asset No.</th>
               <th>Asset Name</th>
               <th>Type</th>
               <th>Location</th>
               <th>Hourly Rate</th>
               <th>Target Hrs/Day</th>
               <th>Status</th>
+              <th>View</th>
               {userRole?.role !== 'technician' && <th>Action</th>}
             </tr>
           </thead>
           <tbody>
             {assets.map(asset => (
               <tr key={asset.id}>
+                <td style={{color:'#00c2e0', fontWeight:'bold'}}>{asset.asset_number || '-'}</td>
                 <td>{asset.name}</td>
                 <td>{asset.type}</td>
                 <td>{asset.location}</td>
@@ -122,8 +119,11 @@ function Assets({ userRole }) {
                     </span>
                   )}
                 </td>
+                <td><span className={`status-badge ${asset.status.toLowerCase()}`}>{asset.status}</span></td>
                 <td>
-                  <span className={`status-badge ${asset.status.toLowerCase()}`}>{asset.status}</span>
+                  <button className="btn-primary" style={{fontSize:'12px', padding:'4px 10px'}} onClick={() => onViewAsset && onViewAsset(asset.id)}>
+                    📋 View
+                  </button>
                 </td>
                 {userRole?.role !== 'technician' && (
                   <td>
