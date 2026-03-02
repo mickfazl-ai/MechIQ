@@ -1,5 +1,202 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from './supabase';
+import QRCode from 'qrcode.react';
+
+function QRPrintModal({ asset, onClose }) {
+  const printRef = useRef();
+
+  const handlePrint = () => {
+    const qrCanvas = printRef.current?.querySelector('canvas');
+    if (!qrCanvas) {
+      alert('QR code not ready, please try again.');
+      return;
+    }
+    const qrDataUrl = qrCanvas.toDataURL('image/png');
+
+    const win = window.open('', '_blank');
+    win.document.write(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>QR Label - ${asset.asset_number}</title>
+          <style>
+            @page {
+              size: 85.6mm 54mm;
+              margin: 0;
+            }
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            body {
+              width: 85.6mm;
+              height: 54mm;
+              background: #000;
+              font-family: 'Arial', sans-serif;
+              display: flex;
+              align-items: center;
+              justify-content: space-between;
+              padding: 6mm 5mm;
+            }
+            .qr-wrap {
+              flex-shrink: 0;
+              width: 36mm;
+              height: 36mm;
+              background: #fff;
+              border-radius: 3mm;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              padding: 2mm;
+            }
+            .qr-wrap img {
+              width: 100%;
+              height: 100%;
+            }
+            .info {
+              flex: 1;
+              padding-left: 4mm;
+              display: flex;
+              flex-direction: column;
+              justify-content: space-between;
+              height: 100%;
+            }
+            .company {
+              font-size: 7pt;
+              color: #888;
+              letter-spacing: 0.5px;
+              text-transform: uppercase;
+            }
+            .asset-number {
+              font-size: 16pt;
+              font-weight: 900;
+              color: #00c2e0;
+              letter-spacing: 1px;
+              margin: 1mm 0;
+              line-height: 1;
+            }
+            .asset-name {
+              font-size: 9pt;
+              color: #fff;
+              font-weight: 600;
+            }
+            .asset-meta {
+              font-size: 7pt;
+              color: #888;
+              margin-top: 1mm;
+            }
+            .branding {
+              font-size: 9pt;
+              font-weight: 700;
+              color: #fff;
+              letter-spacing: 1px;
+              text-transform: uppercase;
+            }
+            .branding span {
+              color: #00c2e0;
+            }
+            .bottom {
+              display: flex;
+              align-items: flex-end;
+              justify-content: space-between;
+            }
+            .scan-text {
+              font-size: 6pt;
+              color: #555;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="qr-wrap">
+            <img src="${qrDataUrl}" />
+          </div>
+          <div class="info">
+            <div>
+              <div class="company">COMPANY: ${asset.company_id?.substring(0, 8).toUpperCase() || 'N/A'}</div>
+              <div class="asset-number">${asset.asset_number || 'AST-0000'}</div>
+              <div class="asset-name">${asset.name}</div>
+              <div class="asset-meta">${asset.type} · ${asset.location}</div>
+            </div>
+            <div class="bottom">
+              <div class="scan-text">Scan to view asset</div>
+              <div class="branding">MAINTAIN<span>IQ</span></div>
+            </div>
+          </div>
+        </body>
+      </html>
+    `);
+    win.document.close();
+    win.focus();
+    setTimeout(() => { win.print(); win.close(); }, 500);
+  };
+
+  const qrValue = `https://maintain-iq.vercel.app/asset/${asset.id}`;
+
+  return (
+    <div style={{
+      position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+      background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center',
+      justifyContent: 'center', zIndex: 9999
+    }}>
+      <div style={{
+        background: '#0a1a1a', border: '1px solid #1a3a3a', borderRadius: '12px',
+        padding: '28px', minWidth: '360px', maxWidth: '440px'
+      }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+          <h3 style={{ color: '#fff', margin: 0 }}>QR Label Preview</h3>
+          <button onClick={onClose} style={{ background: 'transparent', border: 'none', color: '#888', fontSize: '20px', cursor: 'pointer' }}>✕</button>
+        </div>
+
+        {/* Preview Card */}
+        <div ref={printRef} style={{
+          background: '#000', borderRadius: '10px', padding: '14px 16px',
+          display: 'flex', alignItems: 'center', gap: '14px',
+          width: '100%', minHeight: '100px', marginBottom: '20px'
+        }}>
+          {/* QR Code */}
+          <div style={{
+            background: '#fff', borderRadius: '6px', padding: '6px',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            flexShrink: 0
+          }}>
+            <QRCode value={qrValue} size={100} level="H" />
+          </div>
+
+          {/* Info */}
+          <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', height: '100%', flex: 1 }}>
+            <div>
+              <div style={{ fontSize: '9px', color: '#666', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                COMPANY: {asset.company_id?.substring(0, 8).toUpperCase()}
+              </div>
+              <div style={{ fontSize: '18px', fontWeight: 900, color: '#00c2e0', letterSpacing: '1px', lineHeight: 1.1, margin: '2px 0' }}>
+                {asset.asset_number || 'AST-0000'}
+              </div>
+              <div style={{ fontSize: '11px', color: '#fff', fontWeight: 600 }}>{asset.name}</div>
+              <div style={{ fontSize: '9px', color: '#666', marginTop: '2px' }}>
+                {asset.type} · {asset.location}
+              </div>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: '8px' }}>
+              <div style={{ fontSize: '8px', color: '#444' }}>Scan to view asset</div>
+              <div style={{ fontSize: '11px', fontWeight: 700, color: '#fff', letterSpacing: '1px' }}>
+                MAINTAIN<span style={{ color: '#00c2e0' }}>IQ</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+          <button onClick={onClose} style={{
+            background: 'transparent', border: '1px solid #1a3a3a',
+            color: '#a0b0b0', padding: '8px 18px', borderRadius: '6px', cursor: 'pointer'
+          }}>Cancel</button>
+          <button onClick={handlePrint} style={{
+            background: '#00c2e0', border: 'none', color: '#000',
+            padding: '8px 22px', borderRadius: '6px', cursor: 'pointer',
+            fontWeight: 700, fontSize: '14px'
+          }}>🖨️ Print Label</button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function Assets({ userRole, onViewAsset }) {
   const [assets, setAssets] = useState([]);
@@ -8,6 +205,7 @@ function Assets({ userRole, onViewAsset }) {
   const [editingHours, setEditingHours] = useState('');
   const [newAsset, setNewAsset] = useState({ name: '', type: '', location: '', status: 'Running', hourly_rate: '', target_hours: 8 });
   const [loading, setLoading] = useState(true);
+  const [printAsset, setPrintAsset] = useState(null);
 
   useEffect(() => {
     if (userRole?.company_id) fetchAssets();
@@ -49,6 +247,8 @@ function Assets({ userRole, onViewAsset }) {
 
   return (
     <div className="assets">
+      {printAsset && <QRPrintModal asset={printAsset} onClose={() => setPrintAsset(null)} />}
+
       <div className="page-header">
         <h2>Assets</h2>
         {userRole?.role !== 'technician' && (
@@ -93,6 +293,7 @@ function Assets({ userRole, onViewAsset }) {
               <th>Target Hrs/Day</th>
               <th>Status</th>
               <th>View</th>
+              <th>QR</th>
               {userRole?.role !== 'technician' && <th>Action</th>}
             </tr>
           </thead>
@@ -123,6 +324,19 @@ function Assets({ userRole, onViewAsset }) {
                 <td>
                   <button className="btn-primary" style={{fontSize:'12px', padding:'4px 10px'}} onClick={() => onViewAsset && onViewAsset(asset.id)}>
                     📋 View
+                  </button>
+                </td>
+                <td>
+                  <button
+                    onClick={() => setPrintAsset(asset)}
+                    style={{
+                      background: 'transparent', border: '1px solid #1a3a3a',
+                      color: '#00c2e0', padding: '4px 10px', borderRadius: '6px',
+                      cursor: 'pointer', fontSize: '12px'
+                    }}
+                    title="Print QR Label"
+                  >
+                    🏷️ QR
                   </button>
                 </td>
                 {userRole?.role !== 'technician' && (
