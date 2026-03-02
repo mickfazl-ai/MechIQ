@@ -1,159 +1,132 @@
 import React, { useState, useEffect } from 'react';
+import './App.css';
+import Navbar from './Navbar';
+import Dashboard from './Dashboard';
+import Assets from './Assets';
+import Downtime from './Downtime';
+import Maintenance from './Maintenance';
+import Reports from './Reports';
+import Users from './Users';
+import Login from './Login';
+import Signup from './Signup';
+import Prestart from './Prestart';
+import Scanner from './Scanner';
+import AssetPage from './MachineProfile';
 import { supabase } from './supabase';
-import { Html5Qrcode } from 'html5-qrcode';
 
-function Scanner({ userRole, onAssetFound }) {
-  const [manualEntry, setManualEntry] = useState('');
-  const [assets, setAssets] = useState([]);
-  const [error, setError] = useState('');
-  const [scanning, setScanning] = useState(false);
-  const [scannerInstance, setScannerInstance] = useState(null);
+function App() {
+  const [currentPage, setCurrentPage] = useState('dashboard');
+  const [session, setSession] = useState(null);
+  const [userRole, setUserRole] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [showSignup, setShowSignup] = useState(false);
+  const [viewingAssetId, setViewingAssetId] = useState(null);
+  const [prestartAsset, setPrestartAsset] = useState(null);
 
   useEffect(() => {
-    if (userRole?.company_id) fetchAssets();
+    // Check for /asset/{id} in URL path (QR code scan)
+    const path = window.location.pathname;
+    const pathMatch = path.match(/^\/asset\/(.+)/);
+    if (pathMatch) {
+      const assetId = pathMatch[1];
+      // Save to sessionStorage so it survives the login redirect
+      sessionStorage.setItem('pendingAssetId', assetId);
+      window.history.replaceState({}, '', '/');
+    }
+
+    // Also support legacy ?asset= query param
+    const params = new URLSearchParams(window.location.search);
+    const assetParam = params.get('asset');
+    if (assetParam) {
+      sessionStorage.setItem('pendingAssetId', assetParam);
+      window.history.replaceState({}, '', '/');
+    }
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      if (session) fetchUserRole(session.user.email);
+      else setLoading(false);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      if (session) fetchUserRole(session.user.email);
+      else { setUserRole(null); setLoading(false); }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const fetchUserRole = async (email) => {
+    const { data, error } = await supabase.from('user_roles').select('*').eq('email', email).single();
+    if (error) setUserRole({ role: 'technician', name: email });
+    else setUserRole(data);
+    setLoading(false);
+  };
+
+  // After login + userRole loaded, check for a pending QR asset
+  useEffect(() => {
+    if (userRole) {
+      const pendingAssetId = sessionStorage.getItem('pendingAssetId');
+      if (pendingAssetId) {
+        sessionStorage.removeItem('pendingAssetId');
+        setViewingAssetId(pendingAssetId);
+        setCurrentPage('assetpage');
+      }
+    }
   }, [userRole]);
 
-  useEffect(() => {
-    if (scanning) {
-      const html5Qrcode = new Html5Qrcode('qr-reader');
-      setScannerInstance(html5Qrcode);
+  const handleLogout = async () => { await supabase.auth.signOut(); };
 
-      html5Qrcode.start(
-        { facingMode: 'environment' }, // use back camera
-        { fps: 10, qrbox: { width: 250, height: 250 } },
-        (decodedText) => {
-          html5Qrcode.stop().then(() => {
-            setScannerInstance(null);
-            setScanning(false);
-            handleQrResult(decodedText);
-          });
-        },
-        (err) => {} // ignore scan errors (fires constantly while searching)
-      ).catch((err) => {
-        setError('Camera error: ' + err);
-        setScanning(false);
-      });
+  const handleViewAsset = (assetId) => { setViewingAssetId(assetId); setCurrentPage('assetpage'); };
 
-      return () => {
-        html5Qrcode.stop().catch(() => {});
-      };
-    }
-  }, [scanning]);
+  const handleStartPrestartFromAsset = (assetName) => {
+    setPrestartAsset(assetName);
+    setCurrentPage('prestart');
+    setViewingAssetId(null);
+  };
 
-  const handleQrResult = (decodedText) => {
-    setError('');
-    try {
-      // Handle URL format: https://maintain-iq.vercel.app/asset/{id}
-      const url = new URL(decodedText);
-      const parts = url.pathname.split('/');
-      const assetIndex = parts.indexOf('asset');
-      if (assetIndex !== -1 && parts[assetIndex + 1]) {
-        onAssetFound(parts[assetIndex + 1]);
-        return;
-      }
-      // Fallback: treat full decoded text as asset ID
-      setError('QR code not recognised. Try manual entry.');
-    } catch {
-      // Not a URL — try matching against known assets directly
-      const found = assets.find(a =>
-        a.id === decodedText ||
-        a.asset_number?.toLowerCase() === decodedText.toLowerCase()
+  const renderPage = () => {
+    switch(currentPage) {
+      case 'dashboard': return <Dashboard companyId={userRole?.company_id} />;
+      case 'assets': return <Assets userRole={userRole} onViewAsset={handleViewAsset} />;
+      case 'downtime': return <Downtime userRole={userRole} />;
+      case 'maintenance': return <Maintenance userRole={userRole} />;
+      case 'prestart': return <Prestart userRole={userRole} preloadAsset={prestartAsset} onClearPreload={() => setPrestartAsset(null)} />;
+      case 'scanner': return <Scanner userRole={userRole} onAssetFound={(assetId) => { setViewingAssetId(assetId); setCurrentPage('assetpage'); }} />;
+      case 'assetpage': return (
+        <div>
+          <button onClick={() => { setCurrentPage('assets'); setViewingAssetId(null); }}
+            style={{marginBottom:'15px', backgroundColor:'transparent', color:'#a0b0b0', border:'1px solid #1a2f2f', padding:'6px 14px', borderRadius:'4px', cursor:'pointer'}}>
+            ← Back to Assets
+          </button>
+          <AssetPage assetId={viewingAssetId} userRole={userRole} onStartPrestart={handleStartPrestartFromAsset} />
+        </div>
       );
-      if (found) onAssetFound(found.id);
-      else setError('QR code not recognised. Try manual entry.');
+      case 'reports':
+        if (userRole?.role === 'technician') return <div style={{padding:'20px'}}><h2>Access Denied</h2></div>;
+        return <Reports companyId={userRole?.company_id} />;
+      case 'users':
+        if (userRole?.role !== 'admin') return <div style={{padding:'20px'}}><h2>Access Denied</h2></div>;
+        return <Users companyId={userRole?.company_id} userRole={userRole} />;
+      default: return <Dashboard companyId={userRole?.company_id} />;
     }
   };
 
-  const stopScanning = () => {
-    if (scannerInstance) {
-      scannerInstance.stop().catch(() => {});
-      setScannerInstance(null);
-    }
-    setScanning(false);
-  };
+  if (loading) return <div style={{color:'white', padding:'50px', textAlign:'center', backgroundColor:'#0a0f0f', height:'100vh'}}>Loading...</div>;
 
-  const fetchAssets = async () => {
-    const { data } = await supabase.from('assets').select('id, name, asset_number, type, location').eq('company_id', userRole.company_id);
-    setAssets(data || []);
-  };
-
-  const handleManualSearch = () => {
-    const found = assets.find(a =>
-      a.asset_number?.toLowerCase() === manualEntry.toLowerCase() ||
-      a.name?.toLowerCase() === manualEntry.toLowerCase()
-    );
-    if (found) onAssetFound(found.id);
-    else setError('Asset not found. Try the asset number (e.g. AST-0001) or machine name.');
-  };
+  if (!session) {
+    return showSignup
+      ? <Signup onBackToLogin={() => setShowSignup(false)} />
+      : <Login onShowSignup={() => setShowSignup(true)} />;
+  }
 
   return (
-    <div style={{ maxWidth: '500px', margin: '0 auto', padding: '20px' }}>
-      {/* Header */}
-      <div style={{ textAlign: 'center', marginBottom: '30px' }}>
-        <div style={{ fontSize: '28px', fontWeight: 'bold', marginBottom: '6px' }}>
-          <span style={{ color: 'white' }}>MAINTAIN</span><span style={{ color: '#00c2e0' }}>IQ</span>
-        </div>
-        <p style={{ color: '#a0b0b0', margin: '0' }}>Scan a machine QR code to begin</p>
-      </div>
-
-      {/* Scan Button / Camera */}
-      {!scanning ? (
-        <button
-          onClick={() => { setScanning(true); setError(''); }}
-          style={{ width: '100%', padding: '20px', backgroundColor: '#00c2e0', color: '#0a0f0f', border: 'none', borderRadius: '8px', fontSize: '18px', fontWeight: 'bold', cursor: 'pointer', marginBottom: '20px' }}
-        >
-          📷 Scan QR Code
-        </button>
-      ) : (
-        <div style={{ marginBottom: '20px' }}>
-          <div id="qr-reader" style={{ borderRadius: '8px', overflow: 'hidden', width: '100%' }} />
-          <button
-            onClick={stopScanning}
-            style={{ width: '100%', marginTop: '10px', padding: '10px', backgroundColor: 'transparent', color: '#a0b0b0', border: '1px solid #1a2f2f', borderRadius: '4px', cursor: 'pointer' }}
-          >
-            Cancel
-          </button>
-        </div>
-      )}
-
-      {/* Divider */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
-        <div style={{ flex: 1, height: '1px', backgroundColor: '#1a2f2f' }} />
-        <span style={{ color: '#a0b0b0', fontSize: '13px' }}>or enter manually</span>
-        <div style={{ flex: 1, height: '1px', backgroundColor: '#1a2f2f' }} />
-      </div>
-
-      {/* Manual Entry */}
-      <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
-        <input
-          placeholder="Asset number or machine name (e.g. AST-0001)"
-          value={manualEntry}
-          onChange={e => { setManualEntry(e.target.value); setError(''); }}
-          onKeyDown={e => e.key === 'Enter' && handleManualSearch()}
-          style={{ flex: 1, padding: '12px', backgroundColor: '#0d1515', color: 'white', border: '1px solid #1a2f2f', borderRadius: '4px', fontSize: '14px', fontFamily: 'Barlow, sans-serif' }}
-        />
-        <button onClick={handleManualSearch} className="btn-primary" style={{ padding: '12px 16px' }}>Go</button>
-      </div>
-
-      {error && <p style={{ color: '#e94560', fontSize: '13px', marginBottom: '15px' }}>{error}</p>}
-
-      {/* Asset List */}
-      <div style={{ marginTop: '25px' }}>
-        <p style={{ color: '#a0b0b0', fontSize: '12px', marginBottom: '10px' }}>OR SELECT A MACHINE:</p>
-        {assets.map(a => (
-          <div key={a.id} onClick={() => onAssetFound(a.id)}
-            style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px', backgroundColor: '#0d1515', borderRadius: '6px', marginBottom: '8px', border: '1px solid #1a2f2f', cursor: 'pointer' }}>
-            <div>
-              <div style={{ color: '#00c2e0', fontSize: '12px' }}>{a.asset_number}</div>
-              <div style={{ color: 'white', fontWeight: 'bold' }}>{a.name}</div>
-              <div style={{ color: '#a0b0b0', fontSize: '12px' }}>{a.type} · {a.location}</div>
-            </div>
-            <span style={{ color: '#00c2e0', fontSize: '20px' }}>→</span>
-          </div>
-        ))}
-      </div>
+    <div className="App">
+      <Navbar currentPage={currentPage} setCurrentPage={setCurrentPage} onLogout={handleLogout} session={session} userRole={userRole} />
+      <div className="main-content">{renderPage()}</div>
     </div>
   );
 }
 
-export default Scanner;
+export default App;
