@@ -35,36 +35,77 @@ function AssetPage({ assetId, userRole, onStartPrestart }) {
   const getPriorityColor = (p) => p === 'Critical' ? '#e94560' : p === 'High' ? '#ff6b00' : p === 'Medium' ? '#ffc800' : '#00c264';
 
   const handlePrint = () => {
-    const printContent = document.getElementById('qr-print-area');
-    const win = window.open('', '_blank');
-    win.document.write(`
-      <html><head><title>QR Code - ${asset.name}</title>
-      <style>
-        body { margin: 0; padding: 20px; font-family: Arial, sans-serif; display: flex; justify-content: center; }
-        .card { width: 85mm; border: 2px solid #000; border-radius: 8px; padding: 15px; text-align: center; }
-        .logo { font-size: 22px; font-weight: bold; margin-bottom: 4px; }
-        .logo span { color: #00c2e0; }
-        .asset-num { font-size: 13px; color: #666; margin-bottom: 8px; }
-        .asset-name { font-size: 18px; font-weight: bold; margin-bottom: 4px; }
-        .asset-type { font-size: 12px; color: #666; margin-bottom: 12px; }
-        .qr-box { display: flex; justify-content: center; margin-bottom: 12px; }
-        .scan-text { font-size: 11px; color: #666; border-top: 1px solid #eee; padding-top: 8px; }
-        .site { font-size: 11px; color: #999; margin-top: 4px; }
-      </style></head>
-      <body onload="window.print()">
-        <div class="card">
-          <div class="logo">MAINTAIN<span>IQ</span></div>
-          <div class="asset-num">${asset.asset_number || 'AST-0000'}</div>
-          <div class="asset-name">${asset.name}</div>
-          <div class="asset-type">${asset.type} · ${asset.location}</div>
-          <div class="qr-box">${printContent.innerHTML}</div>
-          <div class="scan-text">Scan to complete prestart & view machine info</div>
-          <div class="site">coastlinemm.com.au · MaintainIQ</div>
+  const canvas = document.querySelector('#qr-visible canvas');
+  const qrDataUrl = canvas ? canvas.toDataURL() : '';
+  const win = window.open('', '_blank');
+  win.document.write(`
+    <html><head><title>QR - ${asset.name}</title>
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      body { font-family: Arial, sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; background: #f0f0f0; }
+      .card {
+        width: 85.6mm;
+        height: 53.98mm;
+        background: #0a0f0f;
+        border-radius: 4mm;
+        padding: 5mm;
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        gap: 4mm;
+        position: relative;
+        overflow: hidden;
+      }
+      .card::before {
+        content: '';
+        position: absolute;
+        top: -10mm;
+        right: -10mm;
+        width: 35mm;
+        height: 35mm;
+        background: radial-gradient(circle, #00c2e020, transparent 70%);
+        border-radius: 50%;
+      }
+      .qr-box {
+        width: 30mm;
+        height: 30mm;
+        background: white;
+        border-radius: 2mm;
+        padding: 1.5mm;
+        flex-shrink: 0;
+      }
+      .qr-box img { width: 100%; height: 100%; }
+      .info { flex: 1; display: flex; flex-direction: column; justify-content: space-between; height: 100%; }
+      .company-id { font-size: 7pt; color: #a0b0b0; letter-spacing: 0.5px; margin-bottom: 1mm; }
+      .asset-num { font-size: 14pt; font-weight: bold; color: #00c2e0; letter-spacing: 1px; margin-bottom: 1mm; }
+      .asset-name { font-size: 9pt; font-weight: bold; color: white; margin-bottom: 1mm; }
+      .asset-type { font-size: 7pt; color: #a0b0b0; }
+      .brand { font-size: 8pt; font-weight: bold; color: #a0b0b0; margin-top: auto; }
+      .brand span { color: #00c2e0; }
+      @media print {
+        body { background: white; margin: 0; }
+        .card { margin: 0; }
+      }
+    </style></head>
+    <body onload="window.print(); window.close();">
+      <div class="card">
+        <div class="qr-box">
+          <img src="${qrDataUrl}" />
         </div>
-      </body></html>
-    `);
-    win.document.close();
-  };
+        <div class="info">
+          <div>
+            <div class="company-id">COMPANY: ${userRole?.company_id?.substring(0,8).toUpperCase() || 'N/A'}</div>
+            <div class="asset-num">${asset.asset_number || 'AST-0000'}</div>
+            <div class="asset-name">${asset.name}</div>
+            <div class="asset-type">${asset.type} · ${asset.location}</div>
+          </div>
+          <div class="brand">MAINTAIN<span>IQ</span></div>
+        </div>
+      </div>
+    </body></html>
+  `);
+  win.document.close();
+};
 
   if (loading) return <p style={{color:'#a0b0b0', padding:'20px'}}>Loading asset...</p>;
   if (!asset) return <p style={{color:'#a0b0b0', padding:'20px'}}>Asset not found</p>;
