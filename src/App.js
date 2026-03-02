@@ -10,7 +10,7 @@ import Users from './Users';
 import Login from './Login';
 import Signup from './Signup';
 import Prestart from './Prestart';
-import AssetPage from './Assetpage';
+import AssetPage from './MachineProfile';
 import { supabase } from './supabase';
 
 function App() {
@@ -102,4 +102,4 @@ function App() {
   );
 }
 
-export default App; 
+export default App;
