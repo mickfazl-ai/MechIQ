@@ -105,7 +105,7 @@ function App() {
   };
 
   const renderPage = () => {
-    if (userRole?.role === 'master') return <MasterAdmin />;
+    if (userRole?.role === 'master' && currentPage === 'master') return <MasterAdmin />;
 
     switch (currentPage) {
       case 'dashboard':    return <Dashboard companyId={userRole?.company_id} />;
