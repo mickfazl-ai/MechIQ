@@ -8,9 +8,15 @@ const WORKER_URL = 'https://mechiq-ai.mickfazl.workers.dev';
 // Extract text from PDF using pdfjs-dist
 async function extractPDFText(file) {
   const pdfjsLib = await import('pdfjs-dist/legacy/build/pdf');
-  pdfjsLib.GlobalWorkerOptions.workerSrc = '';
+  pdfjsLib.GlobalWorkerOptions.workerSrc = '/fake-worker.js';
   const arrayBuffer = await file.arrayBuffer();
-  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer, useWorkerFetch: false, isEvalSupported: false, useSystemFonts: true }).promise;
+  const pdf = await pdfjsLib.getDocument({ 
+    data: arrayBuffer, 
+    useWorkerFetch: false, 
+    isEvalSupported: false, 
+    useSystemFonts: true,
+    disableWorker: true 
+  }).promise;
   let fullText = '';
   const maxPages = Math.min(pdf.numPages, 30);
   for (let i = 1; i <= maxPages; i++) {
