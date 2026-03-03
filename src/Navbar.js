@@ -29,7 +29,6 @@ function Navbar({ currentPage, setCurrentPage, onLogout, session, userRole, view
   const menuItems = [
     { id: 'dashboard',   label: 'Dashboard',   roles: ['admin','supervisor','technician','operator'], feature: 'dashboard' },
     { id: 'assets',      label: 'Assets',       roles: ['admin','supervisor'],                         feature: 'assets' },
-    { id: 'downtime',    label: 'Downtime',     roles: ['admin','supervisor','technician'],             feature: 'downtime' },
     { id: 'maintenance', label: 'Maintenance',  roles: ['admin','supervisor','technician'],             feature: 'maintenance' },
     { id: 'prestart',    label: 'Prestarts',    roles: ['admin','supervisor','technician','operator'],  feature: 'prestart' },
     { id: 'scanner',     label: '📷 Scanner',   roles: ['technician','operator'],                       feature: 'scanner' },
