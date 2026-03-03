@@ -20,17 +20,11 @@ function AIGeneratorModal({ mode, onClose, onGenerated }) {
     r.readAsDataURL(file);
   });
 
-  const getMediaType = (file) => {
-    if (file.type === 'application/pdf') return 'application/pdf';
-    if (file.type.startsWith('image/')) return file.type;
-    return null;
-  };
-
   const buildPrompt = () => {
     if (mode === 'prestart') {
       return `You are a heavy equipment maintenance expert. Based on the provided input, generate a prestart checklist template.
 
-Return ONLY valid JSON in this exact format, no other text:
+Return ONLY valid JSON in this exact format, no other text, no markdown:
 {
   "name": "Template name here",
   "description": "Brief description",
@@ -42,15 +36,15 @@ Return ONLY valid JSON in this exact format, no other text:
   ]
 }
 
-Generate relevant sections like Fluid Levels, Inspection Items, Safety Checks, Controls etc. Each section should have 4-10 specific checklist items relevant to the machine/document provided.`;
+Generate relevant sections like Fluid Levels, Inspection Items, Safety Checks, Controls etc. Each section should have 4-10 specific checklist items relevant to the machine.`;
     } else {
       return `You are a heavy equipment service expert. Based on the provided input, generate a service sheet template.
 
-Return ONLY valid JSON in this exact format, no other text:
+Return ONLY valid JSON in this exact format, no other text, no markdown:
 {
   "name": "Template name here",
   "description": "Brief description",
-  "service_type": "e.g. 250hr Service / Annual Service / Repair",
+  "service_type": "e.g. 250hr Service",
   "sections": [
     {
       "title": "Section Name",
@@ -59,66 +53,90 @@ Return ONLY valid JSON in this exact format, no other text:
       ]
     }
   ],
-  "parts_template": ["Common Part 1", "Common Part 2", "Common Part 3"],
+  "parts_template": ["Common Part 1", "Common Part 2"],
   "labour_items": ["Task 1", "Task 2"]
 }
 
-Generate relevant service sections like Pre-Service Checks, Fluid Changes, Filter Replacements, Inspection Items, Torque Checks etc. Include common parts and labour items for this type of machine/service.`;
+Generate relevant service sections like Pre-Service Checks, Fluid Changes, Filter Replacements, Inspection Items etc.`;
     }
   };
 
   const handleGenerate = async () => {
     if (inputType === 'text' && !textInput.trim()) { setError('Please describe the machine or service'); return; }
     if (inputType !== 'text' && !file) { setError('Please select a file'); return; }
-    setLoading(true); setError('');
+    setLoading(true);
+    setError('');
 
     try {
       let messages;
 
-      if (inputType === 'text') {
-        messages = [{ role: 'user', content: buildPrompt() + '\n\nInput: ' + textInput }];
-      } else {
-        const mediaType = getMediaType(file);
-        if (!mediaType) throw new Error('Unsupported file type. Please use PDF, JPG, or PNG.');
+      if (inputType === 'text' || inputType === 'excel') {
+        const prompt = buildPrompt() + '\n\nInput: ' + (textInput || ('Spreadsheet file: ' + file?.name));
+        messages = [{ role: 'user', content: prompt }];
+      } else if (inputType === 'pdf') {
         const base64 = await toBase64(file);
-
-        if (file.type === 'application/pdf') {
-          messages = [{
-            role: 'user',
-            content: [
-              { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: base64 } },
-              { type: 'text', text: buildPrompt() }
-            ]
-          }];
-        } else {
-          messages = [{
-            role: 'user',
-            content: [
-              { type: 'image', source: { type: 'base64', media_type: mediaType, data: base64 } },
-              { type: 'text', text: buildPrompt() }
-            ]
-          }];
-        }
+        messages = [{
+          role: 'user',
+          content: [
+            { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: base64 } },
+            { type: 'text', text: buildPrompt() }
+          ]
+        }];
+      } else if (inputType === 'image') {
+        const base64 = await toBase64(file);
+        messages = [{
+          role: 'user',
+          content: [
+            { type: 'image', source: { type: 'base64', media_type: file.type, data: base64 } },
+            { type: 'text', text: buildPrompt() }
+          ]
+        }];
       }
 
-      const response = await fetch('https://api.anthropic.com/v1/messages', {
+      const response = await fetch('/api/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 1000, messages })
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 2000,
+          messages
+        })
       });
 
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.error || 'API request failed with status ' + response.status);
+      }
+
       const data = await response.json();
-      const text = data.content?.map(i => i.text || '').join('');
-      const clean = text.replace(/```json|```/g, '').trim();
+
+      if (data.error) throw new Error(data.error.message || JSON.stringify(data.error));
+      if (!data.content || !data.content.length) throw new Error('No content returned from AI');
+
+      const text = data.content.map(i => i.text || '').join('');
+      if (!text) throw new Error('Empty response from AI');
+
+      // Strip any markdown code fences
+      const clean = text
+        .replace(/^```json\s*/i, '')
+        .replace(/^```\s*/i, '')
+        .replace(/\s*```$/i, '')
+        .trim();
+
       const parsed = JSON.parse(clean);
       onGenerated(parsed);
+
     } catch (err) {
-      setError('Error generating template: ' + err.message);
+      setError('Error: ' + err.message);
     }
     setLoading(false);
   };
 
-  const inputStyle = { width: '100%', padding: '10px 14px', backgroundColor: '#0a0f0f', color: 'white', border: '1px solid #1a2f2f', borderRadius: '6px', fontSize: '14px', fontFamily: 'Barlow, sans-serif', boxSizing: 'border-box' };
+  const inputStyle = {
+    width: '100%', padding: '10px 14px', backgroundColor: '#0a0f0f', color: 'white',
+    border: '1px solid #1a2f2f', borderRadius: '6px', fontSize: '14px',
+    fontFamily: 'Barlow, sans-serif', boxSizing: 'border-box'
+  };
 
   return (
     <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '20px' }}>
@@ -131,17 +149,16 @@ Generate relevant service sections like Pre-Service Checks, Fluid Changes, Filte
           <button onClick={onClose} style={{ background: 'transparent', border: 'none', color: '#888', fontSize: '20px', cursor: 'pointer' }}>✕</button>
         </div>
 
-        {/* Input type selector */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px', marginBottom: '20px' }}>
           {[
-            { id: 'text', label: '✏️ Describe', sub: 'Text' },
-            { id: 'pdf', label: '📄 Manual', sub: 'PDF' },
-            { id: 'image', label: '🖼️ Image', sub: 'JPG/PNG' },
-            { id: 'excel', label: '📊 Spreadsheet', sub: 'Excel/CSV' },
+            { id: 'text', label: '✏️', sub: 'Text' },
+            { id: 'pdf', label: '📄', sub: 'PDF' },
+            { id: 'image', label: '🖼️', sub: 'JPG/PNG' },
+            { id: 'excel', label: '📊', sub: 'Excel/CSV' },
           ].map(t => (
             <button key={t.id} onClick={() => { setInputType(t.id); setFile(null); setError(''); }}
               style={{ padding: '10px 6px', backgroundColor: inputType === t.id ? '#0a2a2a' : '#0a0f0f', border: `1px solid ${inputType === t.id ? '#00c2e0' : '#1a2f2f'}`, borderRadius: '8px', cursor: 'pointer', textAlign: 'center' }}>
-              <div style={{ fontSize: '16px' }}>{t.label.split(' ')[0]}</div>
+              <div style={{ fontSize: '18px' }}>{t.label}</div>
               <div style={{ color: inputType === t.id ? '#00c2e0' : '#a0b0b0', fontSize: '11px', marginTop: '2px' }}>{t.sub}</div>
             </button>
           ))}
@@ -150,7 +167,8 @@ Generate relevant service sections like Pre-Service Checks, Fluid Changes, Filte
         {inputType === 'text' && (
           <div style={{ marginBottom: '16px' }}>
             <label style={{ color: '#a0b0b0', fontSize: '12px', display: 'block', marginBottom: '6px' }}>Describe the machine or service type</label>
-            <textarea value={textInput} onChange={e => setTextInput(e.target.value)} placeholder={mode === 'prestart' ? 'e.g. CAT 320 Excavator daily prestart checklist, diesel engine, hydraulic attachments...' : 'e.g. 250 hour service for a Komatsu PC200 excavator, diesel engine...'}
+            <textarea value={textInput} onChange={e => setTextInput(e.target.value)}
+              placeholder={mode === 'prestart' ? 'e.g. CAT 320 excavator daily prestart checklist...' : 'e.g. 250 hour service for Komatsu PC200 excavator...'}
               style={{ ...inputStyle, minHeight: '100px', resize: 'vertical' }} />
           </div>
         )}
@@ -158,8 +176,7 @@ Generate relevant service sections like Pre-Service Checks, Fluid Changes, Filte
         {inputType === 'pdf' && (
           <div style={{ marginBottom: '16px' }}>
             <label style={{ color: '#a0b0b0', fontSize: '12px', display: 'block', marginBottom: '6px' }}>Upload machine manual or service document (PDF)</label>
-            <input type="file" accept=".pdf" onChange={e => setFile(e.target.files[0])}
-              style={{ ...inputStyle, padding: '8px' }} />
+            <input type="file" accept=".pdf" onChange={e => setFile(e.target.files[0])} style={{ ...inputStyle, padding: '8px' }} />
             {file && <p style={{ color: '#00c264', fontSize: '12px', marginTop: '6px' }}>✓ {file.name}</p>}
           </div>
         )}
@@ -167,23 +184,19 @@ Generate relevant service sections like Pre-Service Checks, Fluid Changes, Filte
         {inputType === 'image' && (
           <div style={{ marginBottom: '16px' }}>
             <label style={{ color: '#a0b0b0', fontSize: '12px', display: 'block', marginBottom: '6px' }}>Upload image of existing form or machine</label>
-            <input type="file" accept="image/*" onChange={e => setFile(e.target.files[0])}
-              style={{ ...inputStyle, padding: '8px' }} />
+            <input type="file" accept="image/*" onChange={e => setFile(e.target.files[0])} style={{ ...inputStyle, padding: '8px' }} />
             {file && <p style={{ color: '#00c264', fontSize: '12px', marginTop: '6px' }}>✓ {file.name}</p>}
           </div>
         )}
 
         {inputType === 'excel' && (
           <div style={{ marginBottom: '16px' }}>
-            <label style={{ color: '#a0b0b0', fontSize: '12px', display: 'block', marginBottom: '6px' }}>Upload Excel or CSV file</label>
-            <input type="file" accept=".xlsx,.xls,.csv" onChange={e => setFile(e.target.files[0])}
-              style={{ ...inputStyle, padding: '8px' }} />
-            {file && <p style={{ color: '#00c264', fontSize: '12px', marginTop: '6px' }}>✓ {file.name}</p>}
-            <p style={{ color: '#a0b0b0', fontSize: '11px', marginTop: '6px' }}>Note: AI will read the filename and ask you to describe the content for best results.</p>
-            {file && (
-              <textarea value={textInput} onChange={e => setTextInput(e.target.value)} placeholder="Describe what's in the spreadsheet, e.g. 500hr service checklist for Volvo excavator..."
-                style={{ ...inputStyle, minHeight: '70px', marginTop: '8px', resize: 'vertical' }} />
-            )}
+            <label style={{ color: '#a0b0b0', fontSize: '12px', display: 'block', marginBottom: '6px' }}>Describe what's in the spreadsheet</label>
+            <input type="file" accept=".xlsx,.xls,.csv" onChange={e => setFile(e.target.files[0])} style={{ ...inputStyle, padding: '8px', marginBottom: '8px' }} />
+            {file && <p style={{ color: '#00c264', fontSize: '12px', marginBottom: '8px' }}>✓ {file.name}</p>}
+            <textarea value={textInput} onChange={e => setTextInput(e.target.value)}
+              placeholder="Describe the machine and service type, e.g. 500hr service checklist for Volvo excavator..."
+              style={{ ...inputStyle, minHeight: '70px', resize: 'vertical' }} />
           </div>
         )}
 
@@ -223,9 +236,17 @@ function PrestartTab({ userRole }) {
   const fetchSubmissions = async () => { const { data } = await supabase.from('form_submissions').select('*').eq('company_id', userRole.company_id).order('created_at', { ascending: false }); setSubmissions(data || []); };
   const fetchAssets = async () => { const { data } = await supabase.from('assets').select('id, name, location').eq('company_id', userRole.company_id); setAssets(data || []); };
 
-  const handleAIGenerated = (result) => { setAiPreview(result); setShowAI(false); setBuilder({ name: result.name || '', description: result.description || '', sections: result.sections || [] }); setView('builder'); };
+  const handleAIGenerated = (result) => {
+    setAiPreview(result);
+    setShowAI(false);
+    setBuilder({ name: result.name || '', description: result.description || '', sections: result.sections || [] });
+    setView('builder');
+  };
 
-  const handleResponse = (si, item, field, value) => { const key = `${si}_${item}`; setForm(prev => ({ ...prev, responses: { ...prev.responses, [key]: { ...prev.responses[key], [field]: value } } })); };
+  const handleResponse = (si, item, field, value) => {
+    const key = `${si}_${item}`;
+    setForm(prev => ({ ...prev, responses: { ...prev.responses, [key]: { ...prev.responses[key], [field]: value } } }));
+  };
 
   const startSigning = () => {
     setIsSigning(true);
@@ -245,11 +266,21 @@ function PrestartTab({ userRole }) {
   const handleSubmit = async () => {
     if (!form.asset || !form.operator_name) { alert('Please select an asset and enter operator name'); return; }
     const defects_found = Object.values(form.responses).some(r => r.status === 'Defect');
-    const { data: submission, error } = await supabase.from('form_submissions').insert([{ company_id: userRole.company_id, template_id: selectedTemplate.id, asset: form.asset, operator_name: form.operator_name, site_area: form.site_area, hrs_start: form.hrs_start, date: form.date, notes: form.notes, responses: form.responses, operator_signature: signatureData, defects_found }]).select().single();
+    const { data: submission, error } = await supabase.from('form_submissions').insert([{
+      company_id: userRole.company_id, template_id: selectedTemplate.id,
+      asset: form.asset, operator_name: form.operator_name, site_area: form.site_area,
+      hrs_start: form.hrs_start, date: form.date, notes: form.notes,
+      responses: form.responses, operator_signature: signatureData, defects_found
+    }]).select().single();
     if (error) { alert('Error: ' + error.message); return; }
     if (defects_found && submission) {
       const defectItems = [];
-      selectedTemplate.sections.forEach((section, si) => { section.items.forEach(item => { const key = `${si}_${item}`; const resp = form.responses[key]; if (resp?.status === 'Defect') defectItems.push(`${item}${resp.comment ? ': ' + resp.comment : ''}`); }); });
+      selectedTemplate.sections.forEach((section, si) => {
+        section.items.forEach(item => {
+          const key = `${si}_${item}`; const resp = form.responses[key];
+          if (resp?.status === 'Defect') defectItems.push(`${item}${resp.comment ? ': ' + resp.comment : ''}`);
+        });
+      });
       if (defectItems.length > 0) await supabase.from('work_orders').insert([{ company_id: userRole.company_id, asset: form.asset, defect_description: defectItems.join('\n'), priority: 'High', status: 'Open', source: 'prestart', prestart_id: submission.id, comments: `Auto-generated from prestart by ${form.operator_name} on ${form.date}` }]);
     }
     fetchSubmissions(); setView('list');
@@ -268,7 +299,14 @@ function PrestartTab({ userRole }) {
     doc.text(`Site: ${submission.site_area || '-'}   Hrs Start: ${submission.hrs_start || '-'}`, 14, 36);
     const template = templates.find(t => t.id === submission.template_id);
     let y = 45;
-    if (template) { template.sections.forEach(section => { doc.setTextColor(0, 194, 224); doc.setFontSize(11); doc.setFont('helvetica', 'bold'); doc.text(section.title.toUpperCase(), 14, y); y += 6; const rows = section.items.map(item => { const key = `${template.sections.indexOf(section)}_${item}`; const r = submission.responses[key] || {}; return [item, r.status || '-', r.comment || '']; }); autoTable(doc, { startY: y, head: [['Item', 'Status', 'Comment']], body: rows, theme: 'plain', headStyles: { fillColor: [26, 47, 47], textColor: [160, 176, 176], fontSize: 8 }, bodyStyles: { fillColor: [13, 21, 21], textColor: [255, 255, 255], fontSize: 8 }, styles: { lineColor: [26, 47, 47], lineWidth: 0.1 } }); y = doc.lastAutoTable.finalY + 8; }); }
+    if (template) {
+      template.sections.forEach(section => {
+        doc.setTextColor(0, 194, 224); doc.setFontSize(11); doc.setFont('helvetica', 'bold'); doc.text(section.title.toUpperCase(), 14, y); y += 6;
+        const rows = section.items.map(item => { const key = `${template.sections.indexOf(section)}_${item}`; const r = submission.responses[key] || {}; return [item, r.status || '-', r.comment || '']; });
+        autoTable(doc, { startY: y, head: [['Item', 'Status', 'Comment']], body: rows, theme: 'plain', headStyles: { fillColor: [26, 47, 47], textColor: [160, 176, 176], fontSize: 8 }, bodyStyles: { fillColor: [13, 21, 21], textColor: [255, 255, 255], fontSize: 8 }, styles: { lineColor: [26, 47, 47], lineWidth: 0.1 } });
+        y = doc.lastAutoTable.finalY + 8;
+      });
+    }
     if (submission.notes) { doc.setTextColor(255, 255, 255); doc.setFontSize(9); doc.text('Notes: ' + submission.notes, 14, y); }
     doc.save(`MechIQ-Prestart-${submission.asset}-${submission.date}.pdf`);
   };
@@ -331,11 +369,11 @@ function PrestartTab({ userRole }) {
       <div className="page-header">
         <h2>{aiPreview ? '✨ AI Generated — Review & Edit' : 'Form Builder'}</h2>
         <div style={{ display: 'flex', gap: '10px' }}>
-          <button className="btn-primary" style={{ background: 'linear-gradient(135deg, #00c2e0, #0090a8)', color: '#000' }} onClick={() => setShowAI(true)}>✨ Generate with AI</button>
+          <button className="btn-primary" style={{ background: 'linear-gradient(135deg, #00c2e0, #0090a8)', color: '#000' }} onClick={() => setShowAI(true)}>✨ AI Generate</button>
           <button className="btn-primary" onClick={() => { setView('list'); setAiPreview(null); }}>← Back</button>
         </div>
       </div>
-      {aiPreview && <div style={{ backgroundColor: '#0a2a1a', border: '1px solid #00c264', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}><p style={{ color: '#00c264', margin: 0, fontSize: '13px' }}>✨ AI generated this template from your input. Review and edit before saving.</p></div>}
+      {aiPreview && <div style={{ backgroundColor: '#0a2a1a', border: '1px solid #00c264', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}><p style={{ color: '#00c264', margin: 0, fontSize: '13px' }}>✨ AI generated this template. Review and edit before saving.</p></div>}
       <div className="form-card">
         <input placeholder="Form Name" value={builder.name} onChange={e => setBuilder({ ...builder, name: e.target.value })} style={{ width: '100%', marginBottom: '10px', padding: '10px', backgroundColor: '#0a0f0f', color: 'white', border: '1px solid #1a2f2f', borderRadius: '4px' }} />
         <input placeholder="Description (optional)" value={builder.description} onChange={e => setBuilder({ ...builder, description: e.target.value })} style={{ width: '100%', padding: '10px', backgroundColor: '#0a0f0f', color: 'white', border: '1px solid #1a2f2f', borderRadius: '4px' }} />
@@ -379,13 +417,18 @@ function PrestartTab({ userRole }) {
         <h2>Prestart Checklists</h2>
         <div style={{ display: 'flex', gap: '10px' }}>
           <button className="btn-primary" onClick={() => setView('history')}>History</button>
-          {userRole?.role !== 'technician' && (<><button className="btn-primary" style={{ background: 'linear-gradient(135deg, #00c2e0, #0090a8)', color: '#000' }} onClick={() => setShowAI(true)}>✨ Generate with AI</button><button className="btn-primary" onClick={() => setView('builder')}>+ Build Form</button></>)}
+          {userRole?.role !== 'technician' && (
+            <>
+              <button className="btn-primary" style={{ background: 'linear-gradient(135deg, #00c2e0, #0090a8)', color: '#000' }} onClick={() => setShowAI(true)}>✨ Generate with AI</button>
+              <button className="btn-primary" onClick={() => setView('builder')}>+ Build Form</button>
+            </>
+          )}
         </div>
       </div>
       {templates.length === 0 ? (
         <div className="form-card" style={{ textAlign: 'center', padding: '40px' }}>
           <div style={{ fontSize: '48px', marginBottom: '16px' }}>📋</div>
-          <p style={{ color: '#a0b0b0', marginBottom: '20px' }}>No prestart templates yet. Create one manually or use AI to generate one.</p>
+          <p style={{ color: '#a0b0b0', marginBottom: '20px' }}>No prestart templates yet. Use AI to generate one or build manually.</p>
           {userRole?.role !== 'technician' && <button className="btn-primary" style={{ background: 'linear-gradient(135deg, #00c2e0, #0090a8)', color: '#000', padding: '12px 24px' }} onClick={() => setShowAI(true)}>✨ Generate with AI</button>}
         </div>
       ) : (
@@ -424,13 +467,7 @@ function ServiceSheetsTab({ userRole }) {
   const [isSigning, setIsSigning] = useState(false);
   const [signatureData, setSignatureData] = useState('');
   const [builder, setBuilder] = useState({ name: '', description: '', service_type: '', sections: [], parts_template: [], labour_items: [] });
-
-  const [form, setForm] = useState({
-    asset: '', technician: '', date: new Date().toISOString().split('T')[0],
-    odometer: '', service_type: '', notes: '', responses: {},
-    parts: [{ name: '', qty: '', cost: '' }],
-    labour: [{ description: '', hours: '' }]
-  });
+  const [form, setForm] = useState({ asset: '', technician: '', date: new Date().toISOString().split('T')[0], odometer: '', service_type: '', notes: '', responses: {}, parts: [{ name: '', qty: '', cost: '' }], labour: [{ description: '', hours: '' }] });
 
   useEffect(() => { if (userRole?.company_id) { fetchTemplates(); fetchSubmissions(); fetchAssets(); } }, [userRole]);
 
@@ -441,18 +478,14 @@ function ServiceSheetsTab({ userRole }) {
   const handleAIGenerated = (result) => {
     setAiPreview(result);
     setShowAI(false);
-    setBuilder({
-      name: result.name || '',
-      description: result.description || '',
-      service_type: result.service_type || '',
-      sections: result.sections || [],
-      parts_template: result.parts_template || [],
-      labour_items: result.labour_items || []
-    });
+    setBuilder({ name: result.name || '', description: result.description || '', service_type: result.service_type || '', sections: result.sections || [], parts_template: result.parts_template || [], labour_items: result.labour_items || [] });
     setView('builder');
   };
 
-  const handleResponse = (si, label, value) => { const key = `${si}_${label}`; setForm(prev => ({ ...prev, responses: { ...prev.responses, [key]: value } })); };
+  const handleResponse = (si, label, value) => {
+    const key = `${si}_${label}`;
+    setForm(prev => ({ ...prev, responses: { ...prev.responses, [key]: value } }));
+  };
 
   const startSigning = () => {
     setIsSigning(true);
@@ -474,14 +507,7 @@ function ServiceSheetsTab({ userRole }) {
 
   const handleSubmit = async () => {
     if (!form.asset || !form.technician) { alert('Please select an asset and enter technician name'); return; }
-    const { error } = await supabase.from('service_sheet_submissions').insert([{
-      company_id: userRole.company_id, template_id: selectedTemplate.id,
-      asset: form.asset, technician: form.technician, date: form.date,
-      odometer: form.odometer, service_type: form.service_type || selectedTemplate.service_type,
-      notes: form.notes, responses: form.responses, parts: form.parts,
-      labour: form.labour, operator_signature: signatureData,
-      total_parts_cost: totalPartsValue, total_labour_hours: totalLabourHours
-    }]);
+    const { error } = await supabase.from('service_sheet_submissions').insert([{ company_id: userRole.company_id, template_id: selectedTemplate.id, asset: form.asset, technician: form.technician, date: form.date, odometer: form.odometer, service_type: form.service_type || selectedTemplate.service_type, notes: form.notes, responses: form.responses, parts: form.parts, labour: form.labour, operator_signature: signatureData, total_parts_cost: totalPartsValue, total_labour_hours: totalLabourHours }]);
     if (error) { alert('Error: ' + error.message); return; }
     fetchSubmissions(); setView('list');
     setForm({ asset: '', technician: '', date: new Date().toISOString().split('T')[0], odometer: '', service_type: '', notes: '', responses: {}, parts: [{ name: '', qty: '', cost: '' }], labour: [{ description: '', hours: '' }] });
@@ -501,17 +527,17 @@ function ServiceSheetsTab({ userRole }) {
     if (template?.sections) {
       template.sections.forEach((section, si) => {
         doc.setTextColor(0, 194, 224); doc.setFontSize(11); doc.setFont('helvetica', 'bold'); doc.text(section.title.toUpperCase(), 14, y); y += 6;
-        const rows = section.items.map(item => { const key = `${si}_${item.label}`; return [item.label, submission.responses?.[key] || '-']; });
+        const rows = section.items.map(item => { const label = item.label || item; const key = `${si}_${label}`; return [label, submission.responses?.[key] || '-']; });
         autoTable(doc, { startY: y, head: [['Item', 'Status']], body: rows, theme: 'plain', headStyles: { fillColor: [26, 47, 47], textColor: [160, 176, 176], fontSize: 8 }, bodyStyles: { fillColor: [13, 21, 21], textColor: [255, 255, 255], fontSize: 8 }, styles: { lineColor: [26, 47, 47], lineWidth: 0.1 } });
         y = doc.lastAutoTable.finalY + 8;
       });
     }
-    if (submission.parts?.length > 0) {
+    if (submission.parts?.filter(p => p.name).length > 0) {
       doc.setTextColor(0, 194, 224); doc.setFontSize(11); doc.setFont('helvetica', 'bold'); doc.text('PARTS USED', 14, y); y += 6;
       autoTable(doc, { startY: y, head: [['Part', 'Qty', 'Unit Cost', 'Total']], body: submission.parts.filter(p => p.name).map(p => [p.name, p.qty, '$' + p.cost, '$' + (parseFloat(p.qty || 0) * parseFloat(p.cost || 0)).toFixed(2)]), theme: 'plain', headStyles: { fillColor: [26, 47, 47], textColor: [160, 176, 176], fontSize: 8 }, bodyStyles: { fillColor: [13, 21, 21], textColor: [255, 255, 255], fontSize: 8 }, styles: { lineColor: [26, 47, 47], lineWidth: 0.1 } });
       y = doc.lastAutoTable.finalY + 8;
     }
-    if (submission.labour?.length > 0) {
+    if (submission.labour?.filter(l => l.description).length > 0) {
       doc.setTextColor(0, 194, 224); doc.setFontSize(11); doc.setFont('helvetica', 'bold'); doc.text('LABOUR', 14, y); y += 6;
       autoTable(doc, { startY: y, head: [['Task', 'Hours']], body: submission.labour.filter(l => l.description).map(l => [l.description, l.hours + 'h']), theme: 'plain', headStyles: { fillColor: [26, 47, 47], textColor: [160, 176, 176], fontSize: 8 }, bodyStyles: { fillColor: [13, 21, 21], textColor: [255, 255, 255], fontSize: 8 }, styles: { lineColor: [26, 47, 47], lineWidth: 0.1 } });
     }
@@ -534,33 +560,24 @@ function ServiceSheetsTab({ userRole }) {
     <div className="prestart">
       {showAI && <AIGeneratorModal mode="service" onClose={() => setShowAI(false)} onGenerated={handleAIGenerated} />}
       <div className="page-header"><h2>{selectedTemplate.name}</h2><button className="btn-primary" onClick={() => setView('list')}>← Back</button></div>
-
-      {/* Header fields */}
       <div className="form-card">
         <h3 style={{ color: '#00c2e0', marginBottom: '15px' }}>Service Details</h3>
         <div className="form-grid">
-          <div><label style={{ color: '#a0b0b0', fontSize: '12px', display: 'block', marginBottom: '4px' }}>Asset</label>
-            <select value={form.asset} onChange={e => setForm({ ...form, asset: e.target.value })} style={inputStyle}>
-              <option value="">Select Asset</option>{assets.map(a => <option key={a.id} value={a.name}>{a.name}</option>)}
-            </select></div>
+          <div><label style={{ color: '#a0b0b0', fontSize: '12px', display: 'block', marginBottom: '4px' }}>Asset</label><select value={form.asset} onChange={e => setForm({ ...form, asset: e.target.value })} style={inputStyle}><option value="">Select Asset</option>{assets.map(a => <option key={a.id} value={a.name}>{a.name}</option>)}</select></div>
           <div><label style={{ color: '#a0b0b0', fontSize: '12px', display: 'block', marginBottom: '4px' }}>Technician</label><input placeholder="Technician name" value={form.technician} onChange={e => setForm({ ...form, technician: e.target.value })} style={inputStyle} /></div>
           <div><label style={{ color: '#a0b0b0', fontSize: '12px', display: 'block', marginBottom: '4px' }}>Date</label><input type="date" value={form.date} onChange={e => setForm({ ...form, date: e.target.value })} style={inputStyle} /></div>
           <div><label style={{ color: '#a0b0b0', fontSize: '12px', display: 'block', marginBottom: '4px' }}>Odometer / Hours</label><input placeholder="e.g. 2450 hrs" value={form.odometer} onChange={e => setForm({ ...form, odometer: e.target.value })} style={inputStyle} /></div>
           <div><label style={{ color: '#a0b0b0', fontSize: '12px', display: 'block', marginBottom: '4px' }}>Service Type</label><input placeholder={selectedTemplate.service_type || 'e.g. 250hr Service'} value={form.service_type} onChange={e => setForm({ ...form, service_type: e.target.value })} style={inputStyle} /></div>
         </div>
       </div>
-
-      {/* Checklist sections */}
       {selectedTemplate.sections?.map((section, si) => (
         <div key={si} className="form-card" style={{ marginTop: '15px' }}>
           <h3 style={{ color: '#00c2e0', marginBottom: '15px' }}>{section.title}</h3>
           <table className="data-table"><thead><tr><th>Item</th><th>Status</th></tr></thead>
-            <tbody>{section.items.map((item, ii) => { const key = `${si}_${item.label || item}`; const label = item.label || item; const resp = form.responses[key] || ''; return (<tr key={ii}><td>{label}</td><td><select value={resp} onChange={e => handleResponse(si, label, e.target.value)} style={{ backgroundColor: resp === 'OK' ? '#0a2a1a' : resp === 'Defect' ? '#2a0a0a' : '#0a0f0f', color: resp === 'OK' ? '#00c264' : resp === 'Defect' ? '#e94560' : 'white', border: '1px solid #1a2f2f', padding: '5px 10px', borderRadius: '4px' }}><option value="">Select</option><option value="OK">✓ OK</option><option value="Defect">✗ Defect</option><option value="Done">✓ Done</option><option value="NA">N/A</option></select></td></tr>); })}</tbody>
+            <tbody>{section.items.map((item, ii) => { const label = item.label || item; const key = `${si}_${label}`; const resp = form.responses[key] || ''; return (<tr key={ii}><td>{label}</td><td><select value={resp} onChange={e => handleResponse(si, label, e.target.value)} style={{ backgroundColor: resp === 'OK' ? '#0a2a1a' : resp === 'Defect' ? '#2a0a0a' : '#0a0f0f', color: resp === 'OK' ? '#00c264' : resp === 'Defect' ? '#e94560' : 'white', border: '1px solid #1a2f2f', padding: '5px 10px', borderRadius: '4px' }}><option value="">Select</option><option value="OK">✓ OK</option><option value="Defect">✗ Defect</option><option value="Done">✓ Done</option><option value="NA">N/A</option></select></td></tr>); })}</tbody>
           </table>
         </div>
       ))}
-
-      {/* Parts Used */}
       <div className="form-card" style={{ marginTop: '15px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
           <h3 style={{ color: '#00c2e0', margin: 0 }}>Parts Used</h3>
@@ -568,22 +585,10 @@ function ServiceSheetsTab({ userRole }) {
         </div>
         <table className="data-table">
           <thead><tr><th>Part Name</th><th>Qty</th><th>Unit Cost ($)</th><th>Total</th><th></th></tr></thead>
-          <tbody>
-            {form.parts.map((part, i) => (
-              <tr key={i}>
-                <td><input value={part.name} onChange={e => { const p = [...form.parts]; p[i].name = e.target.value; setForm({ ...form, parts: p }); }} placeholder="Part name" style={{ backgroundColor: '#0a0f0f', color: 'white', border: '1px solid #1a2f2f', padding: '5px 8px', borderRadius: '4px', width: '100%' }} /></td>
-                <td><input type="number" value={part.qty} onChange={e => { const p = [...form.parts]; p[i].qty = e.target.value; setForm({ ...form, parts: p }); }} placeholder="1" style={{ backgroundColor: '#0a0f0f', color: 'white', border: '1px solid #1a2f2f', padding: '5px 8px', borderRadius: '4px', width: '60px' }} /></td>
-                <td><input type="number" value={part.cost} onChange={e => { const p = [...form.parts]; p[i].cost = e.target.value; setForm({ ...form, parts: p }); }} placeholder="0.00" style={{ backgroundColor: '#0a0f0f', color: 'white', border: '1px solid #1a2f2f', padding: '5px 8px', borderRadius: '4px', width: '80px' }} /></td>
-                <td style={{ color: '#ff6b00', fontWeight: 700 }}>${(parseFloat(part.qty || 0) * parseFloat(part.cost || 0)).toFixed(2)}</td>
-                <td><button onClick={() => { const p = form.parts.filter((_, idx) => idx !== i); setForm({ ...form, parts: p }); }} className="btn-delete">✕</button></td>
-              </tr>
-            ))}
-          </tbody>
+          <tbody>{form.parts.map((part, i) => (<tr key={i}><td><input value={part.name} onChange={e => { const p = [...form.parts]; p[i].name = e.target.value; setForm({ ...form, parts: p }); }} placeholder="Part name" style={{ backgroundColor: '#0a0f0f', color: 'white', border: '1px solid #1a2f2f', padding: '5px 8px', borderRadius: '4px', width: '100%' }} /></td><td><input type="number" value={part.qty} onChange={e => { const p = [...form.parts]; p[i].qty = e.target.value; setForm({ ...form, parts: p }); }} placeholder="1" style={{ backgroundColor: '#0a0f0f', color: 'white', border: '1px solid #1a2f2f', padding: '5px 8px', borderRadius: '4px', width: '60px' }} /></td><td><input type="number" value={part.cost} onChange={e => { const p = [...form.parts]; p[i].cost = e.target.value; setForm({ ...form, parts: p }); }} placeholder="0.00" style={{ backgroundColor: '#0a0f0f', color: 'white', border: '1px solid #1a2f2f', padding: '5px 8px', borderRadius: '4px', width: '80px' }} /></td><td style={{ color: '#ff6b00', fontWeight: 700 }}>${(parseFloat(part.qty || 0) * parseFloat(part.cost || 0)).toFixed(2)}</td><td><button onClick={() => { const p = form.parts.filter((_, idx) => idx !== i); setForm({ ...form, parts: p }); }} className="btn-delete">✕</button></td></tr>))}</tbody>
         </table>
         <button onClick={() => setForm({ ...form, parts: [...form.parts, { name: '', qty: '', cost: '' }] })} style={{ marginTop: '10px', backgroundColor: 'transparent', color: '#00c2e0', border: '1px dashed #00c2e0', padding: '6px 14px', borderRadius: '4px', cursor: 'pointer' }}>+ Add Part</button>
       </div>
-
-      {/* Labour */}
       <div className="form-card" style={{ marginTop: '15px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
           <h3 style={{ color: '#00c2e0', margin: 0 }}>Labour</h3>
@@ -591,30 +596,18 @@ function ServiceSheetsTab({ userRole }) {
         </div>
         <table className="data-table">
           <thead><tr><th>Task Description</th><th>Hours</th><th></th></tr></thead>
-          <tbody>
-            {form.labour.map((l, i) => (
-              <tr key={i}>
-                <td><input value={l.description} onChange={e => { const lb = [...form.labour]; lb[i].description = e.target.value; setForm({ ...form, labour: lb }); }} placeholder="e.g. Oil and filter change" style={{ backgroundColor: '#0a0f0f', color: 'white', border: '1px solid #1a2f2f', padding: '5px 8px', borderRadius: '4px', width: '100%' }} /></td>
-                <td><input type="number" value={l.hours} onChange={e => { const lb = [...form.labour]; lb[i].hours = e.target.value; setForm({ ...form, labour: lb }); }} placeholder="0.5" style={{ backgroundColor: '#0a0f0f', color: 'white', border: '1px solid #1a2f2f', padding: '5px 8px', borderRadius: '4px', width: '70px' }} /></td>
-                <td><button onClick={() => { const lb = form.labour.filter((_, idx) => idx !== i); setForm({ ...form, labour: lb }); }} className="btn-delete">✕</button></td>
-              </tr>
-            ))}
-          </tbody>
+          <tbody>{form.labour.map((l, i) => (<tr key={i}><td><input value={l.description} onChange={e => { const lb = [...form.labour]; lb[i].description = e.target.value; setForm({ ...form, labour: lb }); }} placeholder="e.g. Oil and filter change" style={{ backgroundColor: '#0a0f0f', color: 'white', border: '1px solid #1a2f2f', padding: '5px 8px', borderRadius: '4px', width: '100%' }} /></td><td><input type="number" value={l.hours} onChange={e => { const lb = [...form.labour]; lb[i].hours = e.target.value; setForm({ ...form, labour: lb }); }} placeholder="0.5" style={{ backgroundColor: '#0a0f0f', color: 'white', border: '1px solid #1a2f2f', padding: '5px 8px', borderRadius: '4px', width: '70px' }} /></td><td><button onClick={() => { const lb = form.labour.filter((_, idx) => idx !== i); setForm({ ...form, labour: lb }); }} className="btn-delete">✕</button></td></tr>))}</tbody>
         </table>
         <button onClick={() => setForm({ ...form, labour: [...form.labour, { description: '', hours: '' }] })} style={{ marginTop: '10px', backgroundColor: 'transparent', color: '#00c2e0', border: '1px dashed #00c2e0', padding: '6px 14px', borderRadius: '4px', cursor: 'pointer' }}>+ Add Labour</button>
       </div>
-
-      {/* Notes + Signature */}
       <div className="form-card" style={{ marginTop: '15px' }}>
         <h3 style={{ marginBottom: '10px' }}>Notes</h3>
-        <textarea value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} placeholder="Additional notes or observations..." style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid #1a2f2f', backgroundColor: '#0a0f0f', color: 'white', minHeight: '80px', fontFamily: 'Barlow, sans-serif', fontSize: '14px', marginBottom: '15px' }} />
+        <textarea value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} placeholder="Additional notes..." style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid #1a2f2f', backgroundColor: '#0a0f0f', color: 'white', minHeight: '80px', fontFamily: 'Barlow, sans-serif', fontSize: '14px', marginBottom: '15px' }} />
         <h3 style={{ marginBottom: '10px' }}>Technician Signature</h3>
         {!isSigning ? <button className="btn-primary" onClick={startSigning}>Sign Here</button> : (
           <div><canvas ref={sigCanvas} width={400} height={100} style={{ border: '1px solid #1a2f2f', borderRadius: '4px', backgroundColor: '#0a0f0f', cursor: 'crosshair', display: 'block' }} /><button onClick={() => { sigCanvas.current?.getContext('2d').clearRect(0, 0, 400, 100); setSignatureData(''); }} style={{ marginTop: '8px', backgroundColor: 'transparent', color: '#a0b0b0', border: '1px solid #1a2f2f', padding: '5px 12px', borderRadius: '4px', cursor: 'pointer' }}>Clear</button></div>
         )}
       </div>
-
-      {/* Summary + Submit */}
       <div className="form-card" style={{ marginTop: '15px', backgroundColor: '#0a1a1a', border: '1px solid #00c2e030' }}>
         <h3 style={{ color: '#00c2e0', marginBottom: '12px' }}>Summary</h3>
         <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
@@ -632,7 +625,7 @@ function ServiceSheetsTab({ userRole }) {
       <div className="page-header">
         <h2>{aiPreview ? '✨ AI Generated — Review & Edit' : 'Service Sheet Builder'}</h2>
         <div style={{ display: 'flex', gap: '10px' }}>
-          <button className="btn-primary" style={{ background: 'linear-gradient(135deg, #00c2e0, #0090a8)', color: '#000' }} onClick={() => setShowAI(true)}>✨ Generate with AI</button>
+          <button className="btn-primary" style={{ background: 'linear-gradient(135deg, #00c2e0, #0090a8)', color: '#000' }} onClick={() => setShowAI(true)}>✨ AI Generate</button>
           <button className="btn-primary" onClick={() => { setView('list'); setAiPreview(null); }}>← Back</button>
         </div>
       </div>
@@ -646,7 +639,7 @@ function ServiceSheetsTab({ userRole }) {
         <div key={si} className="form-card" style={{ marginTop: '15px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
             <input placeholder="Section Title" value={section.title} onChange={e => { const s = [...builder.sections]; s[si].title = e.target.value; setBuilder({ ...builder, sections: s }); }} style={{ flex: 1, marginRight: '10px', padding: '8px', backgroundColor: '#0a0f0f', color: 'white', border: '1px solid #1a2f2f', borderRadius: '4px' }} />
-            <button onClick={() => { const s = builder.sections.filter((_, i) => i !== si); setBuilder({ ...builder, sections: s }); }} className="btn-delete">Remove</button>
+            <button onClick={() => setBuilder({ ...builder, sections: builder.sections.filter((_, i) => i !== si) })} className="btn-delete">Remove</button>
           </div>
           {section.items.map((item, ii) => {
             const label = item.label || item;
@@ -684,7 +677,12 @@ function ServiceSheetsTab({ userRole }) {
         <h2>Service Sheets</h2>
         <div style={{ display: 'flex', gap: '10px' }}>
           <button className="btn-primary" onClick={() => setView('history')}>History</button>
-          {userRole?.role !== 'technician' && (<><button className="btn-primary" style={{ background: 'linear-gradient(135deg, #00c2e0, #0090a8)', color: '#000' }} onClick={() => setShowAI(true)}>✨ Generate with AI</button><button className="btn-primary" onClick={() => setView('builder')}>+ Build Form</button></>)}
+          {userRole?.role !== 'technician' && (
+            <>
+              <button className="btn-primary" style={{ background: 'linear-gradient(135deg, #00c2e0, #0090a8)', color: '#000' }} onClick={() => setShowAI(true)}>✨ Generate with AI</button>
+              <button className="btn-primary" onClick={() => setView('builder')}>+ Build Form</button>
+            </>
+          )}
         </div>
       </div>
       {templates.length === 0 ? (
@@ -720,16 +718,10 @@ function ServiceSheetsTab({ userRole }) {
 function Forms({ userRole }) {
   const [activeTab, setActiveTab] = useState('prestarts');
 
-  const TABS = [
-    { id: 'prestarts', label: '📋 Prestarts' },
-    { id: 'service-sheets', label: '🔧 Service Sheets' },
-  ];
-
   return (
     <div>
-      {/* Sub Tabs */}
       <div style={{ display: 'flex', gap: '0', borderBottom: '2px solid #1a2f2f', marginBottom: '24px' }}>
-        {TABS.map(tab => (
+        {[{ id: 'prestarts', label: '📋 Prestarts' }, { id: 'service-sheets', label: '🔧 Service Sheets' }].map(tab => (
           <button key={tab.id} onClick={() => setActiveTab(tab.id)}
             style={{ padding: '12px 28px', backgroundColor: 'transparent', color: activeTab === tab.id ? '#00c2e0' : '#a0b0b0', border: 'none', borderBottom: activeTab === tab.id ? '2px solid #00c2e0' : '2px solid transparent', cursor: 'pointer', fontWeight: activeTab === tab.id ? 'bold' : 'normal', fontSize: '15px', marginBottom: '-2px', fontFamily: 'Barlow, sans-serif', letterSpacing: '0.5px' }}>
             {tab.label}
