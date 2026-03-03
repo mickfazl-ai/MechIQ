@@ -3,12 +3,32 @@ import { supabase } from './supabase';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
+const WORKER_URL = 'https://mechiq-ai.mickfazl.workers.dev';
+
+// Extract text from PDF using pdfjs-dist
+async function extractPDFText(file) {
+  const pdfjsLib = await import('pdfjs-dist');
+  pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+  const arrayBuffer = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+  let fullText = '';
+  const maxPages = Math.min(pdf.numPages, 30); // limit to first 30 pages
+  for (let i = 1; i <= maxPages; i++) {
+    const page = await pdf.getPage(i);
+    const content = await page.getTextContent();
+    const pageText = content.items.map(item => item.str).join(' ');
+    fullText += pageText + '\n';
+  }
+  return fullText.slice(0, 15000); // limit to 15k chars
+}
+
 // ─── AI GENERATOR MODAL ───────────────────────────────────────────────────────
 function AIGeneratorModal({ mode, onClose, onGenerated }) {
   const [inputType, setInputType] = useState('text');
   const [textInput, setTextInput] = useState('');
   const [file, setFile] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [loadingMsg, setLoadingMsg] = useState('');
   const [error, setError] = useState('');
 
   const modeLabel = mode === 'prestart' ? 'Prestart Checklist' : 'Service Sheet';
@@ -73,16 +93,17 @@ Generate relevant service sections like Pre-Service Checks, Fluid Changes, Filte
       if (inputType === 'text' || inputType === 'excel') {
         const prompt = buildPrompt() + '\n\nInput: ' + (textInput || ('Spreadsheet file: ' + file?.name));
         messages = [{ role: 'user', content: prompt }];
+
       } else if (inputType === 'pdf') {
-        const base64 = await toBase64(file);
-        messages = [{
-          role: 'user',
-          content: [
-            { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: base64 } },
-            { type: 'text', text: buildPrompt() }
-          ]
-        }];
+        setLoadingMsg('Extracting text from PDF...');
+        const pdfText = await extractPDFText(file);
+        if (!pdfText.trim()) throw new Error('Could not extract text from PDF. Try the Text option instead.');
+        setLoadingMsg('Generating with AI...');
+        const prompt = buildPrompt() + '\n\nDocument content:\n' + pdfText;
+        messages = [{ role: 'user', content: prompt }];
+
       } else if (inputType === 'image') {
+        setLoadingMsg('Processing image...');
         const base64 = await toBase64(file);
         messages = [{
           role: 'user',
@@ -93,7 +114,8 @@ Generate relevant service sections like Pre-Service Checks, Fluid Changes, Filte
         }];
       }
 
-      const response = await fetch('https://mechiq-ai.mickfazl.workers.dev', {
+      setLoadingMsg('Generating with AI...');
+      const response = await fetch(WORKER_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -105,18 +127,16 @@ Generate relevant service sections like Pre-Service Checks, Fluid Changes, Filte
 
       if (!response.ok) {
         const errData = await response.json().catch(() => ({}));
-        throw new Error(errData.error || 'API request failed with status ' + response.status);
+        throw new Error(errData.error || 'Request failed with status ' + response.status);
       }
 
       const data = await response.json();
-
       if (data.error) throw new Error(data.error.message || JSON.stringify(data.error));
       if (!data.content || !data.content.length) throw new Error('No content returned from AI');
 
       const text = data.content.map(i => i.text || '').join('');
       if (!text) throw new Error('Empty response from AI');
 
-      // Strip any markdown code fences
       const clean = text
         .replace(/^```json\s*/i, '')
         .replace(/^```\s*/i, '')
@@ -130,6 +150,7 @@ Generate relevant service sections like Pre-Service Checks, Fluid Changes, Filte
       setError('Error: ' + err.message);
     }
     setLoading(false);
+    setLoadingMsg('');
   };
 
   const inputStyle = {
@@ -177,7 +198,8 @@ Generate relevant service sections like Pre-Service Checks, Fluid Changes, Filte
           <div style={{ marginBottom: '16px' }}>
             <label style={{ color: '#a0b0b0', fontSize: '12px', display: 'block', marginBottom: '6px' }}>Upload machine manual or service document (PDF)</label>
             <input type="file" accept=".pdf" onChange={e => setFile(e.target.files[0])} style={{ ...inputStyle, padding: '8px' }} />
-            {file && <p style={{ color: '#00c264', fontSize: '12px', marginTop: '6px' }}>✓ {file.name}</p>}
+            {file && <p style={{ color: '#00c264', fontSize: '12px', marginTop: '6px' }}>✓ {file.name} ({(file.size / 1024 / 1024).toFixed(1)}MB)</p>}
+            <p style={{ color: '#a0b0b0', fontSize: '11px', marginTop: '6px' }}>Text is extracted from the PDF — any size supported</p>
           </div>
         )}
 
@@ -195,7 +217,7 @@ Generate relevant service sections like Pre-Service Checks, Fluid Changes, Filte
             <input type="file" accept=".xlsx,.xls,.csv" onChange={e => setFile(e.target.files[0])} style={{ ...inputStyle, padding: '8px', marginBottom: '8px' }} />
             {file && <p style={{ color: '#00c264', fontSize: '12px', marginBottom: '8px' }}>✓ {file.name}</p>}
             <textarea value={textInput} onChange={e => setTextInput(e.target.value)}
-              placeholder="Describe the machine and service type, e.g. 500hr service checklist for Volvo excavator..."
+              placeholder="Describe the machine and service type..."
               style={{ ...inputStyle, minHeight: '70px', resize: 'vertical' }} />
           </div>
         )}
@@ -206,7 +228,7 @@ Generate relevant service sections like Pre-Service Checks, Fluid Changes, Filte
           <button onClick={onClose} style={{ flex: 1, padding: '12px', background: 'transparent', border: '1px solid #1a2f2f', color: '#a0b0b0', borderRadius: '6px', cursor: 'pointer' }}>Cancel</button>
           <button onClick={handleGenerate} disabled={loading}
             style={{ flex: 2, padding: '12px', background: loading ? '#1a2f2f' : 'linear-gradient(135deg, #00c2e0, #0090a8)', border: 'none', color: loading ? '#a0b0b0' : '#000', borderRadius: '6px', cursor: loading ? 'not-allowed' : 'pointer', fontWeight: 700, fontSize: '14px' }}>
-            {loading ? '✨ Generating...' : '✨ Generate with AI'}
+            {loading ? (loadingMsg || '✨ Generating...') : '✨ Generate with AI'}
           </button>
         </div>
       </div>
