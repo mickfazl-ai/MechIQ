@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { supabase } from './supabase';
 
-function Login({ onShowSignup, onShowRegister }) {
+function Login({ onShowRegister }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -38,7 +38,7 @@ function Login({ onShowSignup, onShowRegister }) {
   return (
     <div className="login-page">
       <div className="login-card">
-        <h1 className="login-title">MAINTAIN<span>IQ</span></h1>
+        <h1 className="login-title">MECH<span> IQ</span></h1>
         <p className="login-subtitle">Machine Maintenance Software</p>
         <div className="login-form">
           <div className="login-field">
@@ -58,22 +58,17 @@ function Login({ onShowSignup, onShowRegister }) {
             {loading ? 'Signing in...' : 'Sign In'}
           </button>
 
-          {/* Divider */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', margin: '20px 0' }}>
             <div style={{ flex: 1, height: '1px', backgroundColor: '#1a2f2f' }} />
-            <span style={{ color: '#a0b0b0', fontSize: '12px' }}>NEW TO MAINTAINIQ?</span>
+            <span style={{ color: '#a0b0b0', fontSize: '12px' }}>NEW TO MECH IQ?</span>
             <div style={{ flex: 1, height: '1px', backgroundColor: '#1a2f2f' }} />
           </div>
 
-          {/* Register Button */}
-          <button
-            onClick={onShowRegister}
-            style={{
-              width: '100%', padding: '13px', backgroundColor: 'transparent',
-              border: '1px solid #00c2e0', color: '#00c2e0', borderRadius: '6px',
-              cursor: 'pointer', fontSize: '15px', fontWeight: 700, letterSpacing: '0.5px'
-            }}
-          >
+          <button onClick={onShowRegister} style={{
+            width: '100%', padding: '13px', backgroundColor: 'transparent',
+            border: '1px solid #00c2e0', color: '#00c2e0', borderRadius: '6px',
+            cursor: 'pointer', fontSize: '15px', fontWeight: 700, letterSpacing: '0.5px'
+          }}>
             Register for an Account →
           </button>
           <p style={{ textAlign: 'center', marginTop: '12px', color: '#a0b0b0', fontSize: '12px' }}>

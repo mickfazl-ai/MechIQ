@@ -15,9 +15,7 @@ function Navbar({ currentPage, setCurrentPage, onLogout, session, userRole, view
 
   useEffect(() => {
     const handleClick = (e) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
-        setDropdownOpen(false);
-      }
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) setDropdownOpen(false);
     };
     document.addEventListener('mousedown', handleClick);
     return () => document.removeEventListener('mousedown', handleClick);
@@ -41,18 +39,15 @@ function Navbar({ currentPage, setCurrentPage, onLogout, session, userRole, view
 
   const handleNav = (id) => { setCurrentPage(id); setMenuOpen(false); };
 
-  // When viewing a company as master, show that company's nav filtered by their features
-  // When not viewing, show all items + Master Admin tab
   const visibleItems = isMaster && !viewingCompany
     ? [...menuItems, { id: 'master', label: '⚙️ Master Admin', roles: ['master'] }]
     : menuItems.filter(item =>
-        item.roles.includes('admin') &&
+        item.roles.includes(viewingCompany ? 'admin' : (userRole?.role || 'operator')) &&
         (features[item.feature] !== false)
       );
 
   return (
     <>
-      {/* Viewing As Banner */}
       {isMaster && viewingCompany && (
         <div style={{
           backgroundColor: '#ff6b00', color: '#000', padding: '6px 20px',
@@ -69,7 +64,7 @@ function Navbar({ currentPage, setCurrentPage, onLogout, session, userRole, view
 
       <div className="navbar">
         <div className="navbar-brand" onClick={() => handleNav(isMaster && !viewingCompany ? 'master' : 'dashboard')} style={{ cursor: 'pointer' }}>
-          <span className="brand-white">MAINTAIN</span><span className="brand-cyan">IQ</span>
+          <span className="brand-white">MECH</span><span className="brand-cyan"> IQ</span>
         </div>
         <button className="hamburger" onClick={() => setMenuOpen(!menuOpen)}>
           {menuOpen ? '✕' : '☰'}
@@ -77,28 +72,20 @@ function Navbar({ currentPage, setCurrentPage, onLogout, session, userRole, view
         <nav className={menuOpen ? 'nav-open' : ''}>
           <ul>
             {visibleItems.map(item => (
-              <li
-                key={item.id}
-                className={currentPage === item.id ? 'active' : ''}
-                onClick={() => handleNav(item.id)}
-                style={item.id === 'master' ? { color: '#ff6b00' } : {}}
-              >
+              <li key={item.id} className={currentPage === item.id ? 'active' : ''} onClick={() => handleNav(item.id)}
+                style={item.id === 'master' ? { color: '#ff6b00' } : {}}>
                 {item.label}
               </li>
             ))}
           </ul>
           <div className="navbar-user">
-            {/* Company Dropdown for Master */}
             {isMaster && (
               <div ref={dropdownRef} style={{ position: 'relative', marginRight: '12px' }}>
-                <button
-                  onClick={() => setDropdownOpen(!dropdownOpen)}
-                  style={{
-                    backgroundColor: '#1a2f2f', color: '#00c2e0', border: '1px solid #00c2e0',
-                    padding: '5px 12px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px',
-                    fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px'
-                  }}
-                >
+                <button onClick={() => setDropdownOpen(!dropdownOpen)} style={{
+                  backgroundColor: '#1a2f2f', color: '#00c2e0', border: '1px solid #00c2e0',
+                  padding: '5px 12px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px',
+                  fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px'
+                }}>
                   🏢 {viewingCompany ? viewingCompany.name : 'View Company'} ▾
                 </button>
                 {dropdownOpen && (
@@ -108,18 +95,15 @@ function Navbar({ currentPage, setCurrentPage, onLogout, session, userRole, view
                     zIndex: 1000, boxShadow: '0 8px 24px rgba(0,0,0,0.5)', overflow: 'hidden'
                   }}>
                     {viewingCompany && (
-                      <div
-                        onClick={() => { onExitCompany(); setDropdownOpen(false); }}
-                        style={{ padding: '10px 14px', color: '#ff6b00', fontSize: '12px', fontWeight: 700, cursor: 'pointer', borderBottom: '1px solid #1a2f2f', backgroundColor: '#1a0a00' }}
-                      >
+                      <div onClick={() => { onExitCompany(); setDropdownOpen(false); }}
+                        style={{ padding: '10px 14px', color: '#ff6b00', fontSize: '12px', fontWeight: 700, cursor: 'pointer', borderBottom: '1px solid #1a2f2f', backgroundColor: '#1a0a00' }}>
                         ✕ Exit Company View
                       </div>
                     )}
                     {companies.length === 0
                       ? <div style={{ padding: '12px 14px', color: '#a0b0b0', fontSize: '12px' }}>No active companies</div>
                       : companies.map(c => (
-                        <div
-                          key={c.id}
+                        <div key={c.id}
                           onClick={() => { onSelectCompany(c); setDropdownOpen(false); setMenuOpen(false); }}
                           style={{
                             padding: '10px 14px', cursor: 'pointer', fontSize: '13px',
