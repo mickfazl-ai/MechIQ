@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from './supabase';
 
+const MASTER_PIN = '4900';
+
 const FEATURES = [
   { key: 'dashboard',    label: 'Dashboard' },
   { key: 'assets',       label: 'Assets' },
@@ -15,24 +17,81 @@ const FEATURES = [
 
 const STATUS_COLORS = { pending: '#f0a500', active: '#00c264', suspended: '#e94560' };
 
+// PIN Modal
+function PinModal({ onConfirm, onCancel, actionLabel }) {
+  const [pin, setPin] = useState('');
+  const [error, setError] = useState('');
+
+  const handleConfirm = () => {
+    if (pin === MASTER_PIN) { onConfirm(); }
+    else { setError('Incorrect PIN'); setPin(''); }
+  };
+
+  return (
+    <div style={{
+      position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+      background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center',
+      justifyContent: 'center', zIndex: 9999
+    }}>
+      <div style={{
+        background: '#0a1a1a', border: '1px solid #1a3a3a', borderRadius: '12px',
+        padding: '28px', width: '320px', textAlign: 'center'
+      }}>
+        <div style={{ fontSize: '32px', marginBottom: '12px' }}>🔐</div>
+        <h3 style={{ color: '#fff', margin: '0 0 6px' }}>Confirm Action</h3>
+        <p style={{ color: '#a0b0b0', fontSize: '13px', marginBottom: '20px' }}>{actionLabel}</p>
+        <input
+          type="password"
+          placeholder="Enter PIN"
+          value={pin}
+          onChange={e => { setPin(e.target.value); setError(''); }}
+          onKeyDown={e => e.key === 'Enter' && handleConfirm()}
+          autoFocus
+          style={{
+            width: '100%', padding: '12px', backgroundColor: '#0d1515', color: 'white',
+            border: '1px solid #1a2f2f', borderRadius: '6px', fontSize: '18px',
+            textAlign: 'center', letterSpacing: '6px', boxSizing: 'border-box', marginBottom: '8px'
+          }}
+        />
+        {error && <p style={{ color: '#e94560', fontSize: '12px', marginBottom: '8px' }}>{error}</p>}
+        <div style={{ display: 'flex', gap: '10px', marginTop: '12px' }}>
+          <button onClick={onCancel} style={{
+            flex: 1, padding: '10px', background: 'transparent', border: '1px solid #1a2f2f',
+            color: '#a0b0b0', borderRadius: '6px', cursor: 'pointer'
+          }}>Cancel</button>
+          <button onClick={handleConfirm} style={{
+            flex: 1, padding: '10px', background: '#00c2e0', border: 'none',
+            color: '#000', borderRadius: '6px', cursor: 'pointer', fontWeight: 700
+          }}>Confirm</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function MasterAdmin() {
   const [companies, setCompanies] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedCompany, setSelectedCompany] = useState(null);
-  const [tab, setTab] = useState('all'); // all | pending | active | suspended
+  const [tab, setTab] = useState('all');
   const [saving, setSaving] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+
+  // PIN state
+  const [pinAction, setPinAction] = useState(null); // { label, onConfirm }
 
   useEffect(() => { fetchCompanies(); }, []);
 
   const fetchCompanies = async () => {
     setLoading(true);
-    const { data, error } = await supabase
-      .from('companies')
-      .select('*')
-      .order('created_at', { ascending: false });
+    const { data, error } = await supabase.from('companies').select('*').order('created_at', { ascending: false });
     if (!error) setCompanies(data || []);
     setLoading(false);
+  };
+
+  // Require PIN before performing action
+  const requirePin = (label, action) => {
+    setPinAction({ label, onConfirm: () => { setPinAction(null); action(); } });
   };
 
   const updateCompany = async (id, updates) => {
@@ -41,21 +100,33 @@ function MasterAdmin() {
     if (error) { alert('Error: ' + error.message); }
     else {
       await fetchCompanies();
-      if (selectedCompany?.id === id) {
-        setSelectedCompany(prev => ({ ...prev, ...updates }));
-      }
+      if (selectedCompany?.id === id) setSelectedCompany(prev => ({ ...prev, ...updates }));
     }
     setSaving(false);
   };
 
-  const setStatus = (id, status) => updateCompany(id, { status });
+  const setStatus = (id, status) => {
+    const labels = { active: 'Approve & activate this company', suspended: 'Suspend this company', pending: 'Set company to pending' };
+    requirePin(labels[status] || 'Change company status', () => updateCompany(id, { status }));
+  };
 
   const toggleFeature = (company, featureKey) => {
-    const updated = { ...company.features, [featureKey]: !company.features?.[featureKey] };
-    updateCompany(company.id, { features: updated });
-    if (selectedCompany?.id === company.id) {
-      setSelectedCompany(prev => ({ ...prev, features: updated }));
-    }
+    const current = company.features?.[featureKey] !== false;
+    requirePin(
+      `${current ? 'Disable' : 'Enable'} "${FEATURES.find(f => f.key === featureKey)?.label}" for ${company.name}`,
+      () => {
+        const updated = { ...company.features, [featureKey]: !current };
+        updateCompany(company.id, { features: updated });
+        if (selectedCompany?.id === company.id) setSelectedCompany(prev => ({ ...prev, features: updated }));
+      }
+    );
+  };
+
+  const saveAssetLimit = (company) => {
+    requirePin(
+      `Set asset limit to ${company.asset_limit} for ${company.name}`,
+      () => updateCompany(company.id, { asset_limit: company.asset_limit })
+    );
   };
 
   const filteredCompanies = companies.filter(c => {
@@ -74,12 +145,6 @@ function MasterAdmin() {
     suspended: companies.filter(c => c.status === 'suspended').length,
   };
 
-  const cardStyle = {
-    backgroundColor: '#0d1515', border: '1px solid #1a2f2f',
-    borderRadius: '8px', padding: '16px', marginBottom: '10px',
-    cursor: 'pointer'
-  };
-
   const btnStyle = (color) => ({
     padding: '6px 14px', borderRadius: '5px', border: 'none',
     backgroundColor: color, color: '#fff', cursor: 'pointer',
@@ -88,7 +153,15 @@ function MasterAdmin() {
 
   return (
     <div style={{ padding: '24px', maxWidth: '1100px', margin: '0 auto' }}>
-      {/* Header */}
+      {/* PIN Modal */}
+      {pinAction && (
+        <PinModal
+          actionLabel={pinAction.label}
+          onConfirm={pinAction.onConfirm}
+          onCancel={() => setPinAction(null)}
+        />
+      )}
+
       <div style={{ marginBottom: '24px' }}>
         <h2 style={{ color: '#fff', margin: 0 }}>
           ⚙️ Master Admin <span style={{ color: '#00c2e0' }}>Panel</span>
@@ -114,9 +187,8 @@ function MasterAdmin() {
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: selectedCompany ? '1fr 380px' : '1fr', gap: '20px' }}>
-        {/* Left — Company List */}
+        {/* Company List */}
         <div>
-          {/* Tabs + Search */}
           <div style={{ display: 'flex', gap: '8px', marginBottom: '14px', flexWrap: 'wrap', alignItems: 'center' }}>
             {['all', 'pending', 'active', 'suspended'].map(t => (
               <button key={t} onClick={() => setTab(t)} style={{
@@ -140,7 +212,7 @@ function MasterAdmin() {
               ? <p style={{ color: '#a0b0b0' }}>No companies found.</p>
               : filteredCompanies.map(c => (
                 <div key={c.id}
-                  style={{ ...cardStyle, borderColor: selectedCompany?.id === c.id ? '#00c2e0' : '#1a2f2f' }}
+                  style={{ backgroundColor: '#0d1515', border: `1px solid ${selectedCompany?.id === c.id ? '#00c2e0' : '#1a2f2f'}`, borderRadius: '8px', padding: '16px', marginBottom: '10px', cursor: 'pointer' }}
                   onClick={() => setSelectedCompany(c)}
                 >
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
@@ -149,8 +221,7 @@ function MasterAdmin() {
                         <span style={{ color: '#fff', fontWeight: 700, fontSize: '15px' }}>{c.name}</span>
                         <span style={{
                           padding: '2px 8px', borderRadius: '10px', fontSize: '11px', fontWeight: 600,
-                          backgroundColor: STATUS_COLORS[c.status] + '22',
-                          color: STATUS_COLORS[c.status]
+                          backgroundColor: STATUS_COLORS[c.status] + '22', color: STATUS_COLORS[c.status]
                         }}>{c.status}</span>
                       </div>
                       <div style={{ color: '#a0b0b0', fontSize: '12px' }}>
@@ -187,7 +258,7 @@ function MasterAdmin() {
           )}
         </div>
 
-        {/* Right — Company Detail Panel */}
+        {/* Detail Panel */}
         {selectedCompany && (
           <div style={{ backgroundColor: '#0d1515', border: '1px solid #1a3a3a', borderRadius: '10px', padding: '20px', height: 'fit-content', position: 'sticky', top: '20px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
@@ -195,7 +266,7 @@ function MasterAdmin() {
               <button onClick={() => setSelectedCompany(null)} style={{ background: 'transparent', border: 'none', color: '#888', fontSize: '18px', cursor: 'pointer' }}>✕</button>
             </div>
 
-            {/* Company Info */}
+            {/* Info */}
             <div style={{ marginBottom: '16px' }}>
               {[
                 { label: 'Status', value: selectedCompany.status, color: STATUS_COLORS[selectedCompany.status] },
@@ -223,11 +294,8 @@ function MasterAdmin() {
                   onChange={e => setSelectedCompany(prev => ({ ...prev, asset_limit: parseInt(e.target.value) }))}
                   style={{ width: '80px', padding: '7px 10px', backgroundColor: '#0a0f0f', color: 'white', border: '1px solid #1a2f2f', borderRadius: '5px', fontSize: '14px' }}
                 />
-                <button
-                  style={btnStyle('#00c2e0')}
-                  onClick={() => updateCompany(selectedCompany.id, { asset_limit: selectedCompany.asset_limit })}
-                >
-                  {saving ? '...' : 'Save'}
+                <button style={btnStyle('#00c2e0')} onClick={() => saveAssetLimit(selectedCompany)}>
+                  {saving ? '...' : '🔒 Save'}
                 </button>
               </div>
             </div>
@@ -261,13 +329,13 @@ function MasterAdmin() {
               <div style={{ color: '#a0b0b0', fontSize: '12px', marginBottom: '10px' }}>ACCOUNT ACTIONS</div>
               <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                 {selectedCompany.status !== 'active' && (
-                  <button style={btnStyle('#00c264')} onClick={() => setStatus(selectedCompany.id, 'active')}>✓ Activate</button>
+                  <button style={btnStyle('#00c264')} onClick={() => setStatus(selectedCompany.id, 'active')}>🔒 Activate</button>
                 )}
                 {selectedCompany.status !== 'suspended' && (
-                  <button style={btnStyle('#e94560')} onClick={() => setStatus(selectedCompany.id, 'suspended')}>Suspend</button>
+                  <button style={btnStyle('#e94560')} onClick={() => setStatus(selectedCompany.id, 'suspended')}>🔒 Suspend</button>
                 )}
                 {selectedCompany.status !== 'pending' && (
-                  <button style={btnStyle('#f0a500')} onClick={() => setStatus(selectedCompany.id, 'pending')}>Set Pending</button>
+                  <button style={btnStyle('#f0a500')} onClick={() => setStatus(selectedCompany.id, 'pending')}>🔒 Set Pending</button>
                 )}
               </div>
             </div>
