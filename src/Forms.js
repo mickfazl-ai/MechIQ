@@ -469,18 +469,12 @@ function PrestartTab({ userRole }) {
       {selectedTemplate.sections.map((section, si) => (
         <div key={si} className="form-card" style={{ marginTop: '15px' }}>
           <h3 style={{ color: '#00c2e0', marginBottom: '15px' }}>{section.title}</h3>
-          <table className="data-table"><thead><tr><th>Item</th><th>Type</th><th>Value</th></tr></thead>
+          <table className="data-table"><thead><tr><th>Item</th><th>Type</th><th>Value</th><th>Comment</th><th>📷</th></tr></thead>
             <tbody>{section.items.map((item, ii) => {
               const label = item.label || item; const type = item.type || 'check'; const key = `${si}_${label}`;
-              return (<tr key={ii}><td>{label}</td><td style={{ color: '#a0b0b0', fontSize: '12px' }}>{INPUT_TYPES.find(t => t.id === type)?.icon} {type}</td><td><ItemInput item={item} value={form.responses[key] || {}} onChange={val => handleResponse(key, val)} companyId={userRole.company_id} /></td></tr>);
+              return (<tr key={ii}><td>{label}</td><td style={{ color: '#a0b0b0', fontSize: '12px' }}>{INPUT_TYPES.find(t => t.id === type)?.icon} {type}</td><td><ItemInput item={item} value={form.responses[key] || {}} onChange={val => handleResponse(key, { ...form.responses[key], ...val })} companyId={userRole.company_id} /></td><td><input placeholder="Comment..." value={form.responses[key]?.comment || ''} onChange={e => handleResponse(key, { ...form.responses[key], comment: e.target.value })} style={{ backgroundColor: '#0a0f0f', color: 'white', border: '1px solid #1a2f2f', padding: '5px 8px', borderRadius: '4px', width: '140px', fontSize: '12px' }} /></td><td><label style={{ cursor: 'pointer', fontSize: '18px' }}>{form.responses[key]?.photo_url ? <img src={form.responses[key].photo_url} alt="" style={{ width: '36px', height: '28px', objectFit: 'cover', borderRadius: '3px', border: '1px solid #00c2e0' }} /> : '📷'}<input type="file" accept="image/*" capture="environment" style={{ display: 'none' }} onChange={async e => { const file = e.target.files[0]; if (!file) return; try { const url = await uploadPhoto(file, userRole.company_id); handleResponse(key, { ...form.responses[key], photo_url: url }); } catch(err) { alert(err.message); } }} /></label></td></tr>);
             })}</tbody>
           </table>
-        </div>
-      ))}
-      <div className="form-card" style={{ marginTop: '15px' }}>
-        <h3 style={{ marginBottom: '10px' }}>Notes</h3>
-        <textarea value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid #1a2f2f', backgroundColor: '#0a0f0f', color: 'white', minHeight: '80px', fontFamily: 'Barlow, sans-serif', fontSize: '14px', marginBottom: '15px' }} />
-        <h3 style={{ marginBottom: '10px' }}>Operator Signature</h3>
         {!isSigning ? <button className="btn-primary" onClick={startSigning}>Sign Here</button> : (
           <div><canvas ref={sigCanvas} width={400} height={100} style={{ border: '1px solid #1a2f2f', borderRadius: '4px', backgroundColor: '#0a0f0f', cursor: 'crosshair', display: 'block' }} /><button onClick={() => { sigCanvas.current?.getContext('2d').clearRect(0, 0, 400, 100); setSignatureData(''); }} style={{ marginTop: '8px', backgroundColor: 'transparent', color: '#a0b0b0', border: '1px solid #1a2f2f', padding: '5px 12px', borderRadius: '4px', cursor: 'pointer' }}>Clear</button></div>
         )}
@@ -705,10 +699,10 @@ function ServiceSheetsTab({ userRole }) {
       {selectedTemplate.sections?.map((section, si) => (
         <div key={si} className="form-card" style={{ marginTop: '15px' }}>
           <h3 style={{ color: '#00c2e0', marginBottom: '15px' }}>{section.title}</h3>
-          <table className="data-table"><thead><tr><th>Item</th><th>Type</th><th>Value</th></tr></thead>
+          <table className="data-table"><thead><tr><th>Item</th><th>Type</th><th>Value</th><th>Comment</th><th>📷</th></tr></thead>
             <tbody>{section.items.map((item, ii) => {
               const label = item.label || item; const type = item.type || 'check'; const key = `${si}_${label}`;
-              return (<tr key={ii}><td>{label}</td><td style={{ color: '#a0b0b0', fontSize: '12px' }}>{INPUT_TYPES.find(t => t.id === type)?.icon} {type}</td><td><ItemInput item={item} value={form.responses[key] || {}} onChange={val => handleResponse(key, val)} companyId={userRole.company_id} /></td></tr>);
+              return (<tr key={ii}><td>{label}</td><td style={{ color: '#a0b0b0', fontSize: '12px' }}>{INPUT_TYPES.find(t => t.id === type)?.icon} {type}</td><td><ItemInput item={item} value={form.responses[key] || {}} onChange={val => handleResponse(key, { ...form.responses[key], ...val })} companyId={userRole.company_id} /></td><td><input placeholder="Comment..." value={form.responses[key]?.comment || ''} onChange={e => handleResponse(key, { ...form.responses[key], comment: e.target.value })} style={{ backgroundColor: '#0a0f0f', color: 'white', border: '1px solid #1a2f2f', padding: '5px 8px', borderRadius: '4px', width: '140px', fontSize: '12px' }} /></td><td><label style={{ cursor: 'pointer', fontSize: '18px' }}>{form.responses[key]?.photo_url ? <img src={form.responses[key].photo_url} alt="" style={{ width: '36px', height: '28px', objectFit: 'cover', borderRadius: '3px', border: '1px solid #00c2e0' }} /> : '📷'}<input type="file" accept="image/*" capture="environment" style={{ display: 'none' }} onChange={async e => { const file = e.target.files[0]; if (!file) return; try { const url = await uploadPhoto(file, userRole.company_id); handleResponse(key, { ...form.responses[key], photo_url: url }); } catch(err) { alert(err.message); } }} /></label></td></tr>);
             })}</tbody>
           </table>
         </div>
