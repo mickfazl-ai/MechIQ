@@ -8,7 +8,7 @@ import Maintenance from './Maintenance';
 import Reports from './Reports';
 import Users from './Users';
 import Login from './Login';
-import Signup from './Signup';
+import Register from './Register';
 import Prestart from './Prestart';
 import Scanner from './Scanner';
 import AssetPage from './MachineProfile';
@@ -20,12 +20,10 @@ function App() {
   const [session, setSession] = useState(null);
   const [userRole, setUserRole] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [showSignup, setShowSignup] = useState(false);
+  const [authScreen, setAuthScreen] = useState('login'); // login | register
   const [viewingAssetId, setViewingAssetId] = useState(null);
   const [prestartAssetId, setPrestartAssetId] = useState(null);
   const [prestartAsset, setPrestartAsset] = useState(null);
-
-  // Company impersonation state
   const [viewingCompany, setViewingCompany] = useState(null);
 
   useEffect(() => {
@@ -104,9 +102,7 @@ function App() {
     setViewingAssetId(null);
   };
 
-  // When master selects a company to view
   const handleSelectCompany = async (company) => {
-    // Fetch full company details including features
     const { data } = await supabase.from('companies').select('*').eq('id', company.id).single();
     setViewingCompany(data || company);
     setCurrentPage('dashboard');
@@ -117,30 +113,23 @@ function App() {
     setCurrentPage('master');
   };
 
-  // The effective company_id to use for all pages
-  // If master is viewing a company, use that company's ID; otherwise use own
   const effectiveCompanyId = viewingCompany?.id || userRole?.company_id;
-
-  // Fake a userRole that looks like an admin for the viewed company
   const effectiveUserRole = viewingCompany
     ? { ...userRole, role: 'admin', company_id: viewingCompany.id, company_features: viewingCompany.features || {} }
     : userRole;
 
   const renderPage = () => {
-    // Master on master tab and not viewing a company
-    if (userRole?.role === 'master' && currentPage === 'master' && !viewingCompany) {
-      return <MasterAdmin />;
-    }
+    if (userRole?.role === 'master' && currentPage === 'master' && !viewingCompany) return <MasterAdmin />;
 
     switch (currentPage) {
-      case 'dashboard':    return <Dashboard companyId={effectiveCompanyId} />;
-      case 'assets':       return <Assets userRole={effectiveUserRole} onViewAsset={handleViewAsset} />;
-      case 'downtime':     return <Downtime userRole={effectiveUserRole} />;
-      case 'maintenance':  return <Maintenance userRole={effectiveUserRole} />;
-      case 'prestart':     return <Prestart userRole={effectiveUserRole} preloadAsset={prestartAsset} onClearPreload={() => setPrestartAsset(null)} />;
-      case 'scanner':      return <Scanner userRole={effectiveUserRole} onAssetFound={(assetId) => { setPrestartAssetId(assetId); setCurrentPage('prestart-from-scan'); }} />;
+      case 'dashboard':          return <Dashboard companyId={effectiveCompanyId} />;
+      case 'assets':             return <Assets userRole={effectiveUserRole} onViewAsset={handleViewAsset} />;
+      case 'downtime':           return <Downtime userRole={effectiveUserRole} />;
+      case 'maintenance':        return <Maintenance userRole={effectiveUserRole} />;
+      case 'prestart':           return <Prestart userRole={effectiveUserRole} preloadAsset={prestartAsset} onClearPreload={() => setPrestartAsset(null)} />;
+      case 'scanner':            return <Scanner userRole={effectiveUserRole} onAssetFound={(assetId) => { setPrestartAssetId(assetId); setCurrentPage('prestart-from-scan'); }} />;
       case 'prestart-from-scan': return <Prestart userRole={effectiveUserRole} preloadAssetId={prestartAssetId} onClearPreload={() => { setPrestartAssetId(null); setCurrentPage('scanner'); }} />;
-      case 'assetpage':    return (
+      case 'assetpage':          return (
         <div>
           <button onClick={() => { setCurrentPage('assets'); setViewingAssetId(null); }}
             style={{ marginBottom: '15px', backgroundColor: 'transparent', color: '#a0b0b0', border: '1px solid #1a2f2f', padding: '6px 14px', borderRadius: '4px', cursor: 'pointer' }}>
@@ -149,19 +138,18 @@ function App() {
           <AssetPage assetId={viewingAssetId} userRole={effectiveUserRole} onStartPrestart={handleStartPrestartFromAsset} />
         </div>
       );
-      case 'reports':      return <Reports companyId={effectiveCompanyId} />;
-      case 'users':        return <Users companyId={effectiveCompanyId} userRole={effectiveUserRole} />;
-      case 'master':       return <MasterAdmin />;
-      default:             return <Dashboard companyId={effectiveCompanyId} />;
+      case 'reports':            return <Reports companyId={effectiveCompanyId} />;
+      case 'users':              return <Users companyId={effectiveCompanyId} userRole={effectiveUserRole} />;
+      case 'master':             return <MasterAdmin />;
+      default:                   return <Dashboard companyId={effectiveCompanyId} />;
     }
   };
 
   if (loading) return <div style={{ color: 'white', padding: '50px', textAlign: 'center', backgroundColor: '#0a0f0f', height: '100vh' }}>Loading...</div>;
 
   if (!session) {
-    return showSignup
-      ? <Signup onBackToLogin={() => setShowSignup(false)} />
-      : <Login onShowSignup={() => setShowSignup(true)} />;
+    if (authScreen === 'register') return <Register onBackToLogin={() => setAuthScreen('login')} />;
+    return <Login onShowRegister={() => setAuthScreen('register')} />;
   }
 
   return (
