@@ -3,7 +3,37 @@ import { supabase } from './supabase';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
-const WORKER_URL = 'https://mechiq-ai.mickfazl.workers.dev';
+// ─── SHARED AI HELPER ─────────────────────────────────────────────────────────
+// All AI calls route through /api/ai-insight (Vercel serverless proxy).
+// The Anthropic API key lives server-side only — never exposed to the browser.
+// Used by: AIGeneratorModal (prestart + service sheets) and Depreciation.js
+async function callAI(messages, maxTokens = 2000) {
+  const { data: { session } } = await supabase.auth.getSession();
+  const token = session?.access_token;
+  if (!token) throw new Error('Not authenticated');
+
+  const response = await fetch('/api/ai-insight', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+    },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: maxTokens,
+      messages,
+    }),
+  });
+
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error(err.error || 'AI request failed (' + response.status + ')');
+  }
+
+  const data = await response.json();
+  if (data.error) throw new Error(data.error.message || 'AI error');
+  return data.content.map(i => i.text || '').join('');
+}
 
 const INPUT_TYPES = [
   { id: 'check', label: 'OK/Defect/NA' },
@@ -261,11 +291,11 @@ function AIGeneratorModal({ mode, onClose, onGenerated }) {
 
   const handleGenerate = async () => {
     if (inputType === 'text' && !textInput.trim()) { setError('Please describe the machine or service'); return; }
-    if (inputType !== 'text' && !file) { setError('Please select a file'); return; }
+    if (inputType !== 'text' && inputType !== 'excel' && !file) { setError('Please select a file'); return; }
     setLoading(true); setError('');
     try {
       let messages;
-      if (inputType === 'text') {
+      if (inputType === 'text' || inputType === 'excel') {
         messages = [{ role: 'user', content: buildPrompt() + '\n\nInput: ' + textInput }];
       } else if (inputType === 'pdf') {
         setLoadingMsg('Extracting PDF text...');
@@ -277,15 +307,10 @@ function AIGeneratorModal({ mode, onClose, onGenerated }) {
         setLoadingMsg('Processing image...');
         const base64 = await toBase64(file);
         messages = [{ role: 'user', content: [{ type: 'image', source: { type: 'base64', media_type: file.type, data: base64 } }, { type: 'text', text: buildPrompt() }] }];
-      } else {
-        messages = [{ role: 'user', content: buildPrompt() + '\n\nInput: ' + textInput }];
       }
       setLoadingMsg('Generating with AI...');
-      const response = await fetch(WORKER_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 2000, messages }) });
-      if (!response.ok) throw new Error('Status ' + response.status);
-      const data = await response.json();
-      if (data.error) throw new Error(data.error.message || 'AI error');
-      const text = data.content.map(i => i.text || '').join('');
+      // ── Uses shared proxy — no API key in browser ──
+      const text = await callAI(messages, 2000);
       const clean = text.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/\s*```$/i, '').trim();
       onGenerated(JSON.parse(clean));
     } catch (err) { setError('Error: ' + err.message); }
@@ -309,7 +334,7 @@ function AIGeneratorModal({ mode, onClose, onGenerated }) {
             </button>
           ))}
         </div>
-        {inputType === 'text' && (
+        {(inputType === 'text' || inputType === 'excel') && (
           <div style={{ marginBottom: '16px' }}>
             <label style={{ color: '#a0b0b0', fontSize: '12px', display: 'block', marginBottom: '6px' }}>Describe the machine or service</label>
             <textarea value={textInput} onChange={e => setTextInput(e.target.value)} placeholder={mode === 'prestart' ? 'e.g. CAT 320 excavator daily prestart...' : 'e.g. 250hr service Komatsu PC200...'} style={{ ...iStyle, minHeight: '100px', resize: 'vertical' }} />
@@ -327,12 +352,6 @@ function AIGeneratorModal({ mode, onClose, onGenerated }) {
             <label style={{ color: '#a0b0b0', fontSize: '12px', display: 'block', marginBottom: '6px' }}>Upload image of existing form</label>
             <input type="file" accept="image/*" onChange={e => setFile(e.target.files[0])} style={{ ...iStyle, padding: '8px' }} />
             {file && <p style={{ color: '#00c264', fontSize: '12px', marginTop: '6px' }}>{file.name}</p>}
-          </div>
-        )}
-        {inputType === 'excel' && (
-          <div style={{ marginBottom: '16px' }}>
-            <label style={{ color: '#a0b0b0', fontSize: '12px', display: 'block', marginBottom: '6px' }}>Describe the machine</label>
-            <textarea value={textInput} onChange={e => setTextInput(e.target.value)} placeholder="Describe the machine..." style={{ ...iStyle, minHeight: '70px', resize: 'vertical' }} />
           </div>
         )}
         {error && <p style={{ color: '#e94560', fontSize: '13px', marginBottom: '12px' }}>{error}</p>}

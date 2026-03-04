@@ -276,13 +276,15 @@ Provide:
 Keep response concise and professional, focused on practical advice for a fleet manager. Max 200 words.`;
 
     try {
-      const response = await fetch("https://api.anthropic.com/v1/messages", {
+      const { data: { session } } = await (await import("./supabase")).supabase.auth.getSession();
+      const token = session?.access_token;
+
+      const response = await fetch("/api/ai-insight", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
         body: JSON.stringify({
           model: "claude-sonnet-4-20250514",
           max_tokens: 1000,
-          tools: [{ type: "web_search_20250305", name: "web_search" }],
           messages: [{ role: "user", content: prompt }],
         }),
       });
