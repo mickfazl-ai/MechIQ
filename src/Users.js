@@ -167,7 +167,7 @@ function Users({ companyId, userRole }) {
                   <select
                     value={user.role}
                     onChange={e => handleRoleChange(user.id, e.target.value)}
-                    style={{backgroundColor:'#0a0f0f', color:'white', border:'1px solid #1a2f2f', padding:'5px 10px', borderRadius:'4px'}}
+                    style={{backgroundColor:'#E9F1FA', color:'#1a2b3c', border:'1px solid #00ABE4', padding:'5px 10px', borderRadius:'6px', fontFamily:'Inter,sans-serif', fontSize:'13px', cursor:'pointer'}}
                   >
                     <option value="technician">Technician</option>
                     <option value="supervisor">Supervisor</option>

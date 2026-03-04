@@ -47,30 +47,54 @@ function Navbar({ currentPage, setCurrentPage, onLogout, session, userRole, view
     <>
       {isMaster && viewingCompany && (
         <div style={{
-          backgroundColor: '#ff6b00', color: '#000', padding: '6px 20px',
+          backgroundColor: '#0077cc', color: '#fff', padding: '6px 20px',
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           fontSize: '13px', fontWeight: 700
         }}>
           <span>Viewing as: <strong>{viewingCompany.name}</strong> (Admin)</span>
           <button onClick={onExitCompany} style={{
-            backgroundColor: '#000', color: '#ff6b00', border: 'none',
+            backgroundColor: '#fff', color: '#0077cc', border: 'none',
             padding: '4px 12px', borderRadius: '4px', cursor: 'pointer', fontWeight: 700, fontSize: '12px'
           }}>Exit Company View</button>
         </div>
       )}
 
       <div className="navbar">
-        <div className="navbar-brand" onClick={() => handleNav(isMaster && !viewingCompany ? 'master' : 'dashboard')} style={{ cursor: 'pointer' }}>
-          <span className="brand-white">MECH</span><span className="brand-cyan"> IQ</span>
+        <div
+          className="navbar-brand"
+          onClick={() => handleNav(isMaster && !viewingCompany ? 'master' : 'dashboard')}
+          style={{ cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+        >
+          <span style={{
+            fontFamily: "'Barlow Condensed', sans-serif",
+            fontSize: '34px',
+            fontWeight: 800,
+            letterSpacing: '2px',
+            color: '#ffffff',
+            WebkitTextStroke: '1.5px #000000',
+            textTransform: 'uppercase',
+          }}>MECH</span>
+          <span style={{
+            fontFamily: "'Barlow Condensed', sans-serif",
+            fontSize: '34px',
+            fontWeight: 800,
+            letterSpacing: '2px',
+            color: '#00ABE4',
+            WebkitTextStroke: '1.5px #000000',
+            textTransform: 'uppercase',
+            marginLeft: '8px',
+          }}>IQ</span>
         </div>
+
         <button className="hamburger" onClick={() => setMenuOpen(!menuOpen)}>
           {menuOpen ? 'X' : '='}
         </button>
+
         <nav className={menuOpen ? 'nav-open' : ''}>
           <ul>
             {visibleItems.map(item => (
               <li key={item.id} className={currentPage === item.id ? 'active' : ''} onClick={() => handleNav(item.id)}
-                style={item.id === 'master' ? { color: '#ff6b00' } : {}}>
+                style={item.id === 'master' ? { color: '#00ABE4', fontWeight: 700 } : {}}>
                 {item.label}
               </li>
             ))}
@@ -79,37 +103,37 @@ function Navbar({ currentPage, setCurrentPage, onLogout, session, userRole, view
             {isMaster && (
               <div ref={dropdownRef} style={{ position: 'relative', marginRight: '12px' }}>
                 <button onClick={() => setDropdownOpen(!dropdownOpen)} style={{
-                  backgroundColor: '#1a2f2f', color: '#00c2e0', border: '1px solid #00c2e0',
+                  backgroundColor: '#00ABE4', color: '#fff', border: '1px solid #0088b8',
                   padding: '5px 12px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px',
                   fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px'
                 }}>
-                  {viewingCompany ? viewingCompany.name : 'View Company'} v
+                  {viewingCompany ? viewingCompany.name : 'View Company'} ▾
                 </button>
                 {dropdownOpen && (
                   <div style={{
-                    position: 'absolute', right: 0, top: '110%', backgroundColor: '#0d1515',
-                    border: '1px solid #1a3a3a', borderRadius: '8px', minWidth: '200px',
-                    zIndex: 1000, boxShadow: '0 8px 24px rgba(0,0,0,0.5)', overflow: 'hidden'
+                    position: 'absolute', right: 0, top: '110%', backgroundColor: '#ffffff',
+                    border: '1px solid #d6e6f2', borderRadius: '8px', minWidth: '200px',
+                    zIndex: 1000, boxShadow: '0 8px 24px rgba(0,0,0,0.12)', overflow: 'hidden'
                   }}>
                     {viewingCompany && (
                       <div onClick={() => { onExitCompany(); setDropdownOpen(false); }}
-                        style={{ padding: '10px 14px', color: '#ff6b00', fontSize: '12px', fontWeight: 700, cursor: 'pointer', borderBottom: '1px solid #1a2f2f', backgroundColor: '#1a0a00' }}>
+                        style={{ padding: '10px 14px', color: '#0077cc', fontSize: '12px', fontWeight: 700, cursor: 'pointer', borderBottom: '1px solid #E9F1FA', backgroundColor: '#E9F1FA' }}>
                         Exit Company View
                       </div>
                     )}
                     {companies.length === 0
-                      ? <div style={{ padding: '12px 14px', color: '#a0b0b0', fontSize: '12px' }}>No active companies</div>
+                      ? <div style={{ padding: '12px 14px', color: '#7a92a8', fontSize: '12px' }}>No active companies</div>
                       : companies.map(c => (
                         <div key={c.id}
                           onClick={() => { onSelectCompany(c); setDropdownOpen(false); setMenuOpen(false); }}
                           style={{
                             padding: '10px 14px', cursor: 'pointer', fontSize: '13px',
-                            color: viewingCompany?.id === c.id ? '#00c2e0' : '#fff',
-                            backgroundColor: viewingCompany?.id === c.id ? '#0a2a2a' : 'transparent',
-                            borderBottom: '1px solid #1a2f2f'
+                            color: viewingCompany?.id === c.id ? '#00ABE4' : '#1a2b3c',
+                            backgroundColor: viewingCompany?.id === c.id ? '#E9F1FA' : 'transparent',
+                            borderBottom: '1px solid #E9F1FA'
                           }}
-                          onMouseEnter={e => e.currentTarget.style.backgroundColor = '#0a2a2a'}
-                          onMouseLeave={e => e.currentTarget.style.backgroundColor = viewingCompany?.id === c.id ? '#0a2a2a' : 'transparent'}
+                          onMouseEnter={e => e.currentTarget.style.backgroundColor = '#E9F1FA'}
+                          onMouseLeave={e => e.currentTarget.style.backgroundColor = viewingCompany?.id === c.id ? '#E9F1FA' : 'transparent'}
                         >
                           {c.name}
                         </div>
@@ -120,7 +144,15 @@ function Navbar({ currentPage, setCurrentPage, onLogout, session, userRole, view
               </div>
             )}
             <span className="logged-in-as">{userRole?.name || session?.user?.email}</span>
-            <span className="role-badge" style={{ backgroundColor: isMaster ? '#ff6b00' : undefined }}>
+            <span style={{
+              backgroundColor: isMaster ? '#00ABE4' : '#E9F1FA',
+              color: isMaster ? '#fff' : '#1a2b3c',
+              border: '1px solid #00ABE4',
+              padding: '3px 10px',
+              borderRadius: '20px',
+              fontSize: '11px',
+              fontWeight: 600,
+            }}>
               {isMaster ? 'master' : (userRole?.role || 'operator')}
             </span>
             <button className="btn-logout" onClick={onLogout}>Logout</button>
