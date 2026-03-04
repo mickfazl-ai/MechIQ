@@ -7,7 +7,7 @@ const WORKER_URL = 'https://mechiq-ai.mickfazl.workers.dev';
 
 const INPUT_TYPES = [
   { id: 'check', label: '✓ OK/Defect/NA', icon: '✓' },
-  { id: 'photo', label: <span style={{fontSize:"16px"}}>: '📷 #128247;</span>Photo', icon: '&#x1F4F7;' },
+  { id: 'photo', label: '📷 Photo', icon: '📷' },
   { id: 'temperature', label: '🌡️ Temperature', icon: '🌡️' },
   { id: 'fluid', label: '💧 Fluid Qty', icon: '💧' },
   { id: 'pressure', label: '🔵 Pressure', icon: '🔵' },
