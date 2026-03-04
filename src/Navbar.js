@@ -25,14 +25,15 @@ function Navbar({ currentPage, setCurrentPage, onLogout, session, userRole, view
   };
 
   const menuItems = [
-    { id: 'dashboard',   label: 'Dashboard',   roles: ['admin','supervisor','technician','operator'], feature: 'dashboard' },
-    { id: 'assets',      label: 'Assets',       roles: ['admin','supervisor'],                         feature: 'assets' },
-    { id: 'maintenance', label: 'Maintenance',  roles: ['admin','supervisor','technician'],             feature: 'maintenance' },
-    { id: 'forms',       label: 'Forms',        roles: ['admin','supervisor','technician','operator'],  feature: 'prestart' },
-    { id: 'scanner',     label: 'Scanner',      roles: ['technician','operator'],                       feature: 'scanner' },
-    { id: 'reports',     label: 'Reports',      roles: ['admin','supervisor'],                          feature: 'reports' },
-    { id: 'depreciation', label: 'Depreciation', roles: ['admin', 'supervisor'], feature: 'depreciation' },
-    { id: 'users',       label: 'Users',        roles: ['admin'],                                       feature: 'users' },
+    { id: 'dashboard',    label: 'Dashboard',    roles: ['admin','supervisor','technician','operator'], feature: 'dashboard' },
+    { id: 'assets',       label: 'Assets',        roles: ['admin','supervisor'],                         feature: 'assets' },
+    { id: 'maintenance',  label: 'Maintenance',   roles: ['admin','supervisor','technician'],             feature: 'maintenance' },
+    { id: 'forms',        label: 'Forms',         roles: ['admin','supervisor','technician','operator'],  feature: 'prestart' },
+    { id: 'scanner',      label: 'Scanner',       roles: ['technician','operator'],                       feature: 'scanner' },
+    { id: 'reports',      label: 'Reports',       roles: ['admin','supervisor'],                          feature: 'reports' },
+    { id: 'depreciation', label: 'Depreciation',  roles: ['admin','supervisor'],                          feature: 'depreciation' },
+    { id: 'export',       label: 'Data Export',   roles: ['admin'],                                       feature: 'export' },
+    { id: 'users',        label: 'Users',         roles: ['admin'],                                       feature: 'users' },
   ];
 
   const handleNav = (id) => { setCurrentPage(id); setMenuOpen(false); };
@@ -159,6 +160,26 @@ function Navbar({ currentPage, setCurrentPage, onLogout, session, userRole, view
             <button className="btn-logout" onClick={onLogout}>Logout</button>
           </div>
         </nav>
+      </div>
+
+      {/* Terms of Service footer — visible to all logged-in users */}
+      <div style={{
+        textAlign: 'center',
+        padding: '5px 0',
+        fontSize: '11px',
+        background: '#060b0b',
+        borderBottom: '1px solid #1a2f2f',
+      }}>
+        <span
+          onClick={() => handleNav('terms')}
+          style={{ color: '#4a6a6a', cursor: 'pointer', transition: 'color 0.15s' }}
+          onMouseEnter={e => e.target.style.color = '#00c2e0'}
+          onMouseLeave={e => e.target.style.color = '#4a6a6a'}
+        >
+          Terms of Service
+        </span>
+        <span style={{ color: '#1a2f2f', margin: '0 8px' }}>·</span>
+        <span style={{ color: '#4a6a6a' }}>© {new Date().getFullYear()} Coastline Mechanical</span>
       </div>
     </>
   );
