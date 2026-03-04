@@ -74,6 +74,7 @@ export default function Depreciation() {
     assetName: "",
     purchasePrice: "",
     purchaseYear: new Date().getFullYear() - 3,
+    usageUnit: "hrs",
     currentHours: "",
     expectedAnnualHours: "",
     salvageValue: "",
@@ -87,6 +88,8 @@ export default function Depreciation() {
   const [aiInsight, setAiInsight] = useState(null);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState(null);
+  const [aiPredicting, setAiPredicting] = useState(false);
+  const [aiPredictError, setAiPredictError] = useState(null);
   const [calculated, setCalculated] = useState(false);
 
   const handleChange = (field, value) => {
@@ -247,6 +250,84 @@ export default function Depreciation() {
     setCalculated(true);
   };
 
+  const fetchAiPredict = async () => {
+    if (!inputs.assetName) { setAiPredictError("Please enter an asset name / model first"); return; }
+    setAiPredicting(true);
+    setAiPredictError(null);
+
+    const unit = inputs.usageUnit === "kms" ? "kilometres" : "hours";
+    const unitShort = inputs.usageUnit === "kms" ? "km" : "hrs";
+    const prompt = `You are an expert heavy equipment and vehicle valuation analyst with access to real market data.
+
+For the asset: "${inputs.assetName}"
+Purchase Price: ${inputs.purchasePrice ? "$" + inputs.purchasePrice : "unknown"}
+Purchase Year: ${inputs.purchaseYear}
+Usage Unit: ${unit}
+
+Please research and provide the following as ONLY valid JSON (no markdown, no explanation):
+{
+  "expectedLifeUsage": <number - expected total life in ${unit}, e.g. 15000 for hrs or 300000 for kms>,
+  "salvageValue": <number - estimated salvage/residual value in AUD at end of life>,
+  "recommendedDepreciationMethod": <"straight_line" | "declining_balance" | "units_of_production">,
+  "conditionRating": <1-5 integer based on age and typical wear for this machine type>,
+  "expectedAnnualUsage": <number - typical annual ${unit} for this type of asset>,
+  "salePrices": [
+    { "year": <number>, "price": <number>, "description": "<brief context>" },
+    ... up to 4 real or estimated market sale price data points for this model at different ages/usage levels
+  ],
+  "marketNote": "<1-2 sentence summary of depreciation trend for this model in the Australian market>"
+}
+
+Base your response on:
+- Known industry data for this machine type
+- Typical resale values in the Australian heavy equipment market
+- OEM published service life recommendations
+- Real auction/dealer sale data if available for this model`;
+
+    try {
+      const { data: { session } } = await (await import("./supabase")).supabase.auth.getSession();
+      const token = session?.access_token;
+
+      const response = await fetch("/api/ai-insight", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+        body: JSON.stringify({
+          model: "claude-sonnet-4-20250514",
+          max_tokens: 1000,
+          tools: [{ type: "web_search_20250305", name: "web_search" }],
+          messages: [{ role: "user", content: prompt }],
+        }),
+      });
+      const data = await response.json();
+      const text = data.content
+        .filter((b) => b.type === "text")
+        .map((b) => b.text)
+        .join("\n");
+      const clean = text.replace(/^```json\s*/i, "").replace(/^```\s*/i, "").replace(/\s*```$/i, "").trim();
+      const parsed = JSON.parse(clean);
+
+      setInputs((prev) => ({
+        ...prev,
+        expectedLifeHours: parsed.expectedLifeUsage || prev.expectedLifeHours,
+        salvageValue: parsed.salvageValue ? String(parsed.salvageValue) : prev.salvageValue,
+        depreciationMethod: parsed.recommendedDepreciationMethod || prev.depreciationMethod,
+        conditionRating: parsed.conditionRating || prev.conditionRating,
+        expectedAnnualHours: parsed.expectedAnnualUsage ? String(parsed.expectedAnnualUsage) : prev.expectedAnnualHours,
+        salePrices: parsed.salePrices && parsed.salePrices.length > 0
+          ? parsed.salePrices.map((s) => ({ year: String(s.year), price: String(s.price), description: s.description || "" }))
+          : prev.salePrices,
+      }));
+
+      if (parsed.marketNote) {
+        setAiInsight("📊 Market Note: " + parsed.marketNote);
+      }
+    } catch (err) {
+      setAiPredictError("AI prediction failed: " + err.message);
+    } finally {
+      setAiPredicting(false);
+    }
+  };
+
   const fetchAiInsight = async () => {
     if (!results) return;
     setAiLoading(true);
@@ -258,12 +339,12 @@ export default function Depreciation() {
 Asset: ${inputs.assetName || "Heavy Equipment"}
 Purchase Price: $${inputs.purchasePrice}
 Purchase Year: ${inputs.purchaseYear}
-Current Hours: ${inputs.currentHours}
+Current ${inputs.usageUnit === "kms" ? "Kilometres" : "Hours"}: ${inputs.currentHours}
 Condition: ${CONDITION_RATINGS.find((c) => c.value === inputs.conditionRating)?.label}
 Depreciation Method: ${inputs.depreciationMethod}
 Estimated Current Book Value: ${formatCurrency(results.currentValue)}
 Estimated Market Value: ${formatCurrency(results.marketValue)}
-Cost Per Hour: $${results.costPerHour.toFixed(2)}
+Cost Per ${inputs.usageUnit === "kms" ? "KM" : "Hour"}: $${results.costPerHour.toFixed(2)}
 Years Remaining Useful Life: ${results.yearsRemaining.toFixed(1)}
 Recommendation: ${results.recommendation.label}
 
@@ -351,6 +432,7 @@ Keep response concise and professional, focused on practical advice for a fleet 
 
   return (
     <div style={{ fontFamily: "Barlow, sans-serif", color: "#e0eaea", padding: "24px 28px", maxWidth: 1100 }}>
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       {/* Header */}
       <div className="page-header" style={{ marginBottom: 28 }}>
         <h1 style={{ margin: 0, fontSize: 24, fontWeight: 700 }}>Asset Depreciation Calculator</h1>
@@ -361,9 +443,39 @@ Keep response concise and professional, focused on practical advice for a fleet 
 
       {/* Input Section */}
       <div style={cardStyle}>
-        <h3 style={{ margin: "0 0 20px", fontSize: 15, fontWeight: 700, color: CYAN, letterSpacing: "0.04em" }}>
-          ASSET DETAILS
-        </h3>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
+          <h3 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: CYAN, letterSpacing: "0.04em" }}>
+            ASSET DETAILS
+          </h3>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            {aiPredictError && <span style={{ color: RED, fontSize: 12 }}>{aiPredictError}</span>}
+            <button
+              className="btn-primary"
+              style={{
+                padding: "8px 18px",
+                fontSize: 13,
+                fontWeight: 700,
+                background: aiPredicting ? "#1a2f2f" : "linear-gradient(135deg, #00c2e0, #0090a8)",
+                color: aiPredicting ? "#8fa8a8" : "#000",
+                cursor: aiPredicting ? "not-allowed" : "pointer",
+                display: "flex",
+                alignItems: "center",
+                gap: 7,
+              }}
+              onClick={fetchAiPredict}
+              disabled={aiPredicting || !inputs.assetName}
+            >
+              {aiPredicting ? (
+                <>
+                  <span style={{ display: "inline-block", width: 10, height: 10, border: "2px solid #8fa8a8", borderTopColor: CYAN, borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+                  Predicting...
+                </>
+              ) : (
+                <>✦ AI Predict</>
+              )}
+            </button>
+          </div>
+        </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 16 }}>
           <div>
             <label style={labelStyle}>Asset Name / Model</label>
@@ -395,31 +507,58 @@ Keep response concise and professional, focused on practical advice for a fleet 
             />
           </div>
           <div>
-            <label style={labelStyle}>Current Hours</label>
+            <label style={labelStyle}>Usage Unit</label>
+            <div style={{ display: "flex", gap: 8 }}>
+              {["hrs", "kms"].map((u) => (
+                <button
+                  key={u}
+                  onClick={() => handleChange("usageUnit", u)}
+                  style={{
+                    flex: 1,
+                    padding: "9px 0",
+                    borderRadius: 8,
+                    border: `1px solid ${inputs.usageUnit === u ? "#00c2e0" : "#1a2f2f"}`,
+                    background: inputs.usageUnit === u ? "#0a2a2a" : "#060b0b",
+                    color: inputs.usageUnit === u ? "#00c2e0" : "#8fa8a8",
+                    fontFamily: "Barlow, sans-serif",
+                    fontSize: 14,
+                    fontWeight: inputs.usageUnit === u ? 700 : 400,
+                    cursor: "pointer",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.05em",
+                  }}
+                >
+                  {u}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <label style={labelStyle}>Current {inputs.usageUnit === "kms" ? "Kilometres" : "Hours"}</label>
             <input
               style={inputStyle}
               type="number"
-              placeholder="e.g. 6500"
+              placeholder={inputs.usageUnit === "kms" ? "e.g. 85000" : "e.g. 6500"}
               value={inputs.currentHours}
               onChange={(e) => handleChange("currentHours", e.target.value)}
             />
           </div>
           <div>
-            <label style={labelStyle}>Expected Annual Hours</label>
+            <label style={labelStyle}>Expected Annual {inputs.usageUnit === "kms" ? "KMs" : "Hours"}</label>
             <input
               style={inputStyle}
               type="number"
-              placeholder="e.g. 1800"
+              placeholder={inputs.usageUnit === "kms" ? "e.g. 20000" : "e.g. 1800"}
               value={inputs.expectedAnnualHours}
               onChange={(e) => handleChange("expectedAnnualHours", e.target.value)}
             />
           </div>
           <div>
-            <label style={labelStyle}>Expected Life Hours</label>
+            <label style={labelStyle}>Expected Life {inputs.usageUnit === "kms" ? "KMs" : "Hours"}</label>
             <input
               style={inputStyle}
               type="number"
-              placeholder="e.g. 15000"
+              placeholder={inputs.usageUnit === "kms" ? "e.g. 300000" : "e.g. 15000"}
               value={inputs.expectedLifeHours}
               onChange={(e) => handleChange("expectedLifeHours", e.target.value)}
             />
@@ -476,35 +615,42 @@ Keep response concise and professional, focused on practical advice for a fleet 
           </button>
         </div>
         {inputs.salePrices.map((sale, idx) => (
-          <div key={idx} style={{ display: "flex", gap: 12, marginBottom: 10, alignItems: "center" }}>
-            <div style={{ flex: 1 }}>
-              <label style={labelStyle}>Sale Year</label>
-              <input
-                style={inputStyle}
-                type="number"
-                placeholder="e.g. 2021"
-                value={sale.year}
-                onChange={(e) => handleSalePriceChange(idx, "year", e.target.value)}
-              />
+          <div key={idx} style={{ marginBottom: 12 }}>
+            <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+              <div style={{ flex: 1 }}>
+                <label style={labelStyle}>Sale Year</label>
+                <input
+                  style={inputStyle}
+                  type="number"
+                  placeholder="e.g. 2021"
+                  value={sale.year}
+                  onChange={(e) => handleSalePriceChange(idx, "year", e.target.value)}
+                />
+              </div>
+              <div style={{ flex: 1 }}>
+                <label style={labelStyle}>Sale Price ($)</label>
+                <input
+                  style={inputStyle}
+                  type="number"
+                  placeholder="e.g. 280000"
+                  value={sale.price}
+                  onChange={(e) => handleSalePriceChange(idx, "price", e.target.value)}
+                />
+              </div>
+              {inputs.salePrices.length > 1 && (
+                <button
+                  className="btn-delete"
+                  style={{ marginTop: 18, padding: "8px 12px", fontSize: 12 }}
+                  onClick={() => removeSalePrice(idx)}
+                >
+                  ✕
+                </button>
+              )}
             </div>
-            <div style={{ flex: 1 }}>
-              <label style={labelStyle}>Sale Price ($)</label>
-              <input
-                style={inputStyle}
-                type="number"
-                placeholder="e.g. 280000"
-                value={sale.price}
-                onChange={(e) => handleSalePriceChange(idx, "price", e.target.value)}
-              />
-            </div>
-            {inputs.salePrices.length > 1 && (
-              <button
-                className="btn-delete"
-                style={{ marginTop: 18, padding: "8px 12px", fontSize: 12 }}
-                onClick={() => removeSalePrice(idx)}
-              >
-                ✕
-              </button>
+            {sale.description && (
+              <div style={{ marginTop: 4, fontSize: 11, color: "#8fa8a8", fontStyle: "italic", paddingLeft: 2 }}>
+                ✦ {sale.description}
+              </div>
             )}
           </div>
         ))}
@@ -529,9 +675,9 @@ Keep response concise and professional, focused on practical advice for a fleet 
           <div style={{ display: "flex", gap: 14, flexWrap: "wrap", marginBottom: 20 }}>
             {statCard("Book Value", formatCurrency(results.currentValue), CYAN)}
             {statCard("Market Est.", formatCurrency(results.marketValue), YELLOW)}
-            {statCard("Cost / Hour", `$${results.costPerHour.toFixed(2)}`, ORANGE)}
+            {statCard(`Cost / ${inputs.usageUnit === "kms" ? "KM" : "Hour"}`, `$${results.costPerHour.toFixed(2)}`, ORANGE)}
             {statCard(
-              "Life Used",
+              `${inputs.usageUnit === "kms" ? "KMs" : "Hours"} Used`,
               formatPercent(results.utilizationPct),
               results.utilizationPct >= 85 ? RED : results.utilizationPct >= 65 ? ORANGE : GREEN
             )}
