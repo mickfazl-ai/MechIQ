@@ -474,13 +474,15 @@ Max 180 words.`;
       {/* ASSET DETAILS */}
       <div style={cardStyle}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
-          <h3 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: "#1a2b3c", letterSpacing: "0.04em" }}>ASSET DETAILS</h3>
+          <h3 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: "#00ABE4", letterSpacing: "0.04em" }}>ASSET DETAILS</h3>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             {aiPredictError && <span style={{ color: "#dc2626", fontSize: 12 }}>{aiPredictError}</span>}
             <button
               onClick={fetchAiPredict}
               disabled={aiPredicting || !inputs.assetName}
-              style={{ padding: "9px 20px", fontSize: 13, fontWeight: 700, borderRadius: 8, border: "none", background: aiPredicting || !inputs.assetName ? "#1a2f2f" : `linear-gradient(135deg, ${CYAN}, #0090a8)`, color: aiPredicting || !inputs.assetName ? "#8fa8a8" : "#000", cursor: aiPredicting || !inputs.assetName ? "not-allowed" : "pointer", display: "flex", alignItems: "center", gap: 8, fontFamily: "Barlow, sans-serif" }}
+              style={{ padding: "9px 20px", fontSize: 13, fontWeight: 700, borderRadius: 8, border: aiPredicting || !inputs.assetName ? "1px solid #d6e6f2" : "1px solid #00ABE4", background: aiPredicting || !inputs.assetName ? "#f8fafc" : "#ffffff", color: aiPredicting || !inputs.assetName ? "#b0c4d4" : "#00ABE4", cursor: aiPredicting || !inputs.assetName ? "not-allowed" : "pointer", display: "flex", alignItems: "center", gap: 8, fontFamily: "Barlow, sans-serif", transition: "all 0.15s" }}
+              onMouseEnter={e => { if (!aiPredicting && inputs.assetName) { e.currentTarget.style.background = "#00ABE4"; e.currentTarget.style.color = "#ffffff"; }}}
+              onMouseLeave={e => { if (!aiPredicting && inputs.assetName) { e.currentTarget.style.background = "#ffffff"; e.currentTarget.style.color = "#00ABE4"; }}}
             >
               {aiPredicting
                 ? <><span style={{ display: "inline-block", width: 10, height: 10, border: "2px solid #4a6a6a", borderTopColor: CYAN, borderRadius: "50%", animation: "spin 0.8s linear infinite" }} /> Predicting...</>
@@ -596,7 +598,9 @@ Max 180 words.`;
         <button
           onClick={calculate}
           disabled={!inputs.purchasePrice || !inputs.currentUsage || !inputs.expectedLifeUsage}
-          style={{ padding: "13px 32px", fontSize: 14, fontWeight: 700, fontFamily: "Barlow, sans-serif", background: !inputs.purchasePrice || !inputs.currentUsage || !inputs.expectedLifeUsage ? "#1a2f2f" : `linear-gradient(135deg, ${CYAN}, #0090a8)`, color: !inputs.purchasePrice || !inputs.currentUsage || !inputs.expectedLifeUsage ? "#8fa8a8" : "#000", border: "none", borderRadius: 8, cursor: !inputs.purchasePrice || !inputs.currentUsage || !inputs.expectedLifeUsage ? "not-allowed" : "pointer", letterSpacing: "0.05em", textTransform: "uppercase" }}
+          style={{ padding: "13px 32px", fontSize: 14, fontWeight: 700, fontFamily: "Barlow, sans-serif", background: !inputs.purchasePrice || !inputs.currentUsage || !inputs.expectedLifeUsage ? "#f8fafc" : "#ffffff", color: !inputs.purchasePrice || !inputs.currentUsage || !inputs.expectedLifeUsage ? "#b0c4d4" : "#00ABE4", border: !inputs.purchasePrice || !inputs.currentUsage || !inputs.expectedLifeUsage ? "1px solid #d6e6f2" : "1px solid #00ABE4", borderRadius: 8, cursor: !inputs.purchasePrice || !inputs.currentUsage || !inputs.expectedLifeUsage ? "not-allowed" : "pointer", letterSpacing: "0.05em", textTransform: "uppercase", transition: "all 0.15s" }}
+          onMouseEnter={e => { if (inputs.purchasePrice && inputs.currentUsage && inputs.expectedLifeUsage) { e.currentTarget.style.background = "#00ABE4"; e.currentTarget.style.color = "#ffffff"; }}}
+          onMouseLeave={e => { if (inputs.purchasePrice && inputs.currentUsage && inputs.expectedLifeUsage) { e.currentTarget.style.background = "#ffffff"; e.currentTarget.style.color = "#00ABE4"; }}}
         >
           Calculate Depreciation
         </button>
