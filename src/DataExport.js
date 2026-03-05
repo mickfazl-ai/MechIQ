@@ -3,12 +3,12 @@ import { supabase } from './supabase';
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
 
-const CYAN = '#00c2e0';
-const GREEN = '#00c264';
-const RED = '#e94560';
+const CYAN = '#00ABE4';
+const GREEN = '#166534';
+const RED = '#dc2626';
 const ORANGE = '#ff6b00';
-const BORDER = '#1a2f2f';
-const CARD = '#0d1515';
+const BORDER = '#d6e6f2';
+const CARD = '#ffffff';
 
 const DATASETS = [
   { id: 'assets',                   label: 'Assets',              table: 'assets',                   icon: '🏗️' },
@@ -228,7 +228,7 @@ const isAdmin = userRole?.role === 'admin' || userRole?.role === 'master';
   };
 
   const cardStyle = {
-    background: CARD,
+    background: '#ffffff',
     border: `1px solid ${BORDER}`,
     borderRadius: 12,
     padding: '20px 24px',
@@ -248,8 +248,8 @@ const isAdmin = userRole?.role === 'admin' || userRole?.role === 'master';
 
       {/* Header */}
       <div className="page-header" style={{ marginBottom: 28 }}>
-        <h1 style={{ margin: 0, fontSize: 24, fontWeight: 700 }}>Data Export</h1>
-        <p style={{ margin: '6px 0 0', color: '#8fa8a8', fontSize: 14 }}>
+        <h1 style={{ margin: 0, fontSize: 24, fontWeight: 700, color: "#1a2b3c" }}>Data Export</h1>
+        <p style={{ margin: '6px 0 0', color: '#7a92a8', fontSize: 14 }}>
           Export all your company data as a multi-sheet Excel workbook for backup or offline access
         </p>
       </div>
@@ -257,12 +257,12 @@ const isAdmin = userRole?.role === 'admin' || userRole?.role === 'master';
       {/* Dataset Selection */}
       <div style={cardStyle}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-          <h3 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: CYAN, letterSpacing: '0.04em' }}>
+          <h3 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: '#1a2b3c', letterSpacing: '0.04em' }}>
             SELECT DATASETS
           </h3>
           <button
             onClick={toggleAll}
-            style={{ background: 'transparent', border: `1px solid ${BORDER}`, color: '#8fa8a8', borderRadius: 6, padding: '5px 14px', cursor: 'pointer', fontSize: 12, fontFamily: 'Barlow, sans-serif' }}
+            style={{ background: '#f0f4f8', border: '1px solid #d6e6f2', color: '#3d5166', borderRadius: 6, padding: '5px 14px', cursor: 'pointer', fontSize: 12, fontFamily: 'Barlow, sans-serif' }}
           >
             {selected.size === DATASETS.length ? 'Deselect All' : 'Select All'}
           </button>
@@ -281,7 +281,7 @@ const isAdmin = userRole?.role === 'admin' || userRole?.role === 'master';
                   gap: 12,
                   padding: '12px 16px',
                   borderRadius: 8,
-                  border: `1px solid ${on ? CYAN + '66' : BORDER}`,
+                  border: `1px solid ${on ? '#00ABE4' : '#d6e6f2'}`,
                   background: on ? '#0a2a2a' : '#060b0b',
                   cursor: 'pointer',
                   transition: 'all 0.15s',
@@ -289,15 +289,15 @@ const isAdmin = userRole?.role === 'admin' || userRole?.role === 'master';
               >
                 <div style={{
                   width: 20, height: 20, borderRadius: 4,
-                  border: `2px solid ${on ? CYAN : '#4a6a6a'}`,
+                  border: `2px solid ${on ? '#00ABE4' : '#c0cdd8'}`,
                   background: on ? CYAN : 'transparent',
                   flexShrink: 0,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                 }}>
-                  {on && <span style={{ color: '#000', fontSize: 12, fontWeight: 900, lineHeight: 1 }}>✓</span>}
+                  {on && <span style={{ color: '#ffffff', fontSize: 12, fontWeight: 900, lineHeight: 1 }}>✓</span>}
                 </div>
                 <span style={{ fontSize: 15 }}>{ds.icon}</span>
-                <span style={{ color: on ? '#e0eaea' : '#8fa8a8', fontSize: 13, fontWeight: on ? 600 : 400 }}>
+                <span style={{ color: on ? '#1a2b3c' : '#7a92a8', fontSize: 13, fontWeight: on ? 600 : 400 }}>
                   {ds.label}
                 </span>
               </div>
@@ -307,7 +307,7 @@ const isAdmin = userRole?.role === 'admin' || userRole?.role === 'master';
       </div>
 
       {/* Export Info */}
-      <div style={{ ...cardStyle, background: '#060b0b', border: `1px solid ${CYAN}22` }}>
+      <div style={{ ...cardStyle, background: '#f8fafc', border: `1px solid ${CYAN}22` }}>
         <h3 style={{ margin: '0 0 12px', fontSize: 13, fontWeight: 700, color: '#8fa8a8', letterSpacing: '0.05em' }}>
           WHAT YOU'LL GET
         </h3>
@@ -321,8 +321,8 @@ const isAdmin = userRole?.role === 'admin' || userRole?.role === 'master';
             <div key={i} style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
               <span style={{ fontSize: 18 }}>{item.icon}</span>
               <div>
-                <div style={{ fontSize: 12, fontWeight: 700, color: '#e0eaea' }}>{item.label}</div>
-                <div style={{ fontSize: 11, color: '#8fa8a8', marginTop: 2 }}>{item.desc}</div>
+                <div style={{ fontSize: 12, fontWeight: 700, color: '#1a2b3c' }}>{item.label}</div>
+                <div style={{ fontSize: 11, color: '#7a92a8', marginTop: 2 }}>{item.desc}</div>
               </div>
             </div>
           ))}
@@ -331,24 +331,24 @@ const isAdmin = userRole?.role === 'admin' || userRole?.role === 'master';
 
       {/* Error */}
       {error && (
-        <div style={{ background: '#1a0808', border: `1px solid ${RED}44`, borderRadius: 8, padding: '12px 16px', marginBottom: 16, color: RED, fontSize: 13 }}>
+        <div style={{ background: '#fef2f2', border: `1px solid ${RED}44`, borderRadius: 8, padding: '12px 16px', marginBottom: 16, color: '#dc2626', fontSize: 13 }}>
           {error}
         </div>
       )}
 
       {/* Progress */}
       {loading && progress && (
-        <div style={{ background: '#0a1a1a', border: `1px solid ${CYAN}33`, borderRadius: 8, padding: '12px 16px', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div style={{ background: '#f0f7ff', border: `1px solid ${CYAN}33`, borderRadius: 8, padding: '12px 16px', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 10 }}>
           <span style={{ display: 'inline-block', width: 12, height: 12, border: '2px solid #1a2f2f', borderTopColor: CYAN, borderRadius: '50%', animation: 'spin 0.8s linear infinite', flexShrink: 0 }} />
-          <span style={{ color: CYAN, fontSize: 13 }}>{progress}</span>
+          <span style={{ color: '#0077cc', fontSize: 13 }}>{progress}</span>
           <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
         </div>
       )}
 
       {/* Last Export */}
       {lastExport && !loading && (
-        <div style={{ background: '#0a1a0a', border: `1px solid ${GREEN}44`, borderRadius: 8, padding: '12px 16px', marginBottom: 16 }}>
-          <div style={{ color: GREEN, fontSize: 13, fontWeight: 700, marginBottom: 4 }}>✓ Export complete</div>
+        <div style={{ background: '#f0faf5', border: `1px solid ${GREEN}44`, borderRadius: 8, padding: '12px 16px', marginBottom: 16 }}>
+          <div style={{ color: '#166534', fontSize: 13, fontWeight: 700, marginBottom: 4 }}>✓ Export complete</div>
           <div style={{ color: '#8fa8a8', fontSize: 12 }}>
             {lastExport.filename} — {lastExport.totalRows} records across {lastExport.sheets} sheets — {lastExport.date}
           </div>
@@ -377,7 +377,7 @@ const isAdmin = userRole?.role === 'admin' || userRole?.role === 'master';
         {loading ? `Exporting... (${progress || 'please wait'})` : `⬇ Export ${selected.size} Dataset${selected.size !== 1 ? 's' : ''} to Excel`}
       </button>
 
-      <p style={{ color: '#4a6a6a', fontSize: 11, marginTop: 12, textAlign: 'center' }}>
+      <p style={{ color: '#7a92a8', fontSize: 11, marginTop: 12, textAlign: 'center' }}>
         Data is exported directly from your Supabase database. No data leaves your account except to your local download.
       </p>
     </div>
