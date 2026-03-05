@@ -275,6 +275,8 @@ const isAdmin = userRole?.role === 'admin' || userRole?.role === 'master';
               <div
                 key={ds.id}
                 onClick={() => toggle(ds.id)}
+                onMouseEnter={e => { if (!selected.has(ds.id)) e.currentTarget.style.background = '#f0f4f8'; }}
+                onMouseLeave={e => { if (!selected.has(ds.id)) e.currentTarget.style.background = '#ffffff'; }}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -282,9 +284,10 @@ const isAdmin = userRole?.role === 'admin' || userRole?.role === 'master';
                   padding: '12px 16px',
                   borderRadius: 8,
                   border: `1px solid ${on ? '#00ABE4' : '#d6e6f2'}`,
-                  background: on ? '#0a2a2a' : '#060b0b',
+                  background: on ? '#e6f4ff' : '#ffffff',
                   cursor: 'pointer',
                   transition: 'all 0.15s',
+                  boxShadow: on ? '0 0 0 2px #00ABE422' : 'none',
                 }}
               >
                 <div style={{
