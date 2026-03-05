@@ -6,12 +6,12 @@ function formatCurrency(val) {
   return "$" + Number(val).toLocaleString("en-AU", { maximumFractionDigits: 0 });
 }
 
-const CYAN = "#00c2e0";
-const GREEN = "#00c264";
-const RED = "#e94560";
-const ORANGE = "#ff6b00";
-const CARD = "#0d1515";
-const BORDER = "#1a2f2f";
+const CYAN = "#00ABE4";
+const GREEN = "#166534";
+const RED = "#dc2626";
+const ORANGE = "#e67700";
+const CARD = "#ffffff";
+const BORDER = "#d6e6f2";
 
 const CONDITIONS = ["Poor", "Fair", "Good", "Very Good", "Excellent"];
 const CONDITION_FACTOR = { Poor: 0.5, Fair: 0.7, Good: 0.85, "Very Good": 0.95, Excellent: 1.0 };
@@ -20,7 +20,7 @@ const CustomTooltip = ({ active, payload, label }) => {
   if (active && payload && payload.length) {
     return (
       <div style={{ background: "#0d1515", border: "1px solid #1a2f2f", borderRadius: 8, padding: "10px 14px" }}>
-        <p style={{ margin: "0 0 6px", color: "#8fa8a8", fontSize: 12 }}>{label}</p>
+        <p style={{ margin: "0 0 6px", color: "#3d5166", fontSize: 12 }}>{label}</p>
         {payload.map((p, i) => (
           <p key={i} style={{ margin: "2px 0", color: p.color, fontSize: 12 }}>
             {p.name}: {p.name.toLowerCase().includes("value") || p.name.toLowerCase().includes("dep") ? formatCurrency(p.value) : p.value}
@@ -35,7 +35,7 @@ const CustomTooltip = ({ active, payload, label }) => {
 function statCard(label, value, color) {
   return (
     <div style={{ background: "#f8fafc", border: "1px solid #d6e6f2", borderRadius: 10, padding: "16px 20px" }}>
-      <div style={{ color: "#8fa8a8", fontSize: 11, fontWeight: 700, letterSpacing: "0.05em", marginBottom: 6 }}>{label}</div>
+      <div style={{ color: "#7a92a8", fontSize: 11, fontWeight: 700, letterSpacing: "0.05em", marginBottom: 6 }}>{label}</div>
       <div style={{ color: color || CYAN, fontSize: 22, fontWeight: 700 }}>{value}</div>
     </div>
   );
@@ -458,12 +458,12 @@ Max 180 words.`;
   };
 
   const inputStyle = { background: "#f8fafc", border: "1px solid #d6e6f2", borderRadius: 8, color: "#e0eaea", fontFamily: "Barlow, sans-serif", fontSize: 14, padding: "9px 13px", width: "100%", outline: "none", boxSizing: "border-box" };
-  const labelStyle = { color: "#8fa8a8", fontSize: 11, fontWeight: 700, letterSpacing: "0.05em", textTransform: "uppercase", marginBottom: 6, display: "block" };
+  const labelStyle = { color: "#3d5166", fontSize: 11, fontWeight: 700, letterSpacing: "0.05em", textTransform: "uppercase", marginBottom: 6, display: "block" };
   const cardStyle = { background: CARD, border: `1px solid ${BORDER}`, borderRadius: 12, padding: "20px 24px", marginBottom: 20 };
   const unitLabel = inputs.usageUnit === "kms" ? "KMs" : "Hours";
 
   return (
-    <div style={{ fontFamily: "Barlow, sans-serif", color: "#e0eaea", padding: "24px 28px", maxWidth: 1100 }}>
+    <div style={{ fontFamily: "Barlow, sans-serif", color: "#1a2b3c", padding: "24px 28px", maxWidth: 1100 }}>
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
 
       <div className="page-header" style={{ marginBottom: 28 }}>
@@ -474,9 +474,9 @@ Max 180 words.`;
       {/* ASSET DETAILS */}
       <div style={cardStyle}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
-          <h3 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: CYAN, letterSpacing: "0.04em" }}>ASSET DETAILS</h3>
+          <h3 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: "#1a2b3c", letterSpacing: "0.04em" }}>ASSET DETAILS</h3>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            {aiPredictError && <span style={{ color: RED, fontSize: 12 }}>{aiPredictError}</span>}
+            {aiPredictError && <span style={{ color: "#dc2626", fontSize: 12 }}>{aiPredictError}</span>}
             <button
               onClick={fetchAiPredict}
               disabled={aiPredicting || !inputs.assetName}
@@ -513,7 +513,7 @@ Max 180 words.`;
             <label style={labelStyle}>New or Used</label>
             <div style={{ display: "flex", gap: 8 }}>
               {["new", "used"].map(t => (
-                <button key={t} onClick={() => handleChange("assetConditionType", t)} style={{ flex: 1, padding: "9px 0", borderRadius: 8, border: `1px solid ${inputs.assetConditionType === t ? CYAN : BORDER}`, background: inputs.assetConditionType === t ? "#0a2a2a" : "#060b0b", color: inputs.assetConditionType === t ? CYAN : "#8fa8a8", fontFamily: "Barlow, sans-serif", fontSize: 13, fontWeight: inputs.assetConditionType === t ? 700 : 400, cursor: "pointer", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                <button key={t} onClick={() => handleChange("assetConditionType", t)} style={{ flex: 1, padding: "9px 0", borderRadius: 8, border: `1px solid ${inputs.assetConditionType === t ? CYAN : BORDER}`, background: inputs.assetConditionType === t ? "#e6f4ff" : "#f8fafc", color: inputs.assetConditionType === t ? "#0077cc" : "#7a92a8", border: `1px solid ${inputs.assetConditionType === t ? "#00ABE4" : "#d6e6f2"}`, fontFamily: "Barlow, sans-serif", fontSize: 13, fontWeight: inputs.assetConditionType === t ? 700 : 400, cursor: "pointer", textTransform: "uppercase", letterSpacing: "0.05em" }}>
                   {t}
                 </button>
               ))}
@@ -531,7 +531,7 @@ Max 180 words.`;
             <label style={labelStyle}>Usage Unit</label>
             <div style={{ display: "flex", gap: 8 }}>
               {["hrs", "kms"].map(u => (
-                <button key={u} onClick={() => handleChange("usageUnit", u)} style={{ flex: 1, padding: "9px 0", borderRadius: 8, border: `1px solid ${inputs.usageUnit === u ? CYAN : BORDER}`, background: inputs.usageUnit === u ? "#0a2a2a" : "#060b0b", color: inputs.usageUnit === u ? CYAN : "#8fa8a8", fontFamily: "Barlow, sans-serif", fontSize: 13, fontWeight: inputs.usageUnit === u ? 700 : 400, cursor: "pointer", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                <button key={u} onClick={() => handleChange("usageUnit", u)} style={{ flex: 1, padding: "9px 0", borderRadius: 8, border: `1px solid ${inputs.usageUnit === u ? CYAN : BORDER}`, background: inputs.usageUnit === u ? "#e6f4ff" : "#f8fafc", color: inputs.usageUnit === u ? "#0077cc" : "#7a92a8", border: `1px solid ${inputs.usageUnit === u ? "#00ABE4" : "#d6e6f2"}`, fontFamily: "Barlow, sans-serif", fontSize: 13, fontWeight: inputs.usageUnit === u ? 700 : 400, cursor: "pointer", textTransform: "uppercase", letterSpacing: "0.05em" }}>
                   {u}
                 </button>
               ))}
@@ -555,7 +555,7 @@ Max 180 words.`;
             <label style={labelStyle}>Condition</label>
             <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
               {CONDITIONS.map(c => (
-                <button key={c} onClick={() => handleChange("condition", c)} style={{ padding: "7px 12px", borderRadius: 6, border: `1px solid ${inputs.condition === c ? CYAN : BORDER}`, background: inputs.condition === c ? "#0a2a2a" : "#060b0b", color: inputs.condition === c ? CYAN : "#8fa8a8", fontFamily: "Barlow, sans-serif", fontSize: 12, fontWeight: inputs.condition === c ? 700 : 400, cursor: "pointer" }}>
+                <button key={c} onClick={() => handleChange("condition", c)} style={{ padding: "7px 12px", borderRadius: 6, border: `1px solid ${inputs.condition === c ? CYAN : BORDER}`, background: inputs.condition === c ? "#e6f4ff" : "#f8fafc", color: inputs.condition === c ? "#0077cc" : "#7a92a8", border: `1px solid ${inputs.condition === c ? "#00ABE4" : "#d6e6f2"}`, fontFamily: "Barlow, sans-serif", fontSize: 12, fontWeight: inputs.condition === c ? 700 : 400, cursor: "pointer" }}>
                   {c}
                 </button>
               ))}
@@ -564,18 +564,18 @@ Max 180 words.`;
 
           {/* AI-filled fields — shown after predict */}
           <div>
-            <label style={labelStyle}>Expected Life {unitLabel} <span style={{ color: CYAN, fontSize: 10 }}>(AI filled)</span></label>
+            <label style={labelStyle}>Expected Life {unitLabel} <span style={{ color: "#0077cc", fontSize: 10 }}>(AI filled)</span></label>
             <input style={inputStyle} type="number" placeholder={inputs.usageUnit === "kms" ? "e.g. 300000" : "e.g. 15000"} value={inputs.expectedLifeUsage} onChange={e => handleChange("expectedLifeUsage", e.target.value)} />
           </div>
 
           <div>
-            <label style={labelStyle}>Salvage Value ($) <span style={{ color: CYAN, fontSize: 10 }}>(AI filled)</span></label>
+            <label style={labelStyle}>Salvage Value ($) <span style={{ color: "#0077cc", fontSize: 10 }}>(AI filled)</span></label>
             <input style={inputStyle} type="number" placeholder="e.g. 45000" value={inputs.salvageValue} onChange={e => handleChange("salvageValue", e.target.value)} />
           </div>
 
           <div>
-            <label style={labelStyle}>Depreciation Method <span style={{ color: CYAN, fontSize: 10 }}>(AI filled)</span></label>
-            <select style={{ ...inputStyle, cursor: "pointer" }} value={inputs.depreciationMethod} onChange={e => handleChange("depreciationMethod", e.target.value)}>
+            <label style={labelStyle}>Depreciation Method <span style={{ color: "#0077cc", fontSize: 10 }}>(AI filled)</span></label>
+            <select style={{ ...inputStyle, cursor: "pointer", background: "#ffffff" }} value={inputs.depreciationMethod} onChange={e => handleChange("depreciationMethod", e.target.value)}>
               <option value="straight_line">Straight Line</option>
               <option value="declining_balance">Declining Balance</option>
               <option value="units_of_production">Units of Production</option>
@@ -585,7 +585,7 @@ Max 180 words.`;
 
         {/* AI Market Note */}
         {aiInsight && !calculated && (
-          <div style={{ marginTop: 16, background: "#060b0b", border: `1px solid ${CYAN}33`, borderRadius: 8, padding: "12px 16px", color: "#c8dada", fontSize: 13 }}>
+          <div style={{ marginTop: 16, background: "#f0f7ff", border: "1px solid #bde0f7", borderRadius: 8, padding: "12px 16px", color: "#1a2b3c", fontSize: 13 }}>
             {aiInsight}
           </div>
         )}
@@ -600,7 +600,7 @@ Max 180 words.`;
         >
           Calculate Depreciation
         </button>
-        {(!inputs.expectedLifeUsage) && <span style={{ color: "#8fa8a8", fontSize: 12 }}>Use AI Predict to fill Expected Life {unitLabel} first</span>}
+        {(!inputs.expectedLifeUsage) && <span style={{ color: "#3d5166", fontSize: 12 }}>Use AI Predict to fill Expected Life {unitLabel} first</span>}
         <button
           onClick={() => setShowHistory(h => !h)}
           style={{ padding: "13px 20px", fontSize: 13, fontWeight: 700, fontFamily: "Barlow, sans-serif", background: "transparent", color: history.length > 0 ? CYAN : "#4a6a6a", border: `1px solid ${history.length > 0 ? CYAN : BORDER}`, borderRadius: 8, cursor: "pointer", letterSpacing: "0.05em" }}
@@ -619,25 +619,25 @@ Max 180 words.`;
 
       {/* HISTORY PANEL */}
       {showHistory && (
-        <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 12, padding: "20px 24px", marginBottom: 20 }}>
-          <h3 style={{ margin: "0 0 16px", fontSize: 15, fontWeight: 700, color: CYAN, letterSpacing: "0.04em" }}>CALCULATION HISTORY</h3>
+        <div style={{ background: "#ffffff", border: "1px solid #d6e6f2", borderRadius: 12, padding: "20px 24px", marginBottom: 20 }}>
+          <h3 style={{ margin: "0 0 16px", fontSize: 15, fontWeight: 700, color: "#1a2b3c", letterSpacing: "0.04em" }}>CALCULATION HISTORY</h3>
           {history.length === 0 ? (
-            <p style={{ color: "#8fa8a8", fontSize: 13 }}>No calculations saved yet. Run a calculation to save it here.</p>
+            <p style={{ color: "#7a92a8", fontSize: 13 }}>No calculations saved yet. Run a calculation to save it here.</p>
           ) : (
             <div>
               {history.map(entry => (
-                <div key={entry.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 0", borderBottom: `1px solid ${BORDER}` }}>
+                <div key={entry.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 0", borderBottom: "1px solid #e8f0f7" }}>
                   <div style={{ flex: 1 }}>
-                    <div style={{ color: "#e0eaea", fontSize: 14, fontWeight: 600 }}>{entry.assetName}</div>
+                    <div style={{ color: "#1a2b3c", fontSize: 14, fontWeight: 600 }}>{entry.assetName}</div>
                     <div style={{ color: "#8fa8a8", fontSize: 12, marginTop: 3 }}>
-                      {entry.purchaseYear} · {entry.condition} · {Number(entry.currentUsage).toLocaleString()} {entry.usageUnit} · Book Value: <span style={{ color: CYAN }}>${Number(entry.results?.currentValue).toLocaleString()}</span> · <span style={{ color: entry.results?.recommendation?.color }}>{entry.results?.recommendation?.label}</span>
+                      {entry.purchaseYear} · {entry.condition} · {Number(entry.currentUsage).toLocaleString()} {entry.usageUnit} · Book Value: <span style={{ color: "#0077cc" }}>${Number(entry.results?.currentValue).toLocaleString()}</span> · <span style={{ color: entry.results?.recommendation?.color }}>{entry.results?.recommendation?.label}</span>
                     </div>
-                    <div style={{ color: "#4a6a6a", fontSize: 11, marginTop: 2 }}>{entry.date}</div>
+                    <div style={{ color: "#7a92a8", fontSize: 11, marginTop: 2 }}>{entry.date}</div>
                   </div>
                   <div style={{ display: "flex", gap: 8, marginLeft: 16 }}>
-                    <button onClick={() => loadFromHistory(entry)} style={{ padding: "6px 12px", fontSize: 11, fontWeight: 700, background: "#0a2a2a", border: `1px solid ${CYAN}`, color: CYAN, borderRadius: 6, cursor: "pointer", fontFamily: "Barlow, sans-serif" }}>Load</button>
-                    <button onClick={() => exportPDF(entry)} style={{ padding: "6px 12px", fontSize: 11, fontWeight: 700, background: "#0a1a0a", border: `1px solid ${GREEN}`, color: GREEN, borderRadius: 6, cursor: "pointer", fontFamily: "Barlow, sans-serif" }}>PDF</button>
-                    <button onClick={() => deleteHistoryEntry(entry.id)} style={{ padding: "6px 12px", fontSize: 11, fontWeight: 700, background: "#1a0808", border: `1px solid ${RED}44`, color: RED, borderRadius: 6, cursor: "pointer", fontFamily: "Barlow, sans-serif" }}>✕</button>
+                    <button onClick={() => loadFromHistory(entry)} style={{ padding: "6px 12px", fontSize: 11, fontWeight: 700, background: "#e6f4ff", border: "1px solid #00ABE4", color: CYAN, borderRadius: 6, cursor: "pointer", fontFamily: "Barlow, sans-serif" }}>Load</button>
+                    <button onClick={() => exportPDF(entry)} style={{ padding: "6px 12px", fontSize: 11, fontWeight: 700, background: "#f0faf5", border: "1px solid #16a34a", color: GREEN, borderRadius: 6, cursor: "pointer", fontFamily: "Barlow, sans-serif" }}>PDF</button>
+                    <button onClick={() => deleteHistoryEntry(entry.id)} style={{ padding: "6px 12px", fontSize: 11, fontWeight: 700, background: "#fff1f1", border: "1px solid #fca5a5", color: RED, borderRadius: 6, cursor: "pointer", fontFamily: "Barlow, sans-serif" }}>✕</button>
                   </div>
                 </div>
               ))}
@@ -663,12 +663,12 @@ Max 180 words.`;
           {/* Charts */}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginBottom: 20 }}>
             <div style={cardStyle}>
-              <h3 style={{ margin: "0 0 16px", fontSize: 14, fontWeight: 700, color: CYAN }}>5-YEAR VALUE PROJECTION</h3>
+              <h3 style={{ margin: "0 0 16px", fontSize: 14, fontWeight: 700, color: "#1a2b3c" }}>5-YEAR VALUE PROJECTION</h3>
               <ResponsiveContainer width="100%" height={220}>
                 <LineChart data={results.projection}>
-                  <CartesianGrid strokeDasharray="3 3" stroke={BORDER} />
-                  <XAxis dataKey="year" stroke="#8fa8a8" tick={{ fontSize: 11 }} />
-                  <YAxis stroke="#8fa8a8" tick={{ fontSize: 11 }} tickFormatter={v => "$" + (v / 1000).toFixed(0) + "k"} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e8f0f7" />
+                  <XAxis dataKey="year" stroke="#7a92a8" tick={{ fontSize: 11 }} />
+                  <YAxis stroke="#7a92a8" tick={{ fontSize: 11 }} tickFormatter={v => "$" + (v / 1000).toFixed(0) + "k"} />
                   <Tooltip content={<CustomTooltip />} />
                   <Legend wrapperStyle={{ fontSize: 11 }} />
                   <Line type="monotone" dataKey="bookValue" name="Book Value" stroke={CYAN} strokeWidth={2} dot={false} />
@@ -677,12 +677,12 @@ Max 180 words.`;
               </ResponsiveContainer>
             </div>
             <div style={cardStyle}>
-              <h3 style={{ margin: "0 0 16px", fontSize: 14, fontWeight: 700, color: CYAN }}>ANNUAL DEPRECIATION</h3>
+              <h3 style={{ margin: "0 0 16px", fontSize: 14, fontWeight: 700, color: "#1a2b3c" }}>ANNUAL DEPRECIATION</h3>
               <ResponsiveContainer width="100%" height={220}>
                 <BarChart data={results.projection.slice(1)}>
-                  <CartesianGrid strokeDasharray="3 3" stroke={BORDER} />
-                  <XAxis dataKey="year" stroke="#8fa8a8" tick={{ fontSize: 11 }} />
-                  <YAxis stroke="#8fa8a8" tick={{ fontSize: 11 }} tickFormatter={v => "$" + (v / 1000).toFixed(0) + "k"} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e8f0f7" />
+                  <XAxis dataKey="year" stroke="#7a92a8" tick={{ fontSize: 11 }} />
+                  <YAxis stroke="#7a92a8" tick={{ fontSize: 11 }} tickFormatter={v => "$" + (v / 1000).toFixed(0) + "k"} />
                   <Tooltip content={<CustomTooltip />} />
                   <Bar dataKey="depreciation" name="Depreciation" fill={RED} radius={[4, 4, 0, 0]} />
                 </BarChart>
@@ -730,7 +730,7 @@ Max 180 words.`;
           {/* AI Market Insight */}
           <div style={cardStyle}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-              <h3 style={{ margin: 0, fontSize: 14, fontWeight: 700, color: CYAN }}>AI MARKET INSIGHT</h3>
+              <h3 style={{ margin: 0, fontSize: 14, fontWeight: 700, color: "#1a2b3c" }}>AI MARKET INSIGHT</h3>
               <button
                 onClick={fetchAiInsight}
                 disabled={aiLoading}
@@ -741,12 +741,12 @@ Max 180 words.`;
             </div>
             {aiError && <div style={{ color: RED, fontSize: 13 }}>{aiError}</div>}
             {aiInsight && !aiLoading && (
-              <div style={{ color: "#c8dada", fontSize: 13, lineHeight: 1.7, background: "#f8fafc", border: "1px solid #d6e6f2", borderRadius: 8, padding: "12px 16px" }}>
+              <div style={{ color: "#1a2b3c", fontSize: 13, lineHeight: 1.7, background: "#f8fafc", border: "1px solid #d6e6f2", borderRadius: 8, padding: "12px 16px" }}>
                 {aiInsight}
               </div>
             )}
             {!aiInsight && !aiLoading && (
-              <p style={{ color: "#8fa8a8", fontSize: 13, margin: 0 }}>
+              <p style={{ color: "#7a92a8", fontSize: 13, margin: 0 }}>
                 Click "Get AI Insight" for market commentary on {inputs.assetName || "this asset"}.
               </p>
             )}
