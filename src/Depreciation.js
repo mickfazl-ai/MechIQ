@@ -464,6 +464,12 @@ Max 180 words.`;
 
   return (
     <div style={{ fontFamily: "Barlow, sans-serif", color: "#1a2b3c", padding: "24px 28px", maxWidth: 1100 }}>
+      <style>{`
+        .dep-input { color: #1a2b3c !important; }
+        .dep-input::placeholder { color: #b0c4d4 !important; }
+        .dep-input:focus { border-color: #00ABE4 !important; outline: none; box-shadow: 0 0 0 3px rgba(0,171,228,0.1); }
+        .dep-select { color: #1a2b3c !important; }
+      `}</style>
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
 
       <div className="page-header" style={{ marginBottom: 28 }}>
@@ -495,19 +501,19 @@ Max 180 words.`;
           {/* Asset Name */}
           <div>
             <label style={labelStyle}>Make & Model</label>
-            <input style={inputStyle} placeholder="e.g. Komatsu PC450-8" value={inputs.assetName} onChange={e => handleChange("assetName", e.target.value)} />
+            <input className="dep-input" style={inputStyle} placeholder="e.g. Komatsu PC450-8" value={inputs.assetName} onChange={e => handleChange("assetName", e.target.value)} />
           </div>
 
           {/* Purchase Year */}
           <div>
             <label style={labelStyle}>Year of Manufacture</label>
-            <input style={inputStyle} type="number" placeholder="e.g. 2022" value={inputs.purchaseYear} onChange={e => handleChange("purchaseYear", e.target.value)} />
+            <input className="dep-input" style={inputStyle} type="number" placeholder="e.g. 2022" value={inputs.purchaseYear} onChange={e => handleChange("purchaseYear", e.target.value)} />
           </div>
 
           {/* Year Purchased */}
           <div>
             <label style={labelStyle}>Year Purchased</label>
-            <input style={inputStyle} type="number" placeholder="e.g. 2023" value={inputs.yearPurchased} onChange={e => handleChange("yearPurchased", e.target.value)} />
+            <input className="dep-input" style={inputStyle} type="number" placeholder="e.g. 2023" value={inputs.yearPurchased} onChange={e => handleChange("yearPurchased", e.target.value)} />
           </div>
 
           {/* New or Used */}
@@ -525,7 +531,7 @@ Max 180 words.`;
           {/* Purchase Price */}
           <div>
             <label style={labelStyle}>Purchase Price ($)</label>
-            <input style={inputStyle} type="number" placeholder="e.g. 450000" value={inputs.purchasePrice} onChange={e => handleChange("purchasePrice", e.target.value)} />
+            <input className="dep-input" style={inputStyle} type="number" placeholder="e.g. 450000" value={inputs.purchasePrice} onChange={e => handleChange("purchasePrice", e.target.value)} />
           </div>
 
           {/* Usage Unit Toggle */}
@@ -543,13 +549,13 @@ Max 180 words.`;
           {/* Current Usage */}
           <div>
             <label style={labelStyle}>Current {unitLabel}</label>
-            <input style={inputStyle} type="number" placeholder={inputs.usageUnit === "kms" ? "e.g. 85000" : "e.g. 6500"} value={inputs.currentUsage} onChange={e => handleChange("currentUsage", e.target.value)} />
+            <input className="dep-input" style={inputStyle} type="number" placeholder={inputs.usageUnit === "kms" ? "e.g. 85000" : "e.g. 6500"} value={inputs.currentUsage} onChange={e => handleChange("currentUsage", e.target.value)} />
           </div>
 
           {/* Annual Usage */}
           <div>
             <label style={labelStyle}>Predicted Annual {unitLabel}</label>
-            <input style={inputStyle} type="number" placeholder={inputs.usageUnit === "kms" ? "e.g. 20000" : "e.g. 1800"} value={inputs.annualUsage} onChange={e => handleChange("annualUsage", e.target.value)} />
+            <input className="dep-input" style={inputStyle} type="number" placeholder={inputs.usageUnit === "kms" ? "e.g. 20000" : "e.g. 1800"} value={inputs.annualUsage} onChange={e => handleChange("annualUsage", e.target.value)} />
           </div>
 
           {/* Condition */}
@@ -567,17 +573,17 @@ Max 180 words.`;
           {/* AI-filled fields — shown after predict */}
           <div>
             <label style={labelStyle}>Expected Life {unitLabel} <span style={{ color: "#0077cc", fontSize: 10 }}>(AI filled)</span></label>
-            <input style={inputStyle} type="number" placeholder={inputs.usageUnit === "kms" ? "e.g. 300000" : "e.g. 15000"} value={inputs.expectedLifeUsage} onChange={e => handleChange("expectedLifeUsage", e.target.value)} />
+            <input className="dep-input" style={inputStyle} type="number" placeholder={inputs.usageUnit === "kms" ? "e.g. 300000" : "e.g. 15000"} value={inputs.expectedLifeUsage} onChange={e => handleChange("expectedLifeUsage", e.target.value)} />
           </div>
 
           <div>
             <label style={labelStyle}>Salvage Value ($) <span style={{ color: "#0077cc", fontSize: 10 }}>(AI filled)</span></label>
-            <input style={inputStyle} type="number" placeholder="e.g. 45000" value={inputs.salvageValue} onChange={e => handleChange("salvageValue", e.target.value)} />
+            <input className="dep-input" style={inputStyle} type="number" placeholder="e.g. 45000" value={inputs.salvageValue} onChange={e => handleChange("salvageValue", e.target.value)} />
           </div>
 
           <div>
             <label style={labelStyle}>Depreciation Method <span style={{ color: "#0077cc", fontSize: 10 }}>(AI filled)</span></label>
-            <select style={{ ...inputStyle, cursor: "pointer", background: "#ffffff" }} value={inputs.depreciationMethod} onChange={e => handleChange("depreciationMethod", e.target.value)}>
+            <select className="dep-select" style={{ ...inputStyle, cursor: "pointer", background: "#ffffff", color: "#1a2b3c" }} value={inputs.depreciationMethod} onChange={e => handleChange("depreciationMethod", e.target.value)}>
               <option value="straight_line">Straight Line</option>
               <option value="declining_balance">Declining Balance</option>
               <option value="units_of_production">Units of Production</option>
