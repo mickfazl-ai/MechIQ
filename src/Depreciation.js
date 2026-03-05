@@ -55,7 +55,6 @@ export default function Depreciation({ userRole }) {
     salvageValue: "",
     expectedLifeUsage: "",
     depreciationMethod: "declining_balance",
-    salePrices: [{ year: "", price: "", description: "" }],
   });
 
   const [results, setResults] = useState(null);
@@ -71,14 +70,8 @@ export default function Depreciation({ userRole }) {
     setCalculated(false);
   };
 
-  const handleSalePriceChange = (index, field, value) => {
-    const updated = [...inputs.salePrices];
-    updated[index][field] = value;
-    setInputs(prev => ({ ...prev, salePrices: updated }));
-  };
 
-  const addSalePrice = () => setInputs(prev => ({ ...prev, salePrices: [...prev.salePrices, { year: "", price: "", description: "" }] }));
-  const removeSalePrice = (i) => setInputs(prev => ({ ...prev, salePrices: prev.salePrices.filter((_, idx) => idx !== i) }));
+
 
   const calculate = () => {
     const purchase = parseFloat(inputs.purchasePrice) || 0;
@@ -155,21 +148,8 @@ export default function Depreciation({ userRole }) {
       annualTable.push({ year: parseInt(inputs.purchaseYear) + y, opening: Math.round(openVal), depreciation: Math.round(dep), closing: Math.round(closeVal) });
     }
 
-    // Sale comparisons
-    const saleComparisons = inputs.salePrices
-      .filter(s => s.year && s.price)
-      .map(s => {
-        const saleYear = parseInt(s.year);
-        const salePrice = parseFloat(s.price);
-        const yearsAtSale = saleYear - parseInt(inputs.purchaseYear);
-        let bookAtSale = purchase;
-        if (method === "straight_line") bookAtSale = Math.max(salvage, purchase - annualDepRate * yearsAtSale);
-        else if (method === "declining_balance") bookAtSale = Math.max(salvage, purchase * Math.pow(1 - annualDepRate, yearsAtSale));
-        else { const pu = (purchase - salvage) / lifeUsage; bookAtSale = Math.max(salvage, purchase - pu * (annualUsage * yearsAtSale)); }
-        return { year: saleYear, salePrice, bookValue: Math.round(bookAtSale), variance: Math.round(salePrice - bookAtSale), variancePct: ((salePrice - bookAtSale) / bookAtSale * 100).toFixed(1), description: s.description };
-      });
 
-    setResults({ currentValue: Math.round(currentValue), marketValue: Math.round(marketValue), totalDepreciation: Math.round(totalDepreciation), costPerUnit, yearsRemaining, utilizationPct, recommendation, projection, annualTable, saleComparisons, usefulLife });
+    setResults({ currentValue: Math.round(currentValue), marketValue: Math.round(marketValue), totalDepreciation: Math.round(totalDepreciation), costPerUnit, yearsRemaining, utilizationPct, recommendation, projection, annualTable, usefulLife });
     setCalculated(true);
   };
 
@@ -207,7 +187,7 @@ Respond ONLY with a valid JSON object, no markdown, no explanation, no preamble:
         method: "POST",
         headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
         body: JSON.stringify({
-          model: "claude-sonnet-4-20250514",
+          model: "claude-sonnet-4-5",
           max_tokens: 1000,
           messages: [{ role: "user", content: prompt }],
         }),
@@ -226,9 +206,7 @@ Respond ONLY with a valid JSON object, no markdown, no explanation, no preamble:
         expectedLifeUsage: parsed.expectedLifeUsage ? String(parsed.expectedLifeUsage) : prev.expectedLifeUsage,
         salvageValue: parsed.salvageValue ? String(parsed.salvageValue) : prev.salvageValue,
         depreciationMethod: parsed.recommendedMethod || prev.depreciationMethod,
-        salePrices: parsed.salePrices?.length > 0
-          ? parsed.salePrices.map(s => ({ year: String(s.year), price: String(s.price), description: s.description || "" }))
-          : prev.salePrices,
+
       }));
       if (parsed.marketNote) setAiInsight("📊 " + parsed.marketNote);
     } catch (err) {
@@ -264,7 +242,7 @@ Give 3-4 sentences covering: market trend for this model, key risk factors, and 
       const response = await fetch("/api/ai-insight", {
         method: "POST",
         headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
-        body: JSON.stringify({ model: "claude-sonnet-4-20250514", max_tokens: 500, messages: [{ role: "user", content: prompt }] }),
+        body: JSON.stringify({ model: "claude-sonnet-4-5", max_tokens: 500, messages: [{ role: "user", content: prompt }] }),
       });
       const data = await response.json();
       const text = data.content?.filter(b => b.type === "text").map(b => b.text).join("") || "";
@@ -392,36 +370,6 @@ Give 3-4 sentences covering: market trend for this model, key risk factors, and 
         )}
       </div>
 
-      {/* PREVIOUS SALE PRICES */}
-      <div style={cardStyle}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
-          <h3 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: CYAN, letterSpacing: "0.04em" }}>
-            PREVIOUS SALE PRICES <span style={{ color: "#8fa8a8", fontSize: 12, fontWeight: 400 }}>(Optional — AI fills from market data)</span>
-          </h3>
-          <button onClick={addSalePrice} style={{ background: CYAN, color: "#000", border: "none", borderRadius: 6, padding: "6px 14px", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "Barlow, sans-serif" }}>+ ADD</button>
-        </div>
-        {inputs.salePrices.map((sale, idx) => (
-          <div key={idx} style={{ marginBottom: 12 }}>
-            <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-              <div style={{ flex: 1 }}>
-                <label style={labelStyle}>Sale Year</label>
-                <input style={inputStyle} type="number" placeholder="e.g. 2021" value={sale.year} onChange={e => handleSalePriceChange(idx, "year", e.target.value)} />
-              </div>
-              <div style={{ flex: 1 }}>
-                <label style={labelStyle}>Sale Price ($)</label>
-                <input style={inputStyle} type="number" placeholder="e.g. 280000" value={sale.price} onChange={e => handleSalePriceChange(idx, "price", e.target.value)} />
-              </div>
-              {inputs.salePrices.length > 1 && (
-                <button onClick={() => removeSalePrice(idx)} style={{ marginTop: 18, padding: "8px 12px", background: "transparent", border: `1px solid ${BORDER}`, color: RED, borderRadius: 6, cursor: "pointer", fontSize: 12 }}>✕</button>
-              )}
-            </div>
-            {sale.description && (
-              <div style={{ marginTop: 4, fontSize: 11, color: "#8fa8a8", fontStyle: "italic" }}>✦ {sale.description}</div>
-            )}
-          </div>
-        ))}
-      </div>
-
       {/* CALCULATE BUTTON */}
       <div style={{ marginBottom: 28 }}>
         <button
@@ -500,31 +448,6 @@ Give 3-4 sentences covering: market trend for this model, key risk factors, and 
               </table>
             </div>
           </div>
-
-          {/* Sale comparisons */}
-          {results.saleComparisons.length > 0 && (
-            <div style={{ ...cardStyle, marginBottom: 20 }}>
-              <h3 style={{ margin: "0 0 16px", fontSize: 14, fontWeight: 700, color: CYAN }}>SALE PRICE COMPARISON</h3>
-              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
-                <thead>
-                  <tr>{["Sale Year", "Sale Price", "Book Value at Sale", "Variance", "Variance %"].map(h => (
-                    <th key={h} style={{ padding: "8px 12px", textAlign: "left", color: "#8fa8a8", fontSize: 11, fontWeight: 700, borderBottom: `1px solid ${BORDER}` }}>{h}</th>
-                  ))}</tr>
-                </thead>
-                <tbody>
-                  {results.saleComparisons.map((row, i) => (
-                    <tr key={i} style={{ background: i % 2 === 0 ? "#060b0b" : "transparent" }}>
-                      <td style={{ padding: "8px 12px", color: "#e0eaea" }}>{row.year}</td>
-                      <td style={{ padding: "8px 12px", color: GREEN }}>{formatCurrency(row.salePrice)}</td>
-                      <td style={{ padding: "8px 12px", color: CYAN }}>{formatCurrency(row.bookValue)}</td>
-                      <td style={{ padding: "8px 12px", color: row.variance >= 0 ? GREEN : RED }}>{row.variance >= 0 ? "+" : ""}{formatCurrency(row.variance)}</td>
-                      <td style={{ padding: "8px 12px", color: row.variancePct >= 0 ? GREEN : RED }}>{row.variancePct >= 0 ? "+" : ""}{row.variancePct}%</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
 
           {/* AI Market Insight */}
           <div style={cardStyle}>
