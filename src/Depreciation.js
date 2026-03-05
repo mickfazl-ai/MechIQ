@@ -47,6 +47,8 @@ export default function Depreciation({ userRole }) {
   const [inputs, setInputs] = useState({
     assetName: "",
     purchaseYear: currentYear - 3,
+    yearPurchased: currentYear - 3,
+    assetConditionType: "used",
     purchasePrice: "",
     currentUsage: "",
     annualUsage: "",
@@ -162,7 +164,9 @@ export default function Depreciation({ userRole }) {
     const prompt = `You are an expert heavy equipment and vehicle valuation analyst.
 
 For the asset: "${inputs.assetName}"
-Purchase Year: ${inputs.purchaseYear}
+Year of Manufacture: ${inputs.purchaseYear}
+Year Purchased: ${inputs.yearPurchased}
+Asset Condition: ${inputs.assetConditionType === "new" ? "Purchased new" : "Purchased used"}
 Purchase Price: ${inputs.purchasePrice ? "$" + inputs.purchasePrice : "unknown"}
 Current ${unit}: ${inputs.currentUsage || "unknown"}
 Annual ${unit}: ${inputs.annualUsage || "unknown"}
@@ -225,7 +229,7 @@ Respond ONLY with a valid JSON object, no markdown, no explanation, no preamble:
     const prompt = `You are an expert heavy equipment valuation analyst. Provide a concise market insight for fleet managers.
 
 Asset: ${inputs.assetName}
-Purchase Price: $${inputs.purchasePrice} (${inputs.purchaseYear})
+Purchase Price: $${inputs.purchasePrice} | Year of Manufacture: ${inputs.purchaseYear} | Year Purchased: ${inputs.yearPurchased} | ${inputs.assetConditionType === "new" ? "Purchased New" : "Purchased Used"}
 Current ${inputs.usageUnit === "kms" ? "KMs" : "Hours"}: ${inputs.currentUsage}
 Condition: ${inputs.condition}
 Current Book Value: ${formatCurrency(results.currentValue)}
@@ -297,6 +301,24 @@ Give 3-4 sentences covering: market trend for this model, key risk factors, and 
           <div>
             <label style={labelStyle}>Year of Manufacture</label>
             <input style={inputStyle} type="number" placeholder="e.g. 2022" value={inputs.purchaseYear} onChange={e => handleChange("purchaseYear", e.target.value)} />
+          </div>
+
+          {/* Year Purchased */}
+          <div>
+            <label style={labelStyle}>Year Purchased</label>
+            <input style={inputStyle} type="number" placeholder="e.g. 2023" value={inputs.yearPurchased} onChange={e => handleChange("yearPurchased", e.target.value)} />
+          </div>
+
+          {/* New or Used */}
+          <div>
+            <label style={labelStyle}>New or Used</label>
+            <div style={{ display: "flex", gap: 8 }}>
+              {["new", "used"].map(t => (
+                <button key={t} onClick={() => handleChange("assetConditionType", t)} style={{ flex: 1, padding: "9px 0", borderRadius: 8, border: `1px solid ${inputs.assetConditionType === t ? CYAN : BORDER}`, background: inputs.assetConditionType === t ? "#0a2a2a" : "#060b0b", color: inputs.assetConditionType === t ? CYAN : "#8fa8a8", fontFamily: "Barlow, sans-serif", fontSize: 13, fontWeight: inputs.assetConditionType === t ? 700 : 400, cursor: "pointer", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                  {t}
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Purchase Price */}
