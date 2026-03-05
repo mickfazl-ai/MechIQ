@@ -34,7 +34,7 @@ const CustomTooltip = ({ active, payload, label }) => {
 
 function statCard(label, value, color) {
   return (
-    <div style={{ background: "#060b0b", border: `1px solid ${BORDER}`, borderRadius: 10, padding: "16px 20px" }}>
+    <div style={{ background: "#f8fafc", border: "1px solid #d6e6f2", borderRadius: 10, padding: "16px 20px" }}>
       <div style={{ color: "#8fa8a8", fontSize: 11, fontWeight: 700, letterSpacing: "0.05em", marginBottom: 6 }}>{label}</div>
       <div style={{ color: color || CYAN, fontSize: 22, fontWeight: 700 }}>{value}</div>
     </div>
@@ -457,7 +457,7 @@ Max 180 words.`;
     setTimeout(() => { win.print(); }, 500);
   };
 
-  const inputStyle = { background: "#060b0b", border: `1px solid ${BORDER}`, borderRadius: 8, color: "#e0eaea", fontFamily: "Barlow, sans-serif", fontSize: 14, padding: "9px 13px", width: "100%", outline: "none", boxSizing: "border-box" };
+  const inputStyle = { background: "#f8fafc", border: "1px solid #d6e6f2", borderRadius: 8, color: "#e0eaea", fontFamily: "Barlow, sans-serif", fontSize: 14, padding: "9px 13px", width: "100%", outline: "none", boxSizing: "border-box" };
   const labelStyle = { color: "#8fa8a8", fontSize: 11, fontWeight: 700, letterSpacing: "0.05em", textTransform: "uppercase", marginBottom: 6, display: "block" };
   const cardStyle = { background: CARD, border: `1px solid ${BORDER}`, borderRadius: 12, padding: "20px 24px", marginBottom: 20 };
   const unitLabel = inputs.usageUnit === "kms" ? "KMs" : "Hours";
@@ -467,7 +467,7 @@ Max 180 words.`;
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
 
       <div className="page-header" style={{ marginBottom: 28 }}>
-        <h1 style={{ margin: 0, fontSize: 24, fontWeight: 700 }}>Asset Depreciation Calculator</h1>
+        <h1 style={{ margin: 0, fontSize: 24, fontWeight: 700, color: "#1a2b3c" }}>Asset Depreciation Calculator</h1>
         <p style={{ margin: "6px 0 0", color: "#8fa8a8", fontSize: 14 }}>Enter asset details — use AI Predict to auto-fill depreciation data</p>
       </div>
 
@@ -691,38 +691,38 @@ Max 180 words.`;
           </div>
 
           {/* Annual table */}
-          <div style={{ ...cardStyle, marginBottom: 20 }}>
+          <div style={{ background: "#ffffff", border: "1px solid #d6e6f2", borderRadius: 12, padding: "20px 24px", marginBottom: 20 }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
-              <h3 style={{ margin: 0, fontSize: 14, fontWeight: 700, color: CYAN }}>ANNUAL DEPRECIATION SCHEDULE</h3>
+              <h3 style={{ margin: 0, fontSize: 14, fontWeight: 700, color: "#1a2b3c" }}>ANNUAL DEPRECIATION SCHEDULE</h3>
               <div style={{ display: "flex", gap: 16, fontSize: 11, color: "#8fa8a8" }}>
-                <span><span style={{ display: "inline-block", width: 10, height: 10, background: "#0a1a2a", border: `1px solid ${CYAN}33`, borderRadius: 2, marginRight: 5 }} />Historical (actual avg)</span>
-                <span><span style={{ display: "inline-block", width: 10, height: 10, background: "#060b0b", border: `1px solid ${BORDER}`, borderRadius: 2, marginRight: 5 }} />Projected</span>
+                <span><span style={{ display: "inline-block", width: 10, height: 10, background: "#f0f7ff", border: "1px solid #00ABE4", borderRadius: 2, marginRight: 5 }} />Historical (actual avg)</span>
+                <span><span style={{ display: "inline-block", width: 10, height: 10, background: "#f8fafc", border: "1px solid #d6e6f2", borderRadius: 2, marginRight: 5 }} />Projected</span>
               </div>
             </div>
             <div style={{ overflowX: "auto" }}>
               <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
                 <thead>
                   <tr>{["Year", `${unitLabel}/yr`, `Cumulative ${unitLabel}`, "Opening Value", "Depreciation", "Closing Value"].map(h => (
-                    <th key={h} style={{ padding: "8px 10px", textAlign: "left", color: "#8fa8a8", fontSize: 10, fontWeight: 700, borderBottom: `1px solid ${BORDER}`, whiteSpace: "nowrap" }}>{h}</th>
+                    <th key={h} style={{ padding: "8px 12px", textAlign: "left", color: "#3d5166", fontSize: 10, fontWeight: 700, borderBottom: "2px solid #d6e6f2", whiteSpace: "nowrap", background: "#E9F1FA", textTransform: "uppercase", letterSpacing: "0.05em" }}>{h}</th>
                   ))}</tr>
                 </thead>
                 <tbody>
                   {results.annualTable.map((row, i) => (
-                    <tr key={i} style={{ background: row.isPast ? "#0a1a2a" : (i % 2 === 0 ? "#060b0b" : "transparent"), borderLeft: row.year === new Date().getFullYear() ? `3px solid ${CYAN}` : "3px solid transparent" }}>
-                      <td style={{ padding: "7px 10px", color: row.isPast ? "#c8dada" : "#8fa8a8", fontWeight: row.year === new Date().getFullYear() ? 700 : 400 }}>
+                    <tr key={i} style={{ background: row.isPast ? "#f0f7ff" : (i % 2 === 0 ? "#ffffff" : "#f8fafc"), borderLeft: row.year === new Date().getFullYear() ? `3px solid #00ABE4` : "3px solid transparent" }}>
+                      <td style={{ padding: "7px 12px", color: "#1a2b3c", fontWeight: row.year === new Date().getFullYear() ? 700 : 400 }}>
                         {row.year}{row.year === new Date().getFullYear() ? <span style={{ color: CYAN, fontSize: 9, marginLeft: 4 }}>NOW</span> : ""}
                       </td>
-                      <td style={{ padding: "7px 10px", color: "#8fa8a8" }}>{row.usageThisYear?.toLocaleString()}</td>
-                      <td style={{ padding: "7px 10px", color: "#8fa8a8" }}>{row.cumulativeUsage?.toLocaleString()}</td>
-                      <td style={{ padding: "7px 10px", color: GREEN }}>{formatCurrency(row.opening)}</td>
-                      <td style={{ padding: "7px 10px", color: RED }}>{formatCurrency(row.depreciation)}</td>
-                      <td style={{ padding: "7px 10px", color: CYAN, fontWeight: 600 }}>{formatCurrency(row.closing)}</td>
+                      <td style={{ padding: "7px 12px", color: "#3d5166" }}>{row.usageThisYear?.toLocaleString()}</td>
+                      <td style={{ padding: "7px 12px", color: "#3d5166" }}>{row.cumulativeUsage?.toLocaleString()}</td>
+                      <td style={{ padding: "7px 12px", color: "#166534", fontWeight: 500 }}>{formatCurrency(row.opening)}</td>
+                      <td style={{ padding: "7px 12px", color: "#dc2626", fontWeight: 500 }}>{formatCurrency(row.depreciation)}</td>
+                      <td style={{ padding: "7px 12px", color: "#0077cc", fontWeight: 600 }}>{formatCurrency(row.closing)}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
-            <p style={{ color: "#4a6a6a", fontSize: 11, marginTop: 10 }}>
+            <p style={{ color: "#7a92a8", fontSize: 11, marginTop: 10 }}>
               Historical years use actual average usage ({Math.round(parseFloat(inputs.currentUsage || 0) / Math.max(1, new Date().getFullYear() - (parseInt(inputs.yearPurchased) || new Date().getFullYear()))).toLocaleString()} {unitLabel}/yr). Future years use predicted annual {unitLabel}.
             </p>
           </div>
@@ -741,7 +741,7 @@ Max 180 words.`;
             </div>
             {aiError && <div style={{ color: RED, fontSize: 13 }}>{aiError}</div>}
             {aiInsight && !aiLoading && (
-              <div style={{ color: "#c8dada", fontSize: 13, lineHeight: 1.7, background: "#060b0b", border: `1px solid ${BORDER}`, borderRadius: 8, padding: "12px 16px" }}>
+              <div style={{ color: "#c8dada", fontSize: 13, lineHeight: 1.7, background: "#f8fafc", border: "1px solid #d6e6f2", borderRadius: 8, padding: "12px 16px" }}>
                 {aiInsight}
               </div>
             )}
