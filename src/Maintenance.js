@@ -308,23 +308,18 @@ function Maintenance({ userRole, initialTab }) {
           )}
         </div>
       )}
-    </div>
-  );
-}
-
       {activeTab === 'pm_tasks' && (
         <div style={{ padding: '60px 0', textAlign: 'center', color: '#7a92a8' }}>
-          <div style={{ fontSize: '40px', marginBottom: '12px' }}>🚧</div>
-          <div style={{ fontSize: '16px', fontWeight: 600, color: '#3d5166', marginBottom: '6px' }}>PM Tasks</div>
-          <div style={{ fontSize: '13px' }}>This section is coming soon.</div>
+          <div style={{ fontSize: '16px', fontWeight: 600, color: '#3d5166', marginBottom: '6px' }}>PM Tasks - Coming Soon</div>
         </div>
       )}
       {activeTab === 'oil_sampling' && (
         <div style={{ padding: '60px 0', textAlign: 'center', color: '#7a92a8' }}>
-          <div style={{ fontSize: '40px', marginBottom: '12px' }}>🚧</div>
-          <div style={{ fontSize: '16px', fontWeight: 600, color: '#3d5166', marginBottom: '6px' }}>Oil Sampling</div>
-          <div style={{ fontSize: '13px' }}>Oil sampling via email integration — coming soon.</div>
+          <div style={{ fontSize: '16px', fontWeight: 600, color: '#3d5166', marginBottom: '6px' }}>Oil Sampling - Coming Soon</div>
         </div>
       )}
+    </div>
+  );
+}
 
 export default Maintenance;
