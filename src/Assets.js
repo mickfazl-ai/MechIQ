@@ -238,23 +238,7 @@ function UnitsTab({ userRole, onViewAsset }) {
 
 // ─── Placeholder tab ──────────────────────────────────────────────────────────
 // ─── Onboarding Tab ───────────────────────────────────────────────────────────
-// Multi-step asset onboarding with QR generation
-// Steps: 1) Basic Info  2) Specifications  3) Purchase & Admin  4) QR & Done
-
-const STEP_LABELS = ['Basic Info', 'Specifications', 'Purchase Details', 'QR Code'];
-
-const ASSET_TYPES = [
-  'Excavator', 'Dozer', 'Grader', 'Wheel Loader', 'Skid Steer',
-  'Dump Truck', 'Water Truck', 'Fuel Truck', 'Service Truck',
-  'Compactor', 'Crane', 'Forklift', 'Telehandler', 'Generator',
-  'Compressor', 'Light Tower', 'Drill Rig', 'Scraper', 'Other',
-];
-
-const MAKES = [
-  'CAT', 'Komatsu', 'Hitachi', 'Volvo', 'John Deere', 'Liebherr',
-  'Doosan', 'Hyundai', 'Case', 'JCB', 'Terex', 'Manitowoc',
-  'Sandvik', 'Atlas Copco', 'Other',
-];
+const STEP_LABELS = ['Basic Info', 'Specifications', 'Registration', 'Purchase Details', 'QR Code'];
 
 function StepIndicator({ current, total, labels }) {
   return (
@@ -273,7 +257,7 @@ function StepIndicator({ current, total, labels }) {
                 fontWeight: 700, fontSize: '13px', transition: 'all 0.2s',
                 boxShadow: active ? '0 0 0 3px rgba(0,171,228,0.2)' : 'none',
               }}>
-                {done ? '✓' : i + 1}
+                {done ? '\u2713' : i + 1}
               </div>
               <div style={{ fontSize: '11px', marginTop: '4px', color: active ? '#00ABE4' : done ? '#16a34a' : '#7a92a8', fontWeight: active ? 700 : 400, whiteSpace: 'nowrap' }}>
                 {label}
@@ -289,11 +273,12 @@ function StepIndicator({ current, total, labels }) {
   );
 }
 
-function FieldGroup({ title, children }) {
+function FieldGroup({ title, children, optional }) {
   return (
     <div style={{ marginBottom: '24px' }}>
-      <div style={{ fontSize: '11px', fontWeight: 700, color: '#7a92a8', letterSpacing: '1px', textTransform: 'uppercase', marginBottom: '12px', paddingBottom: '6px', borderBottom: '1px solid #E9F1FA' }}>
-        {title}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px', paddingBottom: '6px', borderBottom: '1px solid #E9F1FA' }}>
+        <span style={{ fontSize: '11px', fontWeight: 700, color: '#7a92a8', letterSpacing: '1px', textTransform: 'uppercase' }}>{title}</span>
+        {optional && <span style={{ fontSize: '10px', color: '#00ABE4', fontWeight: 600, backgroundColor: '#e8f7fd', padding: '1px 7px', borderRadius: '10px' }}>Optional</span>}
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
         {children}
@@ -319,65 +304,80 @@ const iStyle = {
   backgroundColor: '#fff', outline: 'none', boxSizing: 'border-box',
   fontFamily: 'Barlow, sans-serif',
 };
+const iStyleFocus = { ...iStyle, borderColor: '#00ABE4', boxShadow: '0 0 0 3px rgba(0,171,228,0.1)' };
 
-const iStyleFocus = {
-  ...iStyle, borderColor: '#00ABE4', boxShadow: '0 0 0 3px rgba(0,171,228,0.1)',
-};
-
-function FInput({ value, onChange, placeholder, type = 'text', required }) {
+function FInput({ value, onChange, placeholder, type = 'text', required, readOnly }) {
   const [focused, setFocused] = useState(false);
   return (
     <input
       type={type} value={value} onChange={onChange} placeholder={placeholder}
-      required={required}
-      style={focused ? iStyleFocus : iStyle}
+      required={required} readOnly={readOnly}
+      style={readOnly ? { ...iStyle, backgroundColor: '#f5f8fb', color: '#7a92a8' } : focused ? iStyleFocus : iStyle}
       onFocus={() => setFocused(true)} onBlur={() => setFocused(false)}
     />
   );
 }
 
-function FSelect({ value, onChange, children }) {
-  const [focused, setFocused] = useState(false);
-  return (
-    <select value={value} onChange={onChange} style={focused ? iStyleFocus : iStyle}
-      onFocus={() => setFocused(true)} onBlur={() => setFocused(false)}>
-      {children}
-    </select>
-  );
+// ── Depreciation calculator ───────────────────────────────────────────────────
+function calcDepreciation(purchasePrice, purchaseDate, year) {
+  if (!purchasePrice || purchasePrice <= 0) return null;
+  const now = new Date();
+  let ageYears = 0;
+  if (purchaseDate) {
+    ageYears = (now - new Date(purchaseDate)) / (1000 * 60 * 60 * 24 * 365.25);
+  } else if (year) {
+    ageYears = now.getFullYear() - parseInt(year);
+  }
+  if (ageYears < 0) ageYears = 0;
+  // Straight-line over 10 years, 10% residual
+  const usefulLife = 10;
+  const residualRate = 0.10;
+  const residualValue = purchasePrice * residualRate;
+  const annualDepreciation = (purchasePrice - residualValue) / usefulLife;
+  const accumulatedDepreciation = Math.min(annualDepreciation * ageYears, purchasePrice - residualValue);
+  const currentValue = Math.max(purchasePrice - accumulatedDepreciation, residualValue);
+  const depreciationRate = ((purchasePrice - currentValue) / purchasePrice) * 100;
+  const yearsRemaining = Math.max(usefulLife - ageYears, 0);
+  return {
+    purchasePrice,
+    currentValue: Math.round(currentValue),
+    residualValue: Math.round(residualValue),
+    accumulatedDepreciation: Math.round(accumulatedDepreciation),
+    annualDepreciation: Math.round(annualDepreciation),
+    depreciationRate: Math.round(depreciationRate * 10) / 10,
+    ageYears: Math.round(ageYears * 10) / 10,
+    yearsRemaining: Math.round(yearsRemaining * 10) / 10,
+  };
 }
 
 function OnboardingTab({ userRole, onComplete }) {
   const [step, setStep] = useState(0);
   const [saving, setSaving] = useState(false);
-  const [savedAsset, setSavedAsset] = useState(null); // set after DB save
-  const [existingAssets, setExistingAssets] = useState([]);
+  const [savedAsset, setSavedAsset] = useState(null);
+  const [hasRego, setHasRego] = useState(false);
   const qrRef = useRef(null);
 
   const isAdmin = userRole?.role === 'admin' || userRole?.role === 'master';
 
   const emptyForm = {
-    // Step 1 - Basic
-    name: '', asset_number: '', type: '', make: '', model: '', location: '', status: 'Running',
-    year: '', colour: '',
-    // Step 2 - Specs
+    name: '', asset_number: '', type: '', make: '', model: '',
+    location: '', status: 'Active', year: '', colour: '',
     vin: '', serial_number: '', engine_number: '', engine_model: '',
     hours: '', target_hours: '8', hourly_rate: '',
-    // Step 3 - Purchase (admin only)
-    purchase_date: '', purchase_price: '', supplier: '', warranty_expiry: '',
-    registration: '', registration_expiry: '', insurance_policy: '', notes: '',
+    // Registration (step 2 - optional)
+    registration: '', registration_expiry: '', license_class: '',
+    registration_state: '', tare_weight: '', gvm: '', insurance_policy: '',
+    insurance_expiry: '',
+    // Purchase / admin (step 3)
+    purchase_date: '', purchase_price: '', supplier: '', warranty_expiry: '', notes: '',
   };
 
   const [form, setForm] = useState(emptyForm);
 
   useEffect(() => {
-    // Fetch existing to auto-suggest next asset number
     supabase.from('assets').select('asset_number').eq('company_id', userRole.company_id)
       .then(({ data }) => {
-        setExistingAssets(data || []);
-        // Auto-generate next asset number
-        const nums = (data || [])
-          .map(a => parseInt((a.asset_number || '').replace(/\D/g, ''), 10))
-          .filter(n => !isNaN(n));
+        const nums = (data || []).map(a => parseInt((a.asset_number || '').replace(/\D/g, ''), 10)).filter(n => !isNaN(n));
         const next = nums.length ? Math.max(...nums) + 1 : 1;
         setForm(f => ({ ...f, asset_number: `AST-${String(next).padStart(4, '0')}` }));
       });
@@ -385,10 +385,14 @@ function OnboardingTab({ userRole, onComplete }) {
 
   const set = (field) => (e) => setForm(f => ({ ...f, [field]: e.target.value }));
 
+  const depr = calcDepreciation(
+    parseFloat(form.purchase_price),
+    form.purchase_date,
+    form.year
+  );
+
   const canProceed = () => {
-    if (step === 0) return form.name.trim() && form.type && form.asset_number.trim();
-    if (step === 1) return true; // specs optional
-    if (step === 2) return true; // purchase optional
+    if (step === 0) return form.name.trim() && form.type.trim() && form.asset_number.trim();
     return true;
   };
 
@@ -396,47 +400,43 @@ function OnboardingTab({ userRole, onComplete }) {
     setSaving(true);
     const payload = {
       company_id: userRole.company_id,
-      name: form.name,
-      asset_number: form.asset_number,
-      type: form.type,
-      make: form.make,
-      model: form.model,
-      location: form.location,
-      status: form.status,
-      year: form.year || null,
-      colour: form.colour,
-      vin: form.vin,
-      serial_number: form.serial_number,
-      engine_number: form.engine_number,
-      engine_model: form.engine_model,
+      name: form.name, asset_number: form.asset_number, type: form.type,
+      make: form.make, model: form.model, location: form.location,
+      status: form.status, year: parseInt(form.year) || null, colour: form.colour,
+      vin: form.vin, serial_number: form.serial_number,
+      engine_number: form.engine_number, engine_model: form.engine_model,
       hours: parseFloat(form.hours) || 0,
       target_hours: parseFloat(form.target_hours) || 8,
       hourly_rate: parseFloat(form.hourly_rate) || null,
-      registration: form.registration,
-      registration_expiry: form.registration_expiry || null,
-      insurance_policy: form.insurance_policy,
+      registration: hasRego ? form.registration : null,
+      registration_expiry: hasRego && form.registration_expiry ? form.registration_expiry : null,
+      license_class: hasRego ? form.license_class : null,
+      registration_state: hasRego ? form.registration_state : null,
+      tare_weight: hasRego && form.tare_weight ? parseFloat(form.tare_weight) : null,
+      gvm: hasRego && form.gvm ? parseFloat(form.gvm) : null,
+      insurance_policy: hasRego ? form.insurance_policy : null,
+      insurance_expiry: hasRego && form.insurance_expiry ? form.insurance_expiry : null,
       notes: form.notes,
-      // Admin-only fields
       ...(isAdmin ? {
         purchase_date: form.purchase_date || null,
         purchase_price: parseFloat(form.purchase_price) || null,
         supplier: form.supplier,
         warranty_expiry: form.warranty_expiry || null,
+        // Store depreciation snapshot at time of onboarding
+        depreciation_snapshot: depr ? JSON.stringify(depr) : null,
       } : {}),
     };
-
     const { data, error } = await supabase.from('assets').insert([payload]).select().single();
     setSaving(false);
     if (error) { alert('Error saving asset: ' + error.message); return; }
     setSavedAsset(data);
-    setStep(3);
+    setStep(4);
   };
 
   const handlePrintQR = () => {
     const canvas = qrRef.current?.querySelector('canvas');
     if (!canvas) return;
     const qrDataUrl = canvas.toDataURL('image/png');
-    const qrValue = `https://maintain-iq.vercel.app/asset/${savedAsset.id}`;
     const win = window.open('', '_blank');
     win.document.write(`<!DOCTYPE html>
 <html><head>
@@ -445,38 +445,35 @@ function OnboardingTab({ userRole, onComplete }) {
     @page { size: 85.6mm 54mm; margin: 0; }
     * { margin: 0; padding: 0; box-sizing: border-box; }
     html, body { width: 85.6mm; height: 54mm; background: #000 !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-    .card { width: 85.6mm; height: 54mm; background: #000 !important; display: flex; flex-direction: row; align-items: center; padding: 5mm; gap: 4mm; }
+    .card { width: 85.6mm; height: 54mm; background: #000 !important; display: flex; align-items: center; padding: 5mm; gap: 4mm; }
     .qr-block { flex-shrink: 0; width: 36mm; height: 36mm; background: #fff; padding: 1.5mm; border-radius: 1.5mm; }
     .qr-block img { width: 100%; height: 100%; display: block; }
     .text-block { flex: 1; display: flex; flex-direction: column; justify-content: space-between; height: 36mm; }
-    .label-company { font-family: Arial, sans-serif; font-size: 6pt; color: #777; letter-spacing: 0.5px; }
-    .label-number { font-family: Arial, sans-serif; font-size: 22pt; font-weight: 900; color: #00ABE4; line-height: 1; letter-spacing: 1px; }
-    .label-name { font-family: Arial, sans-serif; font-size: 9.5pt; font-weight: 700; color: #fff; }
-    .label-meta { font-family: Arial, sans-serif; font-size: 6.5pt; color: #888; }
-    .label-brand { font-family: Arial, sans-serif; font-size: 9pt; font-weight: 900; color: #fff; letter-spacing: 2px; text-align: right; }
-    .label-brand .iq { color: #00ABE4; }
+    .lc { font-family: Arial; font-size: 6pt; color: #777; letter-spacing: 0.5px; }
+    .ln { font-family: Arial; font-size: 22pt; font-weight: 900; color: #00ABE4; line-height: 1; }
+    .lname { font-family: Arial; font-size: 9.5pt; font-weight: 700; color: #fff; }
+    .lmeta { font-family: Arial; font-size: 6.5pt; color: #888; }
+    .lbrand { font-family: Arial; font-size: 9pt; font-weight: 900; color: #fff; letter-spacing: 2px; text-align: right; }
+    .lbrand .iq { color: #00ABE4; }
   </style>
 </head><body>
   <div class="card">
     <div class="qr-block"><img src="${qrDataUrl}" /></div>
     <div class="text-block">
-      <div class="label-company">MECH IQ · ASSET TAG</div>
-      <div class="label-number">${savedAsset.asset_number || 'AST-0000'}</div>
-      <div class="label-name">${savedAsset.name}</div>
-      <div class="label-meta">${savedAsset.type}${savedAsset.make ? ' · ' + savedAsset.make : ''}${savedAsset.model ? ' · ' + savedAsset.model : ''}</div>
-      <div class="label-brand">MECH <span class="iq">IQ</span></div>
+      <div class="lc">MECH IQ \u00B7 ASSET TAG</div>
+      <div class="ln">${savedAsset.asset_number}</div>
+      <div class="lname">${savedAsset.name}</div>
+      <div class="lmeta">${savedAsset.type}${savedAsset.make ? ' \u00B7 ' + savedAsset.make : ''}</div>
+      <div class="lbrand">MECH <span class="iq">IQ</span></div>
     </div>
   </div>
-  <script>window.onload = function(){ window.print(); }<\/script>
+  <script>window.onload=function(){window.print();}<\/script>
 </body></html>`);
     win.document.close();
   };
 
   const handleOnboardAnother = () => {
-    setForm(emptyForm);
-    setSavedAsset(null);
-    setStep(0);
-    // Re-fetch to get updated asset numbers
+    setForm(emptyForm); setSavedAsset(null); setStep(0); setHasRego(false);
     supabase.from('assets').select('asset_number').eq('company_id', userRole.company_id)
       .then(({ data }) => {
         const nums = (data || []).map(a => parseInt((a.asset_number || '').replace(/\D/g, ''), 10)).filter(n => !isNaN(n));
@@ -485,106 +482,152 @@ function OnboardingTab({ userRole, onComplete }) {
       });
   };
 
-  // ── Step renderers ───────────────────────────────────────────────────────────
-
+  // ── Step 0: Basic Info ───────────────────────────────────────────────────────
   const renderStep0 = () => (
     <>
       <FieldGroup title="Identity">
         <Field label="Asset Name" required>
-          <FInput value={form.name} onChange={set('name')} placeholder="e.g. CAT 320 Excavator #2" required />
+          <FInput value={form.name} onChange={set('name')} placeholder="e.g. CAT 320 Excavator, Ford Ranger, Generator 1" required />
         </Field>
         <Field label="Asset Number" required>
           <FInput value={form.asset_number} onChange={set('asset_number')} placeholder="AST-0001" required />
         </Field>
         <Field label="Asset Type" required>
-          <FSelect value={form.type} onChange={set('type')}>
-            <option value="">Select type...</option>
-            {ASSET_TYPES.map(t => <option key={t}>{t}</option>)}
-          </FSelect>
+          <FInput value={form.type} onChange={set('type')} placeholder="e.g. Excavator, Truck, Compressor, Vehicle..." required />
         </Field>
         <Field label="Status">
-          <FSelect value={form.status} onChange={set('status')}>
-            <option>Running</option>
-            <option>Down</option>
-            <option>Maintenance</option>
-            <option>Standby</option>
-            <option>Decommissioned</option>
-          </FSelect>
+          <FInput value={form.status} onChange={set('status')} placeholder="e.g. Active, Down, Standby..." />
         </Field>
       </FieldGroup>
-      <FieldGroup title="Details">
+      <FieldGroup title="Details" optional>
         <Field label="Make">
-          <FSelect value={form.make} onChange={set('make')}>
-            <option value="">Select make...</option>
-            {MAKES.map(m => <option key={m}>{m}</option>)}
-          </FSelect>
+          <FInput value={form.make} onChange={set('make')} placeholder="e.g. CAT, Ford, Honda, Ingersoll Rand..." />
         </Field>
         <Field label="Model">
-          <FInput value={form.model} onChange={set('model')} placeholder="e.g. 320GC" />
+          <FInput value={form.model} onChange={set('model')} placeholder="e.g. 320GC, Ranger XL, XP185..." />
         </Field>
         <Field label="Year">
-          <FInput value={form.year} onChange={set('year')} placeholder="e.g. 2019" type="number" />
+          <FInput value={form.year} onChange={set('year')} placeholder="e.g. 2021" type="number" />
         </Field>
         <Field label="Colour">
-          <FInput value={form.colour} onChange={set('colour')} placeholder="e.g. Yellow" />
+          <FInput value={form.colour} onChange={set('colour')} placeholder="e.g. Yellow, White, Blue" />
         </Field>
         <Field label="Location / Site" fullWidth>
-          <FInput value={form.location} onChange={set('location')} placeholder="e.g. Mine Site A - Pit 3" />
+          <FInput value={form.location} onChange={set('location')} placeholder="e.g. Main Workshop, Site A, Depot 2" />
         </Field>
       </FieldGroup>
     </>
   );
 
+  // ── Step 1: Specifications ───────────────────────────────────────────────────
   const renderStep1 = () => (
     <>
-      <FieldGroup title="Serial & Identification Numbers">
+      <FieldGroup title="Identification Numbers" optional>
         <Field label="VIN / Chassis Number">
           <FInput value={form.vin} onChange={set('vin')} placeholder="e.g. 1HGBH41JXMN109186" />
         </Field>
         <Field label="Serial Number">
-          <FInput value={form.serial_number} onChange={set('serial_number')} placeholder="e.g. CAT0320GCXXXX" />
+          <FInput value={form.serial_number} onChange={set('serial_number')} placeholder="e.g. SN-XXXXXXXX" />
         </Field>
         <Field label="Engine Number">
-          <FInput value={form.engine_number} onChange={set('engine_number')} placeholder="e.g. C7.1-XXXXX" />
+          <FInput value={form.engine_number} onChange={set('engine_number')} placeholder="e.g. ENG-XXXXXXX" />
         </Field>
         <Field label="Engine Model">
-          <FInput value={form.engine_model} onChange={set('engine_model')} placeholder="e.g. CAT C7.1" />
+          <FInput value={form.engine_model} onChange={set('engine_model')} placeholder="e.g. Cummins QSB6.7" />
         </Field>
       </FieldGroup>
-      <FieldGroup title="Hours & Rates">
-        <Field label="Current Hours">
+      <FieldGroup title="Hours & Operating Rates" optional>
+        <Field label="Current Hours / Odometer">
           <FInput value={form.hours} onChange={set('hours')} placeholder="e.g. 4250" type="number" />
         </Field>
         <Field label="Target Hours / Day">
           <FInput value={form.target_hours} onChange={set('target_hours')} placeholder="e.g. 8" type="number" />
         </Field>
-        <Field label="Hourly Rate ($/hr)">
+        <Field label="Hourly / Day Rate ($/hr)" fullWidth>
           <FInput value={form.hourly_rate} onChange={set('hourly_rate')} placeholder="e.g. 185" type="number" />
-        </Field>
-      </FieldGroup>
-      <FieldGroup title="Registration & Compliance">
-        <Field label="Registration Number">
-          <FInput value={form.registration} onChange={set('registration')} placeholder="e.g. ABC123" />
-        </Field>
-        <Field label="Registration Expiry">
-          <FInput value={form.registration_expiry} onChange={set('registration_expiry')} type="date" />
-        </Field>
-        <Field label="Insurance Policy #" fullWidth>
-          <FInput value={form.insurance_policy} onChange={set('insurance_policy')} placeholder="e.g. POL-2024-XXXX" />
         </Field>
       </FieldGroup>
     </>
   );
 
+  // ── Step 2: Registration (optional) ─────────────────────────────────────────
   const renderStep2 = () => (
+    <>
+      <div style={{ marginBottom: '20px' }}>
+        <div style={{ fontSize: '13px', color: '#3d5166', marginBottom: '12px', fontWeight: 600 }}>
+          Does this asset have vehicle registration?
+        </div>
+        <div style={{ display: 'flex', gap: '10px' }}>
+          {[true, false].map(val => (
+            <button
+              key={String(val)}
+              onClick={() => setHasRego(val)}
+              style={{
+                padding: '10px 28px', borderRadius: '8px', border: '2px solid',
+                borderColor: hasRego === val ? '#00ABE4' : '#d6e6f2',
+                backgroundColor: hasRego === val ? '#e8f7fd' : '#fff',
+                color: hasRego === val ? '#00ABE4' : '#7a92a8',
+                fontWeight: 700, fontSize: '13px', cursor: 'pointer',
+              }}
+            >
+              {val ? 'Yes' : 'No'}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {hasRego && (
+        <>
+          <FieldGroup title="Registration Details">
+            <Field label="Registration Number" required>
+              <FInput value={form.registration} onChange={set('registration')} placeholder="e.g. ABC123" />
+            </Field>
+            <Field label="Registration State">
+              <FInput value={form.registration_state} onChange={set('registration_state')} placeholder="e.g. QLD, NSW, WA" />
+            </Field>
+            <Field label="Registration Expiry">
+              <FInput value={form.registration_expiry} onChange={set('registration_expiry')} type="date" />
+            </Field>
+            <Field label="Licence Class">
+              <FInput value={form.license_class} onChange={set('license_class')} placeholder="e.g. LR, MR, HR, HC" />
+            </Field>
+            <Field label="Tare Weight (kg)">
+              <FInput value={form.tare_weight} onChange={set('tare_weight')} placeholder="e.g. 2100" type="number" />
+            </Field>
+            <Field label="GVM (kg)">
+              <FInput value={form.gvm} onChange={set('gvm')} placeholder="e.g. 3500" type="number" />
+            </Field>
+          </FieldGroup>
+          <FieldGroup title="Insurance" optional>
+            <Field label="Insurance Policy #">
+              <FInput value={form.insurance_policy} onChange={set('insurance_policy')} placeholder="e.g. POL-2024-XXXX" />
+            </Field>
+            <Field label="Insurance Expiry">
+              <FInput value={form.insurance_expiry} onChange={set('insurance_expiry')} type="date" />
+            </Field>
+          </FieldGroup>
+        </>
+      )}
+
+      {!hasRego && (
+        <div style={{ padding: '32px', textAlign: 'center', color: '#7a92a8', backgroundColor: '#f8fbfd', borderRadius: '8px', border: '1px dashed #d6e6f2' }}>
+          <div style={{ fontSize: '28px', marginBottom: '8px' }}>No registration required</div>
+          <div style={{ fontSize: '13px' }}>Click Next to continue to purchase details.</div>
+        </div>
+      )}
+    </>
+  );
+
+  // ── Step 3: Purchase & Depreciation ─────────────────────────────────────────
+  const renderStep3 = () => (
     <>
       {isAdmin ? (
         <>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px', padding: '10px 14px', backgroundColor: '#fff7ed', border: '1px solid #fed7aa', borderRadius: '8px' }}>
-            <span style={{ fontSize: '16px' }}>🔒</span>
-            <span style={{ fontSize: '12px', color: '#92400e', fontWeight: 600 }}>Admin Only — this information is visible to admins only</span>
+            <span style={{ fontSize: '15px' }}>🔒</span>
+            <span style={{ fontSize: '12px', color: '#92400e', fontWeight: 600 }}>Admin Only — purchase price and depreciation visible to admins only</span>
           </div>
-          <FieldGroup title="Purchase Information">
+          <FieldGroup title="Purchase Information" optional>
             <Field label="Purchase Date">
               <FInput value={form.purchase_date} onChange={set('purchase_date')} type="date" />
             </Field>
@@ -592,70 +635,82 @@ function OnboardingTab({ userRole, onComplete }) {
               <FInput value={form.purchase_price} onChange={set('purchase_price')} placeholder="e.g. 320000" type="number" />
             </Field>
             <Field label="Supplier / Dealer" fullWidth>
-              <FInput value={form.supplier} onChange={set('supplier')} placeholder="e.g. WesTrac Equipment" />
+              <FInput value={form.supplier} onChange={set('supplier')} placeholder="e.g. WesTrac, Coates, local dealer" />
             </Field>
             <Field label="Warranty Expiry" fullWidth>
               <FInput value={form.warranty_expiry} onChange={set('warranty_expiry')} type="date" />
             </Field>
           </FieldGroup>
-          <FieldGroup title="Notes">
-            <Field label="Additional Notes" fullWidth>
-              <textarea
-                value={form.notes} onChange={set('notes')}
-                placeholder="Any additional details about this asset..."
-                style={{ ...iStyle, minHeight: '80px', resize: 'vertical' }}
-              />
-            </Field>
-          </FieldGroup>
+
+          {/* Live depreciation preview */}
+          {depr ? (
+            <div style={{ marginBottom: '20px', padding: '16px', backgroundColor: '#E9F1FA', borderRadius: '10px', border: '1px solid #d6e6f2' }}>
+              <div style={{ fontSize: '11px', fontWeight: 700, color: '#7a92a8', letterSpacing: '1px', textTransform: 'uppercase', marginBottom: '12px' }}>
+                Depreciation Preview (Straight-Line, 10yr, 10% Residual)
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
+                {[
+                  { label: 'Purchase Price', value: `$${depr.purchasePrice.toLocaleString()}` },
+                  { label: 'Current Value', value: `$${depr.currentValue.toLocaleString()}`, highlight: true },
+                  { label: 'Residual Value', value: `$${depr.residualValue.toLocaleString()}` },
+                  { label: 'Asset Age', value: `${depr.ageYears} yrs` },
+                  { label: 'Annual Depr.', value: `$${depr.annualDepreciation.toLocaleString()}/yr` },
+                  { label: 'Depreciated', value: `${depr.depreciationRate}%`, warn: depr.depreciationRate > 70 },
+                ].map(({ label, value, highlight, warn }) => (
+                  <div key={label} style={{ textAlign: 'center' }}>
+                    <div style={{ fontSize: '10px', color: '#7a92a8', marginBottom: '2px' }}>{label}</div>
+                    <div style={{ fontSize: '15px', fontWeight: 800, color: warn ? '#dc2626' : highlight ? '#00ABE4' : '#1a2b3c' }}>{value}</div>
+                  </div>
+                ))}
+              </div>
+              <div style={{ marginTop: '10px', fontSize: '11px', color: '#7a92a8', textAlign: 'center' }}>
+                This snapshot will be saved with the asset and visible in the Depreciation tab.
+              </div>
+            </div>
+          ) : (
+            <div style={{ padding: '16px', backgroundColor: '#f8fbfd', borderRadius: '8px', border: '1px dashed #d6e6f2', textAlign: 'center', color: '#7a92a8', fontSize: '13px', marginBottom: '16px' }}>
+              Enter a purchase price above to see an automatic depreciation preview.
+            </div>
+          )}
         </>
       ) : (
-        <>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px', padding: '10px 14px', backgroundColor: '#E9F1FA', border: '1px solid #d6e6f2', borderRadius: '8px' }}>
-            <span style={{ fontSize: '16px' }}>🔒</span>
-            <span style={{ fontSize: '12px', color: '#3d5166', fontWeight: 600 }}>Purchase details are visible to admins only</span>
-          </div>
-          <FieldGroup title="Notes">
-            <Field label="Additional Notes" fullWidth>
-              <textarea
-                value={form.notes} onChange={set('notes')}
-                placeholder="Any additional details about this asset..."
-                style={{ ...iStyle, minHeight: '80px', resize: 'vertical' }}
-              />
-            </Field>
-          </FieldGroup>
-        </>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px', padding: '10px 14px', backgroundColor: '#E9F1FA', border: '1px solid #d6e6f2', borderRadius: '8px' }}>
+          <span style={{ fontSize: '15px' }}>🔒</span>
+          <span style={{ fontSize: '12px', color: '#3d5166', fontWeight: 600 }}>Purchase and depreciation details are visible to admins only.</span>
+        </div>
       )}
+
+      <FieldGroup title="Notes" optional>
+        <Field label="Additional Notes" fullWidth>
+          <textarea value={form.notes} onChange={set('notes')}
+            placeholder="Any additional notes about this asset..."
+            style={{ ...iStyle, minHeight: '80px', resize: 'vertical' }} />
+        </Field>
+      </FieldGroup>
     </>
   );
 
-  const renderStep3 = () => {
+  // ── Step 4: QR Done ──────────────────────────────────────────────────────────
+  const renderStep4 = () => {
     if (!savedAsset) return null;
     const qrValue = `https://maintain-iq.vercel.app/asset/${savedAsset.id}`;
     return (
       <div style={{ textAlign: 'center', padding: '20px 0' }}>
-        <div style={{ fontSize: '48px', marginBottom: '8px' }}>🎉</div>
-        <div style={{ fontSize: '22px', fontWeight: 800, color: '#1a2b3c', marginBottom: '4px' }}>
-          {savedAsset.asset_number} onboarded!
-        </div>
+        <div style={{ fontSize: '48px', marginBottom: '8px' }}>\uD83C\uDF89</div>
+        <div style={{ fontSize: '22px', fontWeight: 800, color: '#1a2b3c', marginBottom: '4px' }}>{savedAsset.asset_number} onboarded!</div>
         <div style={{ fontSize: '14px', color: '#7a92a8', marginBottom: '32px' }}>{savedAsset.name}</div>
-
-        {/* QR Code */}
         <div style={{ display: 'inline-block', padding: '20px', backgroundColor: '#fff', border: '2px solid #d6e6f2', borderRadius: '16px', marginBottom: '24px' }}>
-          <div ref={qrRef}>
-            <QRCodeCanvas value={qrValue} size={180} level="H" />
-          </div>
+          <div ref={qrRef}><QRCodeCanvas value={qrValue} size={180} level="H" /></div>
           <div style={{ marginTop: '10px', fontSize: '11px', color: '#7a92a8', fontFamily: 'monospace' }}>{qrValue}</div>
         </div>
-
-        {/* Asset summary card */}
         <div style={{ backgroundColor: '#E9F1FA', borderRadius: '10px', padding: '16px', marginBottom: '28px', textAlign: 'left', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px 16px' }}>
           {[
             ['Asset Number', savedAsset.asset_number],
             ['Type', savedAsset.type],
-            ['Make / Model', [savedAsset.make, savedAsset.model].filter(Boolean).join(' ') || '—'],
-            ['Location', savedAsset.location || '—'],
-            ['Serial No.', savedAsset.serial_number || '—'],
-            ['VIN', savedAsset.vin || '—'],
+            ['Make / Model', [savedAsset.make, savedAsset.model].filter(Boolean).join(' ') || '\u2014'],
+            ['Location', savedAsset.location || '\u2014'],
+            ['Serial No.', savedAsset.serial_number || '\u2014'],
+            ['VIN', savedAsset.vin || '\u2014'],
           ].map(([k, v]) => (
             <div key={k}>
               <div style={{ fontSize: '10px', color: '#7a92a8', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>{k}</div>
@@ -663,19 +718,10 @@ function OnboardingTab({ userRole, onComplete }) {
             </div>
           ))}
         </div>
-
         <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
-          <button onClick={handlePrintQR} style={{ backgroundColor: '#00ABE4', color: '#fff', border: 'none', padding: '10px 24px', borderRadius: '8px', fontWeight: 700, fontSize: '14px', cursor: 'pointer' }}>
-            Print QR Label
-          </button>
-          <button onClick={handleOnboardAnother} style={{ backgroundColor: '#fff', color: '#00ABE4', border: '2px solid #00ABE4', padding: '10px 24px', borderRadius: '8px', fontWeight: 700, fontSize: '14px', cursor: 'pointer' }}>
-            Onboard Another
-          </button>
-          {onComplete && (
-            <button onClick={onComplete} style={{ backgroundColor: '#E9F1FA', color: '#3d5166', border: '1px solid #d6e6f2', padding: '10px 24px', borderRadius: '8px', fontWeight: 600, fontSize: '14px', cursor: 'pointer' }}>
-              Go to Units
-            </button>
-          )}
+          <button onClick={handlePrintQR} style={{ backgroundColor: '#00ABE4', color: '#fff', border: 'none', padding: '10px 24px', borderRadius: '8px', fontWeight: 700, fontSize: '14px', cursor: 'pointer' }}>Print QR Label</button>
+          <button onClick={handleOnboardAnother} style={{ backgroundColor: '#fff', color: '#00ABE4', border: '2px solid #00ABE4', padding: '10px 24px', borderRadius: '8px', fontWeight: 700, fontSize: '14px', cursor: 'pointer' }}>Onboard Another</button>
+          {onComplete && <button onClick={onComplete} style={{ backgroundColor: '#E9F1FA', color: '#3d5166', border: '1px solid #d6e6f2', padding: '10px 24px', borderRadius: '8px', fontWeight: 600, fontSize: '14px', cursor: 'pointer' }}>Go to Units</button>}
         </div>
       </div>
     );
@@ -683,45 +729,29 @@ function OnboardingTab({ userRole, onComplete }) {
 
   return (
     <div style={{ maxWidth: '680px', margin: '0 auto' }}>
-      <div style={{ marginBottom: '8px' }}>
-        <h2 style={{ fontSize: '20px', fontWeight: 800, color: '#1a2b3c', margin: 0 }}>Asset Onboarding</h2>
-        <p style={{ fontSize: '13px', color: '#7a92a8', margin: '4px 0 24px' }}>
-          Register a new asset and generate its QR tag in 4 steps.
-        </p>
-      </div>
-
+      <h2 style={{ fontSize: '20px', fontWeight: 800, color: '#1a2b3c', margin: '0 0 4px' }}>Asset Onboarding</h2>
+      <p style={{ fontSize: '13px', color: '#7a92a8', margin: '0 0 24px' }}>Register any asset, vehicle, or equipment and generate its QR tag.</p>
       <StepIndicator current={step} total={STEP_LABELS.length} labels={STEP_LABELS} />
-
       <div style={{ backgroundColor: '#fff', border: '1px solid #d6e6f2', borderRadius: '12px', padding: '28px' }}>
         {step === 0 && renderStep0()}
         {step === 1 && renderStep1()}
         {step === 2 && renderStep2()}
         {step === 3 && renderStep3()}
-
-        {/* Nav buttons */}
-        {step < 3 && (
+        {step === 4 && renderStep4()}
+        {step < 4 && (
           <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '24px', paddingTop: '20px', borderTop: '1px solid #E9F1FA' }}>
-            <button
-              onClick={() => setStep(s => s - 1)}
-              disabled={step === 0}
-              style={{ backgroundColor: '#E9F1FA', color: step === 0 ? '#b0c4d4' : '#3d5166', border: 'none', padding: '10px 24px', borderRadius: '8px', fontWeight: 600, fontSize: '14px', cursor: step === 0 ? 'default' : 'pointer' }}
-            >
+            <button onClick={() => setStep(s => s - 1)} disabled={step === 0}
+              style={{ backgroundColor: '#E9F1FA', color: step === 0 ? '#b0c4d4' : '#3d5166', border: 'none', padding: '10px 24px', borderRadius: '8px', fontWeight: 600, fontSize: '14px', cursor: step === 0 ? 'default' : 'pointer' }}>
               Back
             </button>
-            {step < 2 ? (
-              <button
-                onClick={() => setStep(s => s + 1)}
-                disabled={!canProceed()}
-                style={{ backgroundColor: canProceed() ? '#00ABE4' : '#d6e6f2', color: canProceed() ? '#fff' : '#7a92a8', border: 'none', padding: '10px 28px', borderRadius: '8px', fontWeight: 700, fontSize: '14px', cursor: canProceed() ? 'pointer' : 'default', transition: 'all 0.15s' }}
-              >
+            {step < 3 ? (
+              <button onClick={() => setStep(s => s + 1)} disabled={!canProceed()}
+                style={{ backgroundColor: canProceed() ? '#00ABE4' : '#d6e6f2', color: canProceed() ? '#fff' : '#7a92a8', border: 'none', padding: '10px 28px', borderRadius: '8px', fontWeight: 700, fontSize: '14px', cursor: canProceed() ? 'pointer' : 'default', transition: 'all 0.15s' }}>
                 Next
               </button>
             ) : (
-              <button
-                onClick={handleSave}
-                disabled={saving}
-                style={{ backgroundColor: '#16a34a', color: '#fff', border: 'none', padding: '10px 28px', borderRadius: '8px', fontWeight: 700, fontSize: '14px', cursor: saving ? 'default' : 'pointer' }}
-              >
+              <button onClick={handleSave} disabled={saving}
+                style={{ backgroundColor: '#16a34a', color: '#fff', border: 'none', padding: '10px 28px', borderRadius: '8px', fontWeight: 700, fontSize: '14px', cursor: saving ? 'default' : 'pointer' }}>
                 {saving ? 'Saving...' : 'Save & Generate QR'}
               </button>
             )}
@@ -731,7 +761,6 @@ function OnboardingTab({ userRole, onComplete }) {
     </div>
   );
 }
-
 
 // ─── Placeholder (for tabs not yet built) ────────────────────────────────────
 function PlaceholderTab({ label }) {
