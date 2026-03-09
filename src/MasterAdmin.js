@@ -30,7 +30,7 @@ function PinModal({ onConfirm, onCancel, actionLabel }) {
     <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}>
       <div style={{ background: '#ffffff', border: '1px solid #d6e6f2', borderRadius: '12px', padding: '28px', width: '320px', textAlign: 'center' }}>
         <div style={{ fontSize: '32px', marginBottom: '12px' }}>🔐</div>
-        <h3 style={{ color: '#fff', margin: '0 0 6px' }}>Confirm Action</h3>
+        <h3 style={{ color: '#1a2b3c', margin: '0 0 6px' }}>Confirm Action</h3>
         <p style={{ color: '#7a92a8', fontSize: '13px', marginBottom: '20px' }}>{actionLabel}</p>
         <input
           type="password" placeholder="Enter PIN" value={pin}
@@ -57,6 +57,7 @@ function MasterAdmin() {
   const [saving, setSaving] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [pinAction, setPinAction] = useState(null);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => { fetchCompanies(); }, []);
 
@@ -102,6 +103,99 @@ function MasterAdmin() {
   const saveAssetLimit = (company) => {
     requirePin(`Set asset limit to ${company.asset_limit} for ${company.name}`, () => updateCompany(company.id, { asset_limit: company.asset_limit }));
   };
+  // ── Export full company profile as JSON ─────────────────────────────────────
+  const exportCompanyProfile = async (company) => {
+    try {
+      const cid = company.id;
+      const [
+        { data: users },
+        { data: assets },
+        { data: maintenance },
+        { data: workOrders },
+        { data: downtime },
+        { data: formTemplates },
+        { data: formSubmissions },
+        { data: serviceTemplates },
+        { data: serviceSubmissions },
+        { data: oilSamples },
+      ] = await Promise.all([
+        supabase.from('user_roles').select('*').eq('company_id', cid),
+        supabase.from('assets').select('*').eq('company_id', cid),
+        supabase.from('maintenance').select('*').eq('company_id', cid),
+        supabase.from('work_orders').select('*').eq('company_id', cid),
+        supabase.from('downtime').select('*').eq('company_id', cid),
+        supabase.from('form_templates').select('*').eq('company_id', cid),
+        supabase.from('form_submissions').select('*').eq('company_id', cid),
+        supabase.from('service_sheet_templates').select('*').eq('company_id', cid),
+        supabase.from('service_sheet_submissions').select('*').eq('company_id', cid),
+        supabase.from('oil_samples').select('*').eq('company_id', cid).catch(() => ({ data: [] })),
+      ]);
+
+      const profile = {
+        exported_at: new Date().toISOString(),
+        exported_by: 'MechIQ Master Admin',
+        company,
+        users: users || [],
+        assets: assets || [],
+        maintenance: maintenance || [],
+        work_orders: workOrders || [],
+        downtime: downtime || [],
+        form_templates: formTemplates || [],
+        form_submissions: formSubmissions || [],
+        service_sheet_templates: serviceTemplates || [],
+        service_sheet_submissions: serviceSubmissions || [],
+        oil_samples: oilSamples || [],
+        note: 'Photos are stored in Supabase Storage. URLs are embedded in form_submissions.responses and asset records.',
+      };
+
+      const blob = new Blob([JSON.stringify(profile, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `MechIQ_${company.name.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      return true;
+    } catch (err) {
+      alert('Export failed: ' + err.message);
+      return false;
+    }
+  };
+
+  // ── Delete company and all related data ──────────────────────────────────────
+  const handleDeleteCompany = (company) => {
+    requirePin(
+      `PERMANENTLY DELETE "${company.name}" — this cannot be undone`,
+      async () => {
+        setDeleting(true);
+        // First export the full profile
+        const exported = await exportCompanyProfile(company);
+        if (!exported) { setDeleting(false); return; }
+
+        // Then delete all related data in order (child tables first)
+        const cid = company.id;
+        const tables = [
+          'oil_samples', 'service_sheet_submissions', 'service_sheet_templates',
+          'form_submissions', 'form_templates', 'downtime',
+          'work_orders', 'maintenance', 'assets', 'user_roles',
+        ];
+        for (const table of tables) {
+          const { error } = await supabase.from(table).delete().eq('company_id', cid);
+          if (error) console.warn(`Could not delete from ${table}:`, error.message);
+        }
+        // Finally delete the company itself
+        const { error } = await supabase.from('companies').delete().eq('id', cid);
+        if (error) { alert('Error deleting company: ' + error.message); setDeleting(false); return; }
+
+        setDeleting(false);
+        setSelectedCompany(null);
+        await fetchCompanies();
+        alert(`"${company.name}" has been deleted. Profile saved to your Downloads folder.`);
+      }
+    );
+  };
+
+
 
   const filteredCompanies = companies.filter(c => {
     const matchTab = tab === 'all' || c.status === tab;
@@ -241,6 +335,18 @@ function MasterAdmin() {
                 {selectedCompany.status !== 'suspended' && <button style={btnStyle('#dc2626')} onClick={() => setStatus(selectedCompany.id, 'suspended')}>🔒 Suspend</button>}
                 {selectedCompany.status !== 'pending' && <button style={btnStyle('#f0a500')} onClick={() => setStatus(selectedCompany.id, 'pending')}>🔒 Set Pending</button>}
               </div>
+            </div>
+            <div style={{ borderTop: '1px solid #d6e6f2', paddingTop: '14px', marginTop: '4px' }}>
+              <div style={{ color: '#7a92a8', fontSize: '12px', marginBottom: '10px' }}>DATA</div>
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                <button style={btnStyle('#3d5166')} onClick={() => exportCompanyProfile(selectedCompany)}>Export Profile</button>
+                <button style={{ ...btnStyle('#dc2626'), opacity: deleting ? 0.6 : 1 }} disabled={deleting} onClick={() => handleDeleteCompany(selectedCompany)}>
+                  {deleting ? 'Deleting...' : 'Delete Company'}
+                </button>
+              </div>
+              <p style={{ fontSize: '11px', color: '#7a92a8', marginTop: '8px', lineHeight: '1.5' }}>
+                Delete exports a full JSON backup to Downloads first, then permanently removes all company data.
+              </p>
             </div>
           </div>
         )}
