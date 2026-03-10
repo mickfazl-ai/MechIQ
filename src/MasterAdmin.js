@@ -107,44 +107,37 @@ function MasterAdmin() {
   const exportCompanyProfile = async (company) => {
     try {
       const cid = company.id;
-      const [
-        { data: users },
-        { data: assets },
-        { data: maintenance },
-        { data: workOrders },
-        { data: downtime },
-        { data: formTemplates },
-        { data: formSubmissions },
-        { data: serviceTemplates },
-        { data: serviceSubmissions },
-        { data: oilSamples },
-      ] = await Promise.all([
-        supabase.from('user_roles').select('*').eq('company_id', cid),
-        supabase.from('assets').select('*').eq('company_id', cid),
-        supabase.from('maintenance').select('*').eq('company_id', cid),
-        supabase.from('work_orders').select('*').eq('company_id', cid),
-        supabase.from('downtime').select('*').eq('company_id', cid),
-        supabase.from('form_templates').select('*').eq('company_id', cid),
-        supabase.from('form_submissions').select('*').eq('company_id', cid),
-        supabase.from('service_sheet_templates').select('*').eq('company_id', cid),
-        supabase.from('service_sheet_submissions').select('*').eq('company_id', cid),
-        supabase.from('oil_samples').select('*').eq('company_id', cid).catch(() => ({ data: [] })),
+      const safeQuery = async (table) => {
+        try { const { data } = await supabase.from(table).select('*').eq('company_id', cid); return data || []; }
+        catch(e) { return []; }
+      };
+      const [users, assets, maintenance, workOrders, downtime, formTemplates, formSubmissions, serviceTemplates, serviceSubmissions, oilSamples] = await Promise.all([
+        safeQuery('user_roles'),
+        safeQuery('assets'),
+        safeQuery('maintenance'),
+        safeQuery('work_orders'),
+        safeQuery('downtime'),
+        safeQuery('form_templates'),
+        safeQuery('form_submissions'),
+        safeQuery('service_sheet_templates'),
+        safeQuery('service_sheet_submissions'),
+        safeQuery('oil_samples'),
       ]);
 
       const profile = {
         exported_at: new Date().toISOString(),
         exported_by: 'MechIQ Master Admin',
         company,
-        users: users || [],
-        assets: assets || [],
-        maintenance: maintenance || [],
-        work_orders: workOrders || [],
-        downtime: downtime || [],
-        form_templates: formTemplates || [],
-        form_submissions: formSubmissions || [],
-        service_sheet_templates: serviceTemplates || [],
-        service_sheet_submissions: serviceSubmissions || [],
-        oil_samples: oilSamples || [],
+        users,
+        assets,
+        maintenance,
+        work_orders: workOrders,
+        downtime,
+        form_templates: formTemplates,
+        form_submissions: formSubmissions,
+        service_sheet_templates: serviceTemplates,
+        service_sheet_submissions: serviceSubmissions,
+        oil_samples: oilSamples,
         note: 'Photos are stored in Supabase Storage. URLs are embedded in form_submissions.responses and asset records.',
       };
 
