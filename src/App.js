@@ -33,7 +33,10 @@ function App() {
   // Components that have internal tabs receive initialTab prop
   const setCurrentPage = (page, subPage = null) => {
     setCurrentPageRaw(page);
-    setCurrentSubPage(subPage);
+    // Always update subPage — even if navigating to same page with different sub
+    // Use functional update + tiny delay to force useEffect to fire in child
+    setCurrentSubPage(null);
+    setTimeout(() => setCurrentSubPage(subPage), 0);
   };
 
   // Apply saved theme on every load

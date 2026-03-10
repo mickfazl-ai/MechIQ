@@ -1049,14 +1049,7 @@ const [activeTab, setActiveTab] = useState(initialTab || 'prestarts');
   useEffect(() => { if (initialTab) setActiveTab(initialTab); }, [initialTab]);
   return (
     <div>
-      <div style={{ display: 'flex', borderBottom: '2px solid #1a2f2f', marginBottom: '24px' }}>
-        {[{ id: 'prestarts', label: 'Prestarts' }, { id: 'service-sheets', label: 'Service Sheets' }].map(tab => (
-          <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-            style={{ padding: '12px 28px', backgroundColor: 'transparent', color: activeTab === tab.id ? '#00c2e0' : '#a0b0b0', border: 'none', borderBottom: activeTab === tab.id ? '2px solid #00c2e0' : '2px solid transparent', cursor: 'pointer', fontWeight: activeTab === tab.id ? 'bold' : 'normal', fontSize: '15px', marginBottom: '-2px', fontFamily: 'Barlow, sans-serif' }}>
-            {tab.label}
-          </button>
-        ))}
-      </div>
+      
       {activeTab === 'prestarts' && <PrestartTab userRole={userRole} />}
       {activeTab === 'service-sheets' && <ServiceSheetsTab userRole={userRole} />}
     </div>

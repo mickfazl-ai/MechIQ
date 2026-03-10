@@ -309,14 +309,7 @@ function Reports({ companyId, userRole, initialTab }) {
       </div>
 
       {/* Sub Tabs */}
-      <div style={{ display: 'flex', gap: '0', marginTop: '20px', marginBottom: '20px', borderBottom: '2px solid #1a2f2f' }}>
-        {TABS.map(tab => (
-          <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-            style={{ padding: '12px 24px', backgroundColor: 'transparent', color: activeTab === tab.id ? '#00c2e0' : '#a0b0b0', border: 'none', borderBottom: activeTab === tab.id ? '2px solid #00c2e0' : '2px solid transparent', cursor: 'pointer', fontWeight: activeTab === tab.id ? 'bold' : 'normal', fontSize: '14px', marginBottom: '-2px', fontFamily: 'Barlow, sans-serif', letterSpacing: '0.5px' }}>
-            {tab.label}
-          </button>
-        ))}
-      </div>
+      
 
       {/* DOWNTIME LOG TAB */}
       {activeTab === 'downtime-log' && (

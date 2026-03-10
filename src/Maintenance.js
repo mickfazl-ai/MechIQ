@@ -101,18 +101,7 @@ function Maintenance({ userRole, initialTab }) {
 
   return (
     <div className="maintenance">
-      {/* Sub Navbar */}
-      <div style={{display:'flex', gap:'0', marginBottom:'25px', borderBottom:'2px solid #1a2f2f'}}>
-        {[{id:'scheduled', label:'Scheduled Service'}, {id:'work_orders', label:'Work Orders'}, {id:'pm_tasks', label:'PM Tasks'}, {id:'oil_sampling', label:'Oil Sampling'}].map(tab => (
-          <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-            style={{padding:'12px 24px', backgroundColor:'transparent', color: activeTab === tab.id ? '#00c2e0' : '#a0b0b0', border:'none', borderBottom: activeTab === tab.id ? '2px solid #00c2e0' : '2px solid transparent', cursor:'pointer', fontWeight: activeTab === tab.id ? 'bold' : 'normal', fontSize:'14px', marginBottom:'-2px', fontFamily:'Barlow, sans-serif', letterSpacing:'0.5px'}}>
-            {tab.label}
-            {tab.id === 'workorders' && openWOs.length > 0 && (
-              <span style={{marginLeft:'8px', backgroundColor:'#e94560', color:'white', borderRadius:'10px', padding:'1px 7px', fontSize:'11px'}}>{openWOs.length}</span>
-            )}
-          </button>
-        ))}
-      </div>
+      
 
       {/* PM TASKS TAB */}
       {activeTab === 'scheduled' && (

@@ -723,6 +723,8 @@ const TABS = [
 function Settings({ userRole, initialTab }) {
   const [activeTab, setActiveTab] = useState(initialTab || 'company');
 
+  useEffect(() => { if (initialTab) setActiveTab(initialTab); }, [initialTab]);
+
   const tabContent = {
     company: <CompanyDetails userRole={userRole} />,
     format:  <Format userRole={userRole} />,
@@ -741,25 +743,7 @@ function Settings({ userRole, initialTab }) {
       </div>
 
       {/* Sub-nav tabs */}
-      <div style={{ display: 'flex', gap: '4px', marginBottom: '24px', borderBottom: '2px solid #E9F1FA', flexWrap: 'wrap' }}>
-        {TABS.map(t => (
-          <button
-            key={t.id}
-            onClick={() => setActiveTab(t.id)}
-            style={{
-              padding: '10px 18px', border: 'none', cursor: 'pointer',
-              backgroundColor: 'transparent', borderRadius: '6px 6px 0 0',
-              fontSize: '13px', fontWeight: activeTab === t.id ? 700 : 500,
-              color: activeTab === t.id ? '#00ABE4' : '#7a92a8',
-              borderBottom: activeTab === t.id ? '2px solid #00ABE4' : '2px solid transparent',
-              marginBottom: '-2px', display: 'flex', alignItems: 'center', gap: '6px',
-              transition: 'all 0.15s',
-            }}
-          >
-            <span>{t.icon}</span> {t.label}
-          </button>
-        ))}
-      </div>
+      
 
       {/* Tab content */}
       {tabContent[activeTab]}

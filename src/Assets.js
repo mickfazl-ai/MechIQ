@@ -804,13 +804,7 @@ function Assets({ userRole, onViewAsset, initialTab }) {
       <div className="page-header">
         <h2>Assets</h2>
       </div>
-      <div style={TAB_BAR}>
-        {TABS.map(t => (
-          <button key={t.id} style={TAB_BTN(activeTab === t.id)} onClick={() => setActiveTab(t.id)}>
-            {t.label}
-          </button>
-        ))}
-      </div>
+
       {renderTab()}
     </div>
   );
