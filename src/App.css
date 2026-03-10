@@ -555,16 +555,29 @@ body {
   border-color: var(--blue-mid);
 }
 
-/* Standalone inputs used globally */
+/* Standalone inputs used globally — all pick up theme variables */
 input[type="text"],
 input[type="number"],
 input[type="email"],
 input[type="password"],
 input[type="date"],
+input[type="search"],
+input[type="tel"],
+input[type="url"],
 select,
 textarea {
   font-family: 'Inter', sans-serif;
+  color: var(--text-dark);
+  background-color: var(--surface);
+  border-color: var(--border);
+  transition: border-color var(--t-fast), box-shadow var(--t-fast), background-color var(--t-fast);
 }
+input:focus, select:focus, textarea:focus {
+  outline: none;
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 3px rgba(var(--focus-rgb, 0,171,228), 0.12);
+}
+input::placeholder, textarea::placeholder { color: var(--text-faint); }
 
 /* ═══════════════════════════════════════════════════════════════════
    DATA TABLE
