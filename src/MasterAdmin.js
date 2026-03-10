@@ -155,6 +155,24 @@ function MasterAdmin() {
     }
   };
 
+  // ── Restore master admin row ──────────────────────────────────────────────────
+  const handleRestoreMaster = () => {
+    requirePin(
+      'Restore / re-create your Master Admin record',
+      async () => {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) { alert('Not logged in — please refresh and try again.'); return; }
+        // Upsert on email so it works whether the row is missing or just wrong
+        const { error } = await supabase.from('user_roles').upsert(
+          { email: user.email, name: user.email.split('@')[0], role: 'master', company_id: null },
+          { onConflict: 'email' }
+        );
+        if (error) { alert('Error restoring master admin: ' + error.message); }
+        else { alert('Master admin restored! Refresh the page to continue.'); }
+      }
+    );
+  };
+
   // ── Delete company and all related data ──────────────────────────────────────
   const handleDeleteCompany = (company) => {
     requirePin(
@@ -165,17 +183,22 @@ function MasterAdmin() {
         const exported = await exportCompanyProfile(company);
         if (!exported) { setDeleting(false); return; }
 
-        // Then delete all related data in order (child tables first)
         const cid = company.id;
         const tables = [
           'oil_samples', 'service_sheet_submissions', 'service_sheet_templates',
           'form_submissions', 'form_templates', 'downtime',
-          'work_orders', 'maintenance', 'assets', 'user_roles',
+          'work_orders', 'maintenance', 'assets',
         ];
         for (const table of tables) {
           const { error } = await supabase.from(table).delete().eq('company_id', cid);
           if (error) console.warn(`Could not delete from ${table}:`, error.message);
         }
+        // Delete user_roles for this company — but NEVER touch master roles (company_id = null)
+        await supabase.from('user_roles')
+          .delete()
+          .eq('company_id', cid)
+          .neq('role', 'master');
+
         // Finally delete the company itself
         const { error } = await supabase.from('companies').delete().eq('id', cid);
         if (error) { alert('Error deleting company: ' + error.message); setDeleting(false); return; }
@@ -212,9 +235,22 @@ function MasterAdmin() {
     <div style={{ padding: '24px', maxWidth: '1100px', margin: '0 auto' }}>
       {pinAction && <PinModal actionLabel={pinAction.label} onConfirm={pinAction.onConfirm} onCancel={() => setPinAction(null)} />}
 
-      <div style={{ marginBottom: '24px' }}>
-        <h2 style={{ color: '#1a2b3c', margin: 0, fontWeight: 400, letterSpacing: '1px' }}>⚙️ Master Admin <span style={{ color: '#1a2b3c', fontWeight: 700 }}>Panel</span></h2>
-        <p style={{ color: '#7a92a8', margin: '4px 0 0', fontSize: '13px' }}>Manage company registrations, features and access · Mech IQ</p>
+      <div style={{ marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '12px' }}>
+        <div>
+          <h2 style={{ color: '#1a2b3c', margin: 0, fontFamily: "'Barlow Condensed', sans-serif", fontSize: '28px', fontWeight: 800, letterSpacing: '1px', textTransform: 'uppercase' }}>
+            ⚙️ Master Admin <span style={{ color: '#00ABE4' }}>Panel</span>
+          </h2>
+          <p style={{ color: '#7a92a8', margin: '4px 0 0', fontSize: '13px' }}>Manage company registrations, features and access · Mech IQ</p>
+        </div>
+        <button
+          onClick={handleRestoreMaster}
+          title="Re-creates your master admin user_roles record if it was accidentally deleted"
+          style={{ padding: '8px 16px', background: '#f5f3ff', border: '1.5px solid #c4b5fd', color: '#7c3aed', borderRadius: '8px', fontSize: '12px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', transition: 'all 0.15s', whiteSpace: 'nowrap', fontFamily: 'inherit' }}
+          onMouseEnter={e => { e.currentTarget.style.background = '#7c3aed'; e.currentTarget.style.color = '#fff'; }}
+          onMouseLeave={e => { e.currentTarget.style.background = '#f5f3ff'; e.currentTarget.style.color = '#7c3aed'; }}
+        >
+          🛡️ Restore Master Admin
+        </button>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', marginBottom: '24px' }}>
