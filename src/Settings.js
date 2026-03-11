@@ -65,13 +65,13 @@ const saveBtn = (color = 'var(--blue-bright)') => ({
 });
 
 // ─── Section header ───────────────────────────────────────────────────────────
-function SectionHeader({ icon, title, desc }) {
+function SectionHeader({ title, desc }) {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
-      <div style={{ width: '40px', height: '40px', backgroundColor: 'var(--blue-light)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', flexShrink: 0 }}>{icon}</div>
+    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px', paddingBottom: '14px', borderBottom: '1.5px solid var(--border-light)' }}>
+      <div style={{ width: '3px', height: '32px', backgroundColor: 'var(--blue-bright)', borderRadius: '2px', flexShrink: 0 }} />
       <div>
-        <div style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text-dark)' }}>{title}</div>
-        <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{desc}</div>
+        <div style={{ fontSize: '14px', fontWeight: 800, color: 'var(--text-dark)', letterSpacing: '0.2px' }}>{title}</div>
+        <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '2px' }}>{desc}</div>
       </div>
     </div>
   );
@@ -400,11 +400,11 @@ function Format({ userRole }) {
 
   const panelStyle = { background:'#fff', border:'1px solid #e2ecf5', borderRadius:'18px', padding:'24px', marginBottom:'20px', boxShadow:'0 2px 12px rgba(0,100,180,0.06)' };
   const panelHead  = (emoji, title, desc) => (
-    <div style={{display:'flex',alignItems:'center',gap:'12px',marginBottom:'22px'}}>
-      <div style={{width:'38px',height:'38px',borderRadius:'11px',background:activeT.gradient,display:'flex',alignItems:'center',justifyContent:'center',fontSize:'18px',boxShadow:`0 4px 12px ${activeT.primary}35`,flexShrink:0}}>{emoji}</div>
+    <div style={{display:'flex',alignItems:'center',gap:'12px',marginBottom:'22px',paddingBottom:'14px',borderBottom:'1.5px solid var(--border-light)'}}>
+      <div style={{width:'3px',height:'32px',backgroundColor:'var(--blue-bright)',borderRadius:'2px',flexShrink:0}} />
       <div>
-        <div style={{fontSize:'14px',fontWeight:800,color:'#1a2b3c'}}>{title}</div>
-        <div style={{fontSize:'12px',color:'#7a92a8',marginTop:'2px'}}>{desc}</div>
+        <div style={{fontSize:'14px',fontWeight:800,color:'var(--text-dark)',letterSpacing:'0.2px'}}>{title}</div>
+        <div style={{fontSize:'12px',color:'var(--text-muted)',marginTop:'2px'}}>{desc}</div>
       </div>
     </div>
   );
@@ -440,9 +440,7 @@ function Format({ userRole }) {
                 >
                   {/* Gradient banner */}
                   <div style={{height:'42px',background:t.gradient,display:'flex',alignItems:'center',justifyContent:'center',position:'relative'}}>
-                    <span style={{fontSize:'20px',filter:'drop-shadow(0 1px 2px rgba(0,0,0,0.35))',animation:selected===t.id?'fmt-float 2s ease-in-out infinite':'none'}}>
-                      {t.emoji}
-                    </span>
+                    
                     {selected===t.id && (
                       <div style={{position:'absolute',top:'6px',right:'6px',width:'16px',height:'16px',borderRadius:'50%',background:'#fff',display:'flex',alignItems:'center',justifyContent:'center'}}>
                         <div style={{width:'8px',height:'8px',borderRadius:'50%',background:t.primary}}/>
@@ -548,7 +546,7 @@ function Format({ userRole }) {
               onClick={handleApply}
               style={{background: applying ? '#94a3b8' : activeT.gradient}}
             >
-              {applying ? '⟳  Applying…' : saved ? '✓  Saved!' : `Apply  ${activeT.emoji}  ${activeT.label}`}
+              {applying ? '⟳  Applying…' : saved ? '✓  Saved!' : `Apply ${activeT.label}`}
             </button>
             {saved && (
               <div style={{display:'flex',alignItems:'center',gap:'8px',padding:'11px 18px',background:'#dcfce7',border:'1px solid #86efac',borderRadius:'12px',animation:'fmt-fadein 0.3s ease'}}>
@@ -578,7 +576,7 @@ function Format({ userRole }) {
           {/* Theme info strip */}
           <div style={{marginTop:'12px',padding:'12px 16px',background:previewT.bg,border:`1px solid ${previewT.border}`,borderRadius:'12px',display:'flex',alignItems:'center',gap:'10px',transition:'all 0.35s'}}>
             <div style={{width:'36px',height:'36px',borderRadius:'10px',background:previewT.gradient,flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center',fontSize:'18px',animation:'fmt-float 2.5s ease-in-out infinite'}}>
-              {previewT.emoji}
+              
             </div>
             <div style={{flex:1,minWidth:0}}>
               <div style={{fontSize:'13px',fontWeight:800,color:previewT.dark}}>{previewT.label}</div>

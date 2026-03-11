@@ -217,7 +217,7 @@ function Dropdown({ item, currentPage, onNav, onClose }) {
             className={`nav-dropdown-item${isActive ? ' active' : ''}`}
             onClick={() => { onClose(); onNav(child.id, child.subPage); }}
           >
-            <span style={{ fontSize: '14px', flexShrink: 0 }}>{child.icon}</span>
+            
             {child.label}
           </div>
         );
@@ -281,7 +281,7 @@ function MobileNavItem({ item, currentPage, onNav }) {
   if (!hasChildren) {
     return (
       <li className={isActive ? 'active' : ''} onClick={() => onNav(item.id, null)}>
-        <span style={{ marginRight: '8px' }}>{item.icon}</span>{item.label}
+        {item.label}
       </li>
     );
   }
@@ -293,7 +293,7 @@ function MobileNavItem({ item, currentPage, onNav }) {
         onClick={() => setExpanded(e => !e)}
         style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
       >
-        <span><span style={{ marginRight: '8px' }}>{item.icon}</span>{item.label}</span>
+        <span>{item.label}</span>
         <span style={{ fontSize: '10px', opacity: 0.5, transition: 'transform 0.2s', display: 'inline-block', transform: expanded ? 'rotate(180deg)' : 'none' }}>▾</span>
       </li>
       {expanded && item.children.map(child => (
@@ -306,7 +306,7 @@ function MobileNavItem({ item, currentPage, onNav }) {
             background: '#f5f9fd', borderLeft: '3px solid #e2ecf5',
           }}
         >
-          <span style={{ marginRight: '7px' }}>{child.icon}</span>{child.label}
+          {child.label}
         </li>
       ))}
     </>

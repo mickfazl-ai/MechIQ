@@ -177,7 +177,7 @@ function QRModal({ asset, onClose }) {
         </div>
         <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
           <button onClick={onClose} className="nav-pill nav-pill-ghost">Cancel</button>
-          <button onClick={print} className="nav-pill nav-pill-primary">🖨 Print Label</button>
+          <button onClick={print} className="nav-pill nav-pill-primary">Print Label</button>
         </div>
       </div>
     </div>
@@ -316,11 +316,11 @@ function UnitsTab({ userRole, onViewAsset, toast }) {
         </div>
         <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
           <div style={{ position: 'relative' }}>
-            <span style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: '#b0c4d4', fontSize: '14px' }}>🔍</span>
+            <span style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: '#b0c4d4', fontSize: '13px', fontWeight: 700 }}>⌕</span>
             <input className="form-input" value={search} onChange={e => setSearch(e.target.value)} placeholder="Search assets…" style={{ paddingLeft: '32px', width: '200px' }} />
           </div>
           {userRole?.role !== 'technician' && userRole?.role !== 'operator' && (
-            <button onClick={() => setShowForm(!showForm)} className="nav-pill nav-pill-primary">+ Add Asset</button>
+            <button onClick={() => setShowForm(!showForm)} className="nav-pill nav-pill-primary">Add Asset</button>
           )}
         </div>
       </div>
@@ -329,7 +329,6 @@ function UnitsTab({ userRole, onViewAsset, toast }) {
       {showForm && (
         <div style={{ background: '#fff', border: '1px solid #e2ecf5', borderRadius: '14px', padding: '22px', marginBottom: '20px', boxShadow: '0 4px 16px rgba(0,100,180,0.08)', animation: 'fadeUp 0.25s ease' }}>
           <div style={{ fontSize: '13px', fontWeight: 700, color: '#1a2b3c', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span style={{ width: '28px', height: '28px', background: '#E9F1FA', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>➕</span>
             Quick Add Asset
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', marginBottom: '14px' }}>
@@ -593,7 +592,7 @@ function OnboardingTab({ userRole, onComplete, toast }) {
       )}
       {hasRego === false && (
         <div style={{ padding: '36px', textAlign: 'center', background: '#f8fbfd', borderRadius: '12px', border: '1.5px dashed #d6e6f2' }}>
-          <div style={{ fontSize: '32px', marginBottom: '8px' }}>🔩</div>
+          
           <div style={{ fontSize: '14px', fontWeight: 600, color: '#3d5166' }}>No registration required</div>
           <div style={{ fontSize: '12px', color: '#7a92a8', marginTop: '4px' }}>Click Next to continue to purchase details.</div>
         </div>
@@ -664,7 +663,7 @@ function OnboardingTab({ userRole, onComplete, toast }) {
     const qrVal = `https://maintain-iq.vercel.app/asset/${savedAsset.id}`;
     return (
       <div style={{ textAlign: 'center', padding: '10px 0', animation: 'fadeUp 0.4s ease' }}>
-        <div style={{ width: '72px', height: '72px', background: '#dcfce7', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '36px', margin: '0 auto 16px' }}>🎉</div>
+        <div style={{ width: '72px', height: '72px', background: '#dcfce7', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', border: '3px solid #16a34a' }}><div style={{ width: '28px', height: '14px', borderLeft: '4px solid #16a34a', borderBottom: '4px solid #16a34a', transform: 'rotate(-45deg) translate(2px, -4px)' }} /></div>
         <div style={{ fontFamily: "'Barlow Condensed',sans-serif", fontSize: '28px', fontWeight: 800, color: '#1a2b3c', marginBottom: '4px' }}>{savedAsset.asset_number} Onboarded!</div>
         <div style={{ fontSize: '14px', color: '#7a92a8', marginBottom: '28px' }}>{savedAsset.name} has been registered in your fleet</div>
         <div style={{ display: 'inline-block', padding: '20px', background: '#fff', border: '1.5px solid #e2ecf5', borderRadius: '18px', marginBottom: '24px', boxShadow: '0 4px 16px rgba(0,100,180,0.08)' }}>
@@ -677,7 +676,7 @@ function OnboardingTab({ userRole, onComplete, toast }) {
           ))}
         </div>
         <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
-          <button onClick={printQR} className="nav-pill nav-pill-primary">🖨 Print QR Label</button>
+          <button onClick={printQR} className="nav-pill nav-pill-primary">Print QR Label</button>
           <button onClick={again} style={{ padding: '7px 18px', background: '#fff', border: '2px solid #00ABE4', color: '#00ABE4', borderRadius: '8px', fontWeight: 700, fontSize: '12px', cursor: 'pointer' }}>+ Onboard Another</button>
           {onComplete && <button onClick={onComplete} className="nav-pill nav-pill-ghost">View All Assets</button>}
         </div>
@@ -703,7 +702,7 @@ function OnboardingTab({ userRole, onComplete, toast }) {
             <button className="nav-pill nav-pill-ghost" onClick={() => setStep(s => s-1)} disabled={step === 0}>← Back</button>
             {step < 3
               ? <button className="nav-pill nav-pill-primary" onClick={() => setStep(s => s+1)} disabled={!canNext}>Next →</button>
-              : <button className="nav-pill nav-pill-success" onClick={save} disabled={saving}>{saving ? 'Saving…' : '✓ Save & Generate QR'}</button>
+              : <button className="nav-pill nav-pill-success" onClick={save} disabled={saving}>{saving ? 'Saving…' : 'Save & Generate QR'}</button>
             }
           </div>
         )}
