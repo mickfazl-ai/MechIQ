@@ -3,10 +3,10 @@ import { supabase } from './supabase';
 
 // ─── Shared design tokens ──────────────────────────────────────────────────────
 const C = {
-  bg: 'var(--void, #050a12)', surface: 'var(--surface, #0d1f35)',
-  border: 'var(--border, rgba(0,180,255,0.10))', borderLight: 'var(--border-dim, rgba(0,100,150,0.15))',
-  textDark: 'var(--text-bright, #e8f4ff)', textMid: 'var(--text-mid, #7ab8e8)',
-  textMuted: 'var(--text-muted, #3d6a8a)', accent: 'var(--cyan, #00d4ff)',
+  bg: 'var(--bg)', surface: 'var(--surface)',
+  border: 'var(--border)', borderLight: 'var(--border)',
+  textDark: 'var(--text-primary)', textMid: 'var(--text-secondary)',
+  textMuted: 'var(--text-muted)', accent: 'var(--accent)',
   red: 'var(--red, #ff3366)', redBg: 'var(--red-glow, rgba(255,51,102,0.12))',
   amber: 'var(--amber, #ffaa00)', amberBg: 'var(--amber-glow, rgba(255,170,0,0.12))',
   green: 'var(--green, #00ff88)', greenBg: 'var(--green-glow, rgba(0,255,136,0.12))',
@@ -40,7 +40,7 @@ const PRIORITY_MAP = {
 function Badge({ text, map }) {
   const [color, bg] = (map || STATUS_MAP)[text] || [C.textMuted, 'var(--surface-2)'];
   return (
-    <span style={{ display:'inline-flex', alignItems:'center', gap:5, padding:'3px 9px', borderRadius:4, background:bg, color, fontSize:10, fontWeight:700, border:`1px solid ${color}40`, fontFamily:'Rajdhani,sans-serif', letterSpacing:'0.8px', textTransform:'uppercase', whiteSpace:'nowrap' }}>
+    <span style={{ display:'inline-flex', alignItems:'center', gap:5, padding:'3px 9px', borderRadius:4, background:bg, color, fontSize:10, fontWeight:700, border:`1px solid ${color}40`, fontFamily:'var(--font-display)', letterSpacing:'0.8px', textTransform:'uppercase', whiteSpace:'nowrap' }}>
       <span style={{ width:5, height:5, borderRadius:'50%', background:color }} />{text}
     </span>
   );
@@ -49,14 +49,14 @@ function Badge({ text, map }) {
 // ─── Tab bar ───────────────────────────────────────────────────────────────────
 function TabBar({ tabs, active, onChange }) {
   return (
-    <div style={{ display:'flex', gap:4, background:'var(--base,#0a1628)', borderRadius:10, padding:4, marginBottom:24, width:'fit-content', border:'1px solid var(--border)' }}>
+    <div style={{ display:'flex', gap:4, background:'var(--surface-2)', borderRadius:10, padding:4, marginBottom:24, width:'fit-content', border:'1px solid var(--border)' }}>
       {tabs.map(t => (
         <button key={t.id} onClick={() => onChange(t.id)} style={{
           padding:'8px 20px', border:'none', borderRadius:8, cursor:'pointer',
           fontSize:12, fontWeight:700, letterSpacing:'0.3px', fontFamily:'inherit',
           transition:'all 0.15s',
           background: active === t.id ? 'var(--surface,#fff)' : 'transparent',
-          color: active === t.id ? 'var(--blue-bright,#00ABE4)' : 'var(--text-muted,#7a92a8)',
+          color: active === t.id ? 'var(--blue-bright,var(--accent))' : 'var(--text-muted,#7a92a8)',
           boxShadow: active === t.id ? '0 1px 6px rgba(0,0,0,0.1)' : 'none',
         }}>{t.label}</button>
       ))}
@@ -227,7 +227,7 @@ function Maintenance({ userRole, initialTab }) {
     { id:'pm_tasks',    label:'PM Tasks' },
   ];
 
-  const btnPrimary = { padding:'8px 18px', background:C.accent, color:'var(--text-bright)', border:'none', borderRadius:8, fontSize:12, fontWeight:700, cursor:'pointer', fontFamily:'inherit', boxShadow:`0 3px 10px ${C.accent}44`, letterSpacing:'0.5px' };
+  const btnPrimary = { padding:'8px 18px', background:C.accent, color:'var(--text-primary)', border:'none', borderRadius:8, fontSize:12, fontWeight:700, cursor:'pointer', fontFamily:'inherit', boxShadow:`0 3px 10px ${C.accent}44`, letterSpacing:'0.5px' };
   const btnGhost   = { padding:'8px 16px', background:C.surface, color:C.textMid, border:`1.5px solid ${C.border}`, borderRadius:8, fontSize:12, fontWeight:700, cursor:'pointer', fontFamily:'inherit' };
 
   return (

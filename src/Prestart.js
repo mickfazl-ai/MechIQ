@@ -14,7 +14,7 @@ const CSS = `
     100% { background-position:  200% 0; }
   }
   .ps-card {
-    background: #fff;
+    background: var(--surface);
     border: 1px solid #eaf3fb;
     border-radius: 14px;
     padding: 22px 24px;
@@ -23,50 +23,50 @@ const CSS = `
   }
   .ps-input {
     width: 100%; padding: 10px 13px;
-    border: 1.5px solid #d6e6f2; border-radius: 8px;
-    font-size: 13px; color: #1a2b3c; background: #fff;
+    border: 1px solid var(--border); border-radius: 8px;
+    font-size: 13px; color: var(--text-primary); background: var(--surface);
     outline: none; box-sizing: border-box; font-family: inherit;
     transition: border-color 0.15s, box-shadow 0.15s;
   }
-  .ps-input:focus { border-color: #00ABE4; box-shadow: 0 0 0 3px rgba(0,171,228,0.12); }
+  .ps-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(0,171,228,0.12); }
   .ps-input::placeholder { color: #b0c4d4; }
   .ps-btn {
-    padding: 9px 20px; background: #00ABE4; color: #fff; border: none;
+    padding: 9px 20px; background: var(--accent); color: #fff; border: none;
     border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer;
     font-family: inherit; letter-spacing: 0.4px;
     box-shadow: 0 3px 10px rgba(0,171,228,0.3); transition: all 0.15s;
   }
   .ps-btn:hover { background: #0096cc; transform: translateY(-1px); }
   .ps-btn-ghost {
-    padding: 9px 18px; background: #fff; color: #3d5166;
-    border: 1.5px solid #d6e6f2; border-radius: 8px; font-size: 12px;
+    padding: 9px 18px; background: var(--surface); color: var(--text-secondary);
+    border: 1px solid var(--border); border-radius: 8px; font-size: 12px;
     font-weight: 700; cursor: pointer; font-family: inherit; transition: all 0.15s;
   }
-  .ps-btn-ghost:hover { border-color: #00ABE4; color: #00ABE4; }
+  .ps-btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
   .ps-btn-green { background: #16a34a; box-shadow: 0 3px 10px rgba(22,163,74,0.3); }
   .ps-btn-green:hover { background: #15803d; }
   .ps-btn-danger { background: #dc2626; box-shadow: 0 3px 10px rgba(220,38,38,0.2); }
   .ps-btn-danger:hover { background: #b91c1c; }
   .ps-template-card {
-    background: #fff; border: 1.5px solid #eaf3fb; border-radius: 14px;
+    background: var(--surface); border: 1.5px solid #eaf3fb; border-radius: 14px;
     padding: 22px; cursor: pointer; transition: all 0.2s;
     box-shadow: 0 2px 8px rgba(0,100,180,0.06);
   }
   .ps-template-card:hover {
-    border-color: #00ABE4; transform: translateY(-2px);
+    border-color: var(--accent); transform: translateY(-2px);
     box-shadow: 0 8px 28px rgba(0,100,180,0.13);
   }
   .ps-template-new {
-    background: #fff; border: 2px dashed #d6e6f2; border-radius: 14px;
+    background: var(--surface); border: 2px dashed #d6e6f2; border-radius: 14px;
     padding: 22px; cursor: pointer; transition: all 0.2s;
     display: flex; align-items: center; justify-content: center; min-height: 140px;
   }
-  .ps-template-new:hover { border-color: #00ABE4; }
+  .ps-template-new:hover { border-color: var(--accent); }
   .ps-check-row { transition: background 0.1s; }
   .ps-check-row:hover td { background: #f4f8fd !important; }
   .ps-status-ok     { background: #dcfce7; color: #16a34a; }
   .ps-status-defect { background: #fee2e2; color: #dc2626; }
-  .ps-status-na     { background: #f0f5fa; color: #7a92a8; }
+  .ps-status-na     { background: #f0f5fa; color: var(--text-muted); }
   .ps-status-empty  { background: #f8fbfe; color: #b0c4d4; }
   .ps-history-row { transition: background 0.1s; }
   .ps-history-row:hover td { background: #f4f8fd !important; }
@@ -74,7 +74,7 @@ const CSS = `
 
 const iStyle = {
   width:'100%', padding:'10px 13px', border:'1.5px solid #d6e6f2', borderRadius:8,
-  fontSize:13, color:'var(--text-bright)', background:'var(--surface)', fontFamily:'inherit',
+  fontSize:13, color:'var(--text-primary)', background:'var(--surface)', fontFamily:'inherit',
   outline:'none', boxSizing:'border-box', transition:'border-color 0.15s',
 };
 
@@ -82,7 +82,7 @@ function SectionHead({ title, sub, action }) {
   return (
     <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', marginBottom:16, paddingBottom:13, borderBottom:'1.5px solid #eaf3fb' }}>
       <div>
-        <span style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:16, fontWeight:800, textTransform:'uppercase', letterSpacing:'0.8px', color:'var(--text-bright)', display:'block' }}>{title}</span>
+        <span style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:16, fontWeight:800, textTransform:'uppercase', letterSpacing:'0.8px', color:'var(--text-primary)', display:'block' }}>{title}</span>
         {sub && <span style={{ fontSize:11, color:'var(--text-muted)', marginTop:2, display:'block' }}>{sub}</span>}
       </div>
       {action}
@@ -94,7 +94,7 @@ function Empty({ icon, title, desc, action }) {
   return (
     <div style={{ textAlign:'center', padding:'44px 20px' }}>
       <div style={{ fontSize:36, marginBottom:12, opacity:0.3 }}>{icon}</div>
-      <div style={{ fontSize:14, fontWeight:700, color:'var(--text-bright)', marginBottom:6 }}>{title}</div>
+      <div style={{ fontSize:14, fontWeight:700, color:'var(--text-primary)', marginBottom:6 }}>{title}</div>
       <div style={{ fontSize:12, color:'var(--text-muted)', maxWidth:240, margin:'0 auto 16px', lineHeight:1.65 }}>{desc}</div>
       {action}
     </div>
@@ -174,7 +174,7 @@ function Prestart({ userRole, preloadAsset, preloadAssetId, onClearPreload }) {
       const canvas = sigCanvas.current;
       if (!canvas) return;
       const ctx = canvas.getContext('2d');
-      ctx.strokeStyle = '#00ABE4'; ctx.lineWidth = 2;
+      ctx.strokeStyle = 'var(--accent)'; ctx.lineWidth = 2;
       let drawing = false;
       canvas.onmousedown = e => { drawing=true; ctx.beginPath(); ctx.moveTo(e.offsetX,e.offsetY); };
       canvas.onmousemove = e => { if(drawing){ctx.lineTo(e.offsetX,e.offsetY);ctx.stroke();} };
@@ -271,15 +271,15 @@ function Prestart({ userRole, preloadAsset, preloadAssetId, onClearPreload }) {
     <div style={{ animation:'fadeUp 0.4s ease both' }}>
       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-end', marginBottom:24 }}>
         <div>
-          <h2 style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:32, fontWeight:800, color:'var(--text-bright)', letterSpacing:'1px', textTransform:'uppercase', margin:0 }}>Select Checklist</h2>
-          <p style={{ fontSize:13, color:'var(--text-muted)', margin:'5px 0 0' }}>Asset: <strong style={{ color:'var(--cyan)' }}>{form.asset}</strong></p>
+          <h2 style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:32, fontWeight:800, color:'var(--text-primary)', letterSpacing:'1px', textTransform:'uppercase', margin:0 }}>Select Checklist</h2>
+          <p style={{ fontSize:13, color:'var(--text-muted)', margin:'5px 0 0' }}>Asset: <strong style={{ color:'var(--accent)' }}>{form.asset}</strong></p>
         </div>
         <button className="ps-btn-ghost" onClick={goBack}>← Back</button>
       </div>
       <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(280px,1fr))', gap:14 }}>
         {templates.map(t => (
           <div key={t.id} className="ps-template-card" onClick={() => { setSelectedTemplate(t); setView('fill'); }}>
-            <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:18, fontWeight:800, color:'var(--text-bright)', marginBottom:6 }}>{t.name}</div>
+            <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:18, fontWeight:800, color:'var(--text-primary)', marginBottom:6 }}>{t.name}</div>
             <div style={{ fontSize:12, color:'var(--text-muted)', marginBottom:12, lineHeight:1.5 }}>{t.description}</div>
             <div style={{ fontSize:11, color:'var(--text-faint)', marginBottom:16 }}>{t.sections?.length||0} sections · {t.sections?.reduce((s,sec)=>s+sec.items.length,0)||0} items</div>
             <button className="ps-btn" style={{ width:'100%' }}>Start Prestart →</button>
@@ -301,7 +301,7 @@ function Prestart({ userRole, preloadAsset, preloadAssetId, onClearPreload }) {
         {/* Header */}
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-end', marginBottom:20 }}>
           <div>
-            <h2 style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:28, fontWeight:800, color:'var(--text-bright)', letterSpacing:'1px', textTransform:'uppercase', margin:0 }}>{selectedTemplate.name}</h2>
+            <h2 style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:28, fontWeight:800, color:'var(--text-primary)', letterSpacing:'1px', textTransform:'uppercase', margin:0 }}>{selectedTemplate.name}</h2>
             <p style={{ fontSize:13, color:'var(--text-muted)', margin:'5px 0 0' }}>{answered}/{totalItems} items answered · {defectCount > 0 ? <span style={{ color:'var(--red)', fontWeight:700 }}>{defectCount} defects found</span> : 'no defects'}</p>
           </div>
           <button className="ps-btn-ghost" onClick={goBack}>← Back</button>
@@ -309,7 +309,7 @@ function Prestart({ userRole, preloadAsset, preloadAssetId, onClearPreload }) {
 
         {/* Progress */}
         <div style={{ height:5, background:'var(--surface-2)', borderRadius:99, marginBottom:20, overflow:'hidden' }}>
-          <div style={{ height:'100%', borderRadius:99, background:defectCount>0?'#dc2626':'#00ABE4', width:`${pct}%`, transition:'width 0.4s ease' }} />
+          <div style={{ height:'100%', borderRadius:99, background:defectCount>0?'var(--red)':'var(--accent)', width:`${pct}%`, transition:'width 0.4s ease' }} />
         </div>
 
         {/* Details */}
@@ -357,7 +357,7 @@ function Prestart({ userRole, preloadAsset, preloadAssetId, onClearPreload }) {
                     const statusClass = resp.status==='OK' ? 'ps-status-ok' : resp.status==='Defect' ? 'ps-status-defect' : resp.status==='NA' ? 'ps-status-na' : 'ps-status-empty';
                     return (
                       <tr key={ii} className="ps-check-row" style={{ borderBottom:'1px solid #eaf3fb' }}>
-                        <td style={{ padding:'10px 12px 10px 0', fontSize:13, color:'var(--text-bright)', fontWeight:500 }}>{item}</td>
+                        <td style={{ padding:'10px 12px 10px 0', fontSize:13, color:'var(--text-primary)', fontWeight:500 }}>{item}</td>
                         <td style={{ padding:'10px 12px 10px 0', width:130 }}>
                           <select className={`ps-input ${statusClass}`} style={{ fontWeight:700 }} value={resp.status||''} onChange={e => handleResponse(si, item, 'status', e.target.value)}>
                             <option value="">— Select —</option>
@@ -412,7 +412,7 @@ function Prestart({ userRole, preloadAsset, preloadAssetId, onClearPreload }) {
     <div style={{ animation:'fadeUp 0.4s ease both' }}>
       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-end', marginBottom:24 }}>
         <div>
-          <h2 style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:32, fontWeight:800, color:'var(--text-bright)', letterSpacing:'1px', textTransform:'uppercase', margin:0 }}>Form Builder</h2>
+          <h2 style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:32, fontWeight:800, color:'var(--text-primary)', letterSpacing:'1px', textTransform:'uppercase', margin:0 }}>Form Builder</h2>
           <p style={{ fontSize:13, color:'var(--text-muted)', margin:'5px 0 0' }}>Create a reusable checklist template</p>
         </div>
         <button className="ps-btn-ghost" onClick={() => setView('list')}>← Back</button>
@@ -440,11 +440,11 @@ function Prestart({ userRole, preloadAsset, preloadAssetId, onClearPreload }) {
               </div>
             ))}
           </div>
-          <button onClick={() => addItem(si)} style={{ padding:'7px 16px', background:'transparent', color:'var(--cyan)', border:'1.5px dashed #00ABE4', borderRadius:7, fontSize:12, fontWeight:700, cursor:'pointer', fontFamily:'inherit' }}>+ Add Item</button>
+          <button onClick={() => addItem(si)} style={{ padding:'7px 16px', background:'transparent', color:'var(--accent)', border:'1.5px dashed var(--accent)', borderRadius:7, fontSize:12, fontWeight:700, cursor:'pointer', fontFamily:'inherit' }}>+ Add Item</button>
         </div>
       ))}
 
-      <button onClick={addSection} style={{ width:'100%', padding:'12px', background:'transparent', color:'var(--cyan)', border:'2px dashed #d6e6f2', borderRadius:10, fontSize:13, fontWeight:700, cursor:'pointer', fontFamily:'inherit', marginBottom:14 }}>+ Add Section</button>
+      <button onClick={addSection} style={{ width:'100%', padding:'12px', background:'transparent', color:'var(--accent)', border:'2px dashed #d6e6f2', borderRadius:10, fontSize:13, fontWeight:700, cursor:'pointer', fontFamily:'inherit', marginBottom:14 }}>+ Add Section</button>
       <button className="ps-btn" style={{ width:'100%', padding:'13px', fontSize:13 }} onClick={saveTemplate}>Save Template</button>
     </div>
   );
@@ -454,7 +454,7 @@ function Prestart({ userRole, preloadAsset, preloadAssetId, onClearPreload }) {
     <div style={{ animation:'fadeUp 0.4s ease both' }}>
       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-end', marginBottom:24 }}>
         <div>
-          <h2 style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:32, fontWeight:800, color:'var(--text-bright)', letterSpacing:'1px', textTransform:'uppercase', margin:0 }}>Prestart History</h2>
+          <h2 style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:32, fontWeight:800, color:'var(--text-primary)', letterSpacing:'1px', textTransform:'uppercase', margin:0 }}>Prestart History</h2>
           <p style={{ fontSize:13, color:'var(--text-muted)', margin:'5px 0 0' }}>{submissions.length} total submission{submissions.length!==1?'s':''}</p>
         </div>
         <button className="ps-btn-ghost" onClick={() => setView('list')}>← Back</button>
@@ -476,19 +476,19 @@ function Prestart({ userRole, preloadAsset, preloadAssetId, onClearPreload }) {
               <tbody>
                 {submissions.map((s,i) => (
                   <tr key={s.id} className="ps-history-row" style={{ borderBottom:'1px solid #eaf3fb', opacity:0, animation:`fadeUp 0.3s ease ${i*35}ms forwards` }}>
-                    <td style={{ padding:'11px 12px 11px 0', fontSize:13, color:'var(--text-bright)', fontWeight:600, whiteSpace:'nowrap' }}>{s.date}</td>
-                    <td style={{ padding:'11px 12px 11px 0', fontSize:13, fontWeight:700, color:'var(--text-bright)' }}>{s.asset}</td>
-                    <td style={{ padding:'11px 12px 11px 0', fontSize:13, color:'var(--text-mid)' }}>{s.operator_name}</td>
+                    <td style={{ padding:'11px 12px 11px 0', fontSize:13, color:'var(--text-primary)', fontWeight:600, whiteSpace:'nowrap' }}>{s.date}</td>
+                    <td style={{ padding:'11px 12px 11px 0', fontSize:13, fontWeight:700, color:'var(--text-primary)' }}>{s.asset}</td>
+                    <td style={{ padding:'11px 12px 11px 0', fontSize:13, color:'var(--text-secondary)' }}>{s.operator_name}</td>
                     <td style={{ padding:'11px 12px 11px 0', fontSize:12, color:'var(--text-muted)' }}>{s.site_area||'—'}</td>
                     <td style={{ padding:'11px 12px 11px 0', fontSize:12, color:'var(--text-muted)' }}>{s.hrs_start||'—'}</td>
                     <td style={{ padding:'11px 12px 11px 0' }}>
                       {s.defects_found ? (
-                        <span style={{ display:'inline-flex', alignItems:'center', gap:5, padding:'3px 10px', borderRadius:20, background:'var(--red-glow)', color:'var(--red)', fontSize:11, fontWeight:700 }}>
-                          <span style={{ width:5, height:5, borderRadius:'50%', background:'#dc2626' }} />Defects
+                        <span style={{ display:'inline-flex', alignItems:'center', gap:5, padding:'3px 10px', borderRadius:20, background:'var(--red-bg)', color:'var(--red)', fontSize:11, fontWeight:700 }}>
+                          <span style={{ width:5, height:5, borderRadius:'50%', background:'var(--red)' }} />Defects
                         </span>
                       ) : (
-                        <span style={{ display:'inline-flex', alignItems:'center', gap:5, padding:'3px 10px', borderRadius:20, background:'var(--green-glow)', color:'var(--green)', fontSize:11, fontWeight:700 }}>
-                          <span style={{ width:5, height:5, borderRadius:'50%', background:'#16a34a' }} />Clear
+                        <span style={{ display:'inline-flex', alignItems:'center', gap:5, padding:'3px 10px', borderRadius:20, background:'var(--green-bg)', color:'var(--green)', fontSize:11, fontWeight:700 }}>
+                          <span style={{ width:5, height:5, borderRadius:'50%', background:'var(--green)' }} />Clear
                         </span>
                       )}
                     </td>
@@ -512,7 +512,7 @@ function Prestart({ userRole, preloadAsset, preloadAssetId, onClearPreload }) {
       {/* Header */}
       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-end', marginBottom:24 }}>
         <div>
-          <h2 style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:32, fontWeight:800, color:'var(--text-bright)', letterSpacing:'1px', textTransform:'uppercase', margin:0 }}>Prestarts & Checklists</h2>
+          <h2 style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:32, fontWeight:800, color:'var(--text-primary)', letterSpacing:'1px', textTransform:'uppercase', margin:0 }}>Prestarts & Checklists</h2>
           <p style={{ fontSize:13, color:'var(--text-muted)', margin:'5px 0 0' }}>{templates.length} template{templates.length!==1?'s':''} · {submissions.length} submission{submissions.length!==1?'s':''}</p>
         </div>
         <div style={{ display:'flex', gap:8 }}>
@@ -524,13 +524,13 @@ function Prestart({ userRole, preloadAsset, preloadAssetId, onClearPreload }) {
       {/* Stats strip */}
       <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:12, marginBottom:24 }}>
         {[
-          { label:'Templates',  value:templates.length,                                  color:'var(--cyan)', bg:'#e0f4ff' },
-          { label:'Submissions',value:submissions.length,                                 color:'var(--purple)', bg:'#f5f3ff' },
-          { label:'Defects Found',value:submissions.filter(s=>s.defects_found).length,  color:'var(--red)', bg:'#fee2e2' },
+          { label:'Templates',  value:templates.length,                                  color:'var(--accent)', bg:'#e0f4ff' },
+          { label:'Submissions',value:submissions.length,                                 color:'var(--purple)', bg:'var(--purple-bg)' },
+          { label:'Defects Found',value:submissions.filter(s=>s.defects_found).length,  color:'var(--red)', bg:'var(--red-bg)' },
         ].map((s,i) => (
           <div key={s.label} className="ps-card" style={{ padding:'14px 20px', display:'flex', alignItems:'center', gap:14, marginBottom:0, opacity:0, animation:`fadeUp 0.4s ease ${i*60}ms forwards` }}>
             <span style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:34, fontWeight:800, color:s.color, background:s.bg, padding:'2px 12px', borderRadius:8, lineHeight:1.3 }}>{s.value}</span>
-            <span style={{ fontSize:12, fontWeight:600, color:'var(--text-mid)' }}>{s.label}</span>
+            <span style={{ fontSize:12, fontWeight:600, color:'var(--text-secondary)' }}>{s.label}</span>
           </div>
         ))}
       </div>
@@ -551,7 +551,7 @@ function Prestart({ userRole, preloadAsset, preloadAssetId, onClearPreload }) {
         <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(280px,1fr))', gap:14 }}>
           {templates.map((t,i) => (
             <div key={t.id} className="ps-template-card" style={{ opacity:0, animation:`fadeUp 0.4s ease ${i*60}ms forwards` }} onClick={() => { setSelectedTemplate(t); setView('fill'); }}>
-              <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:18, fontWeight:800, color:'var(--text-bright)', marginBottom:6 }}>{t.name}</div>
+              <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:18, fontWeight:800, color:'var(--text-primary)', marginBottom:6 }}>{t.name}</div>
               <div style={{ fontSize:12, color:'var(--text-muted)', marginBottom:10, lineHeight:1.5 }}>{t.description}</div>
               <div style={{ fontSize:11, color:'var(--text-faint)', marginBottom:16 }}>
                 {t.sections?.length||0} sections · {t.sections?.reduce((s,sec)=>s+sec.items.length,0)||0} items

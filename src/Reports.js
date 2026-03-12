@@ -27,10 +27,10 @@ const CSS = `
   }
   .r-input {
     padding: 9px 12px; border: 1px solid rgba(0,180,255,0.12); border-radius: 8px;
-    font-size: 13px; color: var(--text-bright); background: var(--surface);
+    font-size: 13px; color: var(--text-primary); background: var(--surface);
     font-family: inherit; outline: none; transition: border-color 0.15s;
   }
-  .r-input:focus { border-color: #00ABE4; box-shadow: 0 0 0 3px rgba(0,171,228,0.12); }
+  .r-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(0,171,228,0.12); }
   .r-btn {
     padding: 9px 18px; background: #00ABE4; color: #fff; border: none;
     border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer;
@@ -39,12 +39,12 @@ const CSS = `
   }
   .r-btn:hover { background: #0096cc; transform: translateY(-1px); }
   .r-btn-ghost {
-    padding: 9px 16px; background: var(--surface); color: var(--text-mid);
+    padding: 9px 16px; background: var(--surface); color: var(--text-secondary);
     border: 1px solid rgba(0,180,255,0.12); border-radius: 8px; font-size: 12px;
     font-weight: 700; cursor: pointer; font-family: inherit; transition: all 0.15s;
     white-space: nowrap;
   }
-  .r-btn-ghost:hover { border-color: #00ABE4; color: #00ABE4; }
+  .r-btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
   .r-btn-green { background: #16a34a; box-shadow: 0 3px 10px rgba(22,163,74,0.3); }
   .r-btn-green:hover { background: #15803d; }
   .r-tab {
@@ -52,7 +52,7 @@ const CSS = `
     font-size: 12px; font-weight: 700; cursor: pointer; font-family: inherit;
     color: var(--text-muted); transition: all 0.15s; letter-spacing: 0.3px;
   }
-  .r-tab.active { background: var(--surface); color: #00ABE4; box-shadow: 0 1px 6px rgba(0,0,0,0.1); }
+  .r-tab.active { background: var(--surface); color: var(--accent); box-shadow: 0 1px 6px rgba(0,0,0,0.1); }
   .r-row { transition: background 0.1s; }
   .r-row:hover td { background: #f4f8fd !important; }
   .r-bar {
@@ -66,8 +66,8 @@ function SectionHead({ title, count, action }) {
   return (
     <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:16, paddingBottom:13, borderBottom:'1.5px solid #eaf3fb' }}>
       <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-        <span style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:16, fontWeight:800, textTransform:'uppercase', letterSpacing:'0.8px', color:'var(--text-bright)' }}>{title}</span>
-        {count !== undefined && <span style={{ background:'rgba(0,212,255,0.1)', color:'var(--cyan)', fontSize:11, fontWeight:700, padding:'2px 8px', borderRadius:20 }}>{count}</span>}
+        <span style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:16, fontWeight:800, textTransform:'uppercase', letterSpacing:'0.8px', color:'var(--text-primary)' }}>{title}</span>
+        {count !== undefined && <span style={{ background:'rgba(0,212,255,0.1)', color:'var(--accent)', fontSize:11, fontWeight:700, padding:'2px 8px', borderRadius:20 }}>{count}</span>}
       </div>
       {action}
     </div>
@@ -82,7 +82,7 @@ function Empty({ icon, title, desc }) {
   return (
     <div style={{ textAlign:'center', padding:'44px 20px' }}>
       <div style={{ fontSize:36, marginBottom:12, opacity:0.3 }}>{icon}</div>
-      <div style={{ fontSize:14, fontWeight:700, color:'var(--text-bright)', marginBottom:6 }}>{title}</div>
+      <div style={{ fontSize:14, fontWeight:700, color:'var(--text-primary)', marginBottom:6 }}>{title}</div>
       <div style={{ fontSize:12, color:'var(--text-muted)', maxWidth:220, margin:'0 auto', lineHeight:1.65 }}>{desc}</div>
     </div>
   );
@@ -99,11 +99,11 @@ function TableHead({ cols }) {
 }
 
 function Td({ children, style }) {
-  return <td style={{ padding:'11px 12px 11px 0', fontSize:13, color:'var(--text-mid)', ...style }}>{children}</td>;
+  return <td style={{ padding:'11px 12px 11px 0', fontSize:13, color:'var(--text-secondary)', ...style }}>{children}</td>;
 }
 
 function Chip({ text, color, bg }) {
-  return <span style={{ padding:'3px 9px', borderRadius:6, background:bg||'var(--surface-2)', color:color||'var(--text-mid)', fontSize:11, fontWeight:600, whiteSpace:'nowrap' }}>{text}</span>;
+  return <span style={{ padding:'3px 9px', borderRadius:6, background:bg||'var(--surface-2)', color:color||'var(--text-secondary)', fontSize:11, fontWeight:600, whiteSpace:'nowrap' }}>{text}</span>;
 }
 
 function BarChart({ items, maxVal, valueKey, labelKey, colors }) {
@@ -115,7 +115,7 @@ function BarChart({ items, maxVal, valueKey, labelKey, colors }) {
         return (
           <div key={item[labelKey]}>
             <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:5 }}>
-              <span style={{ fontSize:12, fontWeight:600, color:'var(--text-bright)', flex:1, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', paddingRight:12 }}>{item[labelKey]}</span>
+              <span style={{ fontSize:12, fontWeight:600, color:'var(--text-primary)', flex:1, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', paddingRight:12 }}>{item[labelKey]}</span>
               <span style={{ fontSize:11, fontWeight:700, color, flexShrink:0 }}>{item[valueKey]}</span>
             </div>
             <div style={{ height:8, background:'var(--surface-2)', borderRadius:99, overflow:'hidden' }}>
@@ -128,7 +128,7 @@ function BarChart({ items, maxVal, valueKey, labelKey, colors }) {
   );
 }
 
-const CHART_COLORS = ['var(--cyan)','#ea580c','var(--amber)','var(--green)','var(--purple)','var(--red)'];
+const CHART_COLORS = ['var(--accent)','#ea580c','var(--amber)','var(--green)','var(--purple)','var(--red)'];
 
 // ─── Main ──────────────────────────────────────────────────────────────────────
 function Reports({ companyId, userRole, initialTab }) {
@@ -329,7 +329,7 @@ function Reports({ companyId, userRole, initialTab }) {
 
   const iStyle = {
     padding:'9px 12px', border:'1px solid var(--border)', borderRadius:8,
-    fontSize:13, color:'var(--text-bright)', background:'var(--surface)', fontFamily:'inherit',
+    fontSize:13, color:'var(--text-primary)', background:'var(--surface)', fontFamily:'inherit',
     outline:'none', boxSizing:'border-box', width:'100%',
   };
 
@@ -340,9 +340,9 @@ function Reports({ companyId, userRole, initialTab }) {
   ];
 
   const shortcutBtn = (label, fn) => (
-    <button onClick={fn} style={{ padding:'6px 13px', background:'var(--surface)', border:'1px solid var(--border)', borderRadius:7, fontSize:11, fontWeight:700, color:'var(--text-mid)', cursor:'pointer', fontFamily:'inherit', transition:'all 0.12s' }}
-      onMouseOver={e => { e.currentTarget.style.borderColor='var(--cyan)'; e.currentTarget.style.color='var(--cyan)'; }}
-      onMouseOut={e => { e.currentTarget.style.borderColor='var(--border)'; e.currentTarget.style.color='var(--text-mid)'; }}>
+    <button onClick={fn} style={{ padding:'6px 13px', background:'var(--surface)', border:'1px solid var(--border)', borderRadius:7, fontSize:11, fontWeight:700, color:'var(--text-secondary)', cursor:'pointer', fontFamily:'inherit', transition:'all 0.12s' }}
+      onMouseOver={e => { e.currentTarget.style.borderColor='var(--accent)'; e.currentTarget.style.color='var(--accent)'; }}
+      onMouseOut={e => { e.currentTarget.style.borderColor='var(--border)'; e.currentTarget.style.color='var(--text-secondary)'; }}>
       {label}
     </button>
   );
@@ -353,7 +353,7 @@ function Reports({ companyId, userRole, initialTab }) {
       {/* ── Page header ── */}
       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-end', marginBottom:24 }}>
         <div>
-          <h2 style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:32, fontWeight:800, color:'var(--text-bright)', letterSpacing:'1px', textTransform:'uppercase', margin:0, lineHeight:1 }}>Reports</h2>
+          <h2 style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:32, fontWeight:800, color:'var(--text-primary)', letterSpacing:'1px', textTransform:'uppercase', margin:0, lineHeight:1 }}>Reports</h2>
           <p style={{ fontSize:13, color:'var(--text-muted)', margin:'5px 0 0', fontWeight:500 }}>Downtime analysis, machine availability & export</p>
         </div>
         <div style={{ display:'flex', gap:8 }}>
@@ -370,10 +370,10 @@ function Reports({ companyId, userRole, initialTab }) {
       ) : (
         <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:12, marginBottom:24 }}>
           {[
-            { label:'Total Downtime', value:`${totalHours}h`, color:'var(--red)', bg:'var(--red-glow)', sub:'all time' },
+            { label:'Total Downtime', value:`${totalHours}h`, color:'var(--red)', bg:'var(--red-bg)', sub:'all time' },
             { label:'Total Cost',     value:`$${parseFloat(totalCost).toLocaleString('en-AU',{minimumFractionDigits:0})}`, color:'#ea580c', bg:'#ffedd5', sub:'all time' },
-            { label:'Total Assets',   value:assetCount, color:'var(--cyan)', bg:'rgba(0,212,255,0.1)', sub:'registered' },
-            { label:'Avg Utilisation',value:`${avgUtilisation}%`, color:getUtilColour(parseFloat(avgUtilisation)), bg: parseFloat(avgUtilisation)>=80?'var(--green-glow)':parseFloat(avgUtilisation)>=50?'var(--amber-glow)':'var(--red-glow)', sub:'fleet average' },
+            { label:'Total Assets',   value:assetCount, color:'var(--accent)', bg:'rgba(0,212,255,0.1)', sub:'registered' },
+            { label:'Avg Utilisation',value:`${avgUtilisation}%`, color:getUtilColour(parseFloat(avgUtilisation)), bg: parseFloat(avgUtilisation)>=80?'var(--green-bg)':parseFloat(avgUtilisation)>=50?'var(--amber-bg)':'var(--red-bg)', sub:'fleet average' },
           ].map((s,i) => (
             <div key={s.label} className="r-card" style={{ padding:'16px 20px', opacity:0, animation:`fadeUp 0.4s ease ${i*60}ms forwards` }}>
               <div style={{ fontSize:10, fontWeight:700, color:'var(--text-muted)', letterSpacing:'1.2px', textTransform:'uppercase', marginBottom:10 }}>{s.label}</div>
@@ -404,7 +404,7 @@ function Reports({ companyId, userRole, initialTab }) {
       </div>
 
       {/* ── Tab bar ── */}
-      <div style={{ display:'flex', gap:4, background:'var(--base)', borderRadius:10, padding:4, marginBottom:20, width:'fit-content' }}>
+      <div style={{ display:'flex', gap:4, background:'var(--surface-2)', borderRadius:10, padding:4, marginBottom:20, width:'fit-content' }}>
         {TABS.map(t => (
           <button key={t.id} className={`r-tab${activeTab===t.id?' active':''}`} onClick={() => setActiveTab(t.id)}>{t.label}</button>
         ))}
@@ -429,7 +429,7 @@ function Reports({ companyId, userRole, initialTab }) {
 
             {showForm && (
               <div style={{ background:'#f8fbfe', border:'1px solid #eaf3fb', borderRadius:10, padding:'18px 20px', marginBottom:18 }}>
-                <div style={{ fontWeight:700, color:'var(--text-bright)', fontSize:13, marginBottom:12 }}>Log New Downtime Event</div>
+                <div style={{ fontWeight:700, color:'var(--text-primary)', fontSize:13, marginBottom:12 }}>Log New Downtime Event</div>
                 <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:10, marginBottom:10 }}>
                   <select style={iStyle} value={newDowntime.asset} onChange={e => setNewDowntime({...newDowntime,asset:e.target.value})}>
                     <option value="">Select Asset</option>
@@ -466,7 +466,7 @@ function Reports({ companyId, userRole, initialTab }) {
                   <tbody>
                     {downtimeData.map((d,i) => (
                       <tr key={d.id} className="r-row" style={{ borderBottom:'1px solid #eaf3fb', opacity:0, animation:`fadeUp 0.3s ease ${i*30}ms forwards` }}>
-                        <Td style={{ fontWeight:700, color:'var(--text-bright)', whiteSpace:'nowrap' }}>{d.asset}</Td>
+                        <Td style={{ fontWeight:700, color:'var(--text-primary)', whiteSpace:'nowrap' }}>{d.asset}</Td>
                         <Td style={{ whiteSpace:'nowrap' }}>{d.date}</Td>
                         <Td><Chip text={d.category} color="#3d5166" bg="#f0f5fa" /></Td>
                         <Td><Chip text={`${d.hours}h`} color="#d97706" bg="#fef3c7" /></Td>
@@ -492,13 +492,13 @@ function Reports({ companyId, userRole, initialTab }) {
           {/* Period stats */}
           <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:12, marginBottom:20 }}>
             {[
-              { label:'Events in Period',   value:filteredData.length,                          color:'var(--cyan)', bg:'rgba(0,212,255,0.1)' },
-              { label:'Hours Lost',         value:`${filteredHours.toFixed(1)}h`,               color:'var(--amber)', bg:'var(--amber-glow)' },
+              { label:'Events in Period',   value:filteredData.length,                          color:'var(--accent)', bg:'rgba(0,212,255,0.1)' },
+              { label:'Hours Lost',         value:`${filteredHours.toFixed(1)}h`,               color:'var(--amber)', bg:'var(--amber-bg)' },
               { label:'Cost in Period',     value:`$${filteredCost.toLocaleString('en-AU',{minimumFractionDigits:0})}`, color:'#ea580c', bg:'#ffedd5' },
             ].map((s,i) => (
               <div key={s.label} className="r-card" style={{ padding:'14px 20px', display:'flex', alignItems:'center', gap:12, opacity:0, animation:`fadeUp 0.4s ease ${i*60}ms forwards` }}>
                 <span style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:30, fontWeight:800, color:s.color, background:s.bg, padding:'2px 12px', borderRadius:8, lineHeight:1.3 }}>{s.value}</span>
-                <span style={{ fontSize:12, fontWeight:600, color:'var(--text-mid)' }}>{s.label}</span>
+                <span style={{ fontSize:12, fontWeight:600, color:'var(--text-secondary)' }}>{s.label}</span>
               </div>
             ))}
           </div>
@@ -531,7 +531,7 @@ function Reports({ companyId, userRole, initialTab }) {
                   <tbody>
                     {filteredData.map((d,i) => (
                       <tr key={d.id} className="r-row" style={{ borderBottom:'1px solid #eaf3fb' }}>
-                        <Td style={{ fontWeight:700, color:'var(--text-bright)' }}>{d.asset}</Td>
+                        <Td style={{ fontWeight:700, color:'var(--text-primary)' }}>{d.asset}</Td>
                         <Td style={{ whiteSpace:'nowrap' }}>{d.date}</Td>
                         <Td><Chip text={d.category} /></Td>
                         <Td><Chip text={`${d.hours}h`} color="#d97706" bg="#fef3c7" /></Td>
@@ -553,13 +553,13 @@ function Reports({ companyId, userRole, initialTab }) {
           {/* Fleet stats */}
           <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:12, marginBottom:20 }}>
             {[
-              { label:'Fleet Avg Utilisation', value:`${avgUtilisation}%`, color:getUtilColour(parseFloat(avgUtilisation)), bg:parseFloat(avgUtilisation)>=80?'var(--green-glow)':parseFloat(avgUtilisation)>=50?'var(--amber-glow)':'var(--red-glow)' },
-              { label:'Machines Tracked',       value:availabilityData.filter(a=>a.prestartCount>0).length, color:'var(--cyan)', bg:'rgba(0,212,255,0.1)' },
-              { label:'Total Prestarts',         value:availabilityData.reduce((sum,a)=>sum+a.prestartCount,0), color:'var(--purple)', bg:'var(--purple-glow)' },
+              { label:'Fleet Avg Utilisation', value:`${avgUtilisation}%`, color:getUtilColour(parseFloat(avgUtilisation)), bg:parseFloat(avgUtilisation)>=80?'var(--green-bg)':parseFloat(avgUtilisation)>=50?'var(--amber-bg)':'var(--red-bg)' },
+              { label:'Machines Tracked',       value:availabilityData.filter(a=>a.prestartCount>0).length, color:'var(--accent)', bg:'rgba(0,212,255,0.1)' },
+              { label:'Total Prestarts',         value:availabilityData.reduce((sum,a)=>sum+a.prestartCount,0), color:'var(--purple)', bg:'var(--purple-bg)' },
             ].map((s,i) => (
               <div key={s.label} className="r-card" style={{ padding:'14px 20px', display:'flex', alignItems:'center', gap:12 }}>
                 <span style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:30, fontWeight:800, color:s.color, background:s.bg, padding:'2px 12px', borderRadius:8, lineHeight:1.3 }}>{s.value}</span>
-                <span style={{ fontSize:12, fontWeight:600, color:'var(--text-mid)' }}>{s.label}</span>
+                <span style={{ fontSize:12, fontWeight:600, color:'var(--text-secondary)' }}>{s.label}</span>
               </div>
             ))}
           </div>
@@ -582,7 +582,7 @@ function Reports({ companyId, userRole, initialTab }) {
                         return (
                           <div key={a.asset}>
                             <div style={{ display:'flex', justifyContent:'space-between', marginBottom:4 }}>
-                              <span style={{ fontSize:12, fontWeight:600, color:'var(--text-bright)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', flex:1, paddingRight:8 }}>{a.asset}</span>
+                              <span style={{ fontSize:12, fontWeight:600, color:'var(--text-primary)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', flex:1, paddingRight:8 }}>{a.asset}</span>
                               <span style={{ fontSize:11, fontWeight:800, color, flexShrink:0 }}>{a.utilisation}%</span>
                             </div>
                             <div style={{ height:7, background:'var(--surface-2)', borderRadius:99, overflow:'hidden' }}>
@@ -613,7 +613,7 @@ function Reports({ companyId, userRole, initialTab }) {
                       const color = getUtilColour(pct);
                       return (
                         <tr key={a.asset} className="r-row" style={{ borderBottom:'1px solid #eaf3fb', opacity:0, animation:`fadeUp 0.3s ease ${i*35}ms forwards` }}>
-                          <Td style={{ fontWeight:700, color:'var(--text-bright)' }}>{a.asset}</Td>
+                          <Td style={{ fontWeight:700, color:'var(--text-primary)' }}>{a.asset}</Td>
                           <Td><Chip text={`${a.totalRunHours}h`} color="#00ABE4" bg="#e0f4ff" /></Td>
                           <Td style={{ color:'var(--text-muted)' }}>{a.targetHours}h</Td>
                           <Td>

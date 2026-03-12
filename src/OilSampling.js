@@ -5,11 +5,11 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsi
 // ─── Condition badge ──────────────────────────────────────────────────────────
 function ConditionBadge({ condition }) {
   const map = {
-    Normal:   { bg: '#dcfce7', color: 'var(--green)', dot: '#16a34a' },
-    Monitor:  { bg: '#fef9c3', color: 'var(--amber)', dot: '#d97706' },
-    Critical: { bg: '#fee2e2', color: 'var(--red)', dot: '#dc2626' },
+    Normal:   { bg: 'var(--green-bg)', color: 'var(--green)', dot: 'var(--green)' },
+    Monitor:  { bg: '#fef9c3', color: 'var(--amber)', dot: 'var(--amber)' },
+    Critical: { bg: 'var(--red-bg)', color: 'var(--red)', dot: 'var(--red)' },
   };
-  const s = map[condition] || { bg: '#E9F1FA', color: 'var(--text-muted)', dot: '#7a92a8' };
+  const s = map[condition] || { bg: 'var(--surface-2)', color: 'var(--text-muted)', dot: 'var(--text-muted)' };
   return (
     <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '3px 10px', borderRadius: '12px', backgroundColor: s.bg, color: s.color, fontWeight: 700, fontSize: '12px' }}>
       <span style={{ width: '7px', height: '7px', borderRadius: '50%', backgroundColor: s.dot, display: 'inline-block' }} />
@@ -25,14 +25,14 @@ const METAL_LIMITS = { fe: 100, cu: 30, al: 20, cr: 15, pb: 15, sn: 10, si: 25, 
 function MetalBar({ metal, value }) {
   const limit = METAL_LIMITS[metal] || 100;
   const pct = Math.min((value / limit) * 100, 100);
-  const color = pct > 90 ? '#dc2626' : pct > 60 ? '#d97706' : '#16a34a';
+  const color = pct > 90 ? 'var(--red)' : pct > 60 ? 'var(--amber)' : 'var(--green)';
   return (
     <div style={{ marginBottom: '8px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', marginBottom: '3px' }}>
-        <span style={{ color: 'var(--text-mid)', fontWeight: 600 }}>{METAL_LABELS[metal] || metal.toUpperCase()} ({metal.toUpperCase()})</span>
+        <span style={{ color: 'var(--text-secondary)', fontWeight: 600 }}>{METAL_LABELS[metal] || metal.toUpperCase()} ({metal.toUpperCase()})</span>
         <span style={{ color, fontWeight: 700 }}>{value ?? '—'} ppm</span>
       </div>
-      <div style={{ height: '6px', backgroundColor: 'var(--base)', borderRadius: '3px', overflow: 'hidden' }}>
+      <div style={{ height: '6px', backgroundColor: 'var(--surface-2)', borderRadius: '3px', overflow: 'hidden' }}>
         <div style={{ width: `${pct}%`, height: '100%', backgroundColor: color, borderRadius: '3px', transition: 'width 0.4s' }} />
       </div>
     </div>
@@ -70,9 +70,9 @@ function SampleDetail({ sample }) {
             { label: 'Oil Hours', value: sample.oil_hours ? `${sample.oil_hours} hrs` : '—' },
             { label: 'Unit Hours', value: sample.unit_hours ? `${sample.unit_hours} hrs` : '—' },
           ].map(({ label, value }) => (
-            <div key={label} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: '6px', paddingBottom: '6px', borderBottom: '1px solid var(--border-dim)' }}>
+            <div key={label} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: '6px', paddingBottom: '6px', borderBottom: '1px solid var(--border)' }}>
               <span style={{ color: 'var(--text-muted)' }}>{label}</span>
-              <span style={{ color: 'var(--text-bright)', fontWeight: 600 }}>{value}</span>
+              <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{value}</span>
             </div>
           ))}
         </div>
@@ -85,14 +85,14 @@ function SampleDetail({ sample }) {
           </div>
           {sample.ai_analysis && (
             <div style={{ marginBottom: '12px' }}>
-              <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-mid)', marginBottom: '4px' }}>SUMMARY</div>
-              <div style={{ fontSize: '12px', color: 'var(--text-mid)', lineHeight: 1.6 }}>{sample.ai_analysis}</div>
+              <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '4px' }}>SUMMARY</div>
+              <div style={{ fontSize: '12px', color: 'var(--text-secondary)', lineHeight: 1.6 }}>{sample.ai_analysis}</div>
             </div>
           )}
           {sample.ai_recommendations && (
             <div>
-              <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-mid)', marginBottom: '4px' }}>RECOMMENDATIONS</div>
-              <div style={{ fontSize: '12px', color: 'var(--text-mid)', lineHeight: 1.6, backgroundColor: 'var(--base)', padding: '8px 10px', borderRadius: '6px', borderLeft: '3px solid #00ABE4' }}>
+              <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '4px' }}>RECOMMENDATIONS</div>
+              <div style={{ fontSize: '12px', color: 'var(--text-secondary)', lineHeight: 1.6, backgroundColor: 'var(--surface-2)', padding: '8px 10px', borderRadius: '6px', borderLeft: '3px solid var(--accent)' }}>
                 {sample.ai_recommendations}
               </div>
             </div>
@@ -125,7 +125,7 @@ function TrendModal({ assetNumber, samples, onClose }) {
       <div style={{ backgroundColor: 'var(--surface)', borderRadius: '12px', padding: '28px', width: '100%', maxWidth: '800px', maxHeight: '85vh', overflowY: 'auto' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
           <div>
-            <div style={{ fontSize: '18px', fontWeight: 800, color: 'var(--text-bright)' }}>{assetNumber} — Wear Metal Trends</div>
+            <div style={{ fontSize: '18px', fontWeight: 800, color: 'var(--text-primary)' }}>{assetNumber} — Wear Metal Trends</div>
             <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>{assetSamples.length} samples on record</div>
           </div>
           <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: '22px', cursor: 'pointer', color: 'var(--text-muted)' }}>✕</button>
@@ -133,14 +133,14 @@ function TrendModal({ assetNumber, samples, onClose }) {
         {chartData.length >= 2 ? (
           <ResponsiveContainer width="100%" height={300}>
             <LineChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#E9F1FA" />
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--surface-2)" />
               <XAxis dataKey="date" tick={{ fontSize: 11 }} />
               <YAxis tick={{ fontSize: 11 }} />
               <Tooltip />
               <Legend />
               <Line type="monotone" dataKey="Fe" stroke="#dc2626" strokeWidth={2} dot={{ r: 4 }} />
               <Line type="monotone" dataKey="Cu" stroke="#d97706" strokeWidth={2} dot={{ r: 4 }} />
-              <Line type="monotone" dataKey="Al" stroke="#00ABE4" strokeWidth={2} dot={{ r: 4 }} />
+              <Line type="monotone" dataKey="Al" stroke="var(--accent)" strokeWidth={2} dot={{ r: 4 }} />
               <Line type="monotone" dataKey="Si" stroke="#16a34a" strokeWidth={2} dot={{ r: 4 }} />
             </LineChart>
           </ResponsiveContainer>
@@ -151,7 +151,7 @@ function TrendModal({ assetNumber, samples, onClose }) {
           {assetSamples.map(s => (
             <div key={s.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderBottom: '1px solid #E9F1FA', fontSize: '13px' }}>
               <span style={{ color: 'var(--text-muted)' }}>{s.sample_date}</span>
-              <span style={{ color: 'var(--text-bright)', fontWeight: 600 }}>{s.component}</span>
+              <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{s.component}</span>
               <ConditionBadge condition={s.ai_condition} />
             </div>
           ))}
@@ -214,12 +214,12 @@ function OilSampling({ userRole }) {
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px' }}>
         <div>
-          <h2 style={{ fontSize: '22px', fontWeight: 800, color: 'var(--text-bright)', margin: '0 0 4px' }}>Oil Sampling</h2>
+          <h2 style={{ fontSize: '22px', fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 4px' }}>Oil Sampling</h2>
           <p style={{ fontSize: '13px', color: 'var(--text-muted)', margin: 0 }}>AI-powered oil analysis results — automatically extracted from lab reports</p>
         </div>
-        <div style={{ fontSize: '12px', color: 'var(--text-muted)', textAlign: 'right', backgroundColor: 'var(--base)', padding: '8px 14px', borderRadius: '8px' }}>
-          <div style={{ fontWeight: 700, color: 'var(--text-mid)', marginBottom: '2px' }}>Submit reports to:</div>
-          <div style={{ fontFamily: 'monospace', color: 'var(--cyan)', fontWeight: 600 }}>
+        <div style={{ fontSize: '12px', color: 'var(--text-muted)', textAlign: 'right', backgroundColor: 'var(--surface-2)', padding: '8px 14px', borderRadius: '8px' }}>
+          <div style={{ fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '2px' }}>Submit reports to:</div>
+          <div style={{ fontFamily: 'monospace', color: 'var(--accent)', fontWeight: 600 }}>
             oilsamples+{(userRole?.company_id || 'company').slice(0, 8)}@mechiq.com.au
           </div>
         </div>
@@ -228,7 +228,7 @@ function OilSampling({ userRole }) {
       {/* Summary cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '14px', marginBottom: '24px' }}>
         {[
-          { label: 'Total Samples', value: counts.total, color: 'var(--cyan)' },
+          { label: 'Total Samples', value: counts.total, color: 'var(--accent)' },
           { label: 'Normal', value: counts.normal, color: 'var(--green)' },
           { label: 'Monitor', value: counts.monitor, color: 'var(--amber)' },
           { label: 'Critical', value: counts.critical, color: 'var(--red)' },
@@ -243,19 +243,19 @@ function OilSampling({ userRole }) {
       {/* Filters */}
       <div style={{ display: 'flex', gap: '10px', marginBottom: '16px', flexWrap: 'wrap' }}>
         <select value={filterAsset} onChange={e => setFilterAsset(e.target.value)}
-          style={{ padding: '7px 12px', border: '1px solid var(--border)', borderRadius: '6px', fontSize: '13px', color: 'var(--text-bright)', backgroundColor: 'var(--surface)', cursor: 'pointer' }}>
+          style={{ padding: '7px 12px', border: '1px solid var(--border)', borderRadius: '6px', fontSize: '13px', color: 'var(--text-primary)', backgroundColor: 'var(--surface)', cursor: 'pointer' }}>
           <option value="">All Assets</option>
           {uniqueAssets.map(a => <option key={a} value={a}>{a}</option>)}
         </select>
         <select value={filterCondition} onChange={e => setFilterCondition(e.target.value)}
-          style={{ padding: '7px 12px', border: '1px solid var(--border)', borderRadius: '6px', fontSize: '13px', color: 'var(--text-bright)', backgroundColor: 'var(--surface)', cursor: 'pointer' }}>
+          style={{ padding: '7px 12px', border: '1px solid var(--border)', borderRadius: '6px', fontSize: '13px', color: 'var(--text-primary)', backgroundColor: 'var(--surface)', cursor: 'pointer' }}>
           <option value="">All Conditions</option>
           <option value="Normal">Normal</option>
           <option value="Monitor">Monitor</option>
           <option value="Critical">Critical</option>
         </select>
         <select value={filterComponent} onChange={e => setFilterComponent(e.target.value)}
-          style={{ padding: '7px 12px', border: '1px solid var(--border)', borderRadius: '6px', fontSize: '13px', color: 'var(--text-bright)', backgroundColor: 'var(--surface)', cursor: 'pointer' }}>
+          style={{ padding: '7px 12px', border: '1px solid var(--border)', borderRadius: '6px', fontSize: '13px', color: 'var(--text-primary)', backgroundColor: 'var(--surface)', cursor: 'pointer' }}>
           <option value="">All Components</option>
           {uniqueComponents.map(c => <option key={c} value={c}>{c}</option>)}
         </select>
@@ -273,7 +273,7 @@ function OilSampling({ userRole }) {
       ) : filtered.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '60px', color: 'var(--text-muted)', backgroundColor: 'var(--surface)', borderRadius: '10px', border: '1px solid var(--border)' }}>
           <div style={{ fontSize: '40px', marginBottom: '12px' }}>🔬</div>
-          <div style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text-mid)', marginBottom: '6px' }}>No oil samples yet</div>
+          <div style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '6px' }}>No oil samples yet</div>
           <div style={{ fontSize: '13px', maxWidth: '400px', margin: '0 auto', lineHeight: 1.6 }}>
             Ask your oil analysis lab to email reports to your company address above. Results will appear here automatically within 6 hours.
           </div>
@@ -282,7 +282,7 @@ function OilSampling({ userRole }) {
         <div style={{ backgroundColor: 'var(--surface)', borderRadius: '10px', border: '1px solid var(--border)', overflow: 'hidden' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
-              <tr style={{ backgroundColor: 'var(--base)' }}>
+              <tr style={{ backgroundColor: 'var(--surface-2)' }}>
                 {['Date', 'Asset', 'Component', 'Condition', 'Key Metals (Fe/Cu/Al)', 'Lab', ''].map(h => (
                   <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', whiteSpace: 'nowrap' }}>{h}</th>
                 ))}
@@ -295,14 +295,14 @@ function OilSampling({ userRole }) {
                     style={{ borderBottom: '1px solid #E9F1FA', cursor: 'pointer', backgroundColor: expandedId === sample.id ? '#f8fbfd' : '#fff' }}
                     onClick={() => setExpandedId(expandedId === sample.id ? null : sample.id)}
                   >
-                    <td style={{ padding: '12px 14px', fontSize: '13px', color: 'var(--text-mid)', whiteSpace: 'nowrap' }}>{sample.sample_date || '—'}</td>
+                    <td style={{ padding: '12px 14px', fontSize: '13px', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>{sample.sample_date || '—'}</td>
                     <td style={{ padding: '12px 14px' }}>
-                      <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--cyan)' }}>{sample.asset_number || '—'}</div>
+                      <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--accent)' }}>{sample.asset_number || '—'}</div>
                       <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{sample.asset_name || ''}</div>
                     </td>
-                    <td style={{ padding: '12px 14px', fontSize: '13px', color: 'var(--text-mid)', textTransform: 'capitalize' }}>{sample.component || '—'}</td>
+                    <td style={{ padding: '12px 14px', fontSize: '13px', color: 'var(--text-secondary)', textTransform: 'capitalize' }}>{sample.component || '—'}</td>
                     <td style={{ padding: '12px 14px' }}><ConditionBadge condition={sample.ai_condition} /></td>
-                    <td style={{ padding: '12px 14px', fontSize: '12px', color: 'var(--text-mid)' }}>
+                    <td style={{ padding: '12px 14px', fontSize: '12px', color: 'var(--text-secondary)' }}>
                       {sample.wear_metals ? (
                         <span>
                           Fe: <strong>{sample.wear_metals.fe ?? '—'}</strong> &nbsp;
@@ -316,7 +316,7 @@ function OilSampling({ userRole }) {
                       <div style={{ display: 'flex', gap: '6px' }}>
                         <button
                           onClick={e => { e.stopPropagation(); setTrendAsset(sample.asset_number); }}
-                          style={{ fontSize: '11px', padding: '4px 10px', backgroundColor: 'var(--base)', color: 'var(--text-mid)', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 600 }}
+                          style={{ fontSize: '11px', padding: '4px 10px', backgroundColor: 'var(--surface-2)', color: 'var(--text-secondary)', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 600 }}
                         >
                           Trends
                         </button>

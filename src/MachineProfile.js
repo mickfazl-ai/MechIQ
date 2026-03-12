@@ -17,7 +17,7 @@ const CSS = `
     50%       { opacity: 0.5; transform: scale(1.4); }
   }
   .mp-card {
-    background: #fff;
+    background: var(--surface);
     border: 1px solid #eaf3fb;
     border-radius: 14px;
     padding: 20px 22px;
@@ -26,7 +26,7 @@ const CSS = `
   .mp-row { transition: background 0.1s; }
   .mp-row:hover { background: #f4f8fd; }
   .mp-start-btn {
-    width: 100%; padding: 14px; background: linear-gradient(135deg, #00ABE4, #0096cc);
+    width: 100%; padding: 14px; background: linear-gradient(135deg, var(--accent), #0096cc);
     color: #fff; border: none; border-radius: 12px; font-size: 14px; font-weight: 800;
     cursor: pointer; font-family: inherit; letter-spacing: 0.5px;
     box-shadow: 0 6px 20px rgba(0,171,228,0.35); transition: all 0.2s;
@@ -36,17 +36,17 @@ const CSS = `
 `;
 
 const STATUS_COLOR = {
-  Running:     { c:'#16a34a', bg:'#dcfce7', pulse:false },
-  Down:        { c:'#dc2626', bg:'#fee2e2', pulse:true  },
-  Maintenance: { c:'#d97706', bg:'#fef3c7', pulse:false },
-  Active:      { c:'#16a34a', bg:'#dcfce7', pulse:false },
-  Standby:     { c:'#7c3aed', bg:'#f5f3ff', pulse:false },
+  Running:     { c:'var(--green)', bg:'var(--green-bg)', pulse:false },
+  Down:        { c:'var(--red)', bg:'var(--red-bg)', pulse:true  },
+  Maintenance: { c:'var(--amber)', bg:'var(--amber-bg)', pulse:false },
+  Active:      { c:'var(--green)', bg:'var(--green-bg)', pulse:false },
+  Standby:     { c:'var(--purple)', bg:'var(--purple-bg)', pulse:false },
 };
 
-const PRIORITY_COLOR = { Critical:'#dc2626', High:'#ea580c', Medium:'#d97706', Low:'#16a34a' };
+const PRIORITY_COLOR = { Critical:'var(--red)', High:'#ea580c', Medium:'var(--amber)', Low:'var(--green)' };
 
 function StatusPill({ status }) {
-  const s = STATUS_COLOR[status] || { c:'#7a92a8', bg:'#f1f5f9', pulse:false };
+  const s = STATUS_COLOR[status] || { c:'var(--text-muted)', bg:'#f1f5f9', pulse:false };
   return (
     <span style={{ display:'inline-flex', alignItems:'center', gap:5, padding:'4px 12px', borderRadius:20, background:s.bg, color:s.c, fontSize:12, fontWeight:700 }}>
       <span style={{ width:6, height:6, borderRadius:'50%', background:s.c, animation:s.pulse?'pulse-dot 1.8s ease-in-out infinite':'none' }} />
@@ -58,8 +58,8 @@ function StatusPill({ status }) {
 function SectionHead({ title, count }) {
   return (
     <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:14, paddingBottom:12, borderBottom:'1.5px solid #eaf3fb' }}>
-      <span style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:15, fontWeight:800, textTransform:'uppercase', letterSpacing:'0.8px', color:'var(--text-bright)' }}>{title}</span>
-      {count !== undefined && <span style={{ background:'#e0f4ff', color:'var(--cyan)', fontSize:11, fontWeight:700, padding:'2px 8px', borderRadius:20 }}>{count}</span>}
+      <span style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:15, fontWeight:800, textTransform:'uppercase', letterSpacing:'0.8px', color:'var(--text-primary)' }}>{title}</span>
+      {count !== undefined && <span style={{ background:'#e0f4ff', color:'var(--accent)', fontSize:11, fontWeight:700, padding:'2px 8px', borderRadius:20 }}>{count}</span>}
     </div>
   );
 }
@@ -158,16 +158,16 @@ function AssetPage({ assetId, userRole, onStartPrestart }) {
       <div className="mp-card" style={{ marginBottom:16 }}>
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', flexWrap:'wrap', gap:20 }}>
           <div style={{ flex:1, minWidth:200 }}>
-            <div style={{ fontSize:12, fontWeight:700, color:'var(--cyan)', letterSpacing:'1px', marginBottom:4 }}>{asset.asset_number||'AST-0000'}</div>
-            <h2 style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:34, fontWeight:800, color:'var(--text-bright)', margin:'0 0 6px', letterSpacing:'0.5px', textTransform:'uppercase' }}>{asset.name}</h2>
+            <div style={{ fontSize:12, fontWeight:700, color:'var(--accent)', letterSpacing:'1px', marginBottom:4 }}>{asset.asset_number||'AST-0000'}</div>
+            <h2 style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:34, fontWeight:800, color:'var(--text-primary)', margin:'0 0 6px', letterSpacing:'0.5px', textTransform:'uppercase' }}>{asset.name}</h2>
             <p style={{ fontSize:13, color:'var(--text-muted)', margin:'0 0 12px' }}>{asset.type}{asset.location ? ` · ${asset.location}` : ''}</p>
             <StatusPill status={asset.status} />
             <div style={{ display:'flex', gap:24, marginTop:18, flexWrap:'wrap' }}>
               {[
-                { label:'Target Hrs/Day', value:`${asset.target_hours||8}h`, color:'var(--cyan)' },
+                { label:'Target Hrs/Day', value:`${asset.target_hours||8}h`, color:'var(--accent)' },
                 { label:'Hourly Rate',    value:`$${asset.hourly_rate||0}/hr`, color:'var(--green)' },
-                { label:'Open WOs',       value:openWorkOrders.length, color:openWorkOrders.length>0?'#dc2626':'#16a34a' },
-                { label:'Last Prestart',  value:recentPrestarts[0]?.date||'None', color:'var(--text-mid)' },
+                { label:'Open WOs',       value:openWorkOrders.length, color:openWorkOrders.length>0?'var(--red)':'var(--green)' },
+                { label:'Last Prestart',  value:recentPrestarts[0]?.date||'None', color:'var(--text-secondary)' },
               ].map(s => (
                 <div key={s.label}>
                   <div style={{ fontSize:10, fontWeight:700, color:'var(--text-muted)', letterSpacing:'1px', textTransform:'uppercase', marginBottom:3 }}>{s.label}</div>
@@ -179,9 +179,9 @@ function AssetPage({ assetId, userRole, onStartPrestart }) {
 
           <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:10 }}>
             <div id="qr-visible" style={{ padding:10, background:'var(--surface)', borderRadius:10, border:'1px solid #eaf3fb', boxShadow:'0 2px 8px rgba(0,100,180,0.08)' }}>
-              <QRCodeCanvas value={qrUrl} size={110} bgColor="#ffffff" fgColor="#1a2b3c" />
+              <QRCodeCanvas value={qrUrl} size={110} bgColor="#ffffff" fgColor="var(--text-primary)" />
             </div>
-            <button onClick={handlePrint} style={{ padding:'6px 14px', background:'var(--surface)', color:'var(--text-mid)', border:'1.5px solid #d6e6f2', borderRadius:7, fontSize:11, fontWeight:700, cursor:'pointer', fontFamily:'inherit' }}>
+            <button onClick={handlePrint} style={{ padding:'6px 14px', background:'var(--surface)', color:'var(--text-secondary)', border:'1.5px solid #d6e6f2', borderRadius:7, fontSize:11, fontWeight:700, cursor:'pointer', fontFamily:'inherit' }}>
               Print QR Card
             </button>
           </div>
@@ -199,14 +199,14 @@ function AssetPage({ assetId, userRole, onStartPrestart }) {
           <SectionHead title="Open Work Orders" count={openWorkOrders.length} />
           <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
             {openWorkOrders.map(wo => {
-              const pc = PRIORITY_COLOR[wo.priority] || '#7a92a8';
+              const pc = PRIORITY_COLOR[wo.priority] || 'var(--text-muted)';
               return (
                 <div key={wo.id} style={{ padding:'11px 14px', background:'#fafcfe', borderRadius:8, borderLeft:`3px solid ${pc}` }}>
                   <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:4 }}>
                     <span style={{ fontSize:11, fontWeight:700, color:pc, padding:'2px 8px', background:pc+'18', borderRadius:20 }}>{wo.priority}</span>
                     <span style={{ fontSize:11, color:'var(--text-muted)', fontWeight:600 }}>{wo.status}</span>
                   </div>
-                  <div style={{ fontSize:13, color:'var(--text-bright)', fontWeight:500 }}>{wo.defect_description}</div>
+                  <div style={{ fontSize:13, color:'var(--text-primary)', fontWeight:500 }}>{wo.defect_description}</div>
                   {wo.assigned_to && <div style={{ fontSize:11, color:'var(--text-muted)', marginTop:3 }}>Assigned: {wo.assigned_to}</div>}
                 </div>
               );
@@ -224,10 +224,10 @@ function AssetPage({ assetId, userRole, onStartPrestart }) {
           : recentPrestarts.map(p => (
             <div key={p.id} className="mp-row" style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'9px 0', borderBottom:'1px solid #eaf3fb' }}>
               <div>
-                <div style={{ fontSize:13, fontWeight:600, color:'var(--text-bright)' }}>{p.date}</div>
+                <div style={{ fontSize:13, fontWeight:600, color:'var(--text-primary)' }}>{p.date}</div>
                 <div style={{ fontSize:11, color:'var(--text-muted)', marginTop:1 }}>{p.operator_name}</div>
               </div>
-              <span style={{ fontSize:11, fontWeight:700, padding:'3px 9px', borderRadius:20, background:p.defects_found?'#fee2e2':'#dcfce7', color:p.defects_found?'#dc2626':'#16a34a' }}>
+              <span style={{ fontSize:11, fontWeight:700, padding:'3px 9px', borderRadius:20, background:p.defects_found?'var(--red-bg)':'var(--green-bg)', color:p.defects_found?'var(--red)':'var(--green)' }}>
                 {p.defects_found ? 'Defects' : 'Clear'}
               </span>
             </div>
@@ -238,12 +238,12 @@ function AssetPage({ assetId, userRole, onStartPrestart }) {
           <SectionHead title="Recent Maintenance" count={recentMaintenance.length} />
           {recentMaintenance.length === 0 ? <div style={{ fontSize:13, color:'var(--text-muted)' }}>No maintenance records</div>
           : recentMaintenance.map(m => {
-            const sc = { Overdue:['#dc2626','#fee2e2'], 'Due Soon':['#d97706','#fef3c7'], Upcoming:['#00ABE4','#e0f4ff'], Completed:['#16a34a','#dcfce7'] };
-            const [c, bg] = sc[m.status] || ['#7a92a8','#f1f5f9'];
+            const sc = { Overdue:['var(--red)','var(--red-bg)'], 'Due Soon':['var(--amber)','var(--amber-bg)'], Upcoming:['var(--accent)','#e0f4ff'], Completed:['var(--green)','var(--green-bg)'] };
+            const [c, bg] = sc[m.status] || ['var(--text-muted)','#f1f5f9'];
             return (
               <div key={m.id} className="mp-row" style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'9px 0', borderBottom:'1px solid #eaf3fb' }}>
                 <div>
-                  <div style={{ fontSize:13, fontWeight:600, color:'var(--text-bright)' }}>{m.task}</div>
+                  <div style={{ fontSize:13, fontWeight:600, color:'var(--text-primary)' }}>{m.task}</div>
                   <div style={{ fontSize:11, color:'var(--text-muted)', marginTop:1 }}>{m.frequency}</div>
                 </div>
                 <span style={{ fontSize:11, fontWeight:700, padding:'3px 9px', borderRadius:20, background:bg, color:c, whiteSpace:'nowrap' }}>{m.status}</span>
@@ -258,7 +258,7 @@ function AssetPage({ assetId, userRole, onStartPrestart }) {
           : recentDowntime.map(d => (
             <div key={d.id} className="mp-row" style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', padding:'9px 0', borderBottom:'1px solid #eaf3fb' }}>
               <div style={{ flex:1, minWidth:0, paddingRight:10 }}>
-                <div style={{ fontSize:13, fontWeight:600, color:'var(--text-bright)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{d.description}</div>
+                <div style={{ fontSize:13, fontWeight:600, color:'var(--text-primary)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{d.description}</div>
                 <div style={{ fontSize:11, color:'var(--text-muted)', marginTop:1 }}>{d.date} · {d.category}</div>
               </div>
               <span style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:16, fontWeight:800, color:'#ea580c', flexShrink:0 }}>{d.hours}h</span>

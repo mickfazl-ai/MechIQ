@@ -39,7 +39,7 @@ const CSS = `
     text-transform: uppercase; line-height: 1; white-space: nowrap;
   }
   .brand-mech { color: var(--sidebar-text, #e5e7eb); }
-  .brand-iq   { color: #00ABE4; }
+  .brand-iq   { color: var(--accent); }
 
   .sidebar-nav {
     flex: 1; width: 100%;
@@ -66,7 +66,7 @@ const CSS = `
     color: #fff;
     background: var(--sidebar-active, rgba(0,171,228,0.15));
   }
-  .sidebar-item.active .sbi-icon { color: #00ABE4; }
+  .sidebar-item.active .sbi-icon { color: var(--accent); }
   .sidebar-item.active::before {
     content: ''; position: absolute;
     left: 0; top: 6px; bottom: 6px;
@@ -127,8 +127,8 @@ const CSS = `
     font-family: 'Inter', sans-serif;
   }
   .sidebar-flyout-item:last-child { border-bottom: none; }
-  .sidebar-flyout-item:hover { background: var(--blue-light, #e9f1fa); color: #00ABE4; }
-  .sidebar-flyout-item.active { background: #e0f4ff; color: #00ABE4; font-weight: 700; }
+  .sidebar-flyout-item:hover { background: var(--blue-light, #e9f1fa); color: var(--accent); }
+  .sidebar-flyout-item.active { background: #e0f4ff; color: var(--accent); font-weight: 700; }
   .sidebar-flyout-item .item-dot {
     width: 5px; height: 5px; border-radius: 50%;
     background: currentColor; opacity: 0.5; flex-shrink: 0;
@@ -147,7 +147,7 @@ const CSS = `
     color: var(--sidebar-text, #e5e7eb);
     background: var(--sidebar-hover, rgba(255,255,255,0.04));
   }
-  .sidebar-sub-item.active { color: #00ABE4; font-weight: 700; }
+  .sidebar-sub-item.active { color: var(--accent); font-weight: 700; }
   .sub-dot { width: 4px; height: 4px; border-radius: 50%; background: currentColor; flex-shrink: 0; opacity: 0.7; }
 
   .sidebar-footer {
@@ -213,7 +213,7 @@ const CSS = `
   }
   .company-switcher-item:last-child { border-bottom: none; }
   .company-switcher-item:hover { background: #eef5fd; }
-  .company-switcher-item.active { background: #e0f4ff; color: #00ABE4; font-weight: 700; }
+  .company-switcher-item.active { background: #e0f4ff; color: var(--accent); font-weight: 700; }
   .company-switcher-item.exit { color: #dc2626; background: #fef2f2; font-weight: 700; }
   .company-switcher-item.exit:hover { background: #fee2e2; }
   .nav-pill {
@@ -224,8 +224,8 @@ const CSS = `
   }
   .nav-pill-primary { background: #00ABE4; color: #fff; box-shadow: 0 2px 8px rgba(0,171,228,0.28); }
   .nav-pill-primary:hover { background: #0096cc; transform: translateY(-1px); }
-  .nav-pill-ghost { background: transparent; color: #7a92a8; border: 1.5px solid #dde8f2; }
-  .nav-pill-ghost:hover { border-color: #00ABE4; color: #00ABE4; background: #eef5fd; }
+  .nav-pill-ghost { background: transparent; color: var(--text-muted); border: 1.5px solid #dde8f2; }
+  .nav-pill-ghost:hover { border-color: var(--accent); color: var(--accent); background: #eef5fd; }
 
   .sidebar-overlay {
     display: none; position: fixed; inset: 0;
@@ -317,10 +317,10 @@ const NAV_STRUCTURE = [
 ];
 
 const ROLE_STYLE = {
-  master:     { bg: '#ede9fe', color: '#7c3aed', border: '#c4b5fd' },
-  admin:      { bg: '#e0f4ff', color: '#00ABE4', border: '#7dd3fc' },
-  supervisor: { bg: '#fef3c7', color: '#d97706', border: '#fcd34d' },
-  technician: { bg: '#dcfce7', color: '#16a34a', border: '#86efac' },
+  master:     { bg: '#ede9fe', color: 'var(--purple)', border: '#c4b5fd' },
+  admin:      { bg: '#e0f4ff', color: 'var(--accent)', border: '#7dd3fc' },
+  supervisor: { bg: 'var(--amber-bg)', color: 'var(--amber)', border: '#fcd34d' },
+  technician: { bg: 'var(--green-bg)', color: 'var(--green)', border: '#86efac' },
   operator:   { bg: '#f1f5f9', color: '#64748b', border: '#cbd5e1' },
 };
 function RoleBadge({ role }) {
@@ -525,7 +525,7 @@ function Navbar({ currentPage, currentSubPage, setCurrentPage, onLogout, session
           {expanded ? (
             <div style={{ padding: '8px 12px', display: 'flex', flexDirection: 'column', gap: 7 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'rgba(0,171,228,0.18)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#00ABE4', fontSize: 12, fontWeight: 800, flexShrink: 0 }}>
+                <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'rgba(0,171,228,0.18)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent)', fontSize: 12, fontWeight: 800, flexShrink: 0 }}>
                   {displayName[0]?.toUpperCase()}
                 </div>
                 <div style={{ flex: 1, overflow: 'hidden' }}>
@@ -535,21 +535,21 @@ function Navbar({ currentPage, currentSubPage, setCurrentPage, onLogout, session
               </div>
               <button
                 onClick={onLogout}
-                style={{ width: '100%', padding: '5px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#9ca3af', borderRadius: 6, cursor: 'pointer', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.8px', fontFamily: 'Inter, sans-serif', transition: 'all 0.15s' }}
+                style={{ width: '100%', padding: '5px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--text-faint)', borderRadius: 6, cursor: 'pointer', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.8px', fontFamily: 'Inter, sans-serif', transition: 'all 0.15s' }}
                 onMouseEnter={e => e.currentTarget.style.color = '#f87171'}
-                onMouseLeave={e => e.currentTarget.style.color = '#9ca3af'}
+                onMouseLeave={e => e.currentTarget.style.color = 'var(--text-faint)'}
               >
                 Logout
               </button>
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, padding: '6px 0' }}>
-              <div title={displayName} style={{ width: 28, height: 28, borderRadius: '50%', background: 'rgba(0,171,228,0.18)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#00ABE4', fontSize: 12, fontWeight: 800 }}>
+              <div title={displayName} style={{ width: 28, height: 28, borderRadius: '50%', background: 'rgba(0,171,228,0.18)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent)', fontSize: 12, fontWeight: 800 }}>
                 {displayName[0]?.toUpperCase()}
               </div>
-              <button onClick={onLogout} title="Logout" style={{ background: 'none', border: 'none', color: '#9ca3af', cursor: 'pointer', padding: 4, borderRadius: 6, display: 'flex', alignItems: 'center', transition: 'color 0.15s' }}
+              <button onClick={onLogout} title="Logout" style={{ background: 'none', border: 'none', color: 'var(--text-faint)', cursor: 'pointer', padding: 4, borderRadius: 6, display: 'flex', alignItems: 'center', transition: 'color 0.15s' }}
                 onMouseEnter={e => e.currentTarget.style.color = '#f87171'}
-                onMouseLeave={e => e.currentTarget.style.color = '#9ca3af'}
+                onMouseLeave={e => e.currentTarget.style.color = 'var(--text-faint)'}
               >{IC.logout}</button>
             </div>
           )}
@@ -576,16 +576,16 @@ function Navbar({ currentPage, currentSubPage, setCurrentPage, onLogout, session
               {switcherOpen && (
                 <div className="company-switcher-dropdown">
                   <div style={{ padding: '10px 16px 8px', borderBottom: '1px solid #f0f6fc' }}>
-                    <div style={{ fontSize: 10, fontWeight: 800, color: '#7a92a8', letterSpacing: '1.2px', textTransform: 'uppercase' }}>Active Companies</div>
+                    <div style={{ fontSize: 10, fontWeight: 800, color: 'var(--text-muted)', letterSpacing: '1.2px', textTransform: 'uppercase' }}>Active Companies</div>
                   </div>
                   {viewingCompany && (
                     <div className="company-switcher-item exit" onClick={() => { onExitCompany(); setSwitcherOpen(false); }}>← Exit Company View</div>
                   )}
                   {companies.length === 0
-                    ? <div style={{ padding: '14px 16px', color: '#7a92a8', fontSize: 12 }}>No active companies</div>
+                    ? <div style={{ padding: '14px 16px', color: 'var(--text-muted)', fontSize: 12 }}>No active companies</div>
                     : companies.map(c => (
                       <div key={c.id} className={`company-switcher-item${viewingCompany?.id === c.id ? ' active' : ''}`} onClick={() => { onSelectCompany(c); setSwitcherOpen(false); }}>
-                        <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#16a34a', flexShrink: 0 }} />{c.name}
+                        <span style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--green)', flexShrink: 0 }} />{c.name}
                       </div>
                     ))
                   }
@@ -596,7 +596,7 @@ function Navbar({ currentPage, currentSubPage, setCurrentPage, onLogout, session
           {/* User info in topbar (non-master) */}
           {!isMaster && (
             <>
-              <span style={{ fontSize: 12, color: '#7a92a8', fontWeight: 500 }}>{displayName}</span>
+              <span style={{ fontSize: 12, color: 'var(--text-muted)', fontWeight: 500 }}>{displayName}</span>
               <RoleBadge role={userRole?.role || 'operator'} />
             </>
           )}

@@ -750,7 +750,7 @@ function PrestartTab({ userRole }) {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '15px', marginTop: '20px' }}>
           {templates.map(t => (
             <div key={t.id} className="form-card" style={{ cursor: 'pointer' }} onClick={() => { setSelectedTemplate(t); setView('fill'); }}>
-              <h3 style={{ color: 'var(--text-bright)', marginBottom: '8px' }}>{t.name}</h3>
+              <h3 style={{ color: 'var(--text-primary)', marginBottom: '8px' }}>{t.name}</h3>
               <p style={{ color: '#a0b0b0', fontSize: '13px', marginBottom: '12px' }}>{t.description}</p>
               <p style={{ color: '#a0b0b0', fontSize: '12px' }}>{(t.sections || []).length} sections</p>
               <button className="btn-primary" style={{ marginTop: '12px', width: '100%' }}>Start Prestart</button>
@@ -759,7 +759,7 @@ function PrestartTab({ userRole }) {
           ))}
           {userRole && userRole.role !== 'technician' && (
             <div className="form-card" style={{ cursor: 'pointer', border: '1px dashed #00c2e040', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '120px' }} onClick={() => setShowAI(true)}>
-              <p style={{ color: 'var(--cyan)', fontSize: '14px', margin: 0 }}>Generate with AI</p>
+              <p style={{ color: 'var(--accent)', fontSize: '14px', margin: 0 }}>Generate with AI</p>
             </div>
           )}
         </div>
@@ -1074,7 +1074,7 @@ function ServiceSheetsTab({ userRole }) {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '15px', marginTop: '20px' }}>
           {templates.map(t => (
             <div key={t.id} className="form-card" style={{ cursor: 'pointer' }} onClick={() => { setSelectedTemplate(t); setView('fill'); }}>
-              <h3 style={{ color: 'var(--text-bright)', marginBottom: '4px' }}>{t.name}</h3>
+              <h3 style={{ color: 'var(--text-primary)', marginBottom: '4px' }}>{t.name}</h3>
               {t.service_type && <p style={{ color: 'var(--text-muted)', fontSize: '12px', marginBottom: '8px', fontWeight: 600 }}>{t.service_type}</p>}
               <p style={{ color: '#a0b0b0', fontSize: '13px', marginBottom: '12px' }}>{t.description}</p>
               <p style={{ color: '#a0b0b0', fontSize: '12px' }}>{(t.sections || []).length} sections</p>
@@ -1084,7 +1084,7 @@ function ServiceSheetsTab({ userRole }) {
           ))}
           {userRole && userRole.role !== 'technician' && (
             <div className="form-card" style={{ cursor: 'pointer', border: '1px dashed #00c2e040', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '120px' }} onClick={() => setShowAI(true)}>
-              <p style={{ color: 'var(--cyan)', fontSize: '14px', margin: 0 }}>Generate with AI</p>
+              <p style={{ color: 'var(--accent)', fontSize: '14px', margin: 0 }}>Generate with AI</p>
             </div>
           )}
         </div>

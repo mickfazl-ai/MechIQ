@@ -37,7 +37,7 @@ const CSS = `
   .feat-toggle {
     padding:4px 11px; border-radius:4px; border:none; cursor:pointer;
     font-size:10px; font-weight:700; letter-spacing:0.8px; text-transform:uppercase;
-    transition:all 0.15s; font-family:'Rajdhani',sans-serif;
+    transition:all 0.15s; font-family:var(--font-display);
   }
   .feat-on  { background:rgba(0,255,136,0.12); color:#00ff88; border:1px solid rgba(0,204,106,0.4); }
   .feat-off { background:rgba(255,51,102,0.08); color:#ff3366; border:1px solid rgba(204,34,68,0.3); }
@@ -47,7 +47,7 @@ const CSS = `
     display:inline-flex; align-items:center; gap:5px;
     padding:3px 9px; border-radius:4px;
     font-size:10px; font-weight:700; letter-spacing:0.8px; text-transform:uppercase;
-    font-family:'Rajdhani',sans-serif;
+    font-family:var(--font-display);
   }
   .pill-active    { background:rgba(0,255,136,0.1);  color:#00ff88; border:1px solid rgba(0,204,106,0.4); }
   .pill-pending   { background:rgba(255,170,0,0.1);  color:#ffaa00; border:1px solid rgba(204,136,0,0.4); }
@@ -56,21 +56,21 @@ const CSS = `
     padding:7px 16px; border-radius:6px; border:1px solid var(--border);
     background:transparent; color:var(--text-muted); cursor:pointer;
     font-size:11px; font-weight:700; letter-spacing:1px; text-transform:uppercase;
-    transition:all 0.15s; font-family:'Rajdhani',sans-serif;
+    transition:all 0.15s; font-family:var(--font-display);
   }
-  .tab-btn.active { background:var(--cyan-glow); color:var(--cyan); border-color:var(--cyan-dim); }
-  .tab-btn:hover:not(.active) { color:var(--text-mid); border-color:rgba(0,180,255,0.2); }
+  .tab-btn.active { background:var(--accent-glow); color:var(--accent); border-color:var(--accent-dark); }
+  .tab-btn:hover:not(.active) { color:var(--text-secondary); border-color:rgba(0,180,255,0.2); }
   .ma-action {
     padding:7px 14px; border-radius:6px; border:none; cursor:pointer;
     font-size:11px; font-weight:700; letter-spacing:0.8px; text-transform:uppercase;
-    transition:all 0.15s; font-family:'Rajdhani',sans-serif;
+    transition:all 0.15s; font-family:var(--font-display);
   }
   .ma-action.approve  { background:rgba(0,255,136,0.12); color:#00ff88; border:1px solid rgba(0,204,106,0.4); }
   .ma-action.reject   { background:rgba(255,51,102,0.1); color:#ff3366; border:1px solid rgba(204,34,68,0.3); }
   .ma-action.suspend  { background:rgba(255,51,102,0.1); color:#ff3366; border:1px solid rgba(204,34,68,0.3); }
   .ma-action.activate { background:rgba(0,255,136,0.12); color:#00ff88; border:1px solid rgba(0,204,106,0.4); }
   .ma-action.pending  { background:rgba(255,170,0,0.1);  color:#ffaa00; border:1px solid rgba(204,136,0,0.3); }
-  .ma-action.export   { background:rgba(0,212,255,0.08); color:var(--cyan); border:1px solid var(--cyan-dim); }
+  .ma-action.export   { background:rgba(0,212,255,0.08); color:var(--accent); border:1px solid var(--accent-dark); }
   .ma-action.danger   { background:rgba(255,51,102,0.08); color:#ff3366; border:1px solid rgba(204,34,68,0.3); }
   .ma-action.restore  { background:rgba(170,85,255,0.1); color:#aa55ff; border:1px solid rgba(136,68,204,0.3); }
   .ma-action:hover { filter:brightness(1.2); transform:translateY(-1px); }
@@ -87,16 +87,16 @@ function PinModal({ onConfirm, onCancel, actionLabel }) {
   return (
     <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.85)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:9999, backdropFilter:'blur(8px)' }}>
       <div style={{ background:'var(--surface)', border:'1px solid rgba(0,212,255,0.3)', borderRadius:16, padding:36, width:360, textAlign:'center', boxShadow:'0 0 60px rgba(0,212,255,0.15)', position:'relative', overflow:'hidden' }}>
-        <div style={{ position:'absolute', top:0, left:0, right:0, height:1, background:'linear-gradient(90deg,transparent,var(--cyan),transparent)' }} />
-        <div style={{ fontSize:11, color:'var(--cyan)', letterSpacing:'3px', textTransform:'uppercase', fontFamily:'Rajdhani,sans-serif', fontWeight:700, marginBottom:8 }}>Authorization Required</div>
-        <div style={{ fontSize:15, color:'var(--text-mid)', marginBottom:24, fontFamily:'Rajdhani,sans-serif', lineHeight:1.5 }}>{actionLabel}</div>
+        <div style={{ position:'absolute', top:0, left:0, right:0, height:1, background:'linear-gradient(90deg,transparent,var(--accent),transparent)' }} />
+        <div style={{ fontSize:11, color:'var(--accent)', letterSpacing:'3px', textTransform:'uppercase', fontFamily:'var(--font-display)', fontWeight:700, marginBottom:8 }}>Authorization Required</div>
+        <div style={{ fontSize:15, color:'var(--text-secondary)', marginBottom:24, fontFamily:'var(--font-display)', lineHeight:1.5 }}>{actionLabel}</div>
         <input type="password" placeholder="Enter PIN" value={pin}
           onChange={e => { setPin(e.target.value); setErr(''); }}
           onKeyDown={e => e.key==='Enter' && confirm()}
           autoFocus
-          style={{ width:'100%', padding:'14px', background:'var(--base)', color:'var(--text-bright)', border:`1px solid ${err?'var(--red-dim)':'rgba(0,212,255,0.25)'}`, borderRadius:8, fontSize:22, textAlign:'center', letterSpacing:'10px', fontFamily:'JetBrains Mono,monospace', boxSizing:'border-box', marginBottom:8 }}
+          style={{ width:'100%', padding:'14px', background:'var(--surface-2)', color:'var(--text-primary)', border:`1px solid ${err?'var(--red-border)':'rgba(0,212,255,0.25)'}`, borderRadius:8, fontSize:22, textAlign:'center', letterSpacing:'10px', fontFamily:'var(--font-mono)', boxSizing:'border-box', marginBottom:8 }}
         />
-        {err && <div style={{ color:'var(--red)', fontSize:12, marginBottom:8, fontFamily:'Rajdhani,sans-serif' }}>{err}</div>}
+        {err && <div style={{ color:'var(--red)', fontSize:12, marginBottom:8, fontFamily:'var(--font-display)' }}>{err}</div>}
         <div style={{ display:'flex', gap:10, marginTop:12 }}>
           <button onClick={onCancel} className="ma-action pending" style={{ flex:1 }}>Cancel</button>
           <button onClick={confirm} className="ma-action approve" style={{ flex:1 }}>Confirm</button>
@@ -221,9 +221,9 @@ function MasterAdmin() {
       {/* Header */}
       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-end', marginBottom:28, flexWrap:'wrap', gap:12 }}>
         <div>
-          <div style={{ fontSize:10, color:'var(--purple)', letterSpacing:'3px', textTransform:'uppercase', fontFamily:'Rajdhani,sans-serif', fontWeight:700, marginBottom:4 }}>◈ MASTER CONTROL</div>
-          <h2 style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:38, fontWeight:900, color:'var(--text-bright)', letterSpacing:'2px', textTransform:'uppercase', margin:0, lineHeight:1 }}>Command Panel</h2>
-          <div style={{ fontSize:12, color:'var(--text-muted)', marginTop:6, fontFamily:'Rajdhani,sans-serif' }}>Manage company registrations, access levels and platform features</div>
+          <div style={{ fontSize:10, color:'var(--purple)', letterSpacing:'3px', textTransform:'uppercase', fontFamily:'var(--font-display)', fontWeight:700, marginBottom:4 }}>◈ MASTER CONTROL</div>
+          <h2 style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:38, fontWeight:900, color:'var(--text-primary)', letterSpacing:'2px', textTransform:'uppercase', margin:0, lineHeight:1 }}>Command Panel</h2>
+          <div style={{ fontSize:12, color:'var(--text-muted)', marginTop:6, fontFamily:'var(--font-display)' }}>Manage company registrations, access levels and platform features</div>
         </div>
         <button className="ma-action restore" onClick={handleRestore} style={{ display:'flex', alignItems:'center', gap:7, padding:'10px 18px' }}>
           <span style={{ fontSize:14 }}>⬡</span> Restore Master Admin
@@ -233,7 +233,7 @@ function MasterAdmin() {
       {/* Stats */}
       <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:14, marginBottom:24 }}>
         {[
-          { label:'Total Companies',  value:counts.all,       color:'var(--cyan)',   glow:'rgba(0,212,255,0.15)' },
+          { label:'Total Companies',  value:counts.all,       color:'var(--accent)',   glow:'rgba(0,212,255,0.15)' },
           { label:'Pending Approval', value:counts.pending,   color:'var(--amber)',  glow:'rgba(255,170,0,0.15)' },
           { label:'Active',           value:counts.active,    color:'var(--green)',  glow:'rgba(0,255,136,0.15)' },
           { label:'Suspended',        value:counts.suspended, color:'var(--red)',    glow:'rgba(255,51,102,0.15)' },
@@ -241,7 +241,7 @@ function MasterAdmin() {
           <div key={s.label} className="ma-card" style={{ padding:'20px 22px', boxShadow:`0 0 20px ${s.glow}`, borderColor:s.glow.replace('0.15','0.3') }}>
             <div style={{ position:'absolute', top:0, left:0, right:0, height:2, background:s.color, opacity:0.6 }} />
             <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:48, fontWeight:800, color:s.color, lineHeight:1, textShadow:`0 0 20px ${s.glow.replace('0.15','0.5')}` }}>{s.value}</div>
-            <div style={{ fontSize:11, color:'var(--text-muted)', letterSpacing:'1px', textTransform:'uppercase', fontFamily:'Rajdhani,sans-serif', fontWeight:700, marginTop:6 }}>{s.label}</div>
+            <div style={{ fontSize:11, color:'var(--text-muted)', letterSpacing:'1px', textTransform:'uppercase', fontFamily:'var(--font-display)', fontWeight:700, marginTop:6 }}>{s.label}</div>
           </div>
         ))}
       </div>
@@ -261,7 +261,7 @@ function MasterAdmin() {
             <div style={{ marginLeft:'auto', position:'relative' }}>
               <span style={{ position:'absolute', left:12, top:'50%', transform:'translateY(-50%)', fontSize:12, color:'var(--text-muted)' }}>⌕</span>
               <input placeholder="Search..." value={search} onChange={e => setSearch(e.target.value)}
-                style={{ paddingLeft:32, width:200, background:'var(--base)', color:'var(--text-bright)', border:'1px solid var(--border)', borderRadius:8, fontSize:13, padding:'8px 12px 8px 30px', fontFamily:'Rajdhani,sans-serif' }}
+                style={{ paddingLeft:32, width:200, background:'var(--surface-2)', color:'var(--text-primary)', border:'1px solid var(--border)', borderRadius:8, fontSize:13, padding:'8px 12px 8px 30px', fontFamily:'var(--font-display)' }}
               />
             </div>
           </div>
@@ -272,7 +272,7 @@ function MasterAdmin() {
               {[0,1,2].map(i => <div key={i} className="ma-card" style={{ height:90, animation:'shimmer 1.5s infinite linear', background:'linear-gradient(90deg,var(--surface-2) 25%,var(--surface-3) 50%,var(--surface-2) 75%)', backgroundSize:'200% 100%' }} />)}
             </div>
           ) : filtered.length === 0 ? (
-            <div style={{ textAlign:'center', padding:'60px 20px', color:'var(--text-muted)', fontFamily:'Rajdhani,sans-serif' }}>No companies found matching the current filter.</div>
+            <div style={{ textAlign:'center', padding:'60px 20px', color:'var(--text-muted)', fontFamily:'var(--font-display)' }}>No companies found matching the current filter.</div>
           ) : filtered.map((c,i) => (
             <div key={c.id} className={`ma-card${selected?.id===c.id?' selected':''}`}
               style={{ marginBottom:10, opacity:0, animation:`fadeUp 0.35s ease ${i*40}ms forwards` }}
@@ -282,15 +282,15 @@ function MasterAdmin() {
                   <div style={{ flex:1 }}>
                     <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:6 }}>
                       <div style={{ width:8, height:8, borderRadius:'50%', background:statusDot(c.status), boxShadow:`0 0 6px ${statusDot(c.status)}`, flexShrink:0 }} />
-                      <span style={{ color:'var(--text-bright)', fontWeight:700, fontSize:15, fontFamily:'Rajdhani,sans-serif', letterSpacing:'0.3px' }}>{c.name}</span>
+                      <span style={{ color:'var(--text-primary)', fontWeight:700, fontSize:15, fontFamily:'var(--font-display)', letterSpacing:'0.3px' }}>{c.name}</span>
                       <span className={pillClass(c.status)}>{c.status||'pending'}</span>
-                      {c.plan && <span style={{ padding:'2px 8px', borderRadius:4, background:'var(--surface-2)', color:'var(--text-muted)', fontSize:10, fontWeight:600, border:'1px solid var(--border)', fontFamily:'Rajdhani,sans-serif', letterSpacing:'0.5px', textTransform:'uppercase' }}>{c.plan}</span>}
+                      {c.plan && <span style={{ padding:'2px 8px', borderRadius:4, background:'var(--surface-2)', color:'var(--text-muted)', fontSize:10, fontWeight:600, border:'1px solid var(--border)', fontFamily:'var(--font-display)', letterSpacing:'0.5px', textTransform:'uppercase' }}>{c.plan}</span>}
                     </div>
-                    <div style={{ color:'var(--text-muted)', fontSize:12, fontFamily:'Rajdhani,sans-serif', display:'flex', gap:12, flexWrap:'wrap' }}>
+                    <div style={{ color:'var(--text-muted)', fontSize:12, fontFamily:'var(--font-display)', display:'flex', gap:12, flexWrap:'wrap' }}>
                       {c.industry && <span>{c.industry}</span>}
                       {c.contact_name && <span>· {c.contact_name}</span>}
                       {c.phone && <span>· {c.phone}</span>}
-                      {c.abn && <span style={{ fontFamily:'JetBrains Mono,monospace', fontSize:11 }}>· ABN {c.abn}</span>}
+                      {c.abn && <span style={{ fontFamily:'var(--font-mono)', fontSize:11 }}>· ABN {c.abn}</span>}
                     </div>
                   </div>
                   <div style={{ display:'flex', gap:6, flexShrink:0 }} onClick={e => e.stopPropagation()}>
@@ -307,7 +307,7 @@ function MasterAdmin() {
                   {FEATURES.map(f => {
                     const on = c.features?.[f.key] !== false;
                     return (
-                      <span key={f.key} style={{ padding:'2px 7px', borderRadius:4, fontSize:10, fontWeight:600, fontFamily:'Rajdhani,sans-serif', letterSpacing:'0.5px', background:on?'rgba(0,212,255,0.07)':'var(--base)', color:on?'var(--cyan)':'var(--text-faint)', border:`1px solid ${on?'rgba(0,212,255,0.2)':'var(--border-dim)'}` }}>
+                      <span key={f.key} style={{ padding:'2px 7px', borderRadius:4, fontSize:10, fontWeight:600, fontFamily:'var(--font-display)', letterSpacing:'0.5px', background:on?'rgba(0,212,255,0.07)':'var(--surface-2)', color:on?'var(--accent)':'var(--text-faint)', border:`1px solid ${on?'rgba(0,212,255,0.2)':'var(--border)'}` }}>
                         {f.label}
                       </span>
                     );
@@ -321,12 +321,12 @@ function MasterAdmin() {
         {/* Right — detail panel */}
         {selected && (
           <div className="ma-card" style={{ height:'fit-content', position:'sticky', top:20 }}>
-            <div style={{ position:'absolute', top:0, left:0, right:0, height:1, background:'linear-gradient(90deg,transparent,var(--cyan),transparent)' }} />
+            <div style={{ position:'absolute', top:0, left:0, right:0, height:1, background:'linear-gradient(90deg,transparent,var(--accent),transparent)' }} />
             <div style={{ padding:'20px 22px', borderBottom:'1px solid var(--border)' }}>
               <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
                 <div>
-                  <div style={{ fontSize:10, color:'var(--cyan)', letterSpacing:'2px', textTransform:'uppercase', fontFamily:'Rajdhani,sans-serif', fontWeight:700, marginBottom:4 }}>Company Detail</div>
-                  <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:22, fontWeight:800, color:'var(--text-bright)', letterSpacing:'1px' }}>{selected.name}</div>
+                  <div style={{ fontSize:10, color:'var(--accent)', letterSpacing:'2px', textTransform:'uppercase', fontFamily:'var(--font-display)', fontWeight:700, marginBottom:4 }}>Company Detail</div>
+                  <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:22, fontWeight:800, color:'var(--text-primary)', letterSpacing:'1px' }}>{selected.name}</div>
                 </div>
                 <button onClick={() => setSelected(null)} style={{ background:'transparent', border:'1px solid var(--border)', color:'var(--text-muted)', width:32, height:32, borderRadius:6, cursor:'pointer', fontSize:14, transition:'all 0.15s' }}>✕</button>
               </div>
@@ -344,15 +344,15 @@ function MasterAdmin() {
                 { label:'Registered', value:selected.created_at?new Date(selected.created_at).toLocaleDateString('en-AU'):'—' },
               ].map(row => (
                 <div key={row.label} style={{ display:'flex', justifyContent:'space-between', marginBottom:8, fontSize:13 }}>
-                  <span style={{ color:'var(--text-muted)', fontFamily:'Rajdhani,sans-serif', letterSpacing:'0.3px' }}>{row.label}</span>
-                  <span style={{ color:row.color||'var(--text-bright)', fontWeight:600, fontFamily:row.mono?'JetBrains Mono,monospace':'Rajdhani,sans-serif', fontSize:row.mono?11:13 }}>{row.value}</span>
+                  <span style={{ color:'var(--text-muted)', fontFamily:'var(--font-display)', letterSpacing:'0.3px' }}>{row.label}</span>
+                  <span style={{ color:row.color||'var(--text-primary)', fontWeight:600, fontFamily:row.mono?'var(--font-mono)':'var(--font-body)', fontSize:row.mono?11:13 }}>{row.value}</span>
                 </div>
               ))}
             </div>
 
             {/* Asset limit */}
             <div style={{ padding:'16px 22px', borderBottom:'1px solid var(--border)' }}>
-              <div style={{ fontSize:10, color:'var(--text-muted)', letterSpacing:'1.5px', textTransform:'uppercase', fontFamily:'Rajdhani,sans-serif', fontWeight:700, marginBottom:10 }}>Asset Limit</div>
+              <div style={{ fontSize:10, color:'var(--text-muted)', letterSpacing:'1.5px', textTransform:'uppercase', fontFamily:'var(--font-display)', fontWeight:700, marginBottom:10 }}>Asset Limit</div>
               <div style={{ display:'flex', gap:8, alignItems:'center' }}>
                 <input type="number" value={selected.asset_limit||10}
                   onChange={e => setSelected(prev => ({ ...prev, asset_limit:parseInt(e.target.value) }))}
@@ -364,13 +364,13 @@ function MasterAdmin() {
 
             {/* Features */}
             <div style={{ padding:'16px 22px', borderBottom:'1px solid var(--border)' }}>
-              <div style={{ fontSize:10, color:'var(--text-muted)', letterSpacing:'1.5px', textTransform:'uppercase', fontFamily:'Rajdhani,sans-serif', fontWeight:700, marginBottom:12 }}>Feature Access</div>
+              <div style={{ fontSize:10, color:'var(--text-muted)', letterSpacing:'1.5px', textTransform:'uppercase', fontFamily:'var(--font-display)', fontWeight:700, marginBottom:12 }}>Feature Access</div>
               <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
                 {FEATURES.map(f => {
                   const on = selected.features?.[f.key] !== false;
                   return (
                     <div key={f.key} style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-                      <span style={{ color:'var(--text-mid)', fontSize:13, fontFamily:'Rajdhani,sans-serif' }}>{f.label}</span>
+                      <span style={{ color:'var(--text-secondary)', fontSize:13, fontFamily:'var(--font-display)' }}>{f.label}</span>
                       <button className={`feat-toggle feat-${on?'on':'off'}`} onClick={() => toggleFeature(selected, f.key)}>
                         {on?'✓ Active':'✕ Locked'}
                       </button>
@@ -382,7 +382,7 @@ function MasterAdmin() {
 
             {/* Actions */}
             <div style={{ padding:'16px 22px', borderBottom:'1px solid var(--border)' }}>
-              <div style={{ fontSize:10, color:'var(--text-muted)', letterSpacing:'1.5px', textTransform:'uppercase', fontFamily:'Rajdhani,sans-serif', fontWeight:700, marginBottom:10 }}>Account Actions</div>
+              <div style={{ fontSize:10, color:'var(--text-muted)', letterSpacing:'1.5px', textTransform:'uppercase', fontFamily:'var(--font-display)', fontWeight:700, marginBottom:10 }}>Account Actions</div>
               <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
                 {selected.status!=='active'    && <button className="ma-action activate" onClick={() => setStatus(selected.id,'active')}>Activate</button>}
                 {selected.status!=='suspended' && <button className="ma-action suspend"  onClick={() => setStatus(selected.id,'suspended')}>Suspend</button>}
@@ -392,12 +392,12 @@ function MasterAdmin() {
 
             {/* Data */}
             <div style={{ padding:'16px 22px' }}>
-              <div style={{ fontSize:10, color:'var(--text-muted)', letterSpacing:'1.5px', textTransform:'uppercase', fontFamily:'Rajdhani,sans-serif', fontWeight:700, marginBottom:10 }}>Data Management</div>
+              <div style={{ fontSize:10, color:'var(--text-muted)', letterSpacing:'1.5px', textTransform:'uppercase', fontFamily:'var(--font-display)', fontWeight:700, marginBottom:10 }}>Data Management</div>
               <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
                 <button className="ma-action export" onClick={() => exportProfile(selected)}>Export JSON</button>
                 <button className="ma-action danger" disabled={deleting} onClick={() => handleDelete(selected)}>{deleting?'Deleting…':'Delete Company'}</button>
               </div>
-              <div style={{ fontSize:11, color:'var(--text-faint)', marginTop:10, lineHeight:1.6, fontFamily:'Rajdhani,sans-serif' }}>
+              <div style={{ fontSize:11, color:'var(--text-faint)', marginTop:10, lineHeight:1.6, fontFamily:'var(--font-display)' }}>
                 Delete exports a full data backup first, then permanently removes all company records.
               </div>
             </div>

@@ -7,7 +7,7 @@ const PLANS = [
     name: 'Free Trial',
     price: 'Free',
     period: '14 days',
-    color: 'var(--cyan)',
+    color: 'var(--accent)',
     badge: 'TRY FREE',
     description: 'Full access to all features for 14 days. No credit card required.',
     features: [
@@ -169,8 +169,8 @@ function Register({ onBackToLogin }) {
     setLoading(false);
   };
 
-  const inputStyle = { width: '100%', padding: '11px 14px', backgroundColor: 'var(--deep)', color: 'white', border: '1px solid #1a2f2f', borderRadius: '6px', fontSize: '14px', fontFamily: 'Barlow, sans-serif', boxSizing: 'border-box' };
-  const labelStyle = { color: 'var(--text-mid)', fontSize: '12px', display: 'block', marginBottom: '5px' };
+  const inputStyle = { width: '100%', padding: '11px 14px', backgroundColor: 'var(--bg)', color: 'white', border: '1px solid #1a2f2f', borderRadius: '6px', fontSize: '14px', fontFamily: 'Barlow, sans-serif', boxSizing: 'border-box' };
+  const labelStyle = { color: 'var(--text-secondary)', fontSize: '12px', display: 'block', marginBottom: '5px' };
   const fieldStyle = { marginBottom: '14px' };
 
   if (step === 'success') return (
@@ -178,15 +178,15 @@ function Register({ onBackToLogin }) {
       <div className="login-card" style={{ textAlign: 'center' }}>
         <h1 className="login-title">MECH<span> IQ</span></h1>
         <div style={{ fontSize: '48px', margin: '20px 0' }}>⏳</div>
-        <h2 style={{ color: 'var(--cyan)', marginBottom: '12px' }}>Registration Submitted!</h2>
-        <div style={{ backgroundColor: 'var(--deep)', border: '1px solid #1a2f2f', borderRadius: '8px', padding: '14px', marginBottom: '16px' }}>
-          <div style={{ color: 'var(--text-mid)', fontSize: '12px', marginBottom: '4px' }}>SELECTED PLAN</div>
+        <h2 style={{ color: 'var(--accent)', marginBottom: '12px' }}>Registration Submitted!</h2>
+        <div style={{ backgroundColor: 'var(--bg)', border: '1px solid #1a2f2f', borderRadius: '8px', padding: '14px', marginBottom: '16px' }}>
+          <div style={{ color: 'var(--text-secondary)', fontSize: '12px', marginBottom: '4px' }}>SELECTED PLAN</div>
           <div style={{ color: selectedPlan.color, fontWeight: 700, fontSize: '16px' }}>{selectedPlan.name}</div>
         </div>
-        <p style={{ color: 'var(--text-mid)', marginBottom: '8px', fontSize: '14px' }}>
+        <p style={{ color: 'var(--text-secondary)', marginBottom: '8px', fontSize: '14px' }}>
           Thanks <strong style={{ color: 'white' }}>{form.contactName}</strong>! Your account for <strong style={{ color: 'white' }}>{form.companyName}</strong> is pending approval.
         </p>
-        <p style={{ color: 'var(--text-mid)', marginBottom: '24px', fontSize: '13px' }}>
+        <p style={{ color: 'var(--text-secondary)', marginBottom: '24px', fontSize: '13px' }}>
           We'll be in touch shortly to confirm your plan and activate your account.
         </p>
         <button className="btn-login" onClick={onBackToLogin}>Back to Login</button>
@@ -198,16 +198,16 @@ function Register({ onBackToLogin }) {
     <div className="login-page">
       <div className="login-card" style={{ maxWidth: '460px' }}>
         <h1 className="login-title">MECH<span> IQ</span></h1>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', backgroundColor: 'var(--deep)', border: `1px solid ${selectedPlan.color}`, borderRadius: '8px', padding: '10px 14px', marginBottom: '20px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', backgroundColor: 'var(--bg)', border: `1px solid ${selectedPlan.color}`, borderRadius: '8px', padding: '10px 14px', marginBottom: '20px' }}>
           <div>
             <div style={{ color: selectedPlan.color, fontWeight: 700, fontSize: '14px' }}>{selectedPlan.name} Plan</div>
-            <div style={{ color: 'var(--text-mid)', fontSize: '11px' }}>{selectedPlan.price}{selectedPlan.period}</div>
+            <div style={{ color: 'var(--text-secondary)', fontSize: '11px' }}>{selectedPlan.price}{selectedPlan.period}</div>
           </div>
-          <button onClick={() => { setStep('plans'); setFormStep(1); setError(''); }} style={{ background: 'transparent', border: 'none', color: 'var(--text-mid)', cursor: 'pointer', fontSize: '12px' }}>Change ↩</button>
+          <button onClick={() => { setStep('plans'); setFormStep(1); setError(''); }} style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '12px' }}>Change ↩</button>
         </div>
         <p className="login-subtitle">{formStep === 1 ? 'Company Details — Step 1 of 2' : 'Account Setup — Step 2 of 2'}</p>
         <div style={{ display: 'flex', gap: '8px', marginBottom: '20px', justifyContent: 'center' }}>
-          {[1, 2].map(s => <div key={s} style={{ width: '32px', height: '4px', borderRadius: '2px', backgroundColor: s <= formStep ? selectedPlan.color : 'var(--base)' }} />)}
+          {[1, 2].map(s => <div key={s} style={{ width: '32px', height: '4px', borderRadius: '2px', backgroundColor: s <= formStep ? selectedPlan.color : 'var(--surface-2)' }} />)}
         </div>
 
         {formStep === 1 && (
@@ -225,22 +225,22 @@ function Register({ onBackToLogin }) {
             <div style={fieldStyle}><label style={labelStyle}>Phone *</label><input style={inputStyle} placeholder="e.g. 0412 345 678" value={form.phone} onChange={e => set('phone', e.target.value)} /></div>
             {error && <p className="login-error">{error}</p>}
             <button className="btn-login" onClick={handleNext}>Next →</button>
-            <button onClick={() => { setStep('plans'); setError(''); }} style={{ width: '100%', marginTop: '10px', padding: '11px', background: 'transparent', border: '1px solid #1a2f2f', color: 'var(--text-mid)', borderRadius: '6px', cursor: 'pointer' }}>← Back to Plans</button>
+            <button onClick={() => { setStep('plans'); setError(''); }} style={{ width: '100%', marginTop: '10px', padding: '11px', background: 'transparent', border: '1px solid #1a2f2f', color: 'var(--text-secondary)', borderRadius: '6px', cursor: 'pointer' }}>← Back to Plans</button>
           </div>
         )}
 
         {formStep === 2 && (
           <div>
-            <div style={{ padding: '12px', backgroundColor: 'var(--deep)', borderRadius: '6px', marginBottom: '18px', border: '1px solid #1a2f2f' }}>
-              <div style={{ color: 'var(--cyan)', fontWeight: 700, marginBottom: '4px' }}>{form.companyName}</div>
-              <div style={{ color: 'var(--text-mid)', fontSize: '12px' }}>{form.industry} · {form.contactName}</div>
+            <div style={{ padding: '12px', backgroundColor: 'var(--bg)', borderRadius: '6px', marginBottom: '18px', border: '1px solid #1a2f2f' }}>
+              <div style={{ color: 'var(--accent)', fontWeight: 700, marginBottom: '4px' }}>{form.companyName}</div>
+              <div style={{ color: 'var(--text-secondary)', fontSize: '12px' }}>{form.industry} · {form.contactName}</div>
             </div>
             <div style={fieldStyle}><label style={labelStyle}>Email *</label><input style={inputStyle} type="email" placeholder="you@company.com" value={form.email} onChange={e => set('email', e.target.value)} /></div>
             <div style={fieldStyle}><label style={labelStyle}>Password *</label><input style={inputStyle} type="password" placeholder="Min 6 characters" value={form.password} onChange={e => set('password', e.target.value)} /></div>
             <div style={fieldStyle}><label style={labelStyle}>Confirm Password *</label><input style={inputStyle} type="password" placeholder="Repeat password" value={form.confirmPassword} onChange={e => set('confirmPassword', e.target.value)} /></div>
             {error && <p className="login-error">{error}</p>}
             <button className="btn-login" onClick={handleSubmit} disabled={loading}>{loading ? 'Submitting...' : 'Submit Registration'}</button>
-            <button onClick={() => { setFormStep(1); setError(''); }} style={{ width: '100%', marginTop: '10px', padding: '11px', background: 'transparent', border: '1px solid #1a2f2f', color: 'var(--text-mid)', borderRadius: '6px', cursor: 'pointer' }}>← Back</button>
+            <button onClick={() => { setFormStep(1); setError(''); }} style={{ width: '100%', marginTop: '10px', padding: '11px', background: 'transparent', border: '1px solid #1a2f2f', color: 'var(--text-secondary)', borderRadius: '6px', cursor: 'pointer' }}>← Back</button>
           </div>
         )}
       </div>
@@ -249,24 +249,24 @@ function Register({ onBackToLogin }) {
 
   // PLAN SELECTION
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: 'var(--void)', padding: '40px 20px' }}>
+    <div style={{ minHeight: '100vh', backgroundColor: 'var(--bg)', padding: '40px 20px' }}>
       <div style={{ textAlign: 'center', marginBottom: '40px' }}>
         <h1 style={{ fontSize: '28px', fontWeight: 900, margin: '0 0 8px' }}>
-          <span style={{ color: 'white' }}>MECH</span><span style={{ color: 'var(--cyan)' }}> IQ</span>
+          <span style={{ color: 'white' }}>MECH</span><span style={{ color: 'var(--accent)' }}> IQ</span>
         </h1>
         <h2 style={{ color: '#fff', fontSize: '22px', margin: '0 0 8px' }}>Choose your plan</h2>
-        <p style={{ color: 'var(--text-mid)', margin: 0, fontSize: '14px' }}>Start with a free trial — no credit card required</p>
+        <p style={{ color: 'var(--text-secondary)', margin: 0, fontSize: '14px' }}>Start with a free trial — no credit card required</p>
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '20px', maxWidth: '1100px', margin: '0 auto 40px' }}>
         {PLANS.map(plan => (
-          <div key={plan.id} style={{ backgroundColor: 'var(--deep)', border: `1px solid ${plan.color}44`, borderRadius: '12px', padding: '28px', display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden' }}>
+          <div key={plan.id} style={{ backgroundColor: 'var(--bg)', border: `1px solid ${plan.color}44`, borderRadius: '12px', padding: '28px', display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden' }}>
             <div style={{ position: 'absolute', top: '14px', right: '14px', backgroundColor: plan.color + '22', color: plan.color, padding: '3px 10px', borderRadius: '20px', fontSize: '10px', fontWeight: 700 }}>{plan.badge}</div>
             <div style={{ color: plan.color, fontWeight: 900, fontSize: '18px', marginBottom: '6px' }}>{plan.name}</div>
             <div style={{ marginBottom: '6px' }}>
               <span style={{ color: '#fff', fontSize: '28px', fontWeight: 900 }}>{plan.price}</span>
-              {plan.period && <span style={{ color: 'var(--text-mid)', fontSize: '13px' }}> {plan.period}</span>}
+              {plan.period && <span style={{ color: 'var(--text-secondary)', fontSize: '13px' }}> {plan.period}</span>}
             </div>
-            <p style={{ color: 'var(--text-mid)', fontSize: '12px', marginBottom: '20px', lineHeight: 1.5 }}>{plan.description}</p>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '12px', marginBottom: '20px', lineHeight: 1.5 }}>{plan.description}</p>
             <div style={{ flex: 1, marginBottom: '24px' }}>
               {plan.features.map((f, i) => <div key={i} style={{ fontSize: '13px', marginBottom: '7px', color: f.startsWith('✓') ? '#fff' : 'var(--text-muted)' }}>{f}</div>)}
             </div>
@@ -277,7 +277,7 @@ function Register({ onBackToLogin }) {
         ))}
       </div>
       <div style={{ textAlign: 'center' }}>
-        <button onClick={onBackToLogin} style={{ background: 'transparent', border: 'none', color: 'var(--text-mid)', cursor: 'pointer', fontSize: '14px' }}>← Back to Login</button>
+        <button onClick={onBackToLogin} style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '14px' }}>← Back to Login</button>
       </div>
     </div>
   );

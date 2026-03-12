@@ -1,50 +1,25 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from './supabase';
 
-// ─── Colour themes ────────────────────────────────────────────────────────────
+// ─── Page themes (match App.css body.theme-X classes) ─────────────────────────
 const THEMES = [
-  { id: 'default', label: 'Ocean Blue', primary: '#00ABE4', primaryDark: '#0088b8', bg: '#E9F1FA', dark: '#1a2b3c', textMid: '#3d5166', textMuted: '#7a92a8', border: '#d6e6f2' },
-  { id: 'slate',   label: 'Slate',      primary: '#475569', primaryDark: '#334155', bg: '#f1f5f9', dark: '#0f172a', textMid: '#334155', textMuted: '#64748b', border: '#cbd5e1' },
-  { id: 'green',   label: 'Forest',     primary: '#16a34a', primaryDark: '#15803d', bg: '#f0fdf4', dark: '#14532d', textMid: '#166534', textMuted: '#4ade80', border: '#bbf7d0' },
-  { id: 'orange',  label: 'Amber',      primary: '#d97706', primaryDark: '#b45309', bg: '#fffbeb', dark: '#78350f', textMid: '#92400e', textMuted: '#a16207', border: '#fde68a' },
-  { id: 'purple',  label: 'Violet',     primary: '#7c3aed', primaryDark: '#6d28d9', bg: '#f5f3ff', dark: '#2e1065', textMid: '#4c1d95', textMuted: '#7c3aed', border: '#ddd6fe' },
-  { id: 'red',     label: 'Crimson',    primary: '#dc2626', primaryDark: '#b91c1c', bg: '#fef2f2', dark: '#7f1d1d', textMid: '#991b1b', textMuted: '#b91c1c', border: '#fecaca' },
-  { id: 'teal',    label: 'Teal',       primary: '#0d9488', primaryDark: '#0f766e', bg: '#f0fdfa', dark: '#134e4a', textMid: '#115e59', textMuted: '#0f766e', border: '#99f6e4' },
-  { id: 'dark',    label: 'Dark Mode',  primary: '#00ABE4', primaryDark: '#0088b8', bg: '#1e2d3d', dark: '#060d18', textMid: '#94a3b8', textMuted: '#64748b', border: '#2d3f52' },
+  { id: 'light',    label: 'Light',    desc: 'Clean white, professional', swatch: '#f0f4f8', accent: '#0ea5e9', surface: '#ffffff', text: '#111827', border: '#e5e7eb' },
+  { id: 'dark',     label: 'Dark',     desc: 'Soft dark, easy on eyes',   swatch: '#0f172a', accent: '#38bdf8', surface: '#1e293b', text: '#f1f5f9', border: 'rgba(255,255,255,0.08)' },
+  { id: 'navy',     label: 'Navy',     desc: 'Deep navy midnight',        swatch: '#0a1628', accent: '#38bdf8', surface: '#0f2040', text: '#e2eaf4', border: 'rgba(100,160,220,0.12)' },
+  { id: 'contrast', label: 'Contrast', desc: 'Max readability',           swatch: '#000000', accent: '#22d3ee', surface: '#0a0a0a', text: '#ffffff', border: 'rgba(255,255,255,0.15)' },
 ];
 
-// ─── Apply theme to CSS variables ─────────────────────────────────────────────
+// ─── Apply theme: sets body class which activates App.css theme vars ───────────
 const applyTheme = (themeId) => {
-  const t = THEMES.find(x => x.id === themeId) || THEMES[0];
-  const root = document.documentElement;
-  // Brand / accent
-  root.style.setProperty('--blue-bright',    t.primary);
-  root.style.setProperty('--blue-dark',      t.primaryDark);
-  root.style.setProperty('--blue-deeper',    t.primaryDark);
-  root.style.setProperty('--blue-light',     t.bg);
-  root.style.setProperty('--blue-mid',       t.border);
-  root.style.setProperty('--blue-soft',      t.bg);
-  // Surfaces
-  root.style.setProperty('--bg',             t.bg);
-  root.style.setProperty('--surface',        t.dark === '#e2e8f0' ? '#1e2d3d' : '#ffffff');
-  root.style.setProperty('--surface-raised', t.dark === '#e2e8f0' ? '#253548' : '#ffffff');
-  root.style.setProperty('--surface-hover',  t.bg);
-  // Text
-  root.style.setProperty('--text-dark',      t.dark);
-  root.style.setProperty('--text-mid',       t.textMid);
-  root.style.setProperty('--text-muted',     t.textMuted);
-  root.style.setProperty('--text-faint',     t.border);
-  // Borders
-  root.style.setProperty('--border',         t.border);
-  root.style.setProperty('--border-light',   t.border + '88');
-  root.style.setProperty('--border-focus',   t.primary);
-  // Page background
-  document.body.style.backgroundColor = t.bg;
+  document.body.classList.remove('theme-light','theme-dark','theme-navy','theme-contrast');
+  if (themeId && themeId !== 'light') {
+    document.body.classList.add('theme-' + themeId);
+  }
 };
 
 // ─── Shared styles ────────────────────────────────────────────────────────────
 const card = {
-  backgroundColor: 'var(--surface)', border: '1px solid var(--border-light)',
+  backgroundColor: 'var(--surface)', border: '1px solid var(--border)',
   borderRadius: '12px', padding: '24px', marginBottom: '20px',
   boxShadow: 'var(--shadow-sm)',
 };
@@ -55,10 +30,10 @@ const label = {
 const input = {
   width: '100%', padding: '10px 14px',
   border: '1.5px solid var(--border)', borderRadius: '8px',
-  fontSize: '14px', color: 'var(--text-dark)', backgroundColor: 'var(--surface)', outline: 'none',
+  fontSize: '14px', color: 'var(--text-primary)', backgroundColor: 'var(--surface)', outline: 'none',
   fontFamily: 'inherit', transition: 'border-color 0.15s, box-shadow 0.15s',
 };
-const saveBtn = (color = 'var(--blue-bright)') => ({
+const saveBtn = (color = 'var(--accent)') => ({
   padding: '10px 24px', backgroundColor: color, color: '#fff',
   border: 'none', borderRadius: '8px', fontSize: '13px',
   fontWeight: 700, cursor: 'pointer',
@@ -67,10 +42,10 @@ const saveBtn = (color = 'var(--blue-bright)') => ({
 // ─── Section header ───────────────────────────────────────────────────────────
 function SectionHeader({ title, desc }) {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px', paddingBottom: '14px', borderBottom: '1.5px solid var(--border-light)' }}>
-      <div style={{ width: '3px', height: '32px', backgroundColor: 'var(--blue-bright)', borderRadius: '2px', flexShrink: 0 }} />
+    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px', paddingBottom: '14px', borderBottom: '1.5px solid var(--border)' }}>
+      <div style={{ width: '3px', height: '32px', backgroundColor: 'var(--accent)', borderRadius: '2px', flexShrink: 0 }} />
       <div>
-        <div style={{ fontSize: '14px', fontWeight: 800, color: 'var(--text-dark)', letterSpacing: '0.2px' }}>{title}</div>
+        <div style={{ fontSize: '14px', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '0.2px' }}>{title}</div>
         <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '2px' }}>{desc}</div>
       </div>
     </div>
@@ -144,14 +119,14 @@ function CompanyDetails({ userRole }) {
       <div style={card}>
         <SectionHeader icon="🏢" title="Company Logo" desc="Appears on reports, pre-starts and service sheets" />
         <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-          <div style={{ width: '80px', height: '80px', borderRadius: '10px', border: '2px dashed var(--border)', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'var(--blue-light)' }}>
+          <div style={{ width: '80px', height: '80px', borderRadius: '10px', border: '2px dashed var(--border)', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'var(--accent-light)' }}>
             {logoUrl
               ? <img src={logoUrl} alt="logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
               : <span style={{ fontSize: '28px' }}>🏢</span>
             }
           </div>
           <div>
-            <button onClick={() => fileRef.current.click()} style={{ ...saveBtn('#00ABE4'), marginBottom: '8px', display: 'block' }}>
+            <button onClick={() => fileRef.current.click()} style={{ ...saveBtn('var(--accent)'), marginBottom: '8px', display: 'block' }}>
               {logoUrl ? 'Change Logo' : 'Upload Logo'}
             </button>
             <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>PNG or JPG, max 2MB. Recommended 400×400px.</div>
@@ -195,7 +170,7 @@ function CompanyDetails({ userRole }) {
         </div>
         <div style={{ marginTop: '16px', display: 'flex', alignItems: 'center', gap: '12px' }}>
           <button onClick={handlePasswordChange} style={saveBtn()}>Update Password</button>
-          {pwMsg && <span style={{ fontSize: '13px', color: pwMsg.includes('success') ? '#16a34a' : '#dc2626', fontWeight: 600 }}>{pwMsg}</span>}
+          {pwMsg && <span style={{ fontSize: '13px', color: pwMsg.includes('success') ? 'var(--green)' : 'var(--red)', fontWeight: 600 }}>{pwMsg}</span>}
         </div>
       </div>
     </div>
@@ -205,15 +180,15 @@ function CompanyDetails({ userRole }) {
 // ─── Tab: Format / Theme ──────────────────────────────────────────────────────
 
 // Extended theme data with gradients, emoji, taglines
-const THEMES_EX = [
-  { id:'default', label:'Ocean Blue', emoji:'🌊', tagline:'Clean & professional',  primary:'#00ABE4', primaryDark:'#0088b8', accent:'#38bdf8', bg:'#E9F1FA', surface:'#ffffff', dark:'#1a2b3c', textMid:'#3d5166', textMuted:'#7a92a8', border:'#d6e6f2', gradient:'linear-gradient(135deg,#0070a8 0%,#00ABE4 55%,#38bdf8 100%)' },
+const THEMES = [
+  { id:'default', label:'Ocean Blue', emoji:'🌊', tagline:'Clean & professional',  primary:'var(--accent)', primaryDark:'#0088b8', accent:'#38bdf8', bg:'var(--surface-2)', surface:'#ffffff', dark:'var(--text-primary)', textMid:'#3d5166', textMuted:'var(--text-muted)', border:'#d6e6f2', gradient:'linear-gradient(135deg,#0070a8 0%,var(--accent) 55%,#38bdf8 100%)' },
   { id:'slate',   label:'Gunmetal',   emoji:'🔩', tagline:'Industrial & sharp',   primary:'#475569', primaryDark:'#334155', accent:'#94a3b8', bg:'#f1f5f9', surface:'#ffffff', dark:'#0f172a', textMid:'#334155', textMuted:'#64748b', border:'#cbd5e1', gradient:'linear-gradient(135deg,#1e293b 0%,#475569 60%,#94a3b8 100%)' },
-  { id:'green',   label:'Forest',     emoji:'🌿', tagline:'Calm & natural',       primary:'#16a34a', primaryDark:'#15803d', accent:'#4ade80', bg:'#f0fdf4', surface:'#ffffff', dark:'#14532d', textMid:'#166534', textMuted:'#15803d', border:'#bbf7d0', gradient:'linear-gradient(135deg,#14532d 0%,#16a34a 55%,#4ade80 100%)' },
-  { id:'orange',  label:'Amber',      emoji:'🔥', tagline:'Bold & energetic',     primary:'#d97706', primaryDark:'#b45309', accent:'#fbbf24', bg:'#fffbeb', surface:'#ffffff', dark:'#78350f', textMid:'#92400e', textMuted:'#a16207', border:'#fde68a', gradient:'linear-gradient(135deg,#78350f 0%,#d97706 55%,#fbbf24 100%)' },
-  { id:'purple',  label:'Violet',     emoji:'⚡', tagline:'Creative & vibrant',   primary:'#7c3aed', primaryDark:'#6d28d9', accent:'#a78bfa', bg:'#f5f3ff', surface:'#ffffff', dark:'#2e1065', textMid:'#4c1d95', textMuted:'#6d28d9', border:'#ddd6fe', gradient:'linear-gradient(135deg,#2e1065 0%,#7c3aed 55%,#a78bfa 100%)' },
-  { id:'red',     label:'Crimson',    emoji:'🚨', tagline:'High alert & urgent',  primary:'#dc2626', primaryDark:'#b91c1c', accent:'#f87171', bg:'#fef2f2', surface:'#ffffff', dark:'#7f1d1d', textMid:'#991b1b', textMuted:'#b91c1c', border:'#fecaca', gradient:'linear-gradient(135deg,#7f1d1d 0%,#dc2626 55%,#f87171 100%)' },
+  { id:'green',   label:'Forest',     emoji:'🌿', tagline:'Calm & natural',       primary:'var(--green)', primaryDark:'#15803d', accent:'#4ade80', bg:'#f0fdf4', surface:'#ffffff', dark:'#14532d', textMid:'#166534', textMuted:'#15803d', border:'var(--green-border)', gradient:'linear-gradient(135deg,#14532d 0%,#16a34a 55%,#4ade80 100%)' },
+  { id:'orange',  label:'Amber',      emoji:'🔥', tagline:'Bold & energetic',     primary:'var(--amber)', primaryDark:'#b45309', accent:'#fbbf24', bg:'#fffbeb', surface:'#ffffff', dark:'#78350f', textMid:'#92400e', textMuted:'#a16207', border:'var(--amber-border)', gradient:'linear-gradient(135deg,#78350f 0%,#d97706 55%,#fbbf24 100%)' },
+  { id:'purple',  label:'Violet',     emoji:'⚡', tagline:'Creative & vibrant',   primary:'var(--purple)', primaryDark:'#6d28d9', accent:'#a78bfa', bg:'var(--purple-bg)', surface:'#ffffff', dark:'#2e1065', textMid:'#4c1d95', textMuted:'#6d28d9', border:'var(--purple-border)', gradient:'linear-gradient(135deg,#2e1065 0%,#7c3aed 55%,#a78bfa 100%)' },
+  { id:'red',     label:'Crimson',    emoji:'🚨', tagline:'High alert & urgent',  primary:'var(--red)', primaryDark:'#b91c1c', accent:'#f87171', bg:'#fef2f2', surface:'#ffffff', dark:'#7f1d1d', textMid:'#991b1b', textMuted:'#b91c1c', border:'var(--red-border)', gradient:'linear-gradient(135deg,#7f1d1d 0%,#dc2626 55%,#f87171 100%)' },
   { id:'teal',    label:'Teal',       emoji:'🧊', tagline:'Fresh & precise',      primary:'#0d9488', primaryDark:'#0f766e', accent:'#2dd4bf', bg:'#f0fdfa', surface:'#ffffff', dark:'#134e4a', textMid:'#115e59', textMuted:'#0f766e', border:'#99f6e4', gradient:'linear-gradient(135deg,#134e4a 0%,#0d9488 55%,#2dd4bf 100%)' },
-  { id:'dark',    label:'Dark Mode',  emoji:'🌙', tagline:'Night shift ready',    primary:'#00ABE4', primaryDark:'#0088b8', accent:'#38bdf8', bg:'#0d1b2a', surface:'#1e2d3d', dark:'#e2e8f0', textMid:'#94a3b8', textMuted:'#64748b', border:'#2d3f52', gradient:'linear-gradient(135deg,#020d18 0%,#0d1b2a 50%,#1e2d3d 100%)' },
+  { id:'dark',    label:'Dark Mode',  emoji:'🌙', tagline:'Night shift ready',    primary:'var(--accent)', primaryDark:'#0088b8', accent:'#38bdf8', bg:'#0d1b2a', surface:'#1e2d3d', dark:'#e2e8f0', textMid:'#94a3b8', textMuted:'#64748b', border:'#2d3f52', gradient:'linear-gradient(135deg,#020d18 0%,#0d1b2a 50%,#1e2d3d 100%)' },
 ];
 
 const FORMAT_CSS = `
@@ -229,7 +204,7 @@ const FORMAT_CSS = `
   }
   .fmt-theme-card:hover { transform:translateY(-5px) scale(1.02); box-shadow:0 20px 48px rgba(0,0,0,0.18); }
   .fmt-theme-card.fmt-selected {
-    box-shadow:0 0 0 2px #fff, 0 0 0 4px var(--fmt-pri,#00ABE4), 0 16px 40px rgba(0,0,0,0.2);
+    box-shadow:0 0 0 2px var(--surface), 0 0 0 4px var(--accent), 0 16px 40px rgba(0,0,0,0.15);
     animation:fmt-pop 0.3s ease;
   }
   .fmt-live-preview { animation:fmt-fadein 0.3s cubic-bezier(0.16,1,0.3,1); }
@@ -247,23 +222,23 @@ const FORMAT_CSS = `
   .fmt-apply-btn:hover { transform:translateY(-2px); box-shadow:0 10px 28px rgba(0,0,0,0.22); }
   .fmt-apply-btn:disabled { opacity:0.6; cursor:not-allowed; transform:none; }
 
-  .fmt-seg { display:flex; background:#f0f5fa; border-radius:8px; padding:3px; gap:2px; }
+  .fmt-seg { display:flex; background:var(--surface-2); border-radius:8px; padding:3px; gap:2px; }
   .fmt-seg-btn {
     padding:7px 14px; border:none; border-radius:6px; font-size:12px; font-weight:600;
-    cursor:pointer; transition:all 0.15s; font-family:inherit; color:#7a92a8; background:transparent;
+    cursor:pointer; transition:all 0.15s; font-family:inherit; color:var(--text-muted); background:transparent;
   }
-  .fmt-seg-btn.on { background:var(--surface-3); color:var(--text-bright); box-shadow:0 0 8px rgba(0,212,255,0.12); }
+  .fmt-seg-btn.on { background:var(--surface-3); color:var(--text-primary); box-shadow:0 0 8px rgba(0,212,255,0.12); }
 
   .fmt-density-card {
-    border:2px solid #e2ecf5; border-radius:12px; padding:16px;
-    cursor:pointer; transition:all 0.18s; background:#fff; text-align:center;
+    border:1px solid var(--border); border-radius:12px; padding:16px;
+    cursor:pointer; transition:all 0.18s; background:var(--surface); text-align:center;
   }
-  .fmt-density-card:hover { border-color:var(--blue-bright,#00ABE4); transform:translateY(-2px); }
-  .fmt-density-card.on   { border-color:var(--blue-bright,#00ABE4); background:#e0f4ff; }
+  .fmt-density-card:hover { border-color:var(--accent); transform:translateY(-2px); }
+  .fmt-density-card.on   { border-color:var(--accent); background:var(--accent-light); }
 
   .fmt-pref-row {
     display:flex; align-items:center; justify-content:space-between;
-    padding:14px 0; border-bottom:1px solid #f0f6fc; gap:16px;
+    padding:14px 0; border-bottom:1px solid var(--border); gap:16px;
     flex-wrap:wrap;
   }
   .fmt-pref-row:last-child { border-bottom:none; }
@@ -272,20 +247,20 @@ const FORMAT_CSS = `
 // Tiny MechIQ UI inside each theme card
 function ThemeCardMini({ t }) {
   return (
-    <div style={{padding:'10px',background:t.bg}}>
+    <div style={{padding:'10px', background:t.swatch}}>
       {/* mini navbar */}
-      <div style={{background:t.surface,borderRadius:'5px',padding:'4px 7px',marginBottom:'6px',display:'flex',alignItems:'center',gap:'4px',boxShadow:'0 1px 3px rgba(0,0,0,0.07)'}}>
-        <div style={{width:'22px',height:'6px',borderRadius:'3px',background:t.primary}}/>
-        {[16,12,14].map((w,i)=><div key={i} style={{width:w,height:'5px',borderRadius:'2px',background:t.border}}/>)}
-        <div style={{marginLeft:'auto',width:'14px',height:'14px',borderRadius:'50%',background:t.primary+'30',border:`1.5px solid ${t.primary}`}}/>
+      <div style={{background:t.surface,borderRadius:'5px',padding:'4px 7px',marginBottom:'6px',display:'flex',alignItems:'center',gap:'4px',boxShadow:'0 1px 3px rgba(0,0,0,0.12)'}}>
+        <div style={{width:'22px',height:'6px',borderRadius:'3px',background:t.accent}}/>
+        {[16,12,14].map((w,i)=><div key={i} style={{width:w,height:'5px',borderRadius:'2px',background:t.border+'66'}}/>)}
+        <div style={{marginLeft:'auto',width:'14px',height:'14px',borderRadius:'50%',background:t.accent+'30',border:`1.5px solid ${t.accent}`}}/>
       </div>
       {/* mini kpi cards */}
       <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:'4px'}}>
         {[['24','100%'],['3','13%'],['87%','87%']].map(([v,w],i)=>(
-          <div key={i} style={{background:t.surface,borderRadius:'4px',padding:'5px',borderTop:`2px solid ${t.primary}`}}>
-            <div style={{fontSize:'10px',fontWeight:800,color:t.dark,fontFamily:"'Barlow Condensed',sans-serif",lineHeight:1}}>{v}</div>
-            <div style={{height:'3px',background:t.border,borderRadius:'99px',marginTop:'3px'}}>
-              <div style={{width:w,height:'100%',background:t.primary,borderRadius:'99px'}}/>
+          <div key={i} style={{background:t.surface,borderRadius:'4px',padding:'5px',borderTop:`2px solid ${t.accent}`}}>
+            <div style={{fontSize:'10px',fontWeight:800,color:t.text,fontFamily:"'Barlow Condensed',sans-serif",lineHeight:1}}>{v}</div>
+            <div style={{height:'3px',background:t.border+'55',borderRadius:'99px',marginTop:'3px'}}>
+              <div style={{width:w,height:'100%',background:t.accent,borderRadius:'99px'}}/>
             </div>
           </div>
         ))}
@@ -301,29 +276,29 @@ function LivePreview({ t, density, fontSize }) {
   return (
     <div className="fmt-live-preview" key={t.id} style={{border:`1px solid ${t.border}`,borderRadius:'16px',overflow:'hidden',boxShadow:'0 8px 32px rgba(0,0,0,0.10)'}}>
       {/* Navbar */}
-      <div style={{background:t.surface,borderBottom:`2.5px solid ${t.primary}`,padding:'0 14px',height:'38px',display:'flex',alignItems:'center',gap:'7px',boxShadow:'0 2px 6px rgba(0,0,0,0.06)'}}>
-        <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:'15px',fontWeight:900,color:t.dark,letterSpacing:'2px'}}>MECH</span>
-        <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:'15px',fontWeight:900,color:t.primary,letterSpacing:'2px'}}>IQ</span>
+      <div style={{background:t.surface,borderBottom:`2.5px solid ${t.accent}`,padding:'0 14px',height:'38px',display:'flex',alignItems:'center',gap:'7px',boxShadow:'0 2px 6px rgba(0,0,0,0.06)'}}>
+        <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:'15px',fontWeight:900,color:t.text,letterSpacing:'2px'}}>MECH</span>
+        <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:'15px',fontWeight:900,color:t.accent,letterSpacing:'2px'}}>IQ</span>
         <div style={{display:'flex',gap:'3px',marginLeft:'8px'}}>
           {['Dashboard','Assets','Maintenance','Reports'].map((lbl,i)=>(
-            <div key={lbl} style={{padding:'3px 8px',borderRadius:'4px',background:i===0?t.primary:'transparent',color:i===0?'#fff':t.textMuted,fontSize:'9px',fontWeight:700}}>{lbl}</div>
+            <div key={lbl} style={{padding:'3px 8px',borderRadius:'4px',background:i===0?t.accent:'transparent',color:i===0?'#fff':t.accent+'aa',fontSize:'9px',fontWeight:700}}>{lbl}</div>
           ))}
         </div>
         <div style={{marginLeft:'auto',display:'flex',gap:'5px',alignItems:'center'}}>
-          <div style={{width:'52px',height:'16px',borderRadius:'8px',background:t.primary+'20',border:`1px solid ${t.primary}40`}}/>
-          <div style={{width:'16px',height:'16px',borderRadius:'50%',background:t.gradient}}/>
+          <div style={{width:'52px',height:'16px',borderRadius:'8px',background:t.accent+'20',border:`1px solid ${t.accent}40`}}/>
+          <div style={{width:'16px',height:'16px',borderRadius:'50%',background:`linear-gradient(135deg,${t.swatch},${t.accent})`}}/>
         </div>
       </div>
       {/* Body */}
-      <div style={{background:t.bg,padding:'12px'}}>
+      <div style={{background:t.swatch,padding:'12px'}}>
         {/* KPI row */}
         <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:'7px',marginBottom:'8px'}}>
           {[['Fleet','24','100%'],['Down','3','13%'],['Overdue','7','29%'],['Util','87%','87%']].map(([l,v,w])=>(
-            <div key={l} style={{background:t.surface,borderRadius:'7px',padding:sp,borderTop:`2px solid ${t.primary}`,boxShadow:'0 1px 3px rgba(0,0,0,0.05)'}}>
-              <div style={{fontSize:'8px',fontWeight:700,color:t.textMuted,letterSpacing:'0.6px',textTransform:'uppercase',marginBottom:'3px'}}>{l}</div>
-              <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:'20px',fontWeight:800,color:t.dark,lineHeight:1}}>{v}</div>
+            <div key={l} style={{background:t.surface,borderRadius:'7px',padding:sp,borderTop:`2px solid ${t.accent}`,boxShadow:'0 1px 3px rgba(0,0,0,0.05)'}}>
+              <div style={{fontSize:'8px',fontWeight:700,color:t.accent+'aa',letterSpacing:'0.6px',textTransform:'uppercase',marginBottom:'3px'}}>{l}</div>
+              <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:'20px',fontWeight:800,color:t.text,lineHeight:1}}>{v}</div>
               <div style={{height:'3px',background:t.border,borderRadius:'99px',marginTop:'5px'}}>
-                <div style={{width:w,height:'100%',background:t.primary,borderRadius:'99px'}}/>
+                <div style={{width:w,height:'100%',background:t.accent,borderRadius:'99px'}}/>
               </div>
             </div>
           ))}
@@ -331,20 +306,20 @@ function LivePreview({ t, density, fontSize }) {
         {/* Two-panel */}
         <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'7px'}}>
           <div style={{background:t.surface,borderRadius:'7px',padding:sp,boxShadow:'0 1px 3px rgba(0,0,0,0.04)'}}>
-            <div style={{fontSize:'9px',fontWeight:800,color:t.dark,letterSpacing:'0.7px',textTransform:'uppercase',marginBottom:'7px',fontFamily:"'Barlow Condensed',sans-serif"}}>Activity</div>
+            <div style={{fontSize:'9px',fontWeight:800,color:t.text,letterSpacing:'0.7px',textTransform:'uppercase',marginBottom:'7px',fontFamily:"'Barlow Condensed',sans-serif"}}>Activity</div>
             {[['🔴','CAT 320 — downtime'],['⚠️','D9 service overdue'],['🔧','Work order #42']].map(([ic,tx],i)=>(
               <div key={i} style={{display:'flex',gap:'5px',alignItems:'center',padding:'3px 0',borderBottom:`1px solid ${t.border}`}}>
                 <span style={{fontSize:'10px'}}>{ic}</span>
-                <span style={{fontSize:fs,color:t.textMid,fontWeight:500,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{tx}</span>
+                <span style={{fontSize:fs,color:t.text+'cc',fontWeight:500,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{tx}</span>
               </div>
             ))}
           </div>
           <div style={{background:t.surface,borderRadius:'7px',padding:sp,boxShadow:'0 1px 3px rgba(0,0,0,0.04)'}}>
-            <div style={{fontSize:'9px',fontWeight:800,color:t.dark,letterSpacing:'0.7px',textTransform:'uppercase',marginBottom:'7px',fontFamily:"'Barlow Condensed',sans-serif"}}>Service Intervals</div>
-            {[['CAT 320',78,'#d97706'],['D9 Dozer',45,t.primary],['Generator',92,'#dc2626']].map(([nm,pct,cl])=>(
+            <div style={{fontSize:'9px',fontWeight:800,color:t.text,letterSpacing:'0.7px',textTransform:'uppercase',marginBottom:'7px',fontFamily:"'Barlow Condensed',sans-serif"}}>Service Intervals</div>
+            {[['CAT 320',78,'var(--amber)'],['D9 Dozer',45,t.accent],['Generator',92,'var(--red)']].map(([nm,pct,cl])=>(
               <div key={nm} style={{marginBottom:'7px'}}>
                 <div style={{display:'flex',justifyContent:'space-between',marginBottom:'2px'}}>
-                  <span style={{fontSize:fs,color:t.textMid,fontWeight:600}}>{nm}</span>
+                  <span style={{fontSize:fs,color:t.text+'cc',fontWeight:600}}>{nm}</span>
                   <span style={{fontSize:'9px',color:cl,fontWeight:700}}>{pct}%</span>
                 </div>
                 <div style={{height:'4px',background:t.border,borderRadius:'99px'}}>
@@ -360,7 +335,7 @@ function LivePreview({ t, density, fontSize }) {
 }
 
 function Format({ userRole }) {
-  const [selected,   setSelected]   = useState(() => localStorage.getItem('mechiq_theme')      || 'default');
+  const [selected,   setSelected]   = useState(() => localStorage.getItem('mechiq_theme')      || 'light');
   const [hovered,    setHovered]    = useState(null);
   const [sidebarScheme, setSidebarScheme] = useState(() => localStorage.getItem('mechiq_sidebar_scheme') || 'slate');
   const [density,    setDensity]    = useState(() => localStorage.getItem('mechiq_density')    || 'comfortable');
@@ -371,8 +346,8 @@ function Format({ userRole }) {
   const [saved,      setSaved]      = useState(false);
   const [applying,   setApplying]   = useState(false);
 
-  const activeT  = THEMES_EX.find(t => t.id === selected)    || THEMES_EX[0];
-  const previewT = THEMES_EX.find(t => t.id === (hovered || selected)) || THEMES_EX[0];
+  const activeT  = THEMES.find(t => t.id === selected)    || THEMES[0];
+  const previewT = THEMES.find(t => t.id === (hovered || selected)) || THEMES[0];
 
   // Inject CSS + apply saved theme on mount
   useEffect(() => {
@@ -381,7 +356,7 @@ function Format({ userRole }) {
       s.id = 'format-tab-css'; s.textContent = FORMAT_CSS;
       document.head.appendChild(s);
     }
-    applyTheme(localStorage.getItem('mechiq_theme') || 'default');
+    applyTheme(localStorage.getItem('mechiq_theme') || 'light');
     // Restore sidebar scheme
     const savedScheme = localStorage.getItem('mechiq_sidebar_scheme') || 'slate';
     document.body.className = document.body.className.replace(/scheme-\S+/g, '').trim();
@@ -409,10 +384,10 @@ function Format({ userRole }) {
 
   const panelStyle = { background:'var(--surface)', border:'1px solid var(--border)', borderRadius:'18px', padding:'24px', marginBottom:'20px', boxShadow:'0 2px 12px rgba(0,100,180,0.06)' };
   const panelHead  = (emoji, title, desc) => (
-    <div style={{display:'flex',alignItems:'center',gap:'12px',marginBottom:'22px',paddingBottom:'14px',borderBottom:'1.5px solid var(--border-light)'}}>
-      <div style={{width:'3px',height:'32px',backgroundColor:'var(--blue-bright)',borderRadius:'2px',flexShrink:0}} />
+    <div style={{display:'flex',alignItems:'center',gap:'12px',marginBottom:'22px',paddingBottom:'14px',borderBottom:'1.5px solid var(--border)'}}>
+      <div style={{width:'3px',height:'32px',backgroundColor:'var(--accent)',borderRadius:'2px',flexShrink:0}} />
       <div>
-        <div style={{fontSize:'14px',fontWeight:800,color:'var(--text-dark)',letterSpacing:'0.2px'}}>{title}</div>
+        <div style={{fontSize:'14px',fontWeight:800,color:'var(--text-primary)',letterSpacing:'0.2px'}}>{title}</div>
         <div style={{fontSize:'12px',color:'var(--text-muted)',marginTop:'2px'}}>{desc}</div>
       </div>
     </div>
@@ -423,8 +398,8 @@ function Format({ userRole }) {
 
       {/* ── Page title ── */}
       <div style={{marginBottom:'28px'}}>
-        <h2 style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:'30px',fontWeight:900,color:'var(--text-bright)',textTransform:'uppercase',letterSpacing:'1px',margin:'0 0 4px'}}>
-          Format <span style={{color:activeT.primary}}>&</span> Theme
+        <h2 style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:'30px',fontWeight:900,color:'var(--text-primary)',textTransform:'uppercase',letterSpacing:'1px',margin:'0 0 4px'}}>
+          Format <span style={{color:activeT.accent}}>&</span> Theme
         </h2>
         <p style={{fontSize:'13px',color:'var(--text-muted)',margin:0}}>Personalise MechIQ's look, feel and data display. Changes apply instantly across the entire app.</p>
       </div>
@@ -438,21 +413,21 @@ function Format({ userRole }) {
           <div style={panelStyle}>
             {panelHead('🎨', 'Colour Theme', 'Pick a visual personality for your workspace')}
             <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:'10px',marginBottom:'4px'}}>
-              {THEMES_EX.map(t => (
+              {THEMES.map(t => (
                 <div
                   key={t.id}
                   className={`fmt-theme-card${selected===t.id?' fmt-selected':''}`}
-                  style={{'--fmt-pri':t.primary}}
+                  style={{'--fmt-pri':t.accent}}
                   onClick={() => setSelected(t.id)}
                   onMouseEnter={() => setHovered(t.id)}
                   onMouseLeave={() => setHovered(null)}
                 >
                   {/* Gradient banner */}
-                  <div style={{height:'42px',background:t.gradient,display:'flex',alignItems:'center',justifyContent:'center',position:'relative'}}>
+                  <div style={{height:'42px',background:`linear-gradient(135deg,${t.swatch},${t.accent})`,display:'flex',alignItems:'center',justifyContent:'center',position:'relative'}}>
                     
                     {selected===t.id && (
                       <div style={{position:'absolute',top:'6px',right:'6px',width:'16px',height:'16px',borderRadius:'50%',background:'var(--surface)',display:'flex',alignItems:'center',justifyContent:'center'}}>
-                        <div style={{width:'8px',height:'8px',borderRadius:'50%',background:t.primary}}/>
+                        <div style={{width:'8px',height:'8px',borderRadius:'50%',background:t.accent}}/>
                       </div>
                     )}
                   </div>
@@ -461,7 +436,7 @@ function Format({ userRole }) {
                   {/* Label */}
                   <div style={{padding:'8px 10px',background:t.surface,borderTop:`1px solid ${t.border}`}}>
                     <div style={{fontSize:'11px',fontWeight:800,color:t.dark}}>{t.label}</div>
-                    <div style={{fontSize:'10px',color:t.textMuted,marginTop:'1px'}}>{t.tagline}</div>
+                    <div style={{fontSize:'10px',color:t.accent+'aa',marginTop:'1px'}}>{t.tagline}</div>
                   </div>
                 </div>
               ))}
@@ -473,12 +448,12 @@ function Format({ userRole }) {
             {panelHead('🖥', 'Sidebar Style', 'Choose the colour skin for the left navigation panel')}
             <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:'10px'}}>
               {[
-                {id:'slate',   label:'Slate',   desc:'Dark navy — default', bg:'#111827', accent:'#00ABE4'},
-                {id:'carbon',  label:'Carbon',  desc:'Near-black minimal',  bg:'#0a0f14', accent:'#00ABE4'},
+                {id:'slate',   label:'Slate',   desc:'Dark navy — default', bg:'var(--text-primary)', accent:'var(--accent)'},
+                {id:'carbon',  label:'Carbon',  desc:'Near-black minimal',  bg:'#0a0f14', accent:'var(--accent)'},
                 {id:'ocean',   label:'Ocean',   desc:'Deep blue tones',     bg:'#0c1e35', accent:'#0099d6'},
                 {id:'forest',  label:'Forest',  desc:'Dark green earthy',   bg:'#0d1f17', accent:'#22c55e'},
                 {id:'amber',   label:'Amber',   desc:'Warm industrial',     bg:'#1c1407', accent:'#f59e0b'},
-                {id:'light',   label:'Light',   desc:'White / inverted',    bg:'#ffffff', accent:'#00ABE4'},
+                {id:'light',   label:'Light',   desc:'White / inverted',    bg:'#ffffff', accent:'var(--accent)'},
               ].map(s => (
                 <div
                   key={s.id}
@@ -496,7 +471,7 @@ function Format({ userRole }) {
                     {[0,1,2].map(i=><div key={i} style={{width:14,height:3,borderRadius:2,background:i===0?s.accent:'rgba(255,255,255,0.25)'}}/>)}
                   </div>
                   <div>
-                    <div style={{fontSize:12,fontWeight:700,color:'var(--text-bright)'}}>{s.label}</div>
+                    <div style={{fontSize:12,fontWeight:700,color:'var(--text-primary)'}}>{s.label}</div>
                     <div style={{fontSize:11,color:'var(--text-muted)',marginTop:1}}>{s.desc}</div>
                   </div>
                   {sidebarScheme === s.id && (
@@ -523,8 +498,8 @@ function Format({ userRole }) {
                   className={`fmt-density-card${density===d.id?' on':''}`}
                   onClick={() => setDensity(d.id)}
                 >
-                  <div style={{fontSize:'16px',letterSpacing:density===d.id?'4px':'1px',color:density===d.id?activeT.primary:'#7a92a8',marginBottom:'8px',transition:'all 0.2s'}}>{d.icon}</div>
-                  <div style={{fontSize:'12px',fontWeight:800,color:'var(--text-bright)',marginBottom:'3px'}}>{d.label}</div>
+                  <div style={{fontSize:'16px',letterSpacing:density===d.id?'4px':'1px',color:density===d.id?activeT.accent:'var(--text-muted)',marginBottom:'8px',transition:'all 0.2s'}}>{d.icon}</div>
+                  <div style={{fontSize:'12px',fontWeight:800,color:'var(--text-primary)',marginBottom:'3px'}}>{d.label}</div>
                   <div style={{fontSize:'11px',color:'var(--text-muted)'}}>{d.desc}</div>
                 </div>
               ))}
@@ -538,7 +513,7 @@ function Format({ userRole }) {
             {/* Font size */}
             <div className="fmt-pref-row">
               <div>
-                <div style={{fontSize:'13px',fontWeight:700,color:'var(--text-bright)'}}>Font Size</div>
+                <div style={{fontSize:'13px',fontWeight:700,color:'var(--text-primary)'}}>Font Size</div>
                 <div style={{fontSize:'11px',color:'var(--text-muted)',marginTop:'2px'}}>Base text size throughout the app</div>
               </div>
               <div className="fmt-seg">
@@ -551,7 +526,7 @@ function Format({ userRole }) {
             {/* Date format */}
             <div className="fmt-pref-row">
               <div>
-                <div style={{fontSize:'13px',fontWeight:700,color:'var(--text-bright)'}}>Date Format</div>
+                <div style={{fontSize:'13px',fontWeight:700,color:'var(--text-primary)'}}>Date Format</div>
                 <div style={{fontSize:'11px',color:'var(--text-muted)',marginTop:'2px'}}>How dates appear across the platform</div>
               </div>
               <div className="fmt-seg">
@@ -564,7 +539,7 @@ function Format({ userRole }) {
             {/* Timezone */}
             <div className="fmt-pref-row">
               <div>
-                <div style={{fontSize:'13px',fontWeight:700,color:'var(--text-bright)'}}>Time Zone</div>
+                <div style={{fontSize:'13px',fontWeight:700,color:'var(--text-primary)'}}>Time Zone</div>
                 <div style={{fontSize:'11px',color:'var(--text-muted)',marginTop:'2px'}}>Used for timestamps and scheduling</div>
               </div>
               <div className="fmt-seg">
@@ -577,7 +552,7 @@ function Format({ userRole }) {
             {/* Units */}
             <div className="fmt-pref-row">
               <div>
-                <div style={{fontSize:'13px',fontWeight:700,color:'var(--text-bright)'}}>Measurement Units</div>
+                <div style={{fontSize:'13px',fontWeight:700,color:'var(--text-primary)'}}>Measurement Units</div>
                 <div style={{fontSize:'11px',color:'var(--text-muted)',marginTop:'2px'}}>Distances, weights and volumes</div>
               </div>
               <div className="fmt-seg">
@@ -594,12 +569,12 @@ function Format({ userRole }) {
               className="fmt-apply-btn"
               disabled={applying}
               onClick={handleApply}
-              style={{background: applying ? '#94a3b8' : activeT.gradient}}
+              style={{background: applying ? '#94a3b8' : activeT.accent}}
             >
-              {applying ? '⟳  Applying…' : saved ? '✓  Saved!' : `Apply ${activeT.label}`}
+              {applying ? '⟳  Applying…' : saved ? '✓  Saved!' : saved ? "✓  Saved!" : applying ? "⟳  Applying…" : `Apply ${activeT.label} Theme`}
             </button>
             {saved && (
-              <div style={{display:'flex',alignItems:'center',gap:'8px',padding:'11px 18px',background:'var(--green-glow)',border:'1px solid #86efac',borderRadius:'12px',animation:'fmt-fadein 0.3s ease'}}>
+              <div style={{display:'flex',alignItems:'center',gap:'8px',padding:'11px 18px',background:'var(--green-bg)',border:'1px solid #86efac',borderRadius:'12px',animation:'fmt-fadein 0.3s ease'}}>
                 <span style={{fontSize:'18px'}}>🎨</span>
                 <span style={{fontSize:'13px',fontWeight:700,color:'var(--green)'}}>Theme applied across MechIQ</span>
               </div>
@@ -611,11 +586,11 @@ function Format({ userRole }) {
         <div style={{position:'sticky',top:'80px'}}>
           {/* Live label */}
           <div style={{display:'flex',alignItems:'center',gap:'8px',marginBottom:'12px'}}>
-            <div style={{width:'8px',height:'8px',borderRadius:'50%',background:'#16a34a',animation:'fmt-pulse 2s ease-in-out infinite'}}/>
+            <div style={{width:'8px',height:'8px',borderRadius:'50%',background:'var(--green)',animation:'fmt-pulse 2s ease-in-out infinite'}}/>
             <span style={{fontSize:'10px',fontWeight:800,color:'var(--text-muted)',letterSpacing:'1.5px',textTransform:'uppercase'}}>
               Live Preview
             </span>
-            <span style={{fontSize:'12px',fontWeight:700,color:previewT.primary,marginLeft:'2px'}}>
+            <span style={{fontSize:'12px',fontWeight:700,color:previewT.accent,marginLeft:'2px'}}>
               — {previewT.label}
             </span>
           </div>
@@ -624,17 +599,17 @@ function Format({ userRole }) {
           <LivePreview t={previewT} density={density} fontSize={fontSize} />
 
           {/* Theme info strip */}
-          <div style={{marginTop:'12px',padding:'12px 16px',background:previewT.bg,border:`1px solid ${previewT.border}`,borderRadius:'12px',display:'flex',alignItems:'center',gap:'10px',transition:'all 0.35s'}}>
-            <div style={{width:'36px',height:'36px',borderRadius:'10px',background:previewT.gradient,flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center',fontSize:'18px',animation:'fmt-float 2.5s ease-in-out infinite'}}>
+          <div style={{marginTop:'12px',padding:'12px 16px',background:previewT.swatch,border:`1px solid ${previewT.border}`,borderRadius:'12px',display:'flex',alignItems:'center',gap:'10px',transition:'all 0.35s'}}>
+            <div style={{width:'36px',height:'36px',borderRadius:'10px',background:previewT.accent,flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center',fontSize:'18px',animation:'fmt-float 2.5s ease-in-out infinite'}}>
               
             </div>
             <div style={{flex:1,minWidth:0}}>
-              <div style={{fontSize:'13px',fontWeight:800,color:previewT.dark}}>{previewT.label}</div>
-              <div style={{fontSize:'11px',color:previewT.textMuted}}>{previewT.tagline}</div>
+              <div style={{fontSize:'13px',fontWeight:800,color:previewT.text}}>{previewT.label}</div>
+              <div style={{fontSize:'11px',color:previewT.accent}}>{previewT.desc}</div>
             </div>
             {/* Colour swatches */}
             <div style={{display:'flex',gap:'4px'}}>
-              {[previewT.primary, previewT.accent, previewT.dark].map((c,i) => (
+              {[previewT.accent, previewT.accent, previewT.text].map((c,i) => (
                 <div key={i} style={{width:'16px',height:'16px',borderRadius:'4px',background:c,border:'1.5px solid rgba(255,255,255,0.3)',boxShadow:'0 1px 3px rgba(0,0,0,0.15)'}}/>
               ))}
             </div>
@@ -645,7 +620,7 @@ function Format({ userRole }) {
             {[['📐',density],['🔤',fontSize],['📅',dateFormat.split('/')[0]==='DD'?'AU date':'US date']].map(([ic,lbl])=>(
               <div key={lbl} style={{flex:1,padding:'8px',background:'#f8fafc',border:'1px solid var(--border)',borderRadius:'8px',textAlign:'center'}}>
                 <div style={{fontSize:'14px',marginBottom:'2px'}}>{ic}</div>
-                <div style={{fontSize:'10px',fontWeight:700,color:'var(--text-mid)',textTransform:'capitalize'}}>{lbl}</div>
+                <div style={{fontSize:'10px',fontWeight:700,color:'var(--text-secondary)',textTransform:'capitalize'}}>{lbl}</div>
               </div>
             ))}
           </div>
@@ -684,7 +659,7 @@ function Notifications({ userRole }) {
       onClick={() => toggle(k)}
       style={{
         width: '44px', height: '24px', borderRadius: '12px', cursor: 'pointer',
-        background: prefs[k] ? 'var(--cyan)' : 'var(--surface-3)',
+        background: prefs[k] ? 'var(--accent)' : 'var(--surface-3)',
         position: 'relative', transition: 'background 0.2s', flexShrink: 0,
       }}
     >
@@ -698,9 +673,9 @@ function Notifications({ userRole }) {
   );
 
   const NotifRow = ({ k, title, desc }) => (
-    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 0', borderBottom: '1px solid var(--border-light)' }}>
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 0', borderBottom: '1px solid var(--border)' }}>
       <div>
-        <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-dark)' }}>{title}</div>
+        <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)' }}>{title}</div>
         <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '2px' }}>{desc}</div>
       </div>
       <Toggle k={k} />
@@ -797,7 +772,7 @@ function UsersRoles({ userRole }) {
     fetchUsers();
   };
 
-  const roleColor = { master: '#7c3aed', admin: '#00ABE4', supervisor: '#d97706', technician: '#16a34a', operator: '#7a92a8' };
+  const roleColor = { master: 'var(--purple)', admin: 'var(--accent)', supervisor: 'var(--amber)', technician: 'var(--green)', operator: 'var(--text-muted)' };
   const roleBadge = role => (
     <span style={{ padding: '3px 10px', borderRadius: '10px', backgroundColor: roleColor[role] + '20', color: roleColor[role], fontSize: '11px', fontWeight: 700 }}>
       {role}
@@ -831,7 +806,7 @@ function UsersRoles({ userRole }) {
             {inviting ? 'Adding...' : 'Add User'}
           </button>
         </div>
-        {inviteMsg && <div style={{ marginTop: '10px', fontSize: '13px', color: inviteMsg.includes('success') ? '#16a34a' : '#dc2626', fontWeight: 600 }}>{inviteMsg}</div>}
+        {inviteMsg && <div style={{ marginTop: '10px', fontSize: '13px', color: inviteMsg.includes('success') ? 'var(--green)' : 'var(--red)', fontWeight: 600 }}>{inviteMsg}</div>}
       </div>
 
       {/* Role guide */}
@@ -846,7 +821,7 @@ function UsersRoles({ userRole }) {
           ].map(({ role, perms }) => (
             <div key={role} style={{ border: `1px solid ${roleColor[role]}30`, borderRadius: '8px', padding: '14px', borderTop: `3px solid ${roleColor[role]}` }}>
               <div style={{ fontSize: '13px', fontWeight: 700, color: roleColor[role], marginBottom: '10px', textTransform: 'capitalize' }}>{role}</div>
-              {perms.map(p => <div key={p} style={{ fontSize: '12px', color: 'var(--text-mid)', marginBottom: '4px' }}>✓ {p}</div>)}
+              {perms.map(p => <div key={p} style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px' }}>✓ {p}</div>)}
             </div>
           ))}
         </div>
@@ -858,7 +833,7 @@ function UsersRoles({ userRole }) {
         {loading ? <div style={{ color: 'var(--text-muted)', fontSize: '13px' }}>Loading...</div> : (
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
-              <tr style={{ backgroundColor: 'var(--blue-light)' }}>
+              <tr style={{ backgroundColor: 'var(--accent-light)' }}>
                 {['Name', 'Email', 'Role', 'Actions'].map(h => (
                   <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>{h}</th>
                 ))}
@@ -866,13 +841,13 @@ function UsersRoles({ userRole }) {
             </thead>
             <tbody>
               {users.map(u => (
-                <tr key={u.id} style={{ borderBottom: '1px solid var(--border-light)' }}>
-                  <td style={{ padding: '12px 14px', fontSize: '14px', fontWeight: 600, color: 'var(--text-dark)' }}>{u.name}</td>
-                  <td style={{ padding: '12px 14px', fontSize: '13px', color: 'var(--text-mid)' }}>{u.email}</td>
+                <tr key={u.id} style={{ borderBottom: '1px solid var(--border)' }}>
+                  <td style={{ padding: '12px 14px', fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)' }}>{u.name}</td>
+                  <td style={{ padding: '12px 14px', fontSize: '13px', color: 'var(--text-secondary)' }}>{u.email}</td>
                   <td style={{ padding: '12px 14px' }}>
                     {u.role === 'master' ? roleBadge(u.role) : (
                       <select value={u.role} onChange={e => handleRoleChange(u.id, e.target.value)}
-                        style={{ padding: '4px 8px', border: '1px solid var(--border)', borderRadius: '4px', fontSize: '12px', color: 'var(--text-dark)', backgroundColor: 'var(--surface)' }}>
+                        style={{ padding: '4px 8px', border: '1px solid var(--border)', borderRadius: '4px', fontSize: '12px', color: 'var(--text-primary)', backgroundColor: 'var(--surface)' }}>
                         <option value="admin">Admin</option>
                         <option value="supervisor">Supervisor</option>
                         <option value="technician">Technician</option>
@@ -928,8 +903,8 @@ function Billing({ userRole }) {
             { label: 'Status', value: (company?.status || 'Active').toUpperCase() },
             { label: 'Asset Limit', value: company?.asset_limit || 10 },
           ].map(({ label: l, value }) => (
-            <div key={l} style={{ backgroundColor: 'var(--blue-light)', borderRadius: '8px', padding: '16px 24px', textAlign: 'center', minWidth: '120px' }}>
-              <div style={{ fontSize: '24px', fontWeight: 900, color: 'var(--cyan)' }}>{value}</div>
+            <div key={l} style={{ backgroundColor: 'var(--accent-light)', borderRadius: '8px', padding: '16px 24px', textAlign: 'center', minWidth: '120px' }}>
+              <div style={{ fontSize: '24px', fontWeight: 900, color: 'var(--accent)' }}>{value}</div>
               <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 600, letterSpacing: '1px', marginTop: '4px' }}>{l}</div>
             </div>
           ))}
@@ -942,20 +917,20 @@ function Billing({ userRole }) {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px' }}>
           {plans.map(p => (
             <div key={p.id} style={{
-              border: current === p.id ? '1px solid var(--cyan-dim)' : '1px solid var(--border)',
+              border: current === p.id ? '1px solid var(--accent-dark)' : '1px solid var(--border)',
               borderRadius: '10px', padding: '20px',
-              backgroundColor: current === p.id ? 'var(--cyan-glow)' : 'var(--surface-2)',
+              backgroundColor: current === p.id ? 'var(--accent-glow)' : 'var(--surface-2)',
               position: 'relative',
             }}>
               {current === p.id && (
-                <div style={{ position: 'absolute', top: '-10px', left: '50%', transform: 'translateX(-50%)', backgroundColor: 'var(--cyan)', color: '#fff', fontSize: '10px', fontWeight: 700, padding: '3px 10px', borderRadius: '10px', whiteSpace: 'nowrap' }}>
+                <div style={{ position: 'absolute', top: '-10px', left: '50%', transform: 'translateX(-50%)', backgroundColor: 'var(--accent)', color: '#fff', fontSize: '10px', fontWeight: 700, padding: '3px 10px', borderRadius: '10px', whiteSpace: 'nowrap' }}>
                   CURRENT PLAN
                 </div>
               )}
-              <div style={{ fontSize: '16px', fontWeight: 800, color: 'var(--text-dark)', marginBottom: '4px' }}>{p.label}</div>
-              <div style={{ fontSize: '22px', fontWeight: 900, color: 'var(--cyan)', marginBottom: '4px' }}>{p.price}</div>
+              <div style={{ fontSize: '16px', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '4px' }}>{p.label}</div>
+              <div style={{ fontSize: '22px', fontWeight: 900, color: 'var(--accent)', marginBottom: '4px' }}>{p.price}</div>
               <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '14px' }}>Up to {p.assets === 999 ? 'unlimited' : p.assets} assets</div>
-              {p.features.map(f => <div key={f} style={{ fontSize: '12px', color: 'var(--text-mid)', marginBottom: '4px' }}>✓ {f}</div>)}
+              {p.features.map(f => <div key={f} style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px' }}>✓ {f}</div>)}
               {current !== p.id && (
                 <button
                   onClick={() => window.location.href = 'mailto:info@mechiq.com.au?subject=Upgrade to ' + p.label}
@@ -967,7 +942,7 @@ function Billing({ userRole }) {
           ))}
         </div>
         <div style={{ marginTop: '16px', fontSize: '12px', color: 'var(--text-muted)' }}>
-          To upgrade your plan contact us at <a href="mailto:info@mechiq.com.au" style={{ color: 'var(--cyan)' }}>info@mechiq.com.au</a>
+          To upgrade your plan contact us at <a href="mailto:info@mechiq.com.au" style={{ color: 'var(--accent)' }}>info@mechiq.com.au</a>
         </div>
       </div>
     </div>
@@ -1035,12 +1010,12 @@ function DataExport({ userRole }) {
               <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
                 <div style={{ fontSize: '24px' }}>{e.icon}</div>
                 <div>
-                  <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-dark)' }}>{e.label}</div>
+                  <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)' }}>{e.label}</div>
                   <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '2px' }}>{e.desc}</div>
                 </div>
               </div>
               <button onClick={() => exportData(e.id)} disabled={!!exporting}
-                style={{ ...saveBtn(e.id === 'full' ? '#1a2b3c' : '#00ABE4'), whiteSpace: 'nowrap', fontSize: '12px', padding: '8px 16px', flexShrink: 0 }}>
+                style={{ ...saveBtn(e.id === 'full' ? 'var(--text-primary)' : 'var(--accent)'), whiteSpace: 'nowrap', fontSize: '12px', padding: '8px 16px', flexShrink: 0 }}>
                 {exporting === e.id ? 'Exporting...' : 'Export JSON'}
               </button>
             </div>
@@ -1052,7 +1027,7 @@ function DataExport({ userRole }) {
         <SectionHeader icon="🗑️" title="Danger Zone" desc="Irreversible actions — proceed with caution" />
         <div style={{ border: '1px solid #fecaca', borderRadius: '8px', padding: '18px', backgroundColor: '#fef2f2' }}>
           <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--red)', marginBottom: '6px' }}>Delete All Company Data</div>
-          <div style={{ fontSize: '13px', color: 'var(--text-mid)', marginBottom: '14px' }}>Permanently removes all assets, maintenance records, work orders and oil samples. This cannot be undone. Export your data first.</div>
+          <div style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '14px' }}>Permanently removes all assets, maintenance records, work orders and oil samples. This cannot be undone. Export your data first.</div>
           <button
             onClick={() => { if (window.confirm('Are you sure? Contact info@mechiq.com.au to request a full account deletion.')) { window.location.href = 'mailto:info@mechiq.com.au?subject=Account Deletion Request'; } }}
             style={{ padding: '9px 20px', backgroundColor: 'var(--surface)', color: 'var(--red)', border: '1px solid #dc2626', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 600 }}>
@@ -1092,7 +1067,7 @@ function Settings({ userRole, initialTab }) {
     <div style={{ padding: '0' }}>
       {/* Header */}
       <div style={{ marginBottom: '24px' }}>
-        <h2 style={{ fontSize: '22px', fontWeight: 800, color: 'var(--text-dark)', margin: '0 0 4px' }}>Settings</h2>
+        <h2 style={{ fontSize: '22px', fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 4px' }}>Settings</h2>
         <p style={{ fontSize: '13px', color: 'var(--text-muted)', margin: 0 }}>Manage your company preferences, team and account.</p>
       </div>
 
