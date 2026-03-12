@@ -687,12 +687,82 @@ function OnboardingTab({ userRole, onComplete, toast }) {
     );
   };
 
+  const [onboardList, setOnboardList] = React.useState([]);
+  const [showList, setShowList]       = React.useState(true);
+  React.useEffect(() => {
+    if (!userRole?.company_id) return;
+    supabase.from('assets')
+      .select('id,asset_number,name,type,status,make,model,hours,purchase_price,created_at')
+      .eq('company_id', userRole.company_id)
+      .order('created_at', { ascending: false })
+      .limit(50)
+      .then(({ data }) => setOnboardList(data || []));
+  }, [userRole?.company_id, savedAsset?.id]);
+
   return (
-    <div style={{ maxWidth: '700px', margin: '0 auto' }}>
-      <div style={{ marginBottom: '24px' }}>
-        <h2 style={{ fontFamily: "var(--font-display)", fontSize: '30px', fontWeight: 900, color: 'var(--text-primary)', margin: '0 0 4px', textTransform: 'uppercase', letterSpacing: '2px' }}>Asset Onboarding</h2>
-        <p style={{ fontSize: '13px', color: 'var(--text-muted)', margin: 0, fontFamily:'var(--font-display)' }}>Register any asset, vehicle or equipment and generate its QR tag.</p>
+    <div style={{ maxWidth: '860px', margin: '0 auto' }}>
+      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'20px', flexWrap:'wrap', gap:10 }}>
+        <div>
+          <h2 style={{ fontFamily:"var(--font-display)", fontSize:'28px', fontWeight:900, color:'var(--text-primary)', margin:'0 0 3px', textTransform:'uppercase', letterSpacing:'2px' }}>Asset Onboarding</h2>
+          <p style={{ fontSize:'13px', color:'var(--text-muted)', margin:0 }}>Register any asset, vehicle or equipment and generate its QR tag.</p>
+        </div>
+        <span style={{ padding:'5px 14px', borderRadius:20, background:'var(--accent-light)', color:'var(--accent)', fontSize:12, fontWeight:700 }}>
+          {onboardList.length} Registered
+        </span>
       </div>
+
+      {/* Registered assets table */}
+      {onboardList.length > 0 && (
+        <div style={{ background:'var(--surface)', border:'1px solid var(--border)', borderRadius:12, marginBottom:24, overflow:'hidden' }}>
+          <div onClick={() => setShowList(p=>!p)}
+            style={{ padding:'12px 18px', display:'flex', alignItems:'center', justifyContent:'space-between', cursor:'pointer',
+              borderBottom: showList ? '1px solid var(--border)' : 'none' }}>
+            <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+              <div style={{ width:3, height:16, background:'var(--accent)', borderRadius:2 }} />
+              <span style={{ fontSize:13, fontWeight:700, color:'var(--text-primary)' }}>Registered Assets</span>
+              <span style={{ fontSize:12, color:'var(--text-muted)' }}>{onboardList.length} total</span>
+            </div>
+            <span style={{ fontSize:12, color:'var(--text-muted)', userSelect:'none' }}>{showList ? '▲ Hide' : '▼ Show'}</span>
+          </div>
+          {showList && (
+            <div style={{ overflowX:'auto' }}>
+              <table style={{ width:'100%', borderCollapse:'collapse', fontSize:13 }}>
+                <thead>
+                  <tr style={{ background:'var(--surface-2)' }}>
+                    {['Asset No.','Name','Type','Make / Model','Status','Hours','Purchase Price','Date Added'].map(h => (
+                      <th key={h} style={{ padding:'9px 14px', textAlign:'left', fontSize:10, fontWeight:700,
+                        color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.5px',
+                        borderBottom:'1px solid var(--border)', whiteSpace:'nowrap' }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {onboardList.map(a => {
+                    const sc = a.status==='Down'?'var(--red)':a.status==='Maintenance'?'var(--amber)':'var(--green)';
+                    return (
+                      <tr key={a.id} style={{ borderBottom:'1px solid var(--border)' }}>
+                        <td style={{ padding:'9px 14px', fontWeight:700, color:'var(--accent)', fontFamily:'var(--font-mono)', fontSize:12 }}>{a.asset_number}</td>
+                        <td style={{ padding:'9px 14px', fontWeight:600, color:'var(--text-primary)' }}>{a.name}</td>
+                        <td style={{ padding:'9px 14px', color:'var(--text-secondary)' }}>{a.type||'—'}</td>
+                        <td style={{ padding:'9px 14px', color:'var(--text-secondary)', fontSize:12 }}>{[a.make,a.model].filter(Boolean).join(' ')||'—'}</td>
+                        <td style={{ padding:'9px 14px' }}>
+                          <span style={{ padding:'2px 8px', borderRadius:20, background:sc+'18', color:sc, fontSize:11, fontWeight:700 }}>
+                            {a.status||'Active'}
+                          </span>
+                        </td>
+                        <td style={{ padding:'9px 14px', color:'var(--text-secondary)' }}>{a.hours?Number(a.hours).toLocaleString()+' hrs':'—'}</td>
+                        <td style={{ padding:'9px 14px', color:'var(--text-secondary)' }}>{a.purchase_price?'$'+Number(a.purchase_price).toLocaleString():'—'}</td>
+                        <td style={{ padding:'9px 14px', color:'var(--text-muted)', fontSize:12 }}>{a.created_at?new Date(a.created_at).toLocaleDateString('en-AU',{day:'2-digit',month:'short',year:'numeric'}):'—'}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+
       <StepBar current={step} />
       <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '16px', padding: '28px', boxShadow: '0 0 32px rgba(0,212,255,0.06)' }}>
         {step === 0 && renderStep0()}
@@ -714,13 +784,332 @@ function OnboardingTab({ userRole, onComplete, toast }) {
   );
 }
 
-// ─── Tracker placeholder ───────────────────────────────────────────────────────
-function TrackerPlaceholder() {
+// ─── Tracker ──────────────────────────────────────────────────────────────────
+function TrackerPlaceholder({ userRole }) {
+  const [assets, setAssets]       = React.useState([]);
+  const [selected, setSelected]   = React.useState(null);
+  const [watching, setWatching]   = React.useState(false);
+  const [userPos, setUserPos]     = React.useState(null);
+  const [accuracy, setAccuracy]   = React.useState(null);
+  const [gpsError, setGpsError]   = React.useState(null);
+  const [lastUpdate, setLastUpdate] = React.useState(null);
+  const [mapReady, setMapReady]   = React.useState(false);
+  const [filterStatus, setFilterStatus] = React.useState('All');
+  const mapRef      = React.useRef(null);
+  const mapInst     = React.useRef(null);
+  const markersRef  = React.useRef({});
+  const userMarker  = React.useRef(null);
+  const watchId     = React.useRef(null);
+
+  // ── Load Leaflet once ───────────────────────────────────────────
+  React.useEffect(() => {
+    if (!document.getElementById('leaflet-css')) {
+      const l = document.createElement('link');
+      l.id = 'leaflet-css'; l.rel = 'stylesheet';
+      l.href = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css';
+      document.head.appendChild(l);
+    }
+    const load = () => {
+      if (window.L) { initMap(); return; }
+      const s = document.createElement('script');
+      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js';
+      s.onload = () => { setMapReady(true); initMap(); };
+      document.head.appendChild(s);
+    };
+    load();
+    return () => {
+      if (watchId.current) navigator.geolocation.clearWatch(watchId.current);
+      if (mapInst.current) { try { mapInst.current.remove(); } catch(e){} mapInst.current = null; }
+    };
+  }, []);
+
+  // ── Fetch assets ────────────────────────────────────────────────
+  React.useEffect(() => {
+    if (!userRole?.company_id) return;
+    supabase.from('assets')
+      .select('id,asset_number,name,type,make,model,status,location,hours,last_lat,last_lng,last_seen')
+      .eq('company_id', userRole.company_id)
+      .then(({ data }) => setAssets(data || []));
+  }, [userRole?.company_id]);
+
+  // ── Init map ────────────────────────────────────────────────────
+  const initMap = () => {
+    if (mapInst.current || !mapRef.current || !window.L) return;
+    const L = window.L;
+    const map = L.map(mapRef.current, { zoomControl: true });
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© <a href="https://openstreetmap.org">OpenStreetMap</a>',
+      maxZoom: 19,
+    }).addTo(map);
+    map.setView([-25.2744, 133.7751], 5);
+    mapInst.current = map;
+    setMapReady(true);
+  };
+
+  // ── Render asset markers whenever assets or map changes ─────────
+  React.useEffect(() => {
+    if (!mapInst.current || !window.L) return;
+    const L = window.L;
+    Object.values(markersRef.current).forEach(m => { try { m.remove(); } catch(e){} });
+    markersRef.current = {};
+    const withGPS = assets.filter(a => a.last_lat && a.last_lng);
+    if (withGPS.length === 0) return;
+    withGPS.forEach(a => {
+      const SC = { Running:'#16a34a', Down:'#dc2626', Maintenance:'#d97706', Active:'#16a34a' };
+      const c = SC[a.status] || '#0ea5e9';
+      const num = (a.asset_number||'').replace('AST-','');
+      const icon = L.divIcon({
+        html: `<div style="position:relative;width:36px;height:42px">
+          <div style="width:36px;height:36px;border-radius:50% 50% 50% 0;background:${c};border:3px solid #fff;box-shadow:0 3px 10px rgba(0,0,0,0.4);transform:rotate(-45deg);position:absolute;top:0;left:0"></div>
+          <span style="position:absolute;top:5px;left:0;width:36px;text-align:center;font-size:9px;font-weight:900;color:#fff;font-family:sans-serif;line-height:1">${num}</span>
+        </div>`,
+        iconSize: [36, 42], iconAnchor: [18, 42], popupAnchor: [0, -44], className: '',
+      });
+      const pop = `<div style="font-family:sans-serif;padding:4px;min-width:150px">
+        <div style="font-size:14px;font-weight:700;margin-bottom:3px">${a.name}</div>
+        <div style="font-size:11px;color:#6b7280;margin-bottom:4px">${a.asset_number} · ${a.type||''}</div>
+        <div style="display:inline-block;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:700;background:${c}20;color:${c}">${a.status}</div>
+        ${a.last_seen ? `<div style="font-size:10px;color:#9ca3af;margin-top:4px">Updated: ${new Date(a.last_seen).toLocaleString('en-AU',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})}</div>` : ''}
+      </div>`;
+      const marker = L.marker([a.last_lat, a.last_lng], { icon }).addTo(mapInst.current).bindPopup(pop);
+      marker.on('click', () => setSelected(a));
+      markersRef.current[a.id] = marker;
+    });
+    const group = L.featureGroup(Object.values(markersRef.current));
+    if (group.getBounds().isValid()) mapInst.current.fitBounds(group.getBounds(), { padding: [50,50] });
+  }, [assets, mapReady]);
+
+  // ── Track user location ─────────────────────────────────────────
+  const startTracking = () => {
+    if (!navigator.geolocation) { setGpsError('Geolocation not supported by this browser'); return; }
+    setGpsError(null); setWatching(true);
+    watchId.current = navigator.geolocation.watchPosition(
+      ({ coords }) => {
+        const { latitude: lat, longitude: lng, accuracy: acc } = coords;
+        setUserPos({ lat, lng }); setAccuracy(Math.round(acc)); setLastUpdate(new Date());
+        if (mapInst.current && window.L) {
+          if (userMarker.current) { try { userMarker.current.remove(); } catch(e){} }
+          const icon = window.L.divIcon({
+            html: `<div style="width:18px;height:18px;border-radius:50%;background:#0ea5e9;border:3px solid #fff;box-shadow:0 0 0 6px rgba(14,165,233,0.25)"></div>`,
+            iconSize:[18,18], iconAnchor:[9,9], className:'',
+          });
+          userMarker.current = window.L.marker([lat,lng],{icon}).addTo(mapInst.current)
+            .bindPopup(`<b>Your Location</b><br/>±${Math.round(acc)}m accuracy`);
+          mapInst.current.flyTo([lat,lng], 13, { duration: 1.5 });
+        }
+      },
+      (err) => { setGpsError(err.message); setWatching(false); },
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 5000 }
+    );
+  };
+
+  const stopTracking = () => {
+    if (watchId.current) navigator.geolocation.clearWatch(watchId.current);
+    setWatching(false);
+  };
+
+  const flyTo = (a) => {
+    setSelected(a);
+    if (a.last_lat && mapInst.current) {
+      mapInst.current.flyTo([a.last_lat, a.last_lng], 15, { duration: 1.2 });
+      if (markersRef.current[a.id]) markersRef.current[a.id].openPopup();
+    }
+  };
+
+  const SC = { Running:'var(--green)', Down:'var(--red)', Maintenance:'var(--amber)', Active:'var(--green)', Standby:'var(--purple)' };
+  const withGPS    = assets.filter(a => a.last_lat && a.last_lng);
+  const withoutGPS = assets.filter(a => !a.last_lat || !a.last_lng);
+  const filtered   = filterStatus === 'All' ? assets : assets.filter(a => a.status === filterStatus);
+
   return (
-    <div style={{ textAlign: 'center', padding: '80px 20px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '16px' }}>
-      <div style={{ fontSize: '48px', marginBottom: '14px' }}>📡</div>
-      <div style={{ fontFamily: "var(--font-display)", fontSize: '22px', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing:'1.5px' }}>GPS Tracker</div>
-      <div style={{ fontSize: '13px', color: 'var(--text-muted)', maxWidth: '280px', margin: '0 auto' }}>Live asset tracking is coming soon. Connect telematics hardware to see real-time locations.</div>
+    <div>
+      {/* Header row */}
+      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:20, flexWrap:'wrap', gap:12 }}>
+        <div>
+          <h2 style={{ fontSize:22, fontWeight:800, color:'var(--text-primary)', margin:'0 0 3px' }}>Fleet Tracker</h2>
+          <p style={{ fontSize:13, color:'var(--text-muted)', margin:0 }}>
+            GPS · Wi‑Fi · Cell triangulation · {withGPS.length}/{assets.length} assets reporting live location
+          </p>
+        </div>
+        <div style={{ display:'flex', gap:10, alignItems:'center', flexWrap:'wrap' }}>
+          {userPos && (
+            <span style={{ fontSize:12, color:'var(--green)', fontWeight:600, display:'flex', alignItems:'center', gap:5 }}>
+              <span style={{ width:7, height:7, borderRadius:'50%', background:'var(--green)', display:'inline-block', animation:'pulse-dot 1.5s infinite' }} />
+              ±{accuracy}m · {lastUpdate?.toLocaleTimeString('en-AU',{hour:'2-digit',minute:'2-digit',second:'2-digit'})}
+            </span>
+          )}
+          {gpsError && <span style={{ fontSize:12, color:'var(--red)' }}>⚠ {gpsError}</span>}
+          <button onClick={watching ? stopTracking : startTracking}
+            style={{ padding:'9px 18px', borderRadius:8, border: watching ? '1px solid var(--red-border)' : 'none',
+              background: watching ? 'var(--red-bg)' : 'var(--accent)', color: watching ? 'var(--red)' : '#fff',
+              fontWeight:700, fontSize:13, cursor:'pointer', fontFamily:'inherit', transition:'all 0.15s' }}>
+            {watching ? '⏹ Stop Tracking' : '📡 Track My Location'}
+          </button>
+        </div>
+      </div>
+
+      {/* Stat pills */}
+      <div style={{ display:'flex', gap:10, marginBottom:20, flexWrap:'wrap' }}>
+        {[['All', assets.length, 'var(--text-secondary)'],
+          ['Running', assets.filter(a=>a.status==='Running'||a.status==='Active').length, 'var(--green)'],
+          ['Maintenance', assets.filter(a=>a.status==='Maintenance').length, 'var(--amber)'],
+          ['Down', assets.filter(a=>a.status==='Down').length, 'var(--red)'],
+        ].map(([s,n,c]) => (
+          <button key={s} onClick={() => setFilterStatus(s)}
+            style={{ padding:'8px 16px', borderRadius:20, border:`1px solid ${filterStatus===s ? c : 'var(--border)'}`,
+              background: filterStatus===s ? c+'18' : 'var(--surface)', color: filterStatus===s ? c : 'var(--text-muted)',
+              fontWeight: filterStatus===s ? 700 : 500, fontSize:12, cursor:'pointer', fontFamily:'inherit' }}>
+            {s} <span style={{ fontWeight:800 }}>{n}</span>
+          </button>
+        ))}
+      </div>
+
+      {/* Main grid: sidebar + map */}
+      <div style={{ display:'grid', gridTemplateColumns:'290px 1fr', gap:16, alignItems:'start' }}>
+
+        {/* Asset list */}
+        <div style={{ background:'var(--surface)', border:'1px solid var(--border)', borderRadius:12, overflow:'hidden', maxHeight:540, display:'flex', flexDirection:'column' }}>
+          <div style={{ padding:'10px 14px', borderBottom:'1px solid var(--border)', fontSize:11, fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.8px' }}>
+            Fleet Assets · {filtered.length}
+          </div>
+          <div style={{ overflowY:'auto', flex:1 }}>
+            {filtered.length === 0 ? (
+              <div style={{ padding:28, textAlign:'center', color:'var(--text-muted)', fontSize:13 }}>No assets found</div>
+            ) : filtered.map(a => {
+              const hasGPS = !!(a.last_lat && a.last_lng);
+              const sc = SC[a.status] || 'var(--text-muted)';
+              return (
+                <div key={a.id} onClick={() => flyTo(a)}
+                  style={{ padding:'11px 14px', borderBottom:'1px solid var(--border)', cursor:'pointer', transition:'background 0.1s',
+                    background: selected?.id === a.id ? 'var(--accent-light)' : 'transparent' }}>
+                  <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                    <span style={{ width:8, height:8, borderRadius:'50%', background: hasGPS ? 'var(--green)' : 'var(--border-strong)',
+                      flexShrink:0, boxShadow: hasGPS ? '0 0 5px var(--green)' : 'none',
+                      animation: hasGPS ? 'pulse-dot 2s infinite' : 'none' }} />
+                    <span style={{ fontSize:13, fontWeight:600, color:'var(--text-primary)', flex:1, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{a.name}</span>
+                    <span style={{ fontSize:11, color:sc, fontWeight:700 }}>{a.status}</span>
+                  </div>
+                  <div style={{ fontSize:11, color:'var(--text-muted)', paddingLeft:16, marginTop:2 }}>
+                    {a.asset_number}{a.type ? ' · '+a.type : ''}{a.location ? ' · '+a.location : ''}
+                  </div>
+                  {hasGPS && a.last_seen && (
+                    <div style={{ fontSize:10, color:'var(--text-faint)', paddingLeft:16, marginTop:2 }}>
+                      {new Date(a.last_seen).toLocaleString('en-AU',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})}
+                    </div>
+                  )}
+                  {!hasGPS && (
+                    <div style={{ fontSize:10, color:'var(--text-faint)', paddingLeft:16, marginTop:2 }}>No GPS signal</div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Map container */}
+        <div style={{ position:'relative', border:'1px solid var(--border)', borderRadius:12, overflow:'hidden' }}>
+          <div ref={mapRef} style={{ height:540, width:'100%', background:'var(--surface-2)' }} />
+          {!mapReady && (
+            <div style={{ position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center',
+              background:'var(--surface-2)', fontSize:13, color:'var(--text-muted)', gap:8 }}>
+              <span style={{ display:'inline-block', width:14, height:14, border:'2px solid var(--accent)', borderTopColor:'transparent', borderRadius:'50%', animation:'spin 0.7s linear infinite' }} />
+              Loading map…
+            </div>
+          )}
+          {/* Selected asset overlay */}
+          {selected && (
+            <div style={{ position:'absolute', top:12, right:12, background:'var(--surface)', border:'1px solid var(--border)',
+              borderRadius:10, padding:'12px 16px', boxShadow:'0 4px 20px rgba(0,0,0,0.12)', minWidth:200, zIndex:999 }}>
+              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:6 }}>
+                <div style={{ fontSize:13, fontWeight:700, color:'var(--text-primary)', lineHeight:1.3 }}>{selected.name}</div>
+                <button onClick={() => setSelected(null)}
+                  style={{ border:'none', background:'none', cursor:'pointer', color:'var(--text-muted)', fontSize:16, padding:0, marginLeft:8 }}>✕</button>
+              </div>
+              <div style={{ fontSize:11, color:'var(--text-muted)', marginBottom:5 }}>{selected.asset_number} · {selected.type||'Asset'}</div>
+              <span style={{ display:'inline-block', padding:'2px 9px', borderRadius:20, fontSize:11, fontWeight:700,
+                background:(SC[selected.status]||'var(--text-muted)')+'18', color:SC[selected.status]||'var(--text-muted)' }}>{selected.status}</span>
+              {selected.last_lat ? (
+                <div style={{ fontSize:11, color:'var(--text-muted)', marginTop:6 }}>
+                  📍 {selected.last_lat.toFixed(5)}, {selected.last_lng.toFixed(5)}
+                </div>
+              ) : (
+                <div style={{ fontSize:11, color:'var(--text-muted)', marginTop:6 }}>📡 No GPS data — hardware needed</div>
+              )}
+            </div>
+          )}
+          {/* Legend */}
+          <div style={{ position:'absolute', bottom:14, left:14, background:'var(--surface)', border:'1px solid var(--border)',
+            borderRadius:8, padding:'7px 12px', fontSize:11, display:'flex', gap:12, zIndex:999,
+            boxShadow:'0 2px 8px rgba(0,0,0,0.1)' }}>
+            {[['Running','var(--green)'],['Maintenance','var(--amber)'],['Down','var(--red)']].map(([s,c]) => (
+              <div key={s} style={{ display:'flex', alignItems:'center', gap:4 }}>
+                <div style={{ width:7, height:7, borderRadius:'50%', background:c }} />
+                <span style={{ color:'var(--text-secondary)' }}>{s}</span>
+              </div>
+            ))}
+            <div style={{ display:'flex', alignItems:'center', gap:4 }}>
+              <div style={{ width:10, height:10, borderRadius:'50%', background:'#0ea5e9', border:'2px solid #fff' }} />
+              <span style={{ color:'var(--text-secondary)' }}>You</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* No GPS assets — assets without hardware */}
+      {withoutGPS.length > 0 && (
+        <div style={{ marginTop:20, background:'var(--surface)', border:'1px solid var(--border)', borderRadius:12, padding:'14px 18px' }}>
+          <div style={{ fontSize:13, fontWeight:700, color:'var(--text-primary)', marginBottom:8 }}>
+            {withoutGPS.length} asset{withoutGPS.length!==1?'s':''} without GPS signal
+          </div>
+          <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
+            {withoutGPS.map(a => (
+              <span key={a.id} style={{ fontSize:11, padding:'3px 9px', borderRadius:20, background:'var(--surface-2)',
+                border:'1px solid var(--border)', color:'var(--text-muted)', fontWeight:600 }}>
+                {a.asset_number} — {a.name}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Hardware recommendations */}
+      <div style={{ marginTop:20, background:'var(--surface)', border:'1px solid var(--border)', borderRadius:12, overflow:'hidden' }}>
+        <div style={{ padding:'14px 20px', borderBottom:'1px solid var(--border)', display:'flex', alignItems:'center', gap:10 }}>
+          <span style={{ fontSize:18 }}>🛰️</span>
+          <div>
+            <div style={{ fontSize:14, fontWeight:700, color:'var(--text-primary)' }}>Recommended GPS Hardware</div>
+            <div style={{ fontSize:12, color:'var(--text-muted)' }}>Works for fleet vehicles, heavy machinery and trailers — all compatible with MechIQ via API</div>
+          </div>
+        </div>
+        <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(250px,1fr))', gap:0 }}>
+          {[
+            { name:'Teltonika FMB920', badge:'Best All-Rounder', badgeC:'var(--green)', use:'Fleet vehicles & trucks',
+              price:'~$120 AUD/unit', features:['4G LTE + GPS + Wi-Fi + Bluetooth','OBD-II plug-in (no install needed)','Ignition on/off & movement alerts','Aussie distributors available'] },
+            { name:'Concox AT4',       badge:'Best for Machinery', badgeC:'var(--accent)', use:'Excavators, graders, generators',
+              price:'~$90 AUD/unit', features:['Hardwired 9–100V DC input','IP67 waterproof rated','Geofence & tamper alerts','Works without OBD port'] },
+            { name:'Queclink GL300',   badge:'Best for Trailers', badgeC:'var(--purple)', use:'Trailers, containers, tools',
+              price:'~$80 AUD/unit', features:['Built-in rechargeable battery','Up to 3 years standby mode','IP67 + magnetic mount','Motion-activated reporting'] },
+            { name:'Samsara VG34',     badge:'Enterprise', badgeC:'var(--amber)', use:'Full fleet management',
+              price:'Subscription', features:['HD dashcam + real-time GPS','Driver behaviour scoring','ELD compliance built-in','Direct API integration to MechIQ'] },
+          ].map((h, i) => (
+            <div key={h.name} style={{ padding:'16px 20px', borderRight: i<3 ? '1px solid var(--border)' : 'none', borderBottom:'1px solid var(--border)' }}>
+              <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', marginBottom:6 }}>
+                <div style={{ fontSize:14, fontWeight:700, color:'var(--text-primary)' }}>{h.name}</div>
+                <span style={{ fontSize:10, fontWeight:700, padding:'2px 7px', borderRadius:20,
+                  background:h.badgeC+'22', color:h.badgeC, whiteSpace:'nowrap', marginLeft:8 }}>{h.badge}</span>
+              </div>
+              <div style={{ fontSize:11, color:'var(--text-muted)', marginBottom:6 }}>🔧 {h.use}</div>
+              <div style={{ fontSize:13, fontWeight:700, color:'var(--accent)', marginBottom:10 }}>{h.price}</div>
+              <ul style={{ margin:0, paddingLeft:16, fontSize:12, color:'var(--text-secondary)', lineHeight:1.9 }}>
+                {h.features.map(f => <li key={f}>{f}</li>)}
+              </ul>
+            </div>
+          ))}
+        </div>
+        <div style={{ padding:'11px 20px', background:'var(--surface-2)', fontSize:12, color:'var(--text-muted)', borderTop:'1px solid var(--border)' }}>
+          💡 <strong>To activate tracking:</strong> Your chosen device pushes GPS coordinates to MechIQ via REST API, updating <code style={{fontFamily:'var(--font-mono)',background:'var(--surface-3)',padding:'1px 5px',borderRadius:4}}>last_lat</code>, <code style={{fontFamily:'var(--font-mono)',background:'var(--surface-3)',padding:'1px 5px',borderRadius:4}}>last_lng</code> and <code style={{fontFamily:'var(--font-mono)',background:'var(--surface-3)',padding:'1px 5px',borderRadius:4}}>last_seen</code> on each asset in real time.
+        </div>
+      </div>
     </div>
   );
 }
@@ -736,8 +1125,8 @@ function Assets({ userRole, onViewAsset, initialTab }) {
     switch (activeTab) {
       case 'units':        return <UnitsTab userRole={userRole} onViewAsset={onViewAsset} toast={toast} />;
       case 'onboarding':  return <OnboardingTab userRole={userRole} onComplete={() => setActiveTab('units')} toast={toast} />;
-      case 'depreciation':return <Depreciation userRole={userRole} />;
-      case 'tracker':     return <TrackerPlaceholder />;
+      case 'depreciation':return <DepreciationTab userRole={userRole} />;
+      case 'tracker':     return <TrackerPlaceholder userRole={userRole} />;
       default:            return <UnitsTab userRole={userRole} onViewAsset={onViewAsset} toast={toast} />;
     }
   };
@@ -748,13 +1137,37 @@ function Assets({ userRole, onViewAsset, initialTab }) {
     }
   }, []);
 
+  const TABS = [
+    { id:'units',       label:'Fleet Units',  icon:'🚛' },
+    { id:'onboarding',  label:'Onboarding',   icon:'➕' },
+    { id:'depreciation',label:'Depreciation', icon:'📉' },
+    { id:'tracker',     label:'Tracker',      icon:'📡' },
+  ];
+
   return (
     <>
       <Toasts toasts={toasts} />
       <div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-          <h2 style={{ fontFamily: "var(--font-display)", fontSize: '38px', fontWeight: 900, color: 'var(--text-primary)', letterSpacing: '2px', textTransform: 'uppercase', margin: 0, lineHeight: 1 }}>Assets</h2>
+        {/* Header */}
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:16 }}>
+          <h2 style={{ fontFamily:"var(--font-display)", fontSize:'38px', fontWeight:900, color:'var(--text-primary)', letterSpacing:'2px', textTransform:'uppercase', margin:0, lineHeight:1 }}>Assets</h2>
         </div>
+
+        {/* Tab bar */}
+        <div style={{ display:'flex', gap:3, marginBottom:24, background:'var(--surface)', border:'1px solid var(--border)', borderRadius:10, padding:4, width:'fit-content' }}>
+          {TABS.map(t => (
+            <button key={t.id} onClick={() => setActiveTab(t.id)}
+              style={{ padding:'8px 18px', borderRadius:7, border:'none', cursor:'pointer', fontFamily:'inherit',
+                fontSize:13, fontWeight:600, transition:'all 0.15s', display:'flex', alignItems:'center', gap:6,
+                background: activeTab===t.id ? 'var(--accent)' : 'transparent',
+                color:       activeTab===t.id ? '#fff'          : 'var(--text-muted)',
+                boxShadow:   activeTab===t.id ? '0 2px 8px rgba(14,165,233,0.3)' : 'none',
+              }}>
+              <span>{t.icon}</span>{t.label}
+            </button>
+          ))}
+        </div>
+
         {renderTab()}
       </div>
     </>
@@ -762,3 +1175,158 @@ function Assets({ userRole, onViewAsset, initialTab }) {
 }
 
 export default Assets;
+// ─── Depreciation Tab ─────────────────────────────────────────────────────────
+function DepreciationTab({ userRole }) {
+  const [fleetAssets, setFleetAssets] = React.useState([]);
+  const [loading, setLoading]         = React.useState(true);
+  const [expanded, setExpanded]       = React.useState(true);
+
+  React.useEffect(() => {
+    if (!userRole?.company_id) return;
+    supabase.from('assets')
+      .select('id,asset_number,name,type,make,model,status,hours,purchase_price,purchase_date,year,depreciation_snapshot')
+      .eq('company_id', userRole.company_id)
+      .not('purchase_price', 'is', null)
+      .order('created_at', { ascending: false })
+      .then(({ data }) => { setFleetAssets(data || []); setLoading(false); });
+  }, [userRole?.company_id]);
+
+  const SC = {
+    Running:'var(--green)', Down:'var(--red)', Maintenance:'var(--amber)',
+    Active:'var(--green)', Standby:'var(--purple)',
+  };
+
+  // Fleet totals
+  const totals = fleetAssets.reduce((acc, a) => {
+    let snap = null;
+    try { snap = a.depreciation_snapshot ? JSON.parse(a.depreciation_snapshot) : null; } catch {}
+    if (!snap) snap = calcDepr(a.purchase_price, a.purchase_date, a.year);
+    return {
+      purchase: acc.purchase + (a.purchase_price || 0),
+      bookValue: acc.bookValue + (snap?.currentValue || 0),
+      annualDepr: acc.annualDepr + (snap?.annualDepreciation || 0),
+    };
+  }, { purchase:0, bookValue:0, annualDepr:0 });
+
+  return (
+    <div>
+      {/* Fleet summary */}
+      {!loading && fleetAssets.length > 0 && (
+        <div style={{ marginBottom:28 }}>
+          {/* Stat cards row */}
+          <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(180px,1fr))', gap:12, marginBottom:16 }}>
+            {[
+              { label:'Fleet Purchase Value',  val:`$${totals.purchase.toLocaleString()}`,  c:'var(--text-primary)' },
+              { label:'Current Fleet Book Value', val:`$${totals.bookValue.toLocaleString()}`, c:'var(--accent)' },
+              { label:'Annual Depreciation',    val:`$${totals.annualDepr.toLocaleString()}/yr`, c:'var(--red)' },
+              { label:'Assets Tracked',         val:fleetAssets.length,                     c:'var(--green)' },
+            ].map(s => (
+              <div key={s.label} style={{ background:'var(--surface)', border:'1px solid var(--border)', borderRadius:10, padding:'14px 18px' }}>
+                <div style={{ fontSize:11, fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.5px', marginBottom:5 }}>{s.label}</div>
+                <div style={{ fontSize:20, fontWeight:800, color:s.c }}>{s.val}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* Collapsible fleet table */}
+          <div style={{ background:'var(--surface)', border:'1px solid var(--border)', borderRadius:12, overflow:'hidden' }}>
+            <div onClick={() => setExpanded(p=>!p)}
+              style={{ padding:'12px 18px', display:'flex', alignItems:'center', justifyContent:'space-between',
+                cursor:'pointer', borderBottom: expanded ? '1px solid var(--border)' : 'none' }}>
+              <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+                <div style={{ width:3, height:18, background:'var(--accent)', borderRadius:2 }} />
+                <span style={{ fontSize:14, fontWeight:700, color:'var(--text-primary)' }}>Fleet Depreciation Status</span>
+                <span style={{ fontSize:12, color:'var(--text-muted)' }}>{fleetAssets.length} assets with purchase data</span>
+              </div>
+              <span style={{ fontSize:12, color:'var(--text-muted)', userSelect:'none' }}>{expanded ? '▲ Hide' : '▼ Show'}</span>
+            </div>
+            {expanded && (
+              <div style={{ overflowX:'auto' }}>
+                <table style={{ width:'100%', borderCollapse:'collapse', fontSize:13 }}>
+                  <thead>
+                    <tr style={{ background:'var(--surface-2)' }}>
+                      {['Asset','Type','Status','Purchase Price','Book Value','Annual Depr.','Age','% Depreciated','Action'].map(h => (
+                        <th key={h} style={{ padding:'9px 14px', textAlign:'left', fontSize:10, fontWeight:700,
+                          color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.5px',
+                          borderBottom:'1px solid var(--border)', whiteSpace:'nowrap' }}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {fleetAssets.map(a => {
+                      let snap = null;
+                      try { snap = a.depreciation_snapshot ? JSON.parse(a.depreciation_snapshot) : null; } catch {}
+                      if (!snap) snap = calcDepr(a.purchase_price, a.purchase_date, a.year);
+                      const sc  = SC[a.status] || 'var(--text-muted)';
+                      const rec = !snap ? '—' : snap.depreciationRate > 70 ? 'Replace' : snap.depreciationRate > 40 ? 'Monitor' : 'Keep';
+                      const recC = rec==='Replace' ? 'var(--red)' : rec==='Monitor' ? 'var(--amber)' : 'var(--green)';
+                      return (
+                        <tr key={a.id} style={{ borderBottom:'1px solid var(--border)' }}>
+                          <td style={{ padding:'10px 14px' }}>
+                            <div style={{ fontWeight:700, color:'var(--text-primary)', fontSize:13 }}>{a.name}</div>
+                            <div style={{ fontSize:11, color:'var(--text-muted)', fontFamily:'var(--font-mono)' }}>{a.asset_number}</div>
+                          </td>
+                          <td style={{ padding:'10px 14px', color:'var(--text-secondary)', fontSize:12 }}>{a.type||'—'}</td>
+                          <td style={{ padding:'10px 14px' }}>
+                            <span style={{ padding:'2px 8px', borderRadius:20, background:sc+'18', color:sc, fontSize:11, fontWeight:700 }}>{a.status}</span>
+                          </td>
+                          <td style={{ padding:'10px 14px', color:'var(--text-secondary)' }}>${(a.purchase_price||0).toLocaleString()}</td>
+                          <td style={{ padding:'10px 14px', fontWeight:600, color:'var(--accent)' }}>
+                            {snap ? '$'+snap.currentValue.toLocaleString() : '—'}
+                          </td>
+                          <td style={{ padding:'10px 14px', color:'var(--red)' }}>
+                            {snap ? '$'+snap.annualDepreciation.toLocaleString()+'/yr' : '—'}
+                          </td>
+                          <td style={{ padding:'10px 14px', color:'var(--text-secondary)' }}>
+                            {snap ? snap.ageYears+' yrs' : '—'}
+                          </td>
+                          <td style={{ padding:'10px 14px' }}>
+                            {snap ? (
+                              <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                                <div style={{ flex:1, height:5, background:'var(--surface-3)', borderRadius:99, overflow:'hidden', minWidth:50 }}>
+                                  <div style={{ width:snap.depreciationRate+'%', height:'100%', borderRadius:99,
+                                    background: snap.depreciationRate>70?'var(--red)':snap.depreciationRate>40?'var(--amber)':'var(--green)' }} />
+                                </div>
+                                <span style={{ fontSize:12, fontWeight:700, whiteSpace:'nowrap',
+                                  color: snap.depreciationRate>70?'var(--red)':snap.depreciationRate>40?'var(--amber)':'var(--green)' }}>
+                                  {snap.depreciationRate}%
+                                </span>
+                              </div>
+                            ) : '—'}
+                          </td>
+                          <td style={{ padding:'10px 14px' }}>
+                            <span style={{ fontSize:11, fontWeight:700, padding:'2px 8px', borderRadius:20,
+                              background:recC+'18', color:recC }}>{rec}</span>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {!loading && fleetAssets.length === 0 && (
+        <div style={{ marginBottom:24, padding:'20px 24px', background:'var(--surface)', border:'1px solid var(--border)',
+          borderRadius:12, fontSize:13, color:'var(--text-muted)', textAlign:'center' }}>
+          No assets with purchase price data yet. Onboard assets with purchase prices to see fleet depreciation here.
+        </div>
+      )}
+
+      {/* Section divider */}
+      <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:16 }}>
+        <div style={{ width:3, height:20, background:'var(--accent)', borderRadius:2 }} />
+        <span style={{ fontSize:14, fontWeight:700, color:'var(--text-primary)' }}>Depreciation Calculator</span>
+        <span style={{ fontSize:12, color:'var(--text-muted)' }}>AI-powered · PDF export · Calculation history</span>
+      </div>
+
+      {/* The full Depreciation calculator */}
+      <Depreciation userRole={userRole} />
+    </div>
+  );
+}
+
+

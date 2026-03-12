@@ -14,7 +14,6 @@ import Scanner from './Scanner';
 import AssetPage from './MachineProfile';
 import MasterAdmin from './MasterAdmin';
 import { supabase } from './supabase';
-import Settings from './Settings';
 
 function App() {
   const [currentPage, setCurrentPageRaw] = useState('dashboard');
@@ -135,7 +134,7 @@ function App() {
       case 'dashboard':
         return <Dashboard companyId={effectiveCompanyId} />;
       case 'assets':
-        return <Assets userRole={effectiveUserRole} onViewAsset={handleViewAsset} />;
+        return <Assets userRole={effectiveUserRole} onViewAsset={handleViewAsset} initialTab={currentSubPage || 'units'} key={currentSubPage} />;
       case 'downtime':
         return <Downtime userRole={effectiveUserRole} />;
       case 'maintenance':
@@ -177,7 +176,12 @@ function App() {
         // Placeholder until Data Export component is built
         return <Users companyId={effectiveCompanyId} userRole={effectiveUserRole} />;
       case 'settings':
-        return <Settings userRole={effectiveUserRole} initialTab={currentSubPage} />;
+        // Placeholder until Settings component is built
+        return (
+          <div style={{ padding: '40px', color: '#7a92a8', textAlign: 'center' }}>
+            Settings page coming soon.
+          </div>
+        );
       case 'master':
         return <MasterAdmin />;
       default:
