@@ -179,8 +179,8 @@ function CompanyDetails({ userRole }) {
 
 // ─── Tab: Format / Theme ──────────────────────────────────────────────────────
 
-// Extended theme data with gradients, emoji, taglines
-const THEMES = [
+// Sidebar colour scheme data
+const SIDEBAR_SCHEMES = [
   { id:'default', label:'Ocean Blue', emoji:'🌊', tagline:'Clean & professional',  primary:'var(--accent)', primaryDark:'#0088b8', accent:'#38bdf8', bg:'var(--surface-2)', surface:'#ffffff', dark:'var(--text-primary)', textMid:'#3d5166', textMuted:'var(--text-muted)', border:'#d6e6f2', gradient:'linear-gradient(135deg,#0070a8 0%,var(--accent) 55%,#38bdf8 100%)' },
   { id:'slate',   label:'Gunmetal',   emoji:'🔩', tagline:'Industrial & sharp',   primary:'#475569', primaryDark:'#334155', accent:'#94a3b8', bg:'#f1f5f9', surface:'#ffffff', dark:'#0f172a', textMid:'#334155', textMuted:'#64748b', border:'#cbd5e1', gradient:'linear-gradient(135deg,#1e293b 0%,#475569 60%,#94a3b8 100%)' },
   { id:'green',   label:'Forest',     emoji:'🌿', tagline:'Calm & natural',       primary:'var(--green)', primaryDark:'#15803d', accent:'#4ade80', bg:'#f0fdf4', surface:'#ffffff', dark:'#14532d', textMid:'#166534', textMuted:'#15803d', border:'var(--green-border)', gradient:'linear-gradient(135deg,#14532d 0%,#16a34a 55%,#4ade80 100%)' },
@@ -346,8 +346,8 @@ function Format({ userRole }) {
   const [saved,      setSaved]      = useState(false);
   const [applying,   setApplying]   = useState(false);
 
-  const activeT  = THEMES.find(t => t.id === selected)    || THEMES[0];
-  const previewT = THEMES.find(t => t.id === (hovered || selected)) || THEMES[0];
+  const activeT  = SIDEBAR_SCHEMES.find(t => t.id === selected)    || SIDEBAR_SCHEMES[0];
+  const previewT = SIDEBAR_SCHEMES.find(t => t.id === (hovered || selected)) || SIDEBAR_SCHEMES[0];
 
   // Inject CSS + apply saved theme on mount
   useEffect(() => {
@@ -413,7 +413,7 @@ function Format({ userRole }) {
           <div style={panelStyle}>
             {panelHead('🎨', 'Colour Theme', 'Pick a visual personality for your workspace')}
             <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:'10px',marginBottom:'4px'}}>
-              {THEMES.map(t => (
+              {SIDEBAR_SCHEMES.map(t => (
                 <div
                   key={t.id}
                   className={`fmt-theme-card${selected===t.id?' fmt-selected':''}`}
