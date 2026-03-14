@@ -780,22 +780,6 @@ function Settings({ userRole, initialTab, adminMode, personalMode }) {
         </p>
       </div>
 
-      {/* Tab bar */}
-      <div style={{ display: 'flex', gap: 2, borderBottom: '2px solid var(--border)', marginBottom: 28 }}>
-        {TABS.map(t => (
-          <button key={t.id} onClick={() => setActiveTab(t.id)}
-            style={{
-              padding: '10px 20px', background: 'none', border: 'none',
-              borderBottom: activeTab === t.id ? '2px solid var(--accent)' : '2px solid transparent',
-              marginBottom: -2, fontSize: 13, fontWeight: 600, cursor: 'pointer',
-              color: activeTab === t.id ? 'var(--accent)' : 'var(--text-muted)',
-              transition: 'all 0.15s', whiteSpace: 'nowrap', fontFamily: 'inherit',
-              display: 'flex', alignItems: 'center', gap: 7,
-            }}>
-            <span>{t.icon}</span>{t.label}
-          </button>
-        ))}
-      </div>
 
       {content[activeTab]}
     </div>

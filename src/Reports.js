@@ -353,7 +353,7 @@ function Reports({ companyId, userRole, initialTab }) {
       {/* ── Page header ── */}
       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-end', marginBottom:24 }}>
         <div>
-          <h2 style={{ fontFamily:"var(--font-display)", fontSize:32, fontWeight:800, color:'var(--text-primary)', letterSpacing:'1px', textTransform:'uppercase', margin:0, lineHeight:1 }}>{TABS.find(t => t.id === activeTab)?.label || 'Downtime Log'}</h2>
+          <h2 style={{ fontFamily:"var(--font-display)", fontSize:32, fontWeight:800, color:'var(--text-primary)', letterSpacing:'1px', textTransform:'uppercase', margin:0, lineHeight:1 }}>Reports</h2>
           <p style={{ fontSize:13, color:'var(--text-muted)', margin:'5px 0 0', fontWeight:500 }}>Downtime analysis, machine availability & export</p>
         </div>
         <div style={{ display:'flex', gap:8 }}>
@@ -403,12 +403,6 @@ function Reports({ companyId, userRole, initialTab }) {
         </div>
       </div>
 
-      {/* ── Tab bar ── */}
-      <div style={{ display:'flex', gap:4, background:'var(--surface-2)', borderRadius:10, padding:4, marginBottom:20, width:'fit-content' }}>
-        {TABS.map(t => (
-          <button key={t.id} className={`r-tab${activeTab===t.id?' active':''}`} onClick={() => setActiveTab(t.id)}>{t.label}</button>
-        ))}
-      </div>
 
       {/* ══ DOWNTIME LOG ══ */}
       {activeTab === 'downtime-log' && (

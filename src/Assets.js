@@ -1150,22 +1150,7 @@ function Assets({ userRole, onViewAsset, initialTab }) {
       <div>
         {/* Header */}
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:16 }}>
-          <h2 style={{ fontFamily:"var(--font-display)", fontSize:'38px', fontWeight:900, color:'var(--text-primary)', letterSpacing:'2px', textTransform:'uppercase', margin:0, lineHeight:1 }}>{TABS.find(t => t.id === activeTab)?.label || 'Fleet Units'}</h2>
-        </div>
-
-        {/* Tab bar */}
-        <div style={{ display:'flex', gap:3, marginBottom:24, background:'var(--surface)', border:'1px solid var(--border)', borderRadius:10, padding:4, width:'fit-content' }}>
-          {TABS.map(t => (
-            <button key={t.id} onClick={() => setActiveTab(t.id)}
-              style={{ padding:'8px 18px', borderRadius:7, border:'none', cursor:'pointer', fontFamily:'inherit',
-                fontSize:13, fontWeight:600, transition:'all 0.15s', display:'flex', alignItems:'center', gap:6,
-                background: activeTab===t.id ? 'var(--accent)' : 'transparent',
-                color:       activeTab===t.id ? '#fff'          : 'var(--text-muted)',
-                boxShadow:   activeTab===t.id ? '0 2px 8px rgba(14,165,233,0.3)' : 'none',
-              }}>
-              <span>{t.icon}</span>{t.label}
-            </button>
-          ))}
+          <h2 style={{ fontFamily:"var(--font-display)", fontSize:'38px', fontWeight:900, color:'var(--text-primary)', letterSpacing:'2px', textTransform:'uppercase', margin:0, lineHeight:1 }}>Assets</h2>
         </div>
 
         {renderTab()}
