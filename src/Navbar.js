@@ -426,10 +426,20 @@ function Navbar({ currentPage, currentSubPage, setCurrentPage, onLogout, session
   const updateLayout = (exp, banner) => {
     const mc = document.querySelector('.main-content');
     if (mc) {
-      mc.style.marginLeft = exp ? '220px' : '56px';
+      const isMobile = window.innerWidth <= 1024;
+      mc.style.marginLeft = isMobile ? '56px' : (exp ? '220px' : '56px');
       mc.style.marginTop = banner ? '90px' : '56px';
+      mc.style.width = isMobile ? `calc(100vw - 56px)` : '';
+      mc.style.maxWidth = isMobile ? `calc(100vw - 56px)` : '';
     }
   };
+
+  // Re-run layout on window resize
+  React.useEffect(() => {
+    const onResize = () => updateLayout(expanded, hasBanner);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, [expanded, hasBanner]);
 
   useEffect(() => {
     try { localStorage.setItem('mechiq_sidebar_expanded', String(expanded)); } catch {}
@@ -533,6 +543,14 @@ function Navbar({ currentPage, currentSubPage, setCurrentPage, onLogout, session
                   <RoleBadge role={isMaster ? 'master' : (userRole?.role || 'operator')} />
                 </div>
               </div>
+              <a
+                href="https://mechiq.coastlinemm.com.au/MechIQ.apk"
+                download
+                style={{ width: '100%', padding: '6px', background: 'rgba(14,165,233,0.12)', border: '1px solid rgba(14,165,233,0.25)', color: 'var(--accent)', borderRadius: 6, cursor: 'pointer', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.8px', fontFamily: 'Inter, sans-serif', transition: 'all 0.15s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, textDecoration: 'none' }}
+              >
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                Download App
+              </a>
               <button
                 onClick={onLogout}
                 style={{ width: '100%', padding: '5px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--text-faint)', borderRadius: 6, cursor: 'pointer', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.8px', fontFamily: 'Inter, sans-serif', transition: 'all 0.15s' }}
@@ -547,6 +565,9 @@ function Navbar({ currentPage, currentSubPage, setCurrentPage, onLogout, session
               <div title={displayName} style={{ width: 28, height: 28, borderRadius: '50%', background: 'rgba(0,171,228,0.18)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent)', fontSize: 12, fontWeight: 800 }}>
                 {displayName[0]?.toUpperCase()}
               </div>
+              <a href="https://mechiq.coastlinemm.com.au/MechIQ.apk" download title="Download App" style={{ background: 'none', border: 'none', color: 'var(--accent)', cursor: 'pointer', padding: 4, borderRadius: 6, display: 'flex', alignItems: 'center', transition: 'color 0.15s', textDecoration: 'none' }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              </a>
               <button onClick={onLogout} title="Logout" style={{ background: 'none', border: 'none', color: 'var(--text-faint)', cursor: 'pointer', padding: 4, borderRadius: 6, display: 'flex', alignItems: 'center', transition: 'color 0.15s' }}
                 onMouseEnter={e => e.currentTarget.style.color = '#f87171'}
                 onMouseLeave={e => e.currentTarget.style.color = 'var(--text-faint)'}
