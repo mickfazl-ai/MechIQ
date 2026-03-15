@@ -522,66 +522,25 @@ function UsersRoles({ userRole }) {
 
 // ─── Tab: Billing & Plan ──────────────────────────────────────────────────────
 function Billing({ userRole }) {
-  const [company, setCompany] = useState(null);
-
-  useEffect(() => {
-    if (!userRole?.company_id) return;
-    supabase.from('companies').select('plan, status, asset_limit, features').eq('id', userRole.company_id).single()
-      .then(({ data }) => setCompany(data));
-  }, [userRole]);
-
-  const plans = [
-    { id: 'trial',      label: 'Free Trial',   price: 'Free',       assets: 10,  features: ['Assets', 'Maintenance', 'Pre-starts', 'Work Orders'] },
-    { id: 'starter',    label: 'Starter',      price: 'A$49/mo',    assets: 25,  features: ['Everything in Trial', 'Reports', 'Downtime Tracking', 'Email Support'] },
-    { id: 'pro',        label: 'Professional', price: 'A$149/mo',   assets: 100, features: ['Everything in Starter', 'Oil Sampling AI', 'API Access', 'Priority Support'] },
-    { id: 'enterprise', label: 'Enterprise',   price: 'Contact us', assets: 999, features: ['Everything in Pro', 'Unlimited Assets', 'Custom Integrations', 'Dedicated Support'] },
-  ];
-
-  const current = company?.plan || 'trial';
-
   return (
     <div>
       <div style={card}>
-        <SectionHeader title="Current Plan" desc="Your active subscription and limits" />
-        <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-          {[
-            { label: 'Plan',        value: (company?.plan || 'Trial').toUpperCase() },
-            { label: 'Status',      value: (company?.status || 'Active').toUpperCase() },
-            { label: 'Asset Limit', value: company?.asset_limit ?? 10 },
-          ].map(({ label, value }) => (
-            <div key={label} style={{ background: 'var(--accent-light)', borderRadius: 10, padding: '16px 28px', textAlign: 'center', minWidth: 110 }}>
-              <div style={{ fontSize: 26, fontWeight: 900, color: 'var(--accent)' }}>{value}</div>
-              <div style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600, letterSpacing: '0.8px', marginTop: 4, textTransform: 'uppercase' }}>{label}</div>
+        <SectionHeader title="Plans & Pricing" desc="Contact us to discuss the right plan for your fleet" />
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', padding: '32px 20px', gap: 20 }}>
+          <div style={{ width: 64, height: 64, borderRadius: 16, background: 'var(--accent-light)', border: '1px solid rgba(14,165,233,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28 }}>⚙️</div>
+          <div>
+            <div style={{ fontSize: 18, fontWeight: 800, color: 'var(--text-primary)', marginBottom: 8 }}>MechIQ Fleet Management</div>
+            <div style={{ fontSize: 14, color: 'var(--text-muted)', maxWidth: 400, lineHeight: 1.6 }}>
+              For pricing, plan information or to discuss your fleet's requirements, get in touch with our team.
             </div>
-          ))}
-        </div>
-      </div>
-
-      <div style={card}>
-        <SectionHeader title="Available Plans" desc="Upgrade to unlock more features and assets" />
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
-          {plans.map(p => (
-            <div key={p.id} style={{ border: current === p.id ? '2px solid var(--accent)' : '1px solid var(--border)', borderRadius: 10, padding: 18, background: current === p.id ? 'var(--accent-light)' : 'var(--surface-2)', position: 'relative' }}>
-              {current === p.id && (
-                <div style={{ position: 'absolute', top: -11, left: '50%', transform: 'translateX(-50%)', background: 'var(--accent)', color: '#fff', fontSize: 10, fontWeight: 700, padding: '3px 10px', borderRadius: 10, whiteSpace: 'nowrap' }}>
-                  CURRENT PLAN
-                </div>
-              )}
-              <div style={{ fontSize: 15, fontWeight: 800, color: 'var(--text-primary)', marginBottom: 4 }}>{p.label}</div>
-              <div style={{ fontSize: 20, fontWeight: 900, color: 'var(--accent)', marginBottom: 2 }}>{p.price}</div>
-              <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 12 }}>Up to {p.assets === 999 ? 'unlimited' : p.assets} assets</div>
-              {p.features.map(f => <div key={f} style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4 }}>✓ {f}</div>)}
-              {current !== p.id && (
-                <button onClick={() => window.location.href = `mailto:info@mechiq.com.au?subject=Upgrade to ${p.label}`}
-                  style={{ ...saveBtn(), marginTop: 14, width: '100%', fontSize: 12, padding: '8px' }}>
-                  {p.id === 'enterprise' ? 'Contact Us' : 'Upgrade'}
-                </button>
-              )}
-            </div>
-          ))}
-        </div>
-        <div style={{ marginTop: 14, fontSize: 12, color: 'var(--text-muted)' }}>
-          To upgrade contact <a href="mailto:info@mechiq.com.au" style={{ color: 'var(--accent)' }}>info@mechiq.com.au</a>
+          </div>
+          <div style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 12, padding: '20px 32px', display: 'flex', flexDirection: 'column', gap: 12, minWidth: 280 }}>
+            <a href="mailto:info@mechiq.com.au" style={{ display: 'flex', alignItems: 'center', gap: 12, textDecoration: 'none', padding: '12px 16px', background: 'var(--accent)', borderRadius: 10, color: '#fff', fontWeight: 700, fontSize: 14, justifyContent: 'center' }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+              info@mechiq.com.au
+            </a>
+            <div style={{ fontSize: 12, color: 'var(--text-faint)', textAlign: 'center' }}>We'll get back to you within 1 business day</div>
+          </div>
         </div>
       </div>
     </div>
@@ -744,7 +703,7 @@ const ADMIN_TABS = [
   { id: 'company', label: 'Company Details', icon: '🏢' },
   { id: 'users',   label: 'Users & Roles',   icon: '👥' },
   { id: 'notifs',  label: 'Notifications',   icon: '🔔' },
-  { id: 'billing', label: 'Billing & Plan',  icon: '💳' },
+  { id: 'billing', label: 'Contact & Plan',  icon: '💳' },
   { id: 'data',    label: 'Data & Export',   icon: '📤' },
 ];
 
