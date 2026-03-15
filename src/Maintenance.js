@@ -1,3 +1,4 @@
+// MechIQ Maintenance v2 - Calendar + Service Schedules
 import React, { useState, useEffect } from 'react';
 import { supabase } from './supabase';
 
