@@ -506,56 +506,32 @@ label {
 /* ─── CHARTS ─────────────────────────────────────────────────── */
 .charts-grid { display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-bottom:20px; }
 
-/* ─── MOBILE ─────────────────────────────────────────────────── */
+/* ─── MOBILE (phones up to 768px) ────────────────────────────── */
 @media (max-width:768px) {
   .main-content {
-    margin-left: 56px !important;
+    margin-left: 0 !important;
     padding: 14px 12px;
-    width: calc(100vw - 56px);
-    max-width: calc(100vw - 56px);
+    width: 100vw;
+    max-width: 100vw;
     overflow-x: hidden;
     box-sizing: border-box;
+    margin-top: 56px;
   }
-  .topbar { left: 56px !important; }
-
-  /* Grids → single column */
+  .topbar { left: 0 !important; }
   .stats-grid, .form-grid, .charts-grid { grid-template-columns: 1fr !important; gap: 10px; }
   .page-header { flex-direction: column; align-items: flex-start; gap: 10px; }
   .panel-card, .form-card { padding: 14px; }
-
-  /* All inline 2-col grids → stack */
-  [style*="gridTemplateColumns: '1fr 1fr'"],
-  [style*='gridTemplateColumns: "1fr 1fr"'],
-  [style*="grid-template-columns: 1fr 1fr"] {
-    grid-template-columns: 1fr !important;
-  }
-
-  /* 3-col grids → 2 col on mobile */
-  [style*="repeat(3, 1fr)"],
-  [style*="repeat(3,1fr)"] {
-    grid-template-columns: repeat(2, 1fr) !important;
-  }
-
-  /* Tables → horizontal scroll wrapper */
   table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; width: 100%; }
   .data-table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
-
-  /* Tracker 290px sidebar → full width stacked */
-  [style*="gridTemplateColumns:'290px 1fr'"],
-  [style*='gridTemplateColumns: "290px 1fr"'],
-  [style*="gridTemplateColumns:'290px"] {
-    grid-template-columns: 1fr !important;
-  }
-
-  /* Prevent any child from overflowing */
-  .panel, .kpi-card, .form-card, .panel-card {
-    max-width: 100%;
-    overflow: hidden;
-  }
+  .panel, .kpi-card, .form-card, .panel-card { max-width: 100%; overflow: hidden; }
+  /* Button rows wrap on mobile */
+  .r-btn-row, [class*="btn-row"] { flex-wrap: wrap !important; }
+  /* Hide Export buttons on very small screens */
+  .r-btn { font-size: 11px !important; padding: 6px 10px !important; }
 }
 
-/* ─── TABLET / LARGE PHONE (S4 Ultra etc) ────────────────────── */
-@media (max-width:1024px) {
+/* ─── TABLET / LARGE PHONE (768px–1180px covers S4 Ultra) ─────── */
+@media (min-width:769px) and (max-width:1180px) {
   .main-content {
     margin-left: 56px !important;
     padding: 18px 16px;
@@ -567,21 +543,53 @@ label {
   .topbar { left: 56px !important; }
   .stats-grid { grid-template-columns: repeat(2,1fr); gap: 12px; }
   .charts-grid { grid-template-columns: 1fr; }
-
-  /* Prevent wide tables from overflowing */
   table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; width: 100%; }
+}
 
-  /* Tracker grid → stack on tablet */
-  [style*="gridTemplateColumns:'290px 1fr'"],
-  [style*='gridTemplateColumns: "290px 1fr"'] {
-    grid-template-columns: 1fr !important;
-  }
+/* ─── ANY SCREEN ≤ 1180px: prevent overflow ──────────────────── */
+@media (max-width:1180px) {
+  /* All fixed 2-col inline grids → stack */
+  [style*="1fr 1fr"] { grid-template-columns: 1fr !important; }
+  /* Tracker grid */
+  .tracker-grid { grid-template-columns: 1fr !important; }
+  /* Reports action buttons */
+  .r-actions { flex-wrap: wrap !important; }
+  /* Prevent anything from overflowing its container */
+  * { max-width: 100%; }
+  img, video { height: auto; }
 }
 
 /* ─── TRACKER GRID ────────────────────────────────────────────── */
 .tracker-grid { display: grid; grid-template-columns: minmax(0,290px) 1fr; gap: 16px; align-items: start; }
 @media (max-width:900px) {
   .tracker-grid { grid-template-columns: 1fr !important; }
+}
+
+/* ─── REPORTS RESPONSIVE ──────────────────────────────────────── */
+.r-page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.r-page-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* ─── GENERAL MOBILE TOUCH TARGETS ────────────────────────────── */
+@media (max-width:1180px) {
+  /* Minimum tap target size */
+  button, a, select, input[type="button"], input[type="submit"] {
+    min-height: 36px;
+  }
+  /* Reports header wraps */
+  .r-page-header { flex-direction: column; align-items: flex-start; }
+  .r-page-actions { width: 100%; }
+  .r-page-actions .r-btn { flex: 1; text-align: center; justify-content: center; }
 }
 
 /* ─── GLOBAL TABS ─────────────────────────────────────────────── */
