@@ -533,16 +533,23 @@ export default function Parts({ userRole }) {
   const load = useCallback(async () => {
     setLoading(true);
     const cid = userRole.company_id;
-    const [{ data: p }, { data: a }, { data: w }, { data: t }] = await Promise.all([
-      supabase.from('parts').select('*').eq('company_id', cid).order('name'),
-      supabase.from('assets').select('id,name,asset_number').eq('company_id', cid).order('name'),
-      supabase.from('work_orders').select('id,title,defect_description').eq('company_id', cid).neq('status', 'Complete').order('created_at', { ascending: false }).limit(50),
-      supabase.from('parts_transactions').select('*, parts(name,unit)').eq('company_id', cid).order('created_at', { ascending: false }).limit(100),
-    ]);
-    setParts(p || []);
-    setAssets(a || []);
-    setWorkOrders(w || []);
-    setTransactions(t || []);
+    try {
+      const { data: p, error: pe } = await supabase.from('parts').select('*').eq('company_id', cid).order('name');
+      if (pe) console.error('parts error:', pe);
+      setParts(p || []);
+
+      const { data: a } = await supabase.from('assets').select('id,name,asset_number').eq('company_id', cid).order('name');
+      setAssets(a || []);
+
+      const { data: w } = await supabase.from('work_orders').select('id,title,defect_description').eq('company_id', cid).neq('status','Complete').order('created_at',{ascending:false}).limit(50);
+      setWorkOrders(w || []);
+
+      const { data: t, error: te } = await supabase.from('parts_transactions').select('id,type,quantity,asset_id,work_order_id,notes,performed_by,created_at,part_id').eq('company_id', cid).order('created_at',{ascending:false}).limit(100);
+      if (te) console.error('transactions error:', te);
+      setTransactions(t || []);
+    } catch (err) {
+      console.error('Parts load error:', err);
+    }
     setLoading(false);
   }, [userRole]);
 
