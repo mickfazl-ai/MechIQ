@@ -266,6 +266,7 @@ const IC = {
   collapse:     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="11 17 6 12 11 7"/><polyline points="18 17 13 12 18 7"/></svg>,
   expand:       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="13 17 18 12 13 7"/><polyline points="6 17 11 12 6 7"/></svg>,
   hamburger:    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>,
+  parts:        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>,
   chat:         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>,
   logout:       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>,
 };
@@ -281,6 +282,7 @@ const NAV_STRUCTURE = [
       { id: 'assets', subPage: 'tracker',      label: 'Tracker',      roles: ['admin','supervisor'] },
     ],
   },
+  { id: 'parts',        label: 'Parts',        ik: 'parts',        roles: ['admin','supervisor','technician'], feature: null },
   { id: 'maintenance',  label: 'Maintenance',  ik: 'maintenance',  roles: ['admin','supervisor','technician'], feature: 'maintenance',
     children: [
       { id: 'maintenance', subPage: 'scheduled',   label: 'Scheduled Service', roles: ['admin','supervisor','technician'] },
@@ -405,7 +407,7 @@ const PAGE_TITLES = {
   dashboard: 'Dashboard', assets: 'Assets', maintenance: 'Maintenance',
   forms: 'Forms', scanner: 'Scanner', oil_sampling: 'Oil Sampling',
   reports: 'Reports', admin: 'Admin', settings: 'Settings', master: 'Master Admin',
-  users: 'Users', export: 'Data Export', chat: 'Messages',
+  users: 'Users', export: 'Data Export', chat: 'Messages', parts: 'Parts',
 };
 
 // ─── Main Navbar ───────────────────────────────────────────────────────────────

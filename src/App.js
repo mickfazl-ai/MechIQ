@@ -15,6 +15,7 @@ import AssetPage from './MachineProfile';
 import MasterAdmin from './MasterAdmin';
 import Settings from './Settings';
 import Chat from './Chat';
+import Parts from './Parts';
 import { supabase } from './supabase';
 
 function App() {
@@ -178,6 +179,8 @@ function App() {
         return <Settings userRole={effectiveUserRole} initialTab={currentSubPage || 'company'} key={currentSubPage} adminMode />;
       case 'settings':
         return <Settings userRole={effectiveUserRole} initialTab={currentSubPage || 'format'} key={currentSubPage} personalMode />;
+      case 'parts':
+        return <Parts userRole={effectiveUserRole} />;
       case 'chat':
         return <Chat userRole={effectiveUserRole} />;
       case 'master':
