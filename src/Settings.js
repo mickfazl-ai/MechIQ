@@ -550,61 +550,299 @@ function Billing({ userRole }) {
 // ─── Tab: Data & Export ───────────────────────────────────────────────────────
 function DataExport({ userRole }) {
   const [exporting, setExporting] = useState('');
+  const [progress, setProgress] = useState('');
 
-  const exportData = async (type) => {
-    setExporting(type);
-    try {
-      const cid = userRole.company_id;
-      let data, filename;
-      if (type === 'assets')      { const { data: d } = await supabase.from('assets').select('*').eq('company_id', cid); data = d; filename = 'MechIQ_Assets'; }
-      else if (type === 'maintenance') { const { data: d } = await supabase.from('maintenance').select('*').eq('company_id', cid); data = d; filename = 'MechIQ_Maintenance'; }
-      else if (type === 'work_orders') { const { data: d } = await supabase.from('work_orders').select('*').eq('company_id', cid); data = d; filename = 'MechIQ_WorkOrders'; }
-      else if (type === 'oil_samples') { const { data: d } = await supabase.from('oil_samples').select('*').eq('company_id', cid); data = d; filename = 'MechIQ_OilSamples'; }
-      else if (type === 'full') {
-        const [a, m, w, dw, o] = await Promise.all([
-          supabase.from('assets').select('*').eq('company_id', cid),
-          supabase.from('maintenance').select('*').eq('company_id', cid),
-          supabase.from('work_orders').select('*').eq('company_id', cid),
-          supabase.from('downtime').select('*').eq('company_id', cid),
-          supabase.from('oil_samples').select('*').eq('company_id', cid),
-        ]);
-        data = { assets: a.data, maintenance: m.data, work_orders: w.data, downtime: dw.data, oil_samples: o.data };
-        filename = 'MechIQ_Full_Export';
-      }
-      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-      const anchor = document.createElement('a');
-      anchor.href = URL.createObjectURL(blob);
-      anchor.download = `${filename}_${new Date().toISOString().split('T')[0]}.json`;
-      anchor.click();
-    } catch (err) { console.error(err); }
-    setExporting('');
+  const loadScript = (src) => new Promise((res, rej) => {
+    if (document.querySelector(`script[src="${src}"]`)) { res(); return; }
+    const s = document.createElement('script'); s.src = src; s.onload = res; s.onerror = rej;
+    document.head.appendChild(s);
+  });
+
+  const fmtDate = (d) => d ? new Date(d).toLocaleDateString('en-AU') : '—';
+  const fmtVal  = (v) => v == null || v === '' ? '—' : String(v);
+
+  const buildWorkOrderPDF = (jsPDF, wo, company) => {
+    const doc = new jsPDF({ format: 'a4' });
+    const pc = { Critical:'#dc2626', High:'#ea580c', Medium:'#d97706', Low:'#16a34a' }[wo.priority] || '#333';
+    doc.setFillColor(26, 43, 60); doc.rect(0, 0, 210, 30, 'F');
+    doc.setTextColor(255,255,255); doc.setFontSize(18); doc.setFont('helvetica','bold');
+    doc.text('MECHIQ — WORK ORDER', 15, 18);
+    doc.setFontSize(10); doc.text(`ID: ${wo.id?.slice(0,8).toUpperCase()}`, 150, 18);
+    doc.setTextColor(33,33,33); doc.setFontSize(11); doc.setFont('helvetica','normal');
+    const rows = [
+      ['Asset', wo.asset||'—'], ['Priority', wo.priority||'—'],
+      ['Status', wo.status||'—'], ['Assigned To', wo.assigned_to||'—'],
+      ['Due Date', fmtDate(wo.due_date)], ['Est. Hours', wo.estimated_hours ? wo.estimated_hours+'h' : '—'],
+      ['Source', wo.source||'manual'], ['Created', fmtDate(wo.created_at)],
+    ];
+    let y = 40;
+    rows.forEach(([k, v]) => {
+      doc.setFont('helvetica','bold'); doc.text(k + ':', 15, y);
+      doc.setFont('helvetica','normal'); doc.text(fmtVal(v), 70, y);
+      y += 8;
+    });
+    y += 4;
+    doc.setFont('helvetica','bold'); doc.text('Defect Description:', 15, y); y += 7;
+    doc.setFont('helvetica','normal');
+    const lines = doc.splitTextToSize(wo.defect_description||'—', 180);
+    doc.text(lines, 15, y); y += lines.length * 6 + 8;
+    if (wo.comments) {
+      doc.setFont('helvetica','bold'); doc.text('Comments:', 15, y); y += 7;
+      doc.setFont('helvetica','normal');
+      const clines = doc.splitTextToSize(wo.comments, 180);
+      doc.text(clines, 15, y);
+    }
+    return doc;
   };
 
-  const exports = [
-    { id: 'assets',      icon: '⚙️', label: 'Assets',      desc: 'All asset records and specs' },
-    { id: 'maintenance', icon: '🔧', label: 'Maintenance',  desc: 'Maintenance history and schedules' },
-    { id: 'work_orders', icon: '📋', label: 'Work Orders',  desc: 'All work orders — open and closed' },
-    { id: 'oil_samples', icon: '🔬', label: 'Oil Samples',  desc: 'Oil analysis results and AI assessments' },
-    { id: 'full',        icon: '📦', label: 'Full Backup',  desc: 'Complete company data export as JSON' },
-  ];
+  const buildPrestartPDF = (jsPDF, p, company) => {
+    const doc = new jsPDF({ format: 'a4' });
+    doc.setFillColor(26, 43, 60); doc.rect(0, 0, 210, 30, 'F');
+    doc.setTextColor(255,255,255); doc.setFontSize(18); doc.setFont('helvetica','bold');
+    doc.text('MECHIQ — PRESTART CHECKLIST', 15, 18);
+    doc.setTextColor(33,33,33); doc.setFontSize(11); doc.setFont('helvetica','normal');
+    const rows = [
+      ['Asset', p.asset||'—'], ['Operator', p.operator_name||'—'],
+      ['Date', fmtDate(p.date)], ['Defects Found', p.defects_found ? 'YES' : 'No'],
+    ];
+    let y = 40;
+    rows.forEach(([k, v]) => {
+      doc.setFont('helvetica','bold'); doc.text(k + ':', 15, y);
+      doc.setFont('helvetica','normal'); doc.text(fmtVal(v), 70, y);
+      y += 8;
+    });
+    if (p.sections && Array.isArray(p.sections)) {
+      y += 4;
+      p.sections.forEach(section => {
+        if (y > 270) { doc.addPage(); y = 20; }
+        doc.setFont('helvetica','bold'); doc.setFontSize(12);
+        doc.text(section.name || 'Section', 15, y); y += 8;
+        doc.setFontSize(10);
+        (section.items || []).forEach(item => {
+          if (y > 275) { doc.addPage(); y = 20; }
+          doc.setFont('helvetica','normal');
+          const status = item.status || item.value || '—';
+          const statusColor = status === 'OK' ? [22,163,74] : status === 'Defect' ? [220,38,38] : [100,100,100];
+          doc.text(`• ${item.label||''}`, 20, y);
+          doc.setTextColor(...statusColor); doc.text(status, 140, y);
+          doc.setTextColor(33,33,33); y += 6;
+        });
+        y += 4;
+      });
+    }
+    return doc;
+  };
+
+  const buildExcelWorkbook = (XLSX, data) => {
+    const wb = XLSX.utils.book_new();
+    const addSheet = (name, rows) => {
+      if (!rows?.length) return;
+      const ws = XLSX.utils.json_to_sheet(rows);
+      XLSX.utils.book_append_sheet(wb, ws, name);
+    };
+    addSheet('Assets', (data.assets||[]).map(a => ({
+      'Asset Number': a.asset_number, 'Name': a.name, 'Type': a.type,
+      'Make': a.make, 'Model': a.model, 'Year': a.year, 'Status': a.status,
+      'Location': a.location, 'Hours': a.hours, 'Purchase Price': a.purchase_price,
+      'Purchase Date': a.purchase_date, 'Serial Number': a.serial_number,
+    })));
+    addSheet('Work Orders', (data.work_orders||[]).map(w => ({
+      'Asset': w.asset, 'Description': w.defect_description, 'Priority': w.priority,
+      'Status': w.status, 'Assigned To': w.assigned_to, 'Due Date': w.due_date,
+      'Est Hours': w.estimated_hours, 'Comments': w.comments, 'Source': w.source,
+      'Created': fmtDate(w.created_at),
+    })));
+    addSheet('Maintenance', (data.maintenance||[]).map(m => ({
+      'Asset': m.asset, 'Task': m.task, 'Frequency': m.frequency,
+      'Next Due': m.next_due, 'Status': m.status, 'Assigned To': m.assigned_to,
+    })));
+    addSheet('Service Schedules', (data.service_schedules||[]).map(s => ({
+      'Asset': s.asset_name, 'Service': s.service_name, 'Interval Type': s.interval_type,
+      'Interval Value': s.interval_value, 'Last Service': s.last_service_date,
+      'Next Due Value': s.next_due_value, 'Next Due Date': s.next_due_date,
+    })));
+    addSheet('Downtime', (data.downtime||[]).map(d => ({
+      'Asset': d.asset, 'Date': d.date, 'Start': d.start_time, 'End': d.end_time,
+      'Hours': d.hours, 'Category': d.category, 'Description': d.description,
+      'Reported By': d.reported_by, 'Source': d.source,
+    })));
+    addSheet('Oil Samples', (data.oil_samples||[]).map(o => ({
+      'Asset': o.asset_name, 'Component': o.component, 'Date': o.sample_date,
+      'Oil Hours': o.oil_hours, 'Unit Hours': o.unit_hours,
+      'Condition': o.ai_condition, 'Analysis': o.ai_analysis,
+      'Recommendations': o.ai_recommendations,
+    })));
+    addSheet('Prestarts', (data.prestarts||[]).map(p => ({
+      'Asset': p.asset, 'Date': p.date, 'Operator': p.operator_name,
+      'Defects Found': p.defects_found ? 'Yes' : 'No', 'Form': p.form_name,
+    })));
+    addSheet('Parts', (data.parts||[]).map(p => ({
+      'Name': p.name, 'Part Number': p.part_number, 'Category': p.category,
+      'Supplier': p.supplier, 'Quantity': p.quantity, 'Min Stock': p.min_quantity,
+      'Unit Cost': p.unit_cost, 'Location': p.location,
+    })));
+    return wb;
+  };
+
+  const exportZip = async () => {
+    setExporting('zip');
+    setProgress('Loading libraries…');
+    try {
+      await Promise.all([
+        loadScript('https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js'),
+        loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js'),
+        loadScript('https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js'),
+      ]);
+      const JSZip   = window.JSZip;
+      const jsPDF   = window.jspdf?.jsPDF;
+      const XLSX    = window.XLSX;
+      const zip     = new JSZip();
+      const cid     = userRole.company_id;
+      const date    = new Date().toISOString().split('T')[0];
+
+      setProgress('Fetching all data…');
+      const [assets, maintenance, work_orders, downtime, oil_samples, prestarts, service_schedules, parts] = await Promise.all([
+        supabase.from('assets').select('*').eq('company_id', cid).then(r => r.data||[]),
+        supabase.from('maintenance').select('*').eq('company_id', cid).then(r => r.data||[]),
+        supabase.from('work_orders').select('*').eq('company_id', cid).then(r => r.data||[]),
+        supabase.from('downtime').select('*').eq('company_id', cid).then(r => r.data||[]),
+        supabase.from('oil_samples').select('*').eq('company_id', cid).then(r => r.data||[]),
+        supabase.from('form_submissions').select('*').eq('company_id', cid).then(r => r.data||[]),
+        supabase.from('service_schedules').select('*').eq('company_id', cid).then(r => r.data||[]),
+        supabase.from('parts').select('*').eq('company_id', cid).then(r => r.data||[]),
+      ]);
+
+      const data = { assets, maintenance, work_orders, downtime, oil_samples, prestarts, service_schedules, parts };
+
+      // ── Excel workbook ──
+      setProgress('Building Excel spreadsheet…');
+      const wb = buildExcelWorkbook(XLSX, data);
+      const xlsxBuf = XLSX.write(wb, { bookType:'xlsx', type:'array' });
+      zip.file(`MechIQ_${date}.xlsx`, xlsxBuf);
+
+      // ── Work Order PDFs ──
+      if (jsPDF && work_orders.length > 0) {
+        setProgress(`Generating ${work_orders.length} work order PDFs…`);
+        const woFolder = zip.folder('Work_Orders');
+        for (const wo of work_orders) {
+          const doc = buildWorkOrderPDF(jsPDF, wo);
+          const pdfBuf = doc.output('arraybuffer');
+          const fname = `WO_${(wo.asset||'unknown').replace(/[^a-zA-Z0-9]/g,'_')}_${wo.id?.slice(0,8)}.pdf`;
+          woFolder.file(fname, pdfBuf);
+        }
+      }
+
+      // ── Prestart PDFs ──
+      if (jsPDF && prestarts.length > 0) {
+        setProgress(`Generating ${prestarts.length} prestart PDFs…`);
+        const psFolder = zip.folder('Prestarts');
+        for (const p of prestarts) {
+          const doc = buildPrestartPDF(jsPDF, p);
+          const pdfBuf = doc.output('arraybuffer');
+          const fname = `Prestart_${(p.asset||'unknown').replace(/[^a-zA-Z0-9]/g,'_')}_${p.date||'nodate'}.pdf`;
+          psFolder.file(fname, pdfBuf);
+        }
+      }
+
+      // ── README ──
+      const readme = `MechIQ Data Export
+Generated: ${new Date().toLocaleString('en-AU')}
+Company ID: ${cid}
+
+Contents:
+- MechIQ_${date}.xlsx  — Full data spreadsheet (8 tabs)
+- Work_Orders/         — PDF for each work order
+- Prestarts/           — PDF for each prestart submission
+
+Records exported:
+  Assets:            ${assets.length}
+  Work Orders:       ${work_orders.length}
+  Maintenance:       ${maintenance.length}
+  Service Schedules: ${service_schedules.length}
+  Downtime:          ${downtime.length}
+  Oil Samples:       ${oil_samples.length}
+  Prestarts:         ${prestarts.length}
+  Parts:             ${parts.length}
+`;
+      zip.file('README.txt', readme);
+
+      setProgress('Compressing zip file…');
+      const blob = await zip.generateAsync({ type:'blob', compression:'DEFLATE', compressionOptions:{ level:6 } });
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement('a');
+      a.href = url; a.download = `MechIQ_Export_${date}.zip`; a.click();
+      URL.revokeObjectURL(url);
+      setProgress('');
+    } catch (err) {
+      console.error(err);
+      alert('Export failed: ' + err.message);
+      setProgress('');
+    }
+    setExporting('');
+  };
 
   return (
     <div>
       <div style={card}>
-        <SectionHeader title="Export Data" desc="Download your MechIQ data at any time" />
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-          {exports.map(e => (
-            <div key={e.id} style={{ border: '1px solid var(--border)', borderRadius: 8, padding: '16px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
-              <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-                <span style={{ fontSize: 22 }}>{e.icon}</span>
-                <div>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary)' }}>{e.label}</div>
-                  <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>{e.desc}</div>
-                </div>
+        <SectionHeader title="Export Data" desc="Download all your MechIQ data as a ZIP file" />
+
+        {/* Main ZIP export */}
+        <div style={{ border: '2px solid var(--accent)', borderRadius: 12, padding: 22, marginBottom: 16, background: 'var(--accent-light)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16, flexWrap: 'wrap' }}>
+            <div>
+              <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--text-primary)', marginBottom: 6 }}>📦 Full Export Package</div>
+              <div style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.6, maxWidth: 400 }}>
+                Downloads a ZIP containing:
               </div>
-              <button onClick={() => exportData(e.id)} disabled={!!exporting}
-                style={{ ...saveBtn(e.id === 'full' ? 'var(--text-secondary)' : 'var(--accent)'), whiteSpace: 'nowrap', fontSize: 12, padding: '8px 14px', flexShrink: 0 }}>
-                {exporting === e.id ? 'Exporting…' : 'Export'}
+              <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 8, lineHeight: 1.8 }}>
+                📊 Excel spreadsheet with 8 tabs (Assets, Work Orders, Maintenance, Service Schedules, Downtime, Oil Samples, Prestarts, Parts)<br />
+                📄 PDF for every Work Order<br />
+                📋 PDF for every Prestart submission
+              </div>
+            </div>
+            <button onClick={exportZip} disabled={!!exporting}
+              style={{ padding: '12px 28px', background: exporting ? 'var(--surface-2)' : 'var(--accent)', color: exporting ? 'var(--text-muted)' : '#fff', border: 'none', borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: exporting ? 'not-allowed' : 'pointer', flexShrink: 0 }}>
+              {exporting === 'zip' ? '⟳ Exporting…' : '⬇ Download ZIP'}
+            </button>
+          </div>
+          {progress && (
+            <div style={{ marginTop: 14, padding: '10px 14px', background: 'var(--surface)', borderRadius: 8, fontSize: 13, color: 'var(--accent)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ animation: 'spin 1s linear infinite', display: 'inline-block', fontSize: 16 }}>⟳</span>
+              {progress}
+            </div>
+          )}
+        </div>
+
+        {/* Individual exports */}
+        <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 10 }}>Individual Exports</div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+          {[
+            { id: 'assets',      icon: '⚙️', label: 'Assets',           table: 'assets' },
+            { id: 'work_orders', icon: '📋', label: 'Work Orders',       table: 'work_orders' },
+            { id: 'maintenance', icon: '🔧', label: 'Maintenance',       table: 'maintenance' },
+            { id: 'downtime',    icon: '⏱', label: 'Downtime Log',      table: 'downtime' },
+            { id: 'oil_samples', icon: '🔬', label: 'Oil Samples',       table: 'oil_samples' },
+            { id: 'parts',       icon: '🔩', label: 'Parts Inventory',   table: 'parts' },
+          ].map(e => (
+            <div key={e.id} style={{ border: '1px solid var(--border)', borderRadius: 8, padding: '12px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10 }}>
+              <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                <span style={{ fontSize: 18 }}>{e.icon}</span>
+                <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>{e.label}</span>
+              </div>
+              <button onClick={async () => {
+                setExporting(e.id);
+                try {
+                  await loadScript('https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js');
+                  const { data: d } = await supabase.from(e.table).select('*').eq('company_id', userRole.company_id);
+                  const ws = window.XLSX.utils.json_to_sheet(d||[]);
+                  const wb = window.XLSX.utils.book_new();
+                  window.XLSX.utils.book_append_sheet(wb, ws, e.label);
+                  window.XLSX.writeFile(wb, `MechIQ_${e.label.replace(/ /g,'_')}_${new Date().toISOString().split('T')[0]}.xlsx`);
+                } catch(err) { alert('Export failed: ' + err.message); }
+                setExporting('');
+              }} disabled={!!exporting}
+                style={{ padding: '6px 14px', background: 'var(--surface-2)', color: 'var(--accent)', border: '1px solid rgba(14,165,233,0.3)', borderRadius: 7, fontSize: 11, fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                {exporting === e.id ? '…' : 'Excel'}
               </button>
             </div>
           ))}
