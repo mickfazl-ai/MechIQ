@@ -16,6 +16,7 @@ import MasterAdmin from './MasterAdmin';
 import Settings from './Settings';
 import Chat from './Chat';
 import Parts from './Parts';
+import OilSampling from './OilSampling';
 import { supabase } from './supabase';
 import DemoTour from './DemoTour';
 
@@ -30,7 +31,6 @@ function App() {
   const [prestartAssetId, setPrestartAssetId] = useState(null);
   const [prestartAsset, setPrestartAsset] = useState(null);
   const [viewingCompany, setViewingCompany] = useState(null);
-  const [showTour, setShowTour] = useState(false);
 
   // Navbar calls setCurrentPage(pageId, subPage)
   // Components that have internal tabs receive initialTab prop
@@ -89,10 +89,6 @@ function App() {
       if (company?.features) companyFeatures = company.features;
     }
     setUserRole({ ...roleData, company_features: companyFeatures });
-    // Show demo tour for demo account
-    if (roleData.email === 'demo@mechiq.com.au' || roleData.company_id === 'de000000-0000-0000-0000-000000000001') {
-      setTimeout(() => setShowTour(true), 800);
-    }
     setLoading(false);
   };
 
@@ -186,6 +182,8 @@ function App() {
         return <Settings userRole={effectiveUserRole} initialTab={currentSubPage || 'company'} key={currentSubPage} adminMode />;
       case 'settings':
         return <Settings userRole={effectiveUserRole} initialTab={currentSubPage || 'format'} key={currentSubPage} personalMode />;
+      case 'oil_sampling':
+        return <OilSampling userRole={effectiveUserRole} />;
       case 'parts':
         return <Parts userRole={effectiveUserRole} />;
       case 'chat':
@@ -219,37 +217,8 @@ function App() {
         viewingCompany={viewingCompany}
         onSelectCompany={handleSelectCompany}
         onExitCompany={handleExitCompany}
-        isDemo={isDemo}
       />
-      {isDemo && (
-        <div style={{
-          position: 'fixed', top: 56, left: 0, right: 0, zIndex: 199,
-          background: 'linear-gradient(90deg, #0ea5e9, #0284c7)',
-          padding: '9px 20px', display: 'flex', alignItems: 'center',
-          justifyContent: 'space-between', gap: 12, flexWrap: 'wrap',
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <span style={{ fontSize: 16 }}>🎯</span>
-            <span style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>Demo Mode</span>
-            <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.8)' }}>— Read only. Explore freely.</span>
-          </div>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <button onClick={() => setShowTour(true)} style={{ padding: '5px 14px', background: 'rgba(255,255,255,0.2)', border: '1px solid rgba(255,255,255,0.4)', color: '#fff', borderRadius: 7, fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
-              ▶ Guided Tour
-            </button>
-            <a href="mailto:info@mechiq.com.au?subject=MechIQ Demo Enquiry" style={{ padding: '5px 14px', background: '#fff', color: '#0ea5e9', borderRadius: 7, fontSize: 12, fontWeight: 800, textDecoration: 'none', display: 'flex', alignItems: 'center' }}>
-              Get Started →
-            </a>
-          </div>
-        </div>
-      )}
-      <div className="main-content" style={isDemo ? { marginTop: 96 } : {}}>{renderPage()}</div>
-      {showTour && (
-        <DemoTour
-          onNavigate={(page, subPage) => setCurrentPage(page, subPage)}
-          onClose={() => setShowTour(false)}
-        />
-      )}
+      <div className="main-content">{renderPage()}</div>
     </div>
   );
 }

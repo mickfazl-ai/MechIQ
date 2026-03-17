@@ -391,86 +391,86 @@ function OilTab({ asset, userRole }) {
   const [aiAnalysis, setAiAnalysis] = useState('');
   const [aiLoading, setAiLoading] = useState(false);
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ component:'Engine', sample_date: new Date().toISOString().split('T')[0], hours_on_oil:'', iron:'', copper:'', aluminium:'', silicon:'', sodium:'', lead:'', tin:'', viscosity:'', water:'', notes:'' });
+  const blankForm = { component:'Engine', sample_date: new Date().toISOString().split('T')[0], oil_hours:'', unit_hours: asset.hours||'', viscosity_40:'', viscosity_100:'', water_ppm:'', soot_percent:'', wear_metals:{ iron:'', copper:'', aluminium:'', silicon:'', sodium:'', lead:'', tin:'' } };
+  const [form, setForm] = useState(blankForm);
 
   useEffect(() => { load(); }, [asset]);
 
   const load = async () => {
     setLoading(true);
-    const { data } = await supabase.from('oil_samples').select('*').eq('asset_id', asset.id).order('sample_date', { ascending: false });
+    const { data } = await supabase.from('oil_samples').select('*').eq('asset_name', asset.name).eq('company_id', asset.company_id).order('sample_date', { ascending: false });
     setSamples(data || []);
     setLoading(false);
   };
 
   const save = async () => {
-    await supabase.from('oil_samples').insert({ ...form, asset_id: asset.id, asset_name: asset.name, company_id: asset.company_id });
-    setShowForm(false);
-    setForm({ component:'Engine', sample_date: new Date().toISOString().split('T')[0], hours_on_oil:'', iron:'', copper:'', aluminium:'', silicon:'', sodium:'', lead:'', tin:'', viscosity:'', water:'', notes:'' });
-    load();
+    await supabase.from('oil_samples').insert({
+      asset_id: asset.id, asset_name: asset.name, company_id: asset.company_id,
+      component: form.component, sample_date: form.sample_date,
+      oil_hours: parseFloat(form.oil_hours)||null, unit_hours: parseFloat(form.unit_hours)||null,
+      viscosity_40: parseFloat(form.viscosity_40)||null, viscosity_100: parseFloat(form.viscosity_100)||null,
+      water_ppm: parseFloat(form.water_ppm)||null, soot_percent: parseFloat(form.soot_percent)||null,
+      wear_metals: form.wear_metals,
+    });
+    setShowForm(false); setForm(blankForm); load();
   };
 
   const analyseWithAI = async (sample) => {
     setSelected(sample);
-    setAiLoading(true);
-    setAiAnalysis('');
+    // If AI analysis already stored, show it directly
+    if (sample.ai_analysis) { setAiAnalysis(sample.ai_analysis); return; }
+    setAiLoading(true); setAiAnalysis('');
     try {
       const { data: { session } } = await supabase.auth.getSession();
       const token = session?.access_token;
+      const wm = sample.wear_metals || {};
       const resp = await fetch('/api/ai-insight', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({
-          model: 'claude-sonnet-4-5',
-          max_tokens: 600,
-          messages: [{ role: 'user', content: `You are a heavy equipment oil analysis expert. Analyse this oil sample result and provide a clear, practical assessment for a fleet manager.
+          model: 'claude-sonnet-4-5', max_tokens: 600,
+          messages: [{ role: 'user', content: `You are a heavy equipment oil analysis expert. Analyse this sample and give a practical assessment for a fleet manager.
 
 Asset: ${asset.name} (${asset.type})
 Component: ${sample.component}
-Hours on oil: ${sample.hours_on_oil || 'unknown'}
-Date sampled: ${sample.sample_date}
+Oil hours: ${sample.oil_hours || 'unknown'} | Unit hours: ${sample.unit_hours || 'unknown'}
+Date: ${sample.sample_date}
 
-Results:
-- Iron (Fe): ${sample.iron || '—'} ppm (wear indicator - engine/gear wear)
-- Copper (Cu): ${sample.copper || '—'} ppm (bearing wear)
-- Aluminium (Al): ${sample.aluminium || '—'} ppm (piston/housing wear)
-- Silicon (Si): ${sample.silicon || '—'} ppm (dirt/dust contamination)
-- Sodium (Na): ${sample.sodium || '—'} ppm (coolant contamination indicator)
-- Lead (Pb): ${sample.lead || '—'} ppm (bearing wear)
-- Tin (Sn): ${sample.tin || '—'} ppm (bearing overlay wear)
-- Viscosity: ${sample.viscosity || '—'} cSt
-- Water: ${sample.water || '—'} %
+Wear metals (ppm): Iron ${wm.iron||'—'}, Copper ${wm.copper||'—'}, Aluminium ${wm.aluminium||'—'}, Silicon ${wm.silicon||'—'}, Sodium ${wm.sodium||'—'}, Lead ${wm.lead||'—'}, Tin ${wm.tin||'—'}
+Viscosity 40°C: ${sample.viscosity_40||'—'} cSt | Viscosity 100°C: ${sample.viscosity_100||'—'} cSt
+Water: ${sample.water_ppm||'—'} ppm | Soot: ${sample.soot_percent||'—'}%
 
-Provide:
-1. Overall condition rating: NORMAL / CAUTION / CRITICAL
-2. Which readings are concerning and why (use typical industry limits for this component type)
-3. What component wear or contamination is indicated
-4. Specific recommended action (continue, change oil, inspect component, remove from service)
-Keep it concise, max 150 words, practical language for a mechanic/fleet manager.` }]
+Rate overall: NORMAL / CAUTION / CRITICAL. Explain which readings are concerning, what component wear is indicated, and give one specific action. Max 150 words.` }]
         })
       });
       const data = await resp.json();
-      setAiAnalysis(data.content?.[0]?.text || 'Unable to analyse.');
-    } catch (e) { setAiAnalysis('AI analysis failed: ' + e.message); }
+      const text = data.content?.[0]?.text || 'Unable to analyse.';
+      setAiAnalysis(text);
+      // Save analysis back to record
+      await supabase.from('oil_samples').update({ ai_analysis: text }).eq('id', sample.id);
+    } catch(e) { setAiAnalysis('AI error: ' + e.message); }
     finally { setAiLoading(false); }
   };
 
   const getTrafficLight = (val, metal) => {
-    if (!val) return null;
+    if (!val && val !== 0) return null;
     const v = parseFloat(val);
     const limits = { iron:[100,200], copper:[30,60], aluminium:[25,50], silicon:[20,40], sodium:[20,40], lead:[20,40], tin:[10,20] };
-    const [warn, crit] = limits[metal] || [50, 100];
+    const [warn, crit] = limits[metal] || [50,100];
     if (v >= crit) return 'tl-alert';
     if (v >= warn) return 'tl-warn';
     return 'tl-ok';
   };
 
+  const condColor = { NORMAL:'var(--green)', CAUTION:'var(--amber)', CRITICAL:'var(--red)' };
+  const condBg    = { NORMAL:'var(--green-bg)', CAUTION:'var(--amber-bg)', CRITICAL:'var(--red-bg)' };
   const METALS = ['iron','copper','aluminium','silicon','sodium','lead','tin'];
-  const METAL_LABELS = { iron:'Fe Iron', copper:'Cu Copper', aluminium:'Al Aluminium', silicon:'Si Silicon', sodium:'Na Sodium', lead:'Pb Lead', tin:'Sn Tin' };
+  const METAL_LABELS = { iron:'Fe', copper:'Cu', aluminium:'Al', silicon:'Si', sodium:'Na', lead:'Pb', tin:'Sn' };
 
   return (
     <div>
       <div style={{ display:'flex', justifyContent:'space-between', marginBottom:16, alignItems:'center' }}>
-        <div style={{ fontSize:13, color:'var(--text-muted)' }}>{samples.length} sample{samples.length !== 1 ? 's' : ''} recorded</div>
+        <div style={{ fontSize:13, color:'var(--text-muted)' }}>{samples.length} sample{samples.length!==1?'s':''} recorded</div>
         <button onClick={() => setShowForm(s=>!s)} style={{ padding:'9px 18px', background:showForm?'var(--surface-2)':'var(--accent)', color:showForm?'var(--text-secondary)':'#fff', border:'1px solid '+(showForm?'var(--border)':'var(--accent)'), borderRadius:10, fontSize:13, fontWeight:700, cursor:'pointer' }}>
           {showForm ? '✕ Close' : '+ Log Sample'}
         </button>
@@ -482,18 +482,19 @@ Keep it concise, max 150 words, practical language for a mechanic/fleet manager.
           <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(150px,1fr))', gap:10, marginBottom:12 }}>
             <div><label className="mp-label">Component</label>
               <select className="mp-input" value={form.component} onChange={e=>setForm({...form,component:e.target.value})}>
-                {['Engine','Hydraulic System','Transmission','Differential','Final Drive','Coolant'].map(c=><option key={c}>{c}</option>)}
+                {['Engine','Hydraulic System','Transmission','Differential','Final Drive','Coolant'].map(comp=><option key={comp}>{comp}</option>)}
               </select>
             </div>
             <div><label className="mp-label">Sample Date</label><input className="mp-input" type="date" value={form.sample_date} onChange={e=>setForm({...form,sample_date:e.target.value})} /></div>
-            <div><label className="mp-label">Hours on Oil</label><input className="mp-input" type="number" placeholder="0" value={form.hours_on_oil} onChange={e=>setForm({...form,hours_on_oil:e.target.value})} /></div>
+            <div><label className="mp-label">Hours on Oil</label><input className="mp-input" type="number" placeholder="0" value={form.oil_hours} onChange={e=>setForm({...form,oil_hours:e.target.value})} /></div>
+            <div><label className="mp-label">Unit Hours</label><input className="mp-input" type="number" placeholder="0" value={form.unit_hours} onChange={e=>setForm({...form,unit_hours:e.target.value})} /></div>
             {METALS.map(m => (
-              <div key={m}><label className="mp-label">{METAL_LABELS[m]} (ppm)</label><input className="mp-input" type="number" placeholder="0" value={form[m]} onChange={e=>setForm({...form,[m]:e.target.value})} /></div>
+              <div key={m}><label className="mp-label">{METAL_LABELS[m]} (ppm)</label><input className="mp-input" type="number" placeholder="0" value={form.wear_metals[m]} onChange={e=>setForm({...form,wear_metals:{...form.wear_metals,[m]:e.target.value}})} /></div>
             ))}
-            <div><label className="mp-label">Viscosity (cSt)</label><input className="mp-input" type="number" placeholder="0" value={form.viscosity} onChange={e=>setForm({...form,viscosity:e.target.value})} /></div>
-            <div><label className="mp-label">Water (%)</label><input className="mp-input" type="number" placeholder="0" value={form.water} onChange={e=>setForm({...form,water:e.target.value})} /></div>
+            <div><label className="mp-label">Viscosity 40°C</label><input className="mp-input" type="number" placeholder="0" value={form.viscosity_40} onChange={e=>setForm({...form,viscosity_40:e.target.value})} /></div>
+            <div><label className="mp-label">Water (ppm)</label><input className="mp-input" type="number" placeholder="0" value={form.water_ppm} onChange={e=>setForm({...form,water_ppm:e.target.value})} /></div>
+            <div><label className="mp-label">Soot (%)</label><input className="mp-input" type="number" placeholder="0" value={form.soot_percent} onChange={e=>setForm({...form,soot_percent:e.target.value})} /></div>
           </div>
-          <div style={{ marginBottom:12 }}><label className="mp-label">Notes</label><textarea className="mp-input" rows={2} value={form.notes} onChange={e=>setForm({...form,notes:e.target.value})} style={{ resize:'vertical' }} /></div>
           <div style={{ display:'flex', gap:8 }}>
             <button onClick={save} style={{ padding:'8px 20px', background:'var(--accent)', color:'#fff', border:'none', borderRadius:8, fontSize:13, fontWeight:700, cursor:'pointer' }}>Save Sample</button>
             <button onClick={() => setShowForm(false)} style={{ padding:'8px 14px', background:'var(--surface-2)', color:'var(--text-secondary)', border:'1px solid var(--border)', borderRadius:8, fontSize:13, cursor:'pointer' }}>Cancel</button>
@@ -505,48 +506,57 @@ Keep it concise, max 150 words, practical language for a mechanic/fleet manager.
         <div className="mp-card" style={{ textAlign:'center', padding:40, color:'var(--text-faint)' }}>No oil samples recorded yet.</div>
       ) : (
         <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
-          {samples.map(s => (
-            <div key={s.id} className="mp-card">
-              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:12, flexWrap:'wrap', gap:8 }}>
-                <div>
-                  <div style={{ fontSize:15, fontWeight:800, color:'var(--text-primary)' }}>{s.component}</div>
-                  <div style={{ fontSize:12, color:'var(--text-muted)' }}>{s.sample_date} · {s.hours_on_oil ? `${s.hours_on_oil} hrs on oil` : ''}</div>
-                </div>
-                <button onClick={() => analyseWithAI(s)} style={{ padding:'6px 14px', background:'var(--accent-light)', color:'var(--accent)', border:'1px solid rgba(14,165,233,0.25)', borderRadius:8, fontSize:12, fontWeight:700, cursor:'pointer' }}>
-                  🤖 AI Analysis
-                </button>
-              </div>
-
-              {/* Metal readings traffic lights */}
-              <div style={{ display:'flex', gap:8, flexWrap:'wrap', marginBottom:10 }}>
-                {METALS.map(m => {
-                  if (!s[m]) return null;
-                  const cls = getTrafficLight(s[m], m);
-                  return (
-                    <div key={m} className={`traffic-light ${cls}`}>
-                      <span style={{ width:5, height:5, borderRadius:'50%', background:'currentColor' }} />
-                      {METAL_LABELS[m].split(' ')[0]}: {s[m]}
+          {samples.map(s => {
+            const wm = s.wear_metals || {};
+            const cond = s.ai_condition || 'NORMAL';
+            return (
+              <div key={s.id} className="mp-card">
+                <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:12, flexWrap:'wrap', gap:8 }}>
+                  <div>
+                    <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:4 }}>
+                      <span style={{ fontSize:15, fontWeight:800, color:'var(--text-primary)' }}>{s.component}</span>
+                      <span style={{ padding:'3px 10px', borderRadius:20, background:condBg[cond]||'var(--surface-2)', color:condColor[cond]||'var(--text-muted)', fontSize:11, fontWeight:700, border:`1px solid ${condColor[cond]||'var(--border)'}40` }}>{cond}</span>
                     </div>
-                  );
-                })}
-              </div>
-
-              {/* AI Analysis */}
-              {selected?.id === s.id && (
-                <div style={{ marginTop:10, padding:'14px', background:'var(--surface-2)', borderRadius:10, border:'1px solid var(--border)' }}>
-                  {aiLoading ? (
-                    <div style={{ display:'flex', alignItems:'center', gap:8, color:'var(--accent)', fontSize:13 }}>
-                      <span style={{ animation:'spin 0.8s linear infinite', display:'inline-block' }}>⟳</span> Analysing with AI…
-                    </div>
-                  ) : (
-                    <div style={{ fontSize:13, color:'var(--text-secondary)', lineHeight:1.7, whiteSpace:'pre-wrap' }}>{aiAnalysis}</div>
-                  )}
+                    <div style={{ fontSize:12, color:'var(--text-muted)' }}>{s.sample_date} · {s.oil_hours ? `${s.oil_hours} hrs on oil` : ''}{s.unit_hours ? ` · ${s.unit_hours} unit hrs` : ''}</div>
+                  </div>
+                  <button onClick={() => analyseWithAI(s)} style={{ padding:'6px 14px', background:'var(--accent-light)', color:'var(--accent)', border:'1px solid rgba(14,165,233,0.25)', borderRadius:8, fontSize:12, fontWeight:700, cursor:'pointer' }}>
+                    🤖 AI Analysis
+                  </button>
                 </div>
-              )}
 
-              {s.notes && <div style={{ fontSize:12, color:'var(--text-muted)', marginTop:8, fontStyle:'italic' }}>{s.notes}</div>}
-            </div>
-          ))}
+                {/* Wear metals traffic lights */}
+                <div style={{ display:'flex', gap:8, flexWrap:'wrap', marginBottom:10 }}>
+                  {METALS.map(m => {
+                    if (!wm[m] && wm[m] !== 0) return null;
+                    const cls = getTrafficLight(wm[m], m);
+                    return (
+                      <div key={m} className={`traffic-light ${cls}`}>
+                        <span style={{ width:5, height:5, borderRadius:'50%', background:'currentColor' }} />
+                        {METAL_LABELS[m]}: {wm[m]}
+                      </div>
+                    );
+                  })}
+                  {s.water_ppm && <div className={`traffic-light ${s.water_ppm > 500 ? 'tl-alert' : s.water_ppm > 200 ? 'tl-warn' : 'tl-ok'}`}><span style={{ width:5, height:5, borderRadius:'50%', background:'currentColor' }} />H₂O: {s.water_ppm}ppm</div>}
+                </div>
+
+                {/* AI Analysis panel */}
+                {selected?.id === s.id && (
+                  <div style={{ marginTop:10, padding:'14px', background:'var(--surface-2)', borderRadius:10, border:'1px solid var(--border)' }}>
+                    {aiLoading ? (
+                      <div style={{ display:'flex', alignItems:'center', gap:8, color:'var(--accent)', fontSize:13 }}>
+                        <span style={{ animation:'spin 0.8s linear infinite', display:'inline-block' }}>⟳</span> Analysing…
+                      </div>
+                    ) : (
+                      <>
+                        {s.ai_recommendations && <div style={{ fontSize:12, fontWeight:700, color:'var(--accent)', marginBottom:8, padding:'6px 10px', background:'var(--accent-light)', borderRadius:6 }}>📋 {s.ai_recommendations}</div>}
+                        <div style={{ fontSize:13, color:'var(--text-secondary)', lineHeight:1.7, whiteSpace:'pre-wrap' }}>{aiAnalysis}</div>
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
     </div>
