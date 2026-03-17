@@ -686,6 +686,175 @@ function DowntimeTab({ asset }) {
   );
 }
 
+// ─── Tab: Documents & Manuals ────────────────────────────────────────────────
+function DocumentsTab({ asset, userRole }) {
+  const [docs, setDocs]         = useState([]);
+  const [loading, setLoading]   = useState(true);
+  const [uploading, setUploading] = useState(false);
+  const [lightbox, setLightbox] = useState(null);
+  const [form, setForm]         = useState({ name: '', category: 'Manual' });
+  const [showForm, setShowForm] = useState(false);
+  const fileRef = useRef(null);
+  const isAdmin = ['admin','supervisor'].includes(userRole?.role);
+
+  const CATEGORIES = ['Manual', 'Schematic', 'Wiring Diagram', 'Parts Catalogue', 'Safety Data Sheet', 'Photo', 'Other'];
+  const CAT_ICONS  = { Manual:'📖', Schematic:'📐', 'Wiring Diagram':'⚡', 'Parts Catalogue':'🔩', 'Safety Data Sheet':'⚠️', Photo:'📷', Other:'📎' };
+
+  useEffect(() => { load(); }, [asset]);
+
+  const load = async () => {
+    setLoading(true);
+    const { data } = await supabase.from('asset_documents').select('*')
+      .eq('asset_id', asset.id).order('category').order('created_at', { ascending: false });
+    setDocs(data || []);
+    setLoading(false);
+  };
+
+  const upload = async (file) => {
+    if (!file) return;
+    setUploading(true);
+    try {
+      const ext  = file.name.split('.').pop();
+      const path = `${asset.company_id}/${asset.id}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+      const { error: upErr } = await supabase.storage.from('asset-documents').upload(path, file);
+      if (upErr) throw upErr;
+      const { data: { publicUrl } } = supabase.storage.from('asset-documents').getPublicUrl(path);
+      await supabase.from('asset_documents').insert({
+        company_id: asset.company_id,
+        asset_id:   asset.id,
+        asset_name: asset.name,
+        name:       form.name || file.name.replace(/\.[^/.]+$/, ''),
+        category:   form.category,
+        file_url:   publicUrl,
+        file_name:  file.name,
+        file_size:  file.size,
+        file_type:  file.type,
+        uploaded_by: userRole.name || userRole.email,
+      });
+      setForm({ name: '', category: 'Manual' });
+      setShowForm(false);
+      load();
+    } catch (e) { alert('Upload failed: ' + e.message); }
+    finally { setUploading(false); }
+  };
+
+  const deleteDoc = async (doc) => {
+    if (!window.confirm(`Delete "${doc.name}"?`)) return;
+    await supabase.from('asset_documents').delete().eq('id', doc.id);
+    load();
+  };
+
+  const fmtSize = (b) => b > 1024*1024 ? `${(b/1024/1024).toFixed(1)} MB` : b > 1024 ? `${(b/1024).toFixed(0)} KB` : `${b} B`;
+  const isImage = (type) => type?.startsWith('image/');
+  const isPDF   = (type) => type === 'application/pdf';
+
+  // Group by category
+  const grouped = docs.reduce((g, d) => { (g[d.category] = g[d.category] || []).push(d); return g; }, {});
+
+  return (
+    <div>
+      {/* Upload bar */}
+      {isAdmin && (
+        <div style={{ display:'flex', gap:8, marginBottom:16, alignItems:'center', flexWrap:'wrap' }}>
+          {!showForm ? (
+            <button onClick={() => setShowForm(true)} style={{ padding:'9px 18px', background:'var(--accent)', color:'#fff', border:'none', borderRadius:10, fontSize:13, fontWeight:700, cursor:'pointer' }}>
+              + Upload Document
+            </button>
+          ) : (
+            <div style={{ display:'flex', gap:8, flex:1, flexWrap:'wrap', alignItems:'flex-end', background:'var(--surface-2)', border:'1px solid var(--border)', borderRadius:10, padding:'12px 14px' }}>
+              <div style={{ flex:2, minWidth:160 }}>
+                <div className="mp-label">Document Name</div>
+                <input className="mp-input" placeholder="e.g. Engine Service Manual" value={form.name} onChange={e=>setForm({...form,name:e.target.value})} />
+              </div>
+              <div style={{ flex:1, minWidth:140 }}>
+                <div className="mp-label">Category</div>
+                <select className="mp-input" value={form.category} onChange={e=>setForm({...form,category:e.target.value})}>
+                  {CATEGORIES.map(cat => <option key={cat}>{cat}</option>)}
+                </select>
+              </div>
+              <button onClick={() => fileRef.current?.click()} disabled={uploading}
+                style={{ padding:'9px 18px', background:'var(--accent)', color:'#fff', border:'none', borderRadius:8, fontSize:13, fontWeight:700, cursor:'pointer', whiteSpace:'nowrap', opacity:uploading?0.6:1 }}>
+                {uploading ? '⟳ Uploading…' : '📁 Choose File'}
+              </button>
+              <button onClick={() => setShowForm(false)} style={{ padding:'9px 14px', background:'var(--surface)', color:'var(--text-secondary)', border:'1px solid var(--border)', borderRadius:8, fontSize:13, cursor:'pointer' }}>Cancel</button>
+              <input ref={fileRef} type="file" accept=".pdf,.jpg,.jpeg,.png,.gif,.webp,.svg,.dwg,.dxf" style={{ display:'none' }}
+                onChange={e => { const f = e.target.files[0]; if (f) upload(f); e.target.value=''; }} />
+            </div>
+          )}
+        </div>
+      )}
+
+      {loading ? <Sk h="80px" /> : docs.length === 0 ? (
+        <div className="mp-card" style={{ textAlign:'center', padding:'48px 20px', color:'var(--text-faint)' }}>
+          <div style={{ fontSize:36, marginBottom:12 }}>📂</div>
+          <div style={{ fontSize:14, fontWeight:700, color:'var(--text-muted)', marginBottom:6 }}>No documents uploaded yet</div>
+          {isAdmin && <div style={{ fontSize:13, color:'var(--text-faint)' }}>Upload manuals, schematics and diagrams for this asset.</div>}
+        </div>
+      ) : (
+        <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
+          {Object.entries(grouped).map(([category, items]) => (
+            <div key={category} className="mp-card">
+              <div className="mp-section-title">
+                {CAT_ICONS[category] || '📎'} {category} <span style={{ fontSize:11, fontWeight:600, color:'var(--accent)', background:'var(--accent-light)', padding:'2px 8px', borderRadius:20, marginLeft:4 }}>{items.length}</span>
+              </div>
+              <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(200px,1fr))', gap:10 }}>
+                {items.map(doc => (
+                  <div key={doc.id} style={{ border:'1px solid var(--border)', borderRadius:10, overflow:'hidden', background:'var(--surface-2)', transition:'box-shadow 0.15s' }}
+                    onMouseEnter={e=>e.currentTarget.style.boxShadow='var(--shadow-md)'}
+                    onMouseLeave={e=>e.currentTarget.style.boxShadow='none'}>
+
+                    {/* Preview */}
+                    {isImage(doc.file_type) ? (
+                      <div style={{ height:120, overflow:'hidden', cursor:'zoom-in', background:'#000' }} onClick={() => setLightbox(doc.file_url)}>
+                        <img src={doc.file_url} alt={doc.name} style={{ width:'100%', height:'100%', objectFit:'cover', opacity:0.9 }} />
+                      </div>
+                    ) : (
+                      <div style={{ height:80, display:'flex', alignItems:'center', justifyContent:'center', background: isPDF(doc.file_type) ? '#fee2e2' : 'var(--surface-3)', fontSize:36 }}>
+                        {isPDF(doc.file_type) ? '📄' : CAT_ICONS[doc.category] || '📎'}
+                      </div>
+                    )}
+
+                    {/* Info */}
+                    <div style={{ padding:'10px 12px' }}>
+                      <div style={{ fontSize:13, fontWeight:700, color:'var(--text-primary)', marginBottom:3, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }} title={doc.name}>{doc.name}</div>
+                      <div style={{ fontSize:11, color:'var(--text-faint)', marginBottom:8 }}>
+                        {doc.file_size ? fmtSize(doc.file_size) : ''}{doc.uploaded_by ? ` · ${doc.uploaded_by}` : ''}
+                      </div>
+                      <div style={{ display:'flex', gap:6 }}>
+                        <a href={doc.file_url} target="_blank" rel="noopener noreferrer"
+                          style={{ flex:1, padding:'6px 0', background:'var(--accent)', color:'#fff', border:'none', borderRadius:6, fontSize:11, fontWeight:700, cursor:'pointer', textAlign:'center', textDecoration:'none', display:'block' }}>
+                          👁 View
+                        </a>
+                        <a href={doc.file_url} download={doc.file_name}
+                          style={{ flex:1, padding:'6px 0', background:'var(--surface)', color:'var(--text-secondary)', border:'1px solid var(--border)', borderRadius:6, fontSize:11, fontWeight:700, cursor:'pointer', textAlign:'center', textDecoration:'none', display:'block' }}>
+                          ⬇ Save
+                        </a>
+                        {isAdmin && (
+                          <button onClick={() => deleteDoc(doc)}
+                            style={{ padding:'6px 8px', background:'var(--red-bg)', color:'var(--red)', border:'1px solid var(--red-border)', borderRadius:6, fontSize:11, fontWeight:700, cursor:'pointer' }}>
+                            🗑
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Image lightbox */}
+      {lightbox && (
+        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.92)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:9999, cursor:'zoom-out' }} onClick={() => setLightbox(null)}>
+          <img src={lightbox} alt="full size" style={{ maxWidth:'90vw', maxHeight:'90vh', borderRadius:8 }} onClick={e=>e.stopPropagation()} />
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Tab: Depreciation (Admin only) ──────────────────────────────────────────
 function DepreciationTab({ asset, userRole }) {
   const [inputs, setInputs] = useState({
@@ -890,6 +1059,7 @@ function AssetPage({ assetId, userRole, onStartPrestart }) {
     { id:'service',      label:'Service Schedule' },
     { id:'oil',          label:'Oil Sampling' },
     { id:'downtime',     label:'Downtime' },
+    { id:'documents', label:'📂 Documents' },
     ...(isAdmin ? [{ id:'depreciation', label:'💰 Depreciation' }] : []),
   ];
 
@@ -943,6 +1113,7 @@ function AssetPage({ assetId, userRole, onStartPrestart }) {
       {activeTab === 'service'      && <ServiceTab asset={asset} />}
       {activeTab === 'oil'          && <OilTab asset={asset} userRole={userRole} />}
       {activeTab === 'downtime'     && <DowntimeTab asset={asset} />}
+      {activeTab === 'documents'    && <DocumentsTab asset={asset} userRole={userRole} />}
       {activeTab === 'depreciation' && isAdmin && <DepreciationTab asset={asset} userRole={userRole} />}
     </div>
   );
