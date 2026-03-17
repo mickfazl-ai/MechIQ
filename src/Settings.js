@@ -67,6 +67,7 @@ function CompanyDetails({ userRole }) {
     safety_standard: '', insurance_provider: '', insurance_expiry: '',
     notes: '',
   });
+  const [features, setFeatures] = useState({ cost_analysis: false });
   const [logo, setLogo] = useState(null);
   const [logoUrl, setLogoUrl] = useState(null);
   const [saving, setSaving] = useState(false);
@@ -111,6 +112,7 @@ function CompanyDetails({ userRole }) {
         notes:                    data.notes || '',
       }));
       if (data.logo_url) setLogoUrl(data.logo_url);
+      if (data.features) setFeatures(data.features);
     }
   };
 
@@ -124,7 +126,7 @@ function CompanyDetails({ userRole }) {
       const { data: urlData } = supabase.storage.from('company-assets').getPublicUrl(path);
       logo_url = urlData.publicUrl;
     }
-    await supabase.from('companies').update({ ...form, logo_url }).eq('id', userRole.company_id);
+    await supabase.from('companies').update({ ...form, logo_url, features }).eq('id', userRole.company_id);
     setSaving(false); setSaved(true);
     setTimeout(() => setSaved(false), 3000);
   };
@@ -286,6 +288,27 @@ function CompanyDetails({ userRole }) {
             placeholder="Site access instructions, special requirements, account notes..."
             onChange={e => set('notes', e.target.value)} />
         </Field>
+      </div>
+
+      {/* ── Feature Toggles ── */}
+      <div style={card}>
+        <SectionHeader title="Feature Settings" desc="Enable or disable features for your company" />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          {[
+            { key: 'cost_analysis', label: 'Cost Analysis', desc: 'Show hourly rates, downtime costs and cost columns throughout the app. Disable to keep cost data private from technicians.' },
+          ].map(f => (
+            <div key={f.key} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, padding: '14px 16px', background: 'var(--surface-2)', borderRadius: 10, border: '1px solid var(--border)' }}>
+              <div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 3 }}>{f.label}</div>
+                <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{f.desc}</div>
+              </div>
+              <div onClick={() => setFeatures(p => ({ ...p, [f.key]: !p[f.key] }))}
+                style={{ width: 46, height: 26, borderRadius: 13, cursor: 'pointer', background: features[f.key] ? 'var(--accent)' : 'var(--border-strong)', position: 'relative', transition: 'background 0.2s', flexShrink: 0 }}>
+                <div style={{ position: 'absolute', top: 3, left: features[f.key] ? 23 : 3, width: 20, height: 20, borderRadius: '50%', background: '#fff', transition: 'left 0.2s', boxShadow: '0 1px 4px rgba(0,0,0,0.2)' }} />
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* ── Save ── */}
