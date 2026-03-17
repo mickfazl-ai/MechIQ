@@ -216,27 +216,38 @@ export default function Depreciation({ userRole }) {
     setAiPredictError(null);
 
     const unit = inputs.usageUnit === "kms" ? "kilometres" : "hours";
-    const prompt = `You are an expert heavy equipment and vehicle valuation analyst.
+    const prompt = `You are an expert heavy equipment and vehicle valuation analyst with access to Australian market data from Machines4U, IronPlanet, Ritchie Bros, and dealer networks.
 
 For the asset: "${inputs.assetName}"
 Year of Manufacture: ${inputs.purchaseYear}
 Year Purchased: ${inputs.yearPurchased}
-Asset Condition: ${inputs.assetConditionType === "new" ? "Purchased new" : "Purchased used"}
-Purchase Price: ${inputs.purchasePrice ? "$" + inputs.purchasePrice : "unknown"}
+Condition when purchased: ${inputs.assetConditionType === "new" ? "Brand new" : "Used"}
+Purchase Price paid: ${inputs.purchasePrice ? "AUD $" + Number(inputs.purchasePrice).toLocaleString() : "unknown"}
 Current ${unit}: ${inputs.currentUsage || "unknown"}
-Annual ${unit}: ${inputs.annualUsage || "unknown"}
-Condition: ${inputs.condition}
+Annual ${unit} usage: ${inputs.annualUsage || "unknown"}
+Current condition rating: ${inputs.condition}
 Usage unit: ${inputs.usageUnit}
 
-Respond ONLY with a valid JSON object, no markdown, no explanation, no preamble:
+Using your knowledge of REAL Australian heavy equipment and vehicle market sale prices:
+
+1. Research typical sale prices for this exact make/model/year at various ${unit} readings on Machines4U, IronPlanet, Ritchie Bros auctions, and dealer listings in Australia
+2. Compare the purchase price paid ($${inputs.purchasePrice || 'unknown'}) against typical market prices - was it overpaid, fair, or a good deal?
+3. Estimate realistic current market value based on current ${unit} and condition
+4. Project realistic depreciation curve based on ACTUAL market data for this equipment type - heavy excavators typically lose 15-25% in year 1, then 8-15% per year; trucks 20-30% year 1; utes/passenger 15-25% year 1
+
+Respond ONLY with a valid JSON object, no markdown, no explanation:
 {
-  "expectedLifeUsage": <number - total life in ${unit}>,
-  "salvageValue": <number - estimated salvage value AUD>,
+  "expectedLifeUsage": <number - realistic total life ${unit} based on manufacturer specs and market data>,
+  "salvageValue": <number - realistic AUD salvage value at end of life>,
   "recommendedMethod": <"straight_line" or "declining_balance" or "units_of_production">,
+  "currentMarketValue": <number - estimated current AUD market value based on real comparable sales>,
+  "purchasePriceAssessment": <"overpaid" or "fair" or "good_deal" or "unknown">,
+  "purchasePriceNote": "<1 sentence: was the purchase price fair vs market? by how much?">
   "salePrices": [
-    {"year": <number>, "price": <number>, "description": "<context>"}
+    {"year": <manufacture year>, "price": <new price>, "description": "New price"},
+    {"year": <year>, "price": <price>, "description": "<comparable sale context from real market>"}
   ],
-  "marketNote": "<1 sentence market summary>"
+  "marketNote": "<2-3 sentences: current Australian market conditions for this equipment type, demand, and depreciation outlook>"
 }`;
 
     try {
@@ -267,7 +278,19 @@ Respond ONLY with a valid JSON object, no markdown, no explanation, no preamble:
         depreciationMethod: parsed.recommendedMethod || prev.depreciationMethod,
 
       }));
-      if (parsed.marketNote) setAiInsight("📊 " + parsed.marketNote);
+      if (parsed.marketNote) {
+        let insight = "📊 " + parsed.marketNote;
+        if (parsed.purchasePriceNote) insight = "💰 " + parsed.purchasePriceNote + "\n\n" + insight;
+        if (parsed.currentMarketValue) {
+          const diff = parsed.currentMarketValue - Number(inputs.purchasePrice);
+          const diffStr = diff >= 0 ? `+$${Math.abs(diff).toLocaleString()}` : `-$${Math.abs(diff).toLocaleString()}`;
+          insight = `📈 Current market value: $${parsed.currentMarketValue.toLocaleString()} AUD (${diffStr} vs purchase price)\n\n` + insight;
+        }
+        setAiInsight(insight);
+      }
+      if (parsed.currentMarketValue) {
+        setInputs(prev => ({ ...prev, _marketValue: parsed.currentMarketValue }));
+      }
     } catch (err) {
       setAiPredictError("AI prediction failed: " + err.message);
     } finally {
@@ -281,24 +304,26 @@ Respond ONLY with a valid JSON object, no markdown, no explanation, no preamble:
     setAiError(null);
     setAiInsight(null);
     const unit = inputs.usageUnit === "kms" ? "KM" : "Hour";
-    const prompt = `You are an expert heavy equipment valuation analyst. Provide a concise market insight for fleet managers.
+    const prompt = `You are an expert Australian heavy equipment and vehicle valuation analyst with real market knowledge.
 
 Asset: ${inputs.assetName}
-Purchase Price: $${inputs.purchasePrice} | Year of Manufacture: ${inputs.purchaseYear} | Year Purchased: ${inputs.yearPurchased} | ${inputs.assetConditionType === "new" ? "Purchased New" : "Purchased Used"}
+Purchase Price Paid: $${inputs.purchasePrice} AUD | Year of Manufacture: ${inputs.purchaseYear} | Year Purchased: ${inputs.yearPurchased} | ${inputs.assetConditionType === "new" ? "Purchased New" : "Purchased Used"}
 Current ${inputs.usageUnit === "kms" ? "KMs" : "Hours"}: ${inputs.currentUsage}
 Condition: ${inputs.condition}
-Current Book Value: ${formatCurrency(results.currentValue)}
-Market Value: ${formatCurrency(results.marketValue)}
+Calculated Book Value: ${formatCurrency(results.currentValue)}
+Estimated Market Value: ${formatCurrency(results.marketValue)}
 Cost Per ${unit}: $${results.costPerUnit.toFixed(2)}
-Years Remaining: ${results.yearsRemaining.toFixed(1)}
-Recommendation: ${results.recommendation.label}
+Fleet Recommendation: ${results.recommendation.label}
 
-Provide 4-5 sentences covering:
-1. Whether the historic vs predicted usage rate is concerning or reasonable for this asset type
-2. Current depreciation trajectory and book vs market value gap
-3. Key risk factors at this usage level and age
-4. One specific action item for the fleet manager
-Max 180 words.`;
+Using your knowledge of real Australian market sale prices (Machines4U, IronPlanet, Ritchie Bros, dealer networks):
+
+Provide 5-6 sentences covering:
+1. Was the original purchase price fair, or did they overpay/underpay vs market at time of purchase?
+2. What are comparable units of this type/age/hours actually selling for RIGHT NOW in Australia?
+3. The gap between book value and real market value - is it concerning?
+4. Key depreciation risks specific to this machine type at this usage level
+5. One specific action item (sell now, keep running, major service before selling, etc)
+Be specific with dollar amounts where possible. Max 200 words.`;
 
     try {
       const { data: { session } } = await (await import("./supabase")).supabase.auth.getSession();

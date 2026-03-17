@@ -20,7 +20,7 @@ async function callAI(messages, maxTokens = 2000) {
       'Authorization': `Bearer ${token}`,
     },
     body: JSON.stringify({
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-sonnet-4-5',
       max_tokens: maxTokens,
       messages,
     }),
@@ -120,7 +120,7 @@ function normaliseItems(sections) {
 function ItemInput({ item, value, onChange, companyId }) {
   const type = item.type || 'check';
   const [uploading, setUploading] = useState(false);
-  const base = { backgroundColor: '#0a0f0f', color: 'white', border: '1px solid #1a2f2f', padding: '5px 10px', borderRadius: '4px' };
+  const base = { background: 'var(--surface-2)', color: 'var(--text-primary)', border: '1px solid var(--border)', padding: '5px 10px', borderRadius: '4px' };
 
   if (type === 'check') return (
     <select
@@ -150,11 +150,11 @@ function ItemInput({ item, value, onChange, companyId }) {
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
         {value && value.photo_url ? (
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <img src={value.photo_url} alt="uploaded" style={{ width: '60px', height: '45px', objectFit: 'cover', borderRadius: '4px', border: '1px solid #1a2f2f' }} />
-            <button onClick={() => onChange({ ...value, photo_url: null })} style={{ ...base, padding: '3px 8px', color: '#e94560', cursor: 'pointer' }}>X</button>
+            <img src={value.photo_url} alt="uploaded" style={{ width: '60px', height: '45px', objectFit: 'cover', borderRadius: '4px', border: '1px solid var(--border)' }} />
+            <button onClick={() => onChange({ ...value, photo_url: null })} style={{ ...base, padding: '3px 8px', color: 'var(--red)', cursor: 'pointer' }}>X</button>
           </div>
         ) : (
-          <label style={{ backgroundColor: '#0a2a2a', border: '1px solid #00c2e040', color: '#00c2e0', padding: '5px 12px', borderRadius: '4px', cursor: 'pointer', fontSize: '12px' }}>
+          <label style={{ background: 'var(--accent-light)', border: '1px solid #00c2e040', color: 'var(--accent)', padding: '5px 12px', borderRadius: '4px', cursor: 'pointer', fontSize: '12px' }}>
             {uploading ? 'Uploading...' : 'Take/Upload Photo'}
             <input type="file" accept="image/*" capture="environment" onChange={handlePhoto} style={{ display: 'none' }} />
           </label>
@@ -250,7 +250,7 @@ function FormRow({ item, formKey, responses, onResponse, companyId }) {
           placeholder="Comment..."
           value={value.comment || ''}
           onChange={e => onResponse(formKey, { ...value, comment: e.target.value })}
-          style={{ backgroundColor: '#0a0f0f', color: 'white', border: '1px solid #1a2f2f', padding: '5px 8px', borderRadius: '4px', width: '140px', fontSize: '12px' }}
+          style={{ background: 'var(--surface-2)', color: 'var(--text-primary)', border: '1px solid var(--border)', padding: '5px 8px', borderRadius: '4px', width: '140px', fontSize: '12px' }}
         />
       </td>
       <td style={{ verticalAlign: 'middle', textAlign: 'center' }}>
@@ -336,20 +336,20 @@ function AIGeneratorModal({ mode, onClose, onGenerated }) {
     setLoading(false); setLoadingMsg('');
   };
 
-  const iStyle = { width: '100%', padding: '10px 14px', backgroundColor: '#0a0f0f', color: 'white', border: '1px solid #1a2f2f', borderRadius: '6px', fontSize: '14px', fontFamily: 'Barlow, sans-serif', boxSizing: 'border-box' };
+  const iStyle = { width: '100%', padding: '10px 14px', background: 'var(--surface-2)', color: 'var(--text-primary)', border: '1px solid var(--border)', borderRadius: '6px', fontSize: '14px', fontFamily: 'inherit', boxSizing: 'border-box' };
 
   const FileUploadZone = ({ accept, hint }) => (
     <div style={{ marginBottom: '16px' }}>
       <label style={{ color: '#a0b0b0', fontSize: '12px', display: 'block', marginBottom: '8px' }}>{hint}</label>
       <label style={{
         display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-        padding: '28px 16px', border: `2px dashed ${file ? '#00c264' : '#1a3a3a'}`,
+        padding: '28px 16px', border: `2px dashed ${file ? 'var(--green)' : 'var(--border)'}`,
         borderRadius: '10px', cursor: 'pointer', background: file ? '#001a0d' : '#060c0c',
         transition: 'all 0.2s', gap: '8px',
       }}>
         {file ? (
           <div style={{ textAlign: 'center' }}>
-            <div style={{ color: '#00c264', fontSize: '14px', fontWeight: 700, marginBottom: '4px' }}>✓ {file.name}</div>
+            <div style={{ color: 'var(--green)', fontSize: '14px', fontWeight: 700, marginBottom: '4px' }}>✓ {file.name}</div>
             <div style={{ color: '#4a7a6a', fontSize: '11px' }}>{(file.size / 1024 / 1024).toFixed(2)} MB — click to change</div>
           </div>
         ) : (
@@ -365,9 +365,9 @@ function AIGeneratorModal({ mode, onClose, onGenerated }) {
 
   return (
     <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '20px' }}>
-      <div style={{ background: '#0d1515', border: '1px solid #1a3a3a', borderRadius: '12px', padding: '28px', width: '100%', maxWidth: '520px' }}>
+      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '12px', padding: '28px', width: '100%', maxWidth: '520px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-          <h3 style={{ color: '#00c2e0', margin: 0 }}>AI {modeLabel} Generator</h3>
+          <h3 style={{ color: 'var(--accent)', margin: 0 }}>AI {modeLabel} Generator</h3>
           <button onClick={onClose} style={{ background: 'transparent', border: 'none', color: '#888', fontSize: '20px', cursor: 'pointer' }}>×</button>
         </div>
 
@@ -379,7 +379,7 @@ function AIGeneratorModal({ mode, onClose, onGenerated }) {
             { id: 'image', label: 'Image', desc: 'Photo / scan' },
           ].map(t => (
             <button key={t.id} onClick={() => { setInputType(t.id); setFile(null); setError(''); }} style={{
-              padding: '10px 6px', backgroundColor: inputType === t.id ? '#0a2a2a' : '#0a0f0f',
+              padding: '10px 6px', background: inputType === t.id ? 'var(--accent-light)' : 'var(--surface-2)',
               border: '1px solid ' + (inputType === t.id ? '#00c2e0' : '#1a2f2f'),
               borderRadius: '8px', cursor: 'pointer', transition: 'all 0.15s',
             }}>
@@ -402,10 +402,10 @@ function AIGeneratorModal({ mode, onClose, onGenerated }) {
         {inputType === 'excel' && <FileUploadZone accept=".xlsx,.xls,.csv" hint="Upload an Excel spreadsheet or CSV checklist (.xlsx, .xls, .csv)" />}
         {inputType === 'image' && <FileUploadZone accept="image/*" hint="Upload a photo or scan of an existing form" />}
 
-        {error && <p style={{ color: '#e94560', fontSize: '13px', marginBottom: '12px', padding: '10px', background: '#1a0808', borderRadius: '6px', border: '1px solid #3a1010' }}>{error}</p>}
+        {error && <p style={{ color: 'var(--red)', fontSize: '13px', marginBottom: '12px', padding: '10px', background: 'var(--red-bg)', borderRadius: '6px', border: '1px solid var(--red-border)' }}>{error}</p>}
 
         <div style={{ display: 'flex', gap: '10px' }}>
-          <button onClick={onClose} style={{ flex: 1, padding: '12px', background: 'transparent', border: '1px solid #1a2f2f', color: '#a0b0b0', borderRadius: '6px', cursor: 'pointer' }}>Cancel</button>
+          <button onClick={onClose} style={{ flex: 1, padding: '12px', background: 'transparent', border: '1px solid var(--border)', color: '#a0b0b0', borderRadius: '6px', cursor: 'pointer' }}>Cancel</button>
           <button onClick={handleGenerate} disabled={loading} style={{ flex: 2, padding: '12px', background: loading ? '#1a2f2f' : 'linear-gradient(135deg, #00c2e0, #0090a8)', border: 'none', color: loading ? '#a0b0b0' : '#000', borderRadius: '6px', cursor: loading ? 'not-allowed' : 'pointer', fontWeight: 700 }}>
             {loading ? (loadingMsg || 'Generating...') : 'Generate with AI'}
           </button>
@@ -417,21 +417,21 @@ function AIGeneratorModal({ mode, onClose, onGenerated }) {
 
 function BuilderItem({ item, si, ii, onUpdate, onRemove }) {
   return (
-    <div style={{ display: 'flex', gap: '8px', marginBottom: '8px', alignItems: 'center', backgroundColor: '#0a0f0f', padding: '8px 10px', borderRadius: '6px', border: '1px solid #1a2f2f' }}>
+    <div style={{ display: 'flex', gap: '8px', marginBottom: '8px', alignItems: 'center', background: 'var(--surface-2)', padding: '8px 10px', borderRadius: '6px', border: '1px solid var(--border)' }}>
       <input
         placeholder={'Item ' + (ii + 1)}
         value={item.label || ''}
         onChange={e => onUpdate(si, ii, { ...item, label: e.target.value })}
-        style={{ flex: 1, padding: '7px 10px', backgroundColor: '#060c0c', color: 'white', border: '1px solid #1a2f2f', borderRadius: '4px', fontSize: '13px' }}
+        style={{ flex: 1, padding: '7px 10px', backgroundColor: '#060c0c', color: 'var(--text-primary)', border: '1px solid var(--border)', borderRadius: '4px', fontSize: '13px' }}
       />
       <select
         value={item.type || 'check'}
         onChange={e => onUpdate(si, ii, { ...item, type: e.target.value })}
-        style={{ padding: '7px 8px', backgroundColor: '#060c0c', color: '#00c2e0', border: '1px solid #1a2f2f', borderRadius: '4px', fontSize: '12px' }}
+        style={{ padding: '7px 8px', backgroundColor: '#060c0c', color: 'var(--accent)', border: '1px solid var(--border)', borderRadius: '4px', fontSize: '12px' }}
       >
         {INPUT_TYPES.map(t => <option key={t.id} value={t.id}>{t.label}</option>)}
       </select>
-      <button onClick={() => onRemove(si, ii)} style={{ backgroundColor: 'transparent', border: '1px solid #2a1a1a', color: '#e94560', padding: '5px 8px', borderRadius: '4px', cursor: 'pointer', fontSize: '12px' }}>X</button>
+      <button onClick={() => onRemove(si, ii)} style={{ backgroundColor: 'transparent', border: '1px solid #2a1a1a', color: 'var(--red)', padding: '5px 8px', borderRadius: '4px', cursor: 'pointer', fontSize: '12px' }}>X</button>
     </div>
   );
 }
@@ -439,7 +439,7 @@ function BuilderItem({ item, si, ii, onUpdate, onRemove }) {
 function SectionTable({ sections, responses, onResponse, companyId }) {
   return sections.map((section, si) => (
     <div key={si} className="form-card" style={{ marginTop: '15px' }}>
-      <h3 style={{ color: '#00c2e0', marginBottom: '15px' }}>{section.title}</h3>
+      <h3 style={{ color: 'var(--accent)', marginBottom: '15px' }}>{section.title}</h3>
       <div style={{ overflowX: 'auto' }}>
         <table className="data-table" style={{ minWidth: '700px' }}>
           <thead>
@@ -491,8 +491,8 @@ function SignaturePad({ sigCanvas, isSigning, setIsSigning, setSignatureData }) 
   if (!isSigning) return <button className="btn-primary" onClick={startSigning}>Sign Here</button>;
   return (
     <div>
-      <canvas ref={sigCanvas} width={400} height={100} style={{ border: '1px solid #1a2f2f', borderRadius: '4px', backgroundColor: '#0a0f0f', cursor: 'crosshair', display: 'block' }} />
-      <button onClick={() => { if (sigCanvas.current) sigCanvas.current.getContext('2d').clearRect(0, 0, 400, 100); setSignatureData(''); }} style={{ marginTop: '8px', backgroundColor: 'transparent', color: '#a0b0b0', border: '1px solid #1a2f2f', padding: '5px 12px', borderRadius: '4px', cursor: 'pointer' }}>Clear</button>
+      <canvas ref={sigCanvas} width={400} height={100} style={{ border: '1px solid var(--border)', borderRadius: '4px', background: 'var(--surface-2)', cursor: 'crosshair', display: 'block' }} />
+      <button onClick={() => { if (sigCanvas.current) sigCanvas.current.getContext('2d').clearRect(0, 0, 400, 100); setSignatureData(''); }} style={{ marginTop: '8px', backgroundColor: 'transparent', color: '#a0b0b0', border: '1px solid var(--border)', padding: '5px 12px', borderRadius: '4px', cursor: 'pointer' }}>Clear</button>
     </div>
   );
 }
@@ -630,37 +630,37 @@ function PrestartTab({ userRole }) {
           <button className="btn-primary" onClick={() => setView('list')}>Back</button>
         </div>
         <div className="form-card">
-          <h3 style={{ color: '#00c2e0', marginBottom: '15px' }}>Prestart Details</h3>
+          <h3 style={{ color: 'var(--accent)', marginBottom: '15px' }}>Prestart Details</h3>
           <div className="form-grid">
             <div>
               <label style={{ color: '#a0b0b0', fontSize: '12px', display: 'block', marginBottom: '4px' }}>Asset</label>
-              <select value={form.asset} onChange={e => setForm({ ...form, asset: e.target.value })} style={{ width: '100%', padding: '10px', backgroundColor: '#0a0f0f', color: 'white', border: '1px solid #1a2f2f', borderRadius: '4px' }}>
+              <select value={form.asset} onChange={e => setForm({ ...form, asset: e.target.value })} style={{ width: '100%', padding: '10px', background: 'var(--surface-2)', color: 'var(--text-primary)', border: '1px solid var(--border)', borderRadius: '4px' }}>
                 <option value="">Select Asset</option>
                 {assets.map(a => <option key={a.id} value={a.name}>{a.name}</option>)}
               </select>
             </div>
             <div>
               <label style={{ color: '#a0b0b0', fontSize: '12px', display: 'block', marginBottom: '4px' }}>Operator Name</label>
-              <input placeholder="Operator Name" value={form.operator_name} onChange={e => setForm({ ...form, operator_name: e.target.value })} style={{ width: '100%', padding: '10px', backgroundColor: '#0a0f0f', color: 'white', border: '1px solid #1a2f2f', borderRadius: '4px' }} />
+              <input placeholder="Operator Name" value={form.operator_name} onChange={e => setForm({ ...form, operator_name: e.target.value })} style={{ width: '100%', padding: '10px', background: 'var(--surface-2)', color: 'var(--text-primary)', border: '1px solid var(--border)', borderRadius: '4px' }} />
             </div>
             <div>
               <label style={{ color: '#a0b0b0', fontSize: '12px', display: 'block', marginBottom: '4px' }}>Site / Location</label>
-              <input placeholder="Site Area" value={form.site_area} onChange={e => setForm({ ...form, site_area: e.target.value })} style={{ width: '100%', padding: '10px', backgroundColor: '#0a0f0f', color: 'white', border: '1px solid #1a2f2f', borderRadius: '4px' }} />
+              <input placeholder="Site Area" value={form.site_area} onChange={e => setForm({ ...form, site_area: e.target.value })} style={{ width: '100%', padding: '10px', background: 'var(--surface-2)', color: 'var(--text-primary)', border: '1px solid var(--border)', borderRadius: '4px' }} />
             </div>
             <div>
               <label style={{ color: '#a0b0b0', fontSize: '12px', display: 'block', marginBottom: '4px' }}>Hours Start</label>
-              <input type="number" placeholder="Hours" value={form.hrs_start} onChange={e => setForm({ ...form, hrs_start: e.target.value })} style={{ width: '100%', padding: '10px', backgroundColor: '#0a0f0f', color: 'white', border: '1px solid #1a2f2f', borderRadius: '4px' }} />
+              <input type="number" placeholder="Hours" value={form.hrs_start} onChange={e => setForm({ ...form, hrs_start: e.target.value })} style={{ width: '100%', padding: '10px', background: 'var(--surface-2)', color: 'var(--text-primary)', border: '1px solid var(--border)', borderRadius: '4px' }} />
             </div>
             <div>
               <label style={{ color: '#a0b0b0', fontSize: '12px', display: 'block', marginBottom: '4px' }}>Date</label>
-              <input type="date" value={form.date} onChange={e => setForm({ ...form, date: e.target.value })} style={{ width: '100%', padding: '10px', backgroundColor: '#0a0f0f', color: 'white', border: '1px solid #1a2f2f', borderRadius: '4px' }} />
+              <input type="date" value={form.date} onChange={e => setForm({ ...form, date: e.target.value })} style={{ width: '100%', padding: '10px', background: 'var(--surface-2)', color: 'var(--text-primary)', border: '1px solid var(--border)', borderRadius: '4px' }} />
             </div>
           </div>
         </div>
         <SectionTable sections={selectedTemplate.sections} responses={form.responses} onResponse={onResponse} companyId={userRole.company_id} />
         <div className="form-card" style={{ marginTop: '15px' }}>
           <h3 style={{ marginBottom: '10px' }}>Notes</h3>
-          <textarea value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid #1a2f2f', backgroundColor: '#0a0f0f', color: 'white', minHeight: '80px', fontFamily: 'Barlow, sans-serif', fontSize: '14px', marginBottom: '15px' }} />
+          <textarea value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid var(--border)', background: 'var(--surface-2)', color: 'var(--text-primary)', minHeight: '80px', fontFamily: 'inherit', fontSize: '14px', marginBottom: '15px' }} />
           <h3 style={{ marginBottom: '10px' }}>Operator Signature</h3>
           <SignaturePad sigCanvas={sigCanvas} isSigning={isSigning} setIsSigning={setIsSigning} setSignatureData={setSignatureData} />
         </div>
@@ -680,22 +680,22 @@ function PrestartTab({ userRole }) {
             <button className="btn-primary" onClick={() => { setView('list'); setAiPreview(null); }}>Back</button>
           </div>
         </div>
-        {aiPreview && <div style={{ backgroundColor: '#0a2a1a', border: '1px solid #00c264', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}><p style={{ color: '#00c264', margin: 0, fontSize: '13px' }}>AI generated - review and edit before saving.</p></div>}
+        {aiPreview && <div style={{ background: 'var(--green-bg)', border: '1px solid #00c264', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}><p style={{ color: 'var(--green)', margin: 0, fontSize: '13px' }}>AI generated - review and edit before saving.</p></div>}
         <div className="form-card">
-          <input placeholder="Form Name" value={builder.name} onChange={e => setBuilder({ ...builder, name: e.target.value })} style={{ width: '100%', marginBottom: '10px', padding: '10px', backgroundColor: '#0a0f0f', color: 'white', border: '1px solid #1a2f2f', borderRadius: '4px' }} />
-          <input placeholder="Description (optional)" value={builder.description} onChange={e => setBuilder({ ...builder, description: e.target.value })} style={{ width: '100%', padding: '10px', backgroundColor: '#0a0f0f', color: 'white', border: '1px solid #1a2f2f', borderRadius: '4px' }} />
+          <input placeholder="Form Name" value={builder.name} onChange={e => setBuilder({ ...builder, name: e.target.value })} style={{ width: '100%', marginBottom: '10px', padding: '10px', background: 'var(--surface-2)', color: 'var(--text-primary)', border: '1px solid var(--border)', borderRadius: '4px' }} />
+          <input placeholder="Description (optional)" value={builder.description} onChange={e => setBuilder({ ...builder, description: e.target.value })} style={{ width: '100%', padding: '10px', background: 'var(--surface-2)', color: 'var(--text-primary)', border: '1px solid var(--border)', borderRadius: '4px' }} />
         </div>
         {builder.sections.map((section, si) => (
           <div key={si} className="form-card" style={{ marginTop: '15px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-              <input placeholder="Section Title" value={section.title} onChange={e => setBuilder(prev => ({ ...prev, sections: prev.sections.map((sec, i) => i === si ? { ...sec, title: e.target.value } : sec) }))} style={{ flex: 1, marginRight: '10px', padding: '8px', backgroundColor: '#0a0f0f', color: 'white', border: '1px solid #1a2f2f', borderRadius: '4px' }} />
+              <input placeholder="Section Title" value={section.title} onChange={e => setBuilder(prev => ({ ...prev, sections: prev.sections.map((sec, i) => i === si ? { ...sec, title: e.target.value } : sec) }))} style={{ flex: 1, marginRight: '10px', padding: '8px', background: 'var(--surface-2)', color: 'var(--text-primary)', border: '1px solid var(--border)', borderRadius: '4px' }} />
               <button onClick={() => setBuilder(prev => ({ ...prev, sections: prev.sections.filter((_, i) => i !== si) }))} className="btn-delete">Remove</button>
             </div>
             {section.items.map((item, ii) => <BuilderItem key={ii} item={item} si={si} ii={ii} onUpdate={updateItem} onRemove={removeItem} />)}
-            <button onClick={() => addItem(si)} style={{ backgroundColor: 'transparent', color: '#00c2e0', border: '1px dashed #00c2e0', padding: '6px 14px', borderRadius: '4px', cursor: 'pointer', marginTop: '5px', width: '100%' }}>+ Add Item</button>
+            <button onClick={() => addItem(si)} style={{ backgroundColor: 'transparent', color: 'var(--accent)', border: '1px dashed #00c2e0', padding: '6px 14px', borderRadius: '4px', cursor: 'pointer', marginTop: '5px', width: '100%' }}>+ Add Item</button>
           </div>
         ))}
-        <button onClick={() => setBuilder(prev => ({ ...prev, sections: [...prev.sections, { title: '', items: [] }] }))} style={{ marginTop: '15px', backgroundColor: 'transparent', color: '#00c2e0', border: '1px dashed #00c2e0', padding: '10px 20px', borderRadius: '4px', cursor: 'pointer', width: '100%' }}>+ Add Section</button>
+        <button onClick={() => setBuilder(prev => ({ ...prev, sections: [...prev.sections, { title: '', items: [] }] }))} style={{ marginTop: '15px', backgroundColor: 'transparent', color: 'var(--accent)', border: '1px dashed #00c2e0', padding: '10px 20px', borderRadius: '4px', cursor: 'pointer', width: '100%' }}>+ Add Section</button>
         <button className="btn-primary" style={{ marginTop: '15px', width: '100%', padding: '14px' }} onClick={saveTemplate}>Save Template</button>
       </div>
     );
@@ -892,7 +892,7 @@ function ServiceSheetsTab({ userRole }) {
   const removeItem = (si, ii) => setBuilder(prev => ({ ...prev, sections: prev.sections.map((sec, i) => i === si ? { ...sec, items: sec.items.filter((_, j) => j !== ii) } : sec) }));
   const addItem = (si) => setBuilder(prev => ({ ...prev, sections: prev.sections.map((sec, i) => i === si ? { ...sec, items: [...sec.items, { label: '', type: 'check' }] } : sec) }));
 
-  const iStyle = { width: '100%', padding: '10px', backgroundColor: '#0a0f0f', color: 'white', border: '1px solid #1a2f2f', borderRadius: '4px', fontFamily: 'Barlow, sans-serif', fontSize: '14px', boxSizing: 'border-box' };
+  const iStyle = { width: '100%', padding: '10px', background: 'var(--surface-2)', color: 'var(--text-primary)', border: '1px solid var(--border)', borderRadius: '4px', fontFamily: 'inherit', fontSize: '14px', boxSizing: 'border-box' };
 
   if (loading) return <p style={{ color: '#a0b0b0', padding: '20px' }}>Loading...</p>;
 
@@ -905,7 +905,7 @@ function ServiceSheetsTab({ userRole }) {
           <button className="btn-primary" onClick={() => setView('list')}>Back</button>
         </div>
         <div className="form-card">
-          <h3 style={{ color: '#00c2e0', marginBottom: '15px' }}>Service Details</h3>
+          <h3 style={{ color: 'var(--accent)', marginBottom: '15px' }}>Service Details</h3>
           <div className="form-grid">
             <div>
               <label style={{ color: '#a0b0b0', fontSize: '12px', display: 'block', marginBottom: '4px' }}>Asset</label>
@@ -935,7 +935,7 @@ function ServiceSheetsTab({ userRole }) {
         <SectionTable sections={selectedTemplate.sections || []} responses={form.responses} onResponse={onResponse} companyId={userRole.company_id} />
         <div className="form-card" style={{ marginTop: '15px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-            <h3 style={{ color: '#00c2e0', margin: 0 }}>Parts Used</h3>
+            <h3 style={{ color: 'var(--accent)', margin: 0 }}>Parts Used</h3>
             <span style={{ color: '#ff6b00', fontWeight: 700 }}>Total: ${totalPartsValue.toFixed(2)}</span>
           </div>
           <table className="data-table">
@@ -943,47 +943,47 @@ function ServiceSheetsTab({ userRole }) {
             <tbody>
               {form.parts.map((part, i) => (
                 <tr key={i}>
-                  <td><input value={part.name} onChange={e => { const p = [...form.parts]; p[i] = { ...p[i], name: e.target.value }; setForm({ ...form, parts: p }); }} placeholder="Part name" style={{ backgroundColor: '#0a0f0f', color: 'white', border: '1px solid #1a2f2f', padding: '5px 8px', borderRadius: '4px', width: '100%' }} /></td>
-                  <td><input type="number" value={part.qty} onChange={e => { const p = [...form.parts]; p[i] = { ...p[i], qty: e.target.value }; setForm({ ...form, parts: p }); }} placeholder="1" style={{ backgroundColor: '#0a0f0f', color: 'white', border: '1px solid #1a2f2f', padding: '5px 8px', borderRadius: '4px', width: '60px' }} /></td>
-                  <td><input type="number" value={part.cost} onChange={e => { const p = [...form.parts]; p[i] = { ...p[i], cost: e.target.value }; setForm({ ...form, parts: p }); }} placeholder="0.00" style={{ backgroundColor: '#0a0f0f', color: 'white', border: '1px solid #1a2f2f', padding: '5px 8px', borderRadius: '4px', width: '80px' }} /></td>
+                  <td><input value={part.name} onChange={e => { const p = [...form.parts]; p[i] = { ...p[i], name: e.target.value }; setForm({ ...form, parts: p }); }} placeholder="Part name" style={{ background: 'var(--surface-2)', color: 'var(--text-primary)', border: '1px solid var(--border)', padding: '5px 8px', borderRadius: '4px', width: '100%' }} /></td>
+                  <td><input type="number" value={part.qty} onChange={e => { const p = [...form.parts]; p[i] = { ...p[i], qty: e.target.value }; setForm({ ...form, parts: p }); }} placeholder="1" style={{ background: 'var(--surface-2)', color: 'var(--text-primary)', border: '1px solid var(--border)', padding: '5px 8px', borderRadius: '4px', width: '60px' }} /></td>
+                  <td><input type="number" value={part.cost} onChange={e => { const p = [...form.parts]; p[i] = { ...p[i], cost: e.target.value }; setForm({ ...form, parts: p }); }} placeholder="0.00" style={{ background: 'var(--surface-2)', color: 'var(--text-primary)', border: '1px solid var(--border)', padding: '5px 8px', borderRadius: '4px', width: '80px' }} /></td>
                   <td style={{ color: '#ff6b00', fontWeight: 700 }}>${(parseFloat(part.qty || 0) * parseFloat(part.cost || 0)).toFixed(2)}</td>
                   <td><button onClick={() => setForm({ ...form, parts: form.parts.filter((_, idx) => idx !== i) })} className="btn-delete">X</button></td>
                 </tr>
               ))}
             </tbody>
           </table>
-          <button onClick={() => setForm({ ...form, parts: [...form.parts, { name: '', qty: '', cost: '' }] })} style={{ marginTop: '10px', backgroundColor: 'transparent', color: '#00c2e0', border: '1px dashed #00c2e0', padding: '6px 14px', borderRadius: '4px', cursor: 'pointer' }}>+ Add Part</button>
+          <button onClick={() => setForm({ ...form, parts: [...form.parts, { name: '', qty: '', cost: '' }] })} style={{ marginTop: '10px', backgroundColor: 'transparent', color: 'var(--accent)', border: '1px dashed #00c2e0', padding: '6px 14px', borderRadius: '4px', cursor: 'pointer' }}>+ Add Part</button>
         </div>
         <div className="form-card" style={{ marginTop: '15px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-            <h3 style={{ color: '#00c2e0', margin: 0 }}>Labour</h3>
-            <span style={{ color: '#00c2e0', fontWeight: 700 }}>{totalLabourHours.toFixed(1)} hrs total</span>
+            <h3 style={{ color: 'var(--accent)', margin: 0 }}>Labour</h3>
+            <span style={{ color: 'var(--accent)', fontWeight: 700 }}>{totalLabourHours.toFixed(1)} hrs total</span>
           </div>
           <table className="data-table">
             <thead><tr><th>Task Description</th><th>Hours</th><th></th></tr></thead>
             <tbody>
               {form.labour.map((l, i) => (
                 <tr key={i}>
-                  <td><input value={l.description} onChange={e => { const lb = [...form.labour]; lb[i] = { ...lb[i], description: e.target.value }; setForm({ ...form, labour: lb }); }} placeholder="e.g. Oil and filter change" style={{ backgroundColor: '#0a0f0f', color: 'white', border: '1px solid #1a2f2f', padding: '5px 8px', borderRadius: '4px', width: '100%' }} /></td>
-                  <td><input type="number" value={l.hours} onChange={e => { const lb = [...form.labour]; lb[i] = { ...lb[i], hours: e.target.value }; setForm({ ...form, labour: lb }); }} placeholder="0.5" style={{ backgroundColor: '#0a0f0f', color: 'white', border: '1px solid #1a2f2f', padding: '5px 8px', borderRadius: '4px', width: '70px' }} /></td>
+                  <td><input value={l.description} onChange={e => { const lb = [...form.labour]; lb[i] = { ...lb[i], description: e.target.value }; setForm({ ...form, labour: lb }); }} placeholder="e.g. Oil and filter change" style={{ background: 'var(--surface-2)', color: 'var(--text-primary)', border: '1px solid var(--border)', padding: '5px 8px', borderRadius: '4px', width: '100%' }} /></td>
+                  <td><input type="number" value={l.hours} onChange={e => { const lb = [...form.labour]; lb[i] = { ...lb[i], hours: e.target.value }; setForm({ ...form, labour: lb }); }} placeholder="0.5" style={{ background: 'var(--surface-2)', color: 'var(--text-primary)', border: '1px solid var(--border)', padding: '5px 8px', borderRadius: '4px', width: '70px' }} /></td>
                   <td><button onClick={() => setForm({ ...form, labour: form.labour.filter((_, idx) => idx !== i) })} className="btn-delete">X</button></td>
                 </tr>
               ))}
             </tbody>
           </table>
-          <button onClick={() => setForm({ ...form, labour: [...form.labour, { description: '', hours: '' }] })} style={{ marginTop: '10px', backgroundColor: 'transparent', color: '#00c2e0', border: '1px dashed #00c2e0', padding: '6px 14px', borderRadius: '4px', cursor: 'pointer' }}>+ Add Labour</button>
+          <button onClick={() => setForm({ ...form, labour: [...form.labour, { description: '', hours: '' }] })} style={{ marginTop: '10px', backgroundColor: 'transparent', color: 'var(--accent)', border: '1px dashed #00c2e0', padding: '6px 14px', borderRadius: '4px', cursor: 'pointer' }}>+ Add Labour</button>
         </div>
         <div className="form-card" style={{ marginTop: '15px' }}>
           <h3 style={{ marginBottom: '10px' }}>Notes</h3>
-          <textarea value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} placeholder="Additional notes..." style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid #1a2f2f', backgroundColor: '#0a0f0f', color: 'white', minHeight: '80px', fontFamily: 'Barlow, sans-serif', fontSize: '14px', marginBottom: '15px' }} />
+          <textarea value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} placeholder="Additional notes..." style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid var(--border)', background: 'var(--surface-2)', color: 'var(--text-primary)', minHeight: '80px', fontFamily: 'inherit', fontSize: '14px', marginBottom: '15px' }} />
           <h3 style={{ marginBottom: '10px' }}>Technician Signature</h3>
           <SignaturePad sigCanvas={sigCanvas} isSigning={isSigning} setIsSigning={setIsSigning} setSignatureData={setSignatureData} />
         </div>
         <div className="form-card" style={{ marginTop: '15px', backgroundColor: '#0a1a1a', border: '1px solid #00c2e030' }}>
-          <h3 style={{ color: '#00c2e0', marginBottom: '12px' }}>Summary</h3>
+          <h3 style={{ color: 'var(--accent)', marginBottom: '12px' }}>Summary</h3>
           <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
             <div><span style={{ color: '#a0b0b0', fontSize: '12px' }}>PARTS TOTAL</span><div style={{ color: '#ff6b00', fontWeight: 700, fontSize: '20px' }}>${totalPartsValue.toFixed(2)}</div></div>
-            <div><span style={{ color: '#a0b0b0', fontSize: '12px' }}>LABOUR HOURS</span><div style={{ color: '#00c2e0', fontWeight: 700, fontSize: '20px' }}>{totalLabourHours.toFixed(1)}h</div></div>
+            <div><span style={{ color: '#a0b0b0', fontSize: '12px' }}>LABOUR HOURS</span><div style={{ color: 'var(--accent)', fontWeight: 700, fontSize: '20px' }}>{totalLabourHours.toFixed(1)}h</div></div>
           </div>
         </div>
         <button className="btn-primary" style={{ marginTop: '20px', width: '100%', padding: '15px', fontSize: '16px' }} onClick={handleSubmit}>Submit Service Sheet</button>
@@ -1002,23 +1002,23 @@ function ServiceSheetsTab({ userRole }) {
             <button className="btn-primary" onClick={() => { setView('list'); setAiPreview(null); }}>Back</button>
           </div>
         </div>
-        {aiPreview && <div style={{ backgroundColor: '#0a2a1a', border: '1px solid #00c264', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}><p style={{ color: '#00c264', margin: 0, fontSize: '13px' }}>AI generated - review and edit before saving.</p></div>}
+        {aiPreview && <div style={{ background: 'var(--green-bg)', border: '1px solid #00c264', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}><p style={{ color: 'var(--green)', margin: 0, fontSize: '13px' }}>AI generated - review and edit before saving.</p></div>}
         <div className="form-card">
-          <input placeholder="Template Name" value={builder.name} onChange={e => setBuilder({ ...builder, name: e.target.value })} style={{ width: '100%', marginBottom: '10px', padding: '10px', backgroundColor: '#0a0f0f', color: 'white', border: '1px solid #1a2f2f', borderRadius: '4px' }} />
-          <input placeholder="Description" value={builder.description} onChange={e => setBuilder({ ...builder, description: e.target.value })} style={{ width: '100%', marginBottom: '10px', padding: '10px', backgroundColor: '#0a0f0f', color: 'white', border: '1px solid #1a2f2f', borderRadius: '4px' }} />
-          <input placeholder="Service Type (e.g. 250hr Service)" value={builder.service_type} onChange={e => setBuilder({ ...builder, service_type: e.target.value })} style={{ width: '100%', padding: '10px', backgroundColor: '#0a0f0f', color: 'white', border: '1px solid #1a2f2f', borderRadius: '4px' }} />
+          <input placeholder="Template Name" value={builder.name} onChange={e => setBuilder({ ...builder, name: e.target.value })} style={{ width: '100%', marginBottom: '10px', padding: '10px', background: 'var(--surface-2)', color: 'var(--text-primary)', border: '1px solid var(--border)', borderRadius: '4px' }} />
+          <input placeholder="Description" value={builder.description} onChange={e => setBuilder({ ...builder, description: e.target.value })} style={{ width: '100%', marginBottom: '10px', padding: '10px', background: 'var(--surface-2)', color: 'var(--text-primary)', border: '1px solid var(--border)', borderRadius: '4px' }} />
+          <input placeholder="Service Type (e.g. 250hr Service)" value={builder.service_type} onChange={e => setBuilder({ ...builder, service_type: e.target.value })} style={{ width: '100%', padding: '10px', background: 'var(--surface-2)', color: 'var(--text-primary)', border: '1px solid var(--border)', borderRadius: '4px' }} />
         </div>
         {builder.sections.map((section, si) => (
           <div key={si} className="form-card" style={{ marginTop: '15px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
-              <input placeholder="Section Title" value={section.title} onChange={e => setBuilder(prev => ({ ...prev, sections: prev.sections.map((sec, i) => i === si ? { ...sec, title: e.target.value } : sec) }))} style={{ flex: 1, marginRight: '10px', padding: '8px', backgroundColor: '#0a0f0f', color: 'white', border: '1px solid #1a2f2f', borderRadius: '4px' }} />
+              <input placeholder="Section Title" value={section.title} onChange={e => setBuilder(prev => ({ ...prev, sections: prev.sections.map((sec, i) => i === si ? { ...sec, title: e.target.value } : sec) }))} style={{ flex: 1, marginRight: '10px', padding: '8px', background: 'var(--surface-2)', color: 'var(--text-primary)', border: '1px solid var(--border)', borderRadius: '4px' }} />
               <button onClick={() => setBuilder(prev => ({ ...prev, sections: prev.sections.filter((_, i) => i !== si) }))} className="btn-delete">Remove</button>
             </div>
             {section.items.map((item, ii) => <BuilderItem key={ii} item={item} si={si} ii={ii} onUpdate={updateItem} onRemove={removeItem} />)}
-            <button onClick={() => addItem(si)} style={{ backgroundColor: 'transparent', color: '#00c2e0', border: '1px dashed #00c2e0', padding: '6px 14px', borderRadius: '4px', cursor: 'pointer', marginTop: '5px', width: '100%' }}>+ Add Item</button>
+            <button onClick={() => addItem(si)} style={{ backgroundColor: 'transparent', color: 'var(--accent)', border: '1px dashed #00c2e0', padding: '6px 14px', borderRadius: '4px', cursor: 'pointer', marginTop: '5px', width: '100%' }}>+ Add Item</button>
           </div>
         ))}
-        <button onClick={() => setBuilder(prev => ({ ...prev, sections: [...prev.sections, { title: '', items: [] }] }))} style={{ marginTop: '15px', backgroundColor: 'transparent', color: '#00c2e0', border: '1px dashed #00c2e0', padding: '10px 20px', borderRadius: '4px', cursor: 'pointer', width: '100%' }}>+ Add Section</button>
+        <button onClick={() => setBuilder(prev => ({ ...prev, sections: [...prev.sections, { title: '', items: [] }] }))} style={{ marginTop: '15px', backgroundColor: 'transparent', color: 'var(--accent)', border: '1px dashed #00c2e0', padding: '10px 20px', borderRadius: '4px', cursor: 'pointer', width: '100%' }}>+ Add Section</button>
         <button className="btn-primary" style={{ marginTop: '15px', width: '100%', padding: '14px' }} onClick={saveTemplate}>Save Template</button>
       </div>
     );
@@ -1038,7 +1038,7 @@ function ServiceSheetsTab({ userRole }) {
                 <tr key={s.id}>
                   <td>{s.date}</td><td>{s.asset}</td><td>{s.technician}</td><td>{s.service_type || '-'}</td>
                   <td style={{ color: '#ff6b00' }}>${parseFloat(s.total_parts_cost || 0).toFixed(2)}</td>
-                  <td style={{ color: '#00c2e0' }}>{parseFloat(s.total_labour_hours || 0).toFixed(1)}h</td>
+                  <td style={{ color: 'var(--accent)' }}>{parseFloat(s.total_labour_hours || 0).toFixed(1)}h</td>
                   <td><button className="btn-primary" style={{ padding: '4px 10px', fontSize: '12px' }} onClick={() => exportServicePDF(s)}>PDF</button></td>
                   {isAdmin && <td><button className="btn-delete" style={{ padding: '4px 10px', fontSize: '12px' }} onClick={() => deleteSubmission(s.id)}>Delete</button></td>}
                 </tr>
