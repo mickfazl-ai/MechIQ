@@ -275,8 +275,25 @@ function ServiceTab({ asset }) {
   const [loading, setLoading] = useState(true);
   const [currentHours, setCurrentHours] = useState(asset.hours || 0);
   const [saving, setSaving] = useState(false);
+  const [serviceTemplates, setServiceTemplates] = useState([]);
 
-  useEffect(() => { load(); }, [asset]);
+  useEffect(() => { load(); loadTemplates(); }, [asset]);
+
+  const loadTemplates = async () => {
+    const { data } = await supabase.from('form_templates')
+      .select('id, name').eq('company_id', asset.company_id);
+    setServiceTemplates(data || []);
+  };
+
+  // Match a service name to a form template by keyword
+  const findTemplate = (serviceName) => {
+    if (!serviceName) return null;
+    const keywords = serviceName.toLowerCase().split(/[\s\-\/]+/);
+    return serviceTemplates.find(t => {
+      const tName = t.name.toLowerCase();
+      return keywords.some(k => k.length > 2 && tName.includes(k));
+    }) || null;
+  };
 
   const load = async () => {
     setLoading(true);
@@ -424,7 +441,22 @@ function ServiceTab({ asset }) {
                         <div style={{ fontSize:11, color:st.cls==='tl-alert'?'var(--red)':st.cls==='tl-warn'?'var(--amber)':'var(--green)', fontWeight:600, marginTop:2 }}>{st.remaining}</div>
                       </td>
                       <td style={{ padding:'11px 14px 11px 0' }}><span className={`traffic-light ${st.cls}`}><span style={{ width:6, height:6, borderRadius:'50%', background:'currentColor' }} />{st.label}</span></td>
-                      <td style={{ padding:'11px 0' }}><button onClick={() => markDone(s)} style={{ padding:'4px 10px', background:'var(--green-bg)', color:'var(--green)', border:'1px solid var(--green-border)', borderRadius:6, fontSize:11, fontWeight:700, cursor:'pointer' }}>✓ Done</button></td>
+                      <td style={{ padding:'11px 0' }}>
+                        <div style={{ display:'flex', gap:6, alignItems:'center' }}>
+                          <button onClick={() => markDone(s)} style={{ padding:'4px 10px', background:'var(--green-bg)', color:'var(--green)', border:'1px solid var(--green-border)', borderRadius:6, fontSize:11, fontWeight:700, cursor:'pointer' }}>✓ Done</button>
+                          {(() => {
+                            const tmpl = findTemplate(s.service_name);
+                            return tmpl ? (
+                              <button onClick={() => {
+                                sessionStorage.setItem('mechiq_open_form', JSON.stringify({ templateId: tmpl.id, assetName: asset.name }));
+                                window.dispatchEvent(new CustomEvent('mechiq-navigate', { detail: { page: 'forms', subPage: 'service_sheets' } }));
+                              }} style={{ padding:'4px 10px', background:'var(--accent-light)', color:'var(--accent)', border:'1px solid rgba(14,165,233,0.3)', borderRadius:6, fontSize:11, fontWeight:700, cursor:'pointer' }}>
+                                📋 Service Sheet
+                              </button>
+                            ) : null;
+                          })()}
+                        </div>
+                      </td>
                     </tr>
                   );
                 })}
@@ -1006,13 +1038,13 @@ Respond ONLY with JSON, no markdown:
 }
 
 // ─── Main AssetPage ───────────────────────────────────────────────────────────
-function AssetPage({ assetId, userRole, onStartPrestart }) {
+function AssetPage({ assetId, userRole, onStartPrestart, initialTab }) {
   const [asset, setAsset]             = useState(null);
   const [recentPrestarts, setRecentPrestarts] = useState([]);
   const [recentMaintenance, setRecentMaintenance] = useState([]);
   const [openWorkOrders, setOpenWorkOrders] = useState([]);
   const [loading, setLoading]         = useState(true);
-  const [activeTab, setActiveTab]     = useState('overview');
+  const [activeTab, setActiveTab]     = useState(initialTab || 'overview');
 
   const isAdmin = ['admin','supervisor'].includes(userRole?.role);
 
@@ -1022,6 +1054,17 @@ function AssetPage({ assetId, userRole, onStartPrestart }) {
       document.head.appendChild(s);
     }
     if (assetId) fetchAssetData();
+    // Check if navigated here from calendar with a specific tab
+    const navIntent = sessionStorage.getItem('mechiq_open_asset');
+    if (navIntent) {
+      try {
+        const { assetId: intentId, tab } = JSON.parse(navIntent);
+        if (String(intentId) === String(assetId) && tab) {
+          setActiveTab(tab);
+        }
+      } catch(e) {}
+      sessionStorage.removeItem('mechiq_open_asset');
+    }
   }, [assetId]);
 
   const fetchAssetData = async () => {

@@ -166,7 +166,7 @@ function SectionHead({ title, count, action }) {
 }
 
 // ─── Main ──────────────────────────────────────────────────────────────────────
-function Maintenance({ userRole, initialTab }) {
+function Maintenance({ userRole, initialTab, setCurrentPage }) {
   const [activeTab, setActiveTab] = useState(initialTab || 'scheduled');
   // Tab driven by sidebar subPage prop
   const [tasks, setTasks] = useState([]);
@@ -181,6 +181,8 @@ function Maintenance({ userRole, initialTab }) {
   const [showScheduleForm, setShowScheduleForm] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
   const [calMonth, setCalMonth] = useState(new Date());
+  const [selectedDay, setSelectedDay] = useState(null);
+  const [dayPanelEvents, setDayPanelEvents] = useState([]);
   const [newSchedule, setNewSchedule] = useState({ asset_id:'', asset_name:'', service_name:'', interval_type:'hours', interval_value:'', last_service_value:'', last_service_date:'', notes:'' });
   const [newTask, setNewTask] = useState({ asset:'', task:'', frequency:'', next_due:'', assigned_to:'' });
   const [newWO, setNewWO] = useState({ asset:'', defect_description:'', priority:'Medium', assigned_to:'', due_date:'', estimated_hours:'', comments:'' });
@@ -190,7 +192,7 @@ function Maintenance({ userRole, initialTab }) {
 
   const fetchTasks = async () => { setLoading(true); const { data } = await supabase.from('maintenance').select('*').eq('company_id', userRole.company_id).order('created_at', { ascending: false }); setTasks(data || []); setLoading(false); };
   const fetchWorkOrders = async () => { const { data } = await supabase.from('work_orders').select('*').eq('company_id', userRole.company_id).order('created_at', { ascending: false }); setWorkOrders(data || []); };
-  const fetchAssets = async () => { const { data } = await supabase.from('assets').select('name, hours').eq('company_id', userRole.company_id); setAssets(data || []); };
+  const fetchAssets = async () => { const { data } = await supabase.from('assets').select('name, hours, id').eq('company_id', userRole.company_id); setAssets(data || []); };
   const fetchUsers = async () => { const { data } = await supabase.from('user_roles').select('name').eq('company_id', userRole.company_id); setUsers(data || []); };
   const fetchSchedules = async () => { const { data } = await supabase.from('service_schedules').select('*').eq('company_id', userRole.company_id).order('next_due_date'); setSchedules(data || []); };
   
@@ -645,7 +647,7 @@ function Maintenance({ userRole, initialTab }) {
 
       {/* ── Calendar Tab ── */}
       {activeTab === 'calendar' && (
-        <div>
+        <div style={{ position:'relative' }}>
           {(() => {
             const year = calMonth.getFullYear();
             const month = calMonth.getMonth();
@@ -654,9 +656,6 @@ function Maintenance({ userRole, initialTab }) {
             const today = new Date().toISOString().split('T')[0];
             const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 
-            // Gather all events for this month
-            const events = {};
-
             // Helper: estimate a date for hour/km-based schedules
             const estimateDate = (s) => {
               if (s.next_due_date) return s.next_due_date;
@@ -664,8 +663,7 @@ function Maintenance({ userRole, initialTab }) {
                 const assetData = assets.find(a => a.name === s.asset_name);
                 const currentVal = assetData?.hours || s.last_service_value || 0;
                 const remaining = s.next_due_value - currentVal;
-                if (remaining <= 0) return today; // overdue — show today
-                // Assume ~10 hrs/day for heavy equipment, ~50 km/day for vehicles
+                if (remaining <= 0) return today;
                 const dailyRate = s.interval_type === 'km' ? 50 : 10;
                 const daysUntilDue = Math.round(remaining / dailyRate);
                 const d = new Date();
@@ -675,11 +673,22 @@ function Maintenance({ userRole, initialTab }) {
               return null;
             };
 
+            // Build full event objects with navigation data
+            const events = {};
             tasks.forEach(t => {
               if (t.next_due && t.next_due.startsWith(`${year}-${String(month+1).padStart(2,'0')}`)) {
                 const day = parseInt(t.next_due.split('-')[2]);
                 if (!events[day]) events[day] = [];
-                events[day].push({ label: t.asset + ' — ' + t.task, color: t.status==='Overdue'?'var(--red)':t.status==='Due Soon'?'var(--amber)':'var(--accent)', type:'service' });
+                const assetData = assets.find(a => a.name === t.asset);
+                events[day].push({
+                  label: t.asset + ' — ' + t.task,
+                  color: t.status==='Overdue'?'var(--red)':t.status==='Due Soon'?'var(--amber)':'var(--accent)',
+                  type: 'service',
+                  assetName: t.asset,
+                  assetId: assetData?.id,
+                  serviceName: t.task,
+                  detail: `Status: ${t.status} · Assigned: ${t.assigned_to || '—'}`,
+                });
               }
             });
             schedules.forEach(s => {
@@ -690,16 +699,36 @@ function Maintenance({ userRole, initialTab }) {
                 const assetData = assets.find(a => a.name === s.asset_name);
                 const currentVal = assetData?.hours || 0;
                 const remaining = s.next_due_value ? s.next_due_value - currentVal : null;
-                const suffix = remaining !== null ? ` (${remaining > 0 ? remaining + s.interval_type + ' to go' : 'OVERDUE'})` : '';
                 const isOverdue = remaining !== null && remaining <= 0;
-                events[day].push({ label: s.asset_name + ' — ' + s.service_name + suffix, color: isOverdue ? 'var(--red)' : 'var(--purple)', type:'schedule' });
+                const remainingLabel = remaining !== null
+                  ? (remaining > 0 ? `${remaining} ${s.interval_type} to go` : `${Math.abs(remaining)} ${s.interval_type} overdue`)
+                  : s.next_due_date || '—';
+                events[day].push({
+                  label: s.asset_name + ' — ' + s.service_name,
+                  color: isOverdue ? 'var(--red)' : 'var(--purple)',
+                  type: 'schedule',
+                  assetName: s.asset_name,
+                  assetId: assetData?.id,
+                  serviceName: s.service_name,
+                  detail: `Every ${s.interval_value} ${s.interval_type} · ${remainingLabel}`,
+                  scheduleId: s.id,
+                });
               }
             });
             workOrders.filter(w=>w.status!=='Complete').forEach(w => {
               if (w.due_date && w.due_date.startsWith(`${year}-${String(month+1).padStart(2,'0')}`)) {
                 const day = parseInt(w.due_date.split('-')[2]);
                 if (!events[day]) events[day] = [];
-                events[day].push({ label: (w.asset_name||'') + ' — ' + (w.title||w.defect_description||'').slice(0,30), color:'var(--red)', type:'wo' });
+                const assetData = assets.find(a => a.name === w.asset);
+                events[day].push({
+                  label: (w.asset||'') + ' — ' + (w.defect_description||'').slice(0,40),
+                  color: w.priority==='Critical'?'var(--red)':'var(--amber)',
+                  type: 'wo',
+                  assetName: w.asset,
+                  assetId: assetData?.id,
+                  serviceName: w.defect_description,
+                  detail: `Priority: ${w.priority} · Assigned: ${w.assigned_to || '—'}`,
+                });
               }
             });
 
@@ -707,14 +736,19 @@ function Maintenance({ userRole, initialTab }) {
             for (let i = 0; i < (firstDay === 0 ? 6 : firstDay - 1); i++) cells.push(null);
             for (let d = 1; d <= daysInMonth; d++) cells.push(d);
 
+            const openDayPanel = (day) => {
+              setSelectedDay(day);
+              setDayPanelEvents(events[day] || []);
+            };
+
             return (
               <div>
                 {/* Month nav */}
                 <div style={{ display:'flex', alignItems:'center', gap:16, marginBottom:20 }}>
-                  <button onClick={() => setCalMonth(m => new Date(m.getFullYear(), m.getMonth()-1, 1))} style={{ padding:'8px 16px', background:'var(--surface)', border:'1px solid var(--border)', borderRadius:8, cursor:'pointer', fontSize:16, color:'var(--text-secondary)', fontWeight:700 }}>‹</button>
+                  <button onClick={() => { setSelectedDay(null); setCalMonth(m => new Date(m.getFullYear(), m.getMonth()-1, 1)); }} style={{ padding:'8px 16px', background:'var(--surface)', border:'1px solid var(--border)', borderRadius:8, cursor:'pointer', fontSize:16, color:'var(--text-secondary)', fontWeight:700 }}>‹</button>
                   <div style={{ fontSize:20, fontWeight:800, color:'var(--text-primary)', minWidth:200, textAlign:'center', fontFamily:'var(--font-display)' }}>{monthNames[month]} {year}</div>
-                  <button onClick={() => setCalMonth(m => new Date(m.getFullYear(), m.getMonth()+1, 1))} style={{ padding:'8px 16px', background:'var(--surface)', border:'1px solid var(--border)', borderRadius:8, cursor:'pointer', fontSize:16, color:'var(--text-secondary)', fontWeight:700 }}>›</button>
-                  <button onClick={() => setCalMonth(new Date())} style={{ padding:'7px 14px', background:'var(--accent-light)', color:'var(--accent)', border:'1px solid rgba(14,165,233,0.25)', borderRadius:8, cursor:'pointer', fontSize:12, fontWeight:700 }}>Today</button>
+                  <button onClick={() => { setSelectedDay(null); setCalMonth(m => new Date(m.getFullYear(), m.getMonth()+1, 1)); }} style={{ padding:'8px 16px', background:'var(--surface)', border:'1px solid var(--border)', borderRadius:8, cursor:'pointer', fontSize:16, color:'var(--text-secondary)', fontWeight:700 }}>›</button>
+                  <button onClick={() => { setSelectedDay(null); setCalMonth(new Date()); }} style={{ padding:'7px 14px', background:'var(--accent-light)', color:'var(--accent)', border:'1px solid rgba(14,165,233,0.25)', borderRadius:8, cursor:'pointer', fontSize:12, fontWeight:700 }}>Today</button>
                 </div>
                 {/* Legend */}
                 <div style={{ display:'flex', gap:16, marginBottom:16, flexWrap:'wrap' }}>
@@ -733,29 +767,92 @@ function Maintenance({ userRole, initialTab }) {
                 {/* Grid */}
                 <div style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', gap:4 }}>
                   {cells.map((day, i) => {
-                    const dateStr = day ? `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}` : '';
-                    const isToday = dateStr === today;
+                    const isToday = day ? `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}` === today : false;
                     const dayEvents = day ? (events[day] || []) : [];
+                    const isSelected = selectedDay === day;
                     return (
-                      <div key={i} style={{
+                      <div key={i} onClick={() => day && openDayPanel(day)} style={{
                         minHeight:80, background: day ? 'var(--surface)' : 'transparent',
-                        border: day ? `1px solid ${isToday ? 'var(--accent)' : 'var(--border)'}` : 'none',
-                        borderRadius:8, padding:'6px 8px',
-                        boxShadow: isToday ? '0 0 0 2px var(--accent)' : 'none',
+                        border: day ? `1px solid ${isSelected ? 'var(--accent)' : isToday ? 'var(--accent)' : 'var(--border)'}` : 'none',
+                        borderRadius:8, padding:'6px 8px', cursor: day ? 'pointer' : 'default',
+                        boxShadow: isSelected ? '0 0 0 2px var(--accent)' : isToday ? '0 0 0 1px var(--accent)' : 'none',
+                        transition:'box-shadow 0.15s',
                       }}>
                         {day && (
                           <>
-                            <div style={{ fontSize:12, fontWeight: isToday ? 800 : 500, color: isToday ? 'var(--accent)' : 'var(--text-secondary)', marginBottom:4 }}>{day}</div>
-                            {dayEvents.slice(0,3).map((ev, j) => (
+                            <div style={{ fontSize:12, fontWeight: isToday||isSelected ? 800 : 500, color: isToday ? 'var(--accent)' : 'var(--text-secondary)', marginBottom:4 }}>{day}</div>
+                            {dayEvents.slice(0,2).map((ev, j) => (
                               <div key={j} title={ev.label} style={{ fontSize:10, fontWeight:600, color:'#fff', background:ev.color, borderRadius:3, padding:'2px 5px', marginBottom:2, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{ev.label}</div>
                             ))}
-                            {dayEvents.length > 3 && <div style={{ fontSize:9, color:'var(--text-faint)' }}>+{dayEvents.length-3} more</div>}
+                            {dayEvents.length > 2 && <div style={{ fontSize:9, color:'var(--text-muted)', fontWeight:600 }}>+{dayEvents.length-2} more</div>}
                           </>
                         )}
                       </div>
                     );
                   })}
                 </div>
+
+                {/* Day panel slide-out */}
+                {selectedDay !== null && (
+                  <>
+                    {/* Backdrop */}
+                    <div onClick={() => setSelectedDay(null)} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.25)', zIndex:200 }} />
+                    {/* Panel */}
+                    <div style={{
+                      position:'fixed', top:0, right:0, bottom:0, width:380, maxWidth:'90vw',
+                      background:'var(--bg)', borderLeft:'1px solid var(--border)',
+                      boxShadow:'-8px 0 32px rgba(0,0,0,0.15)', zIndex:201,
+                      display:'flex', flexDirection:'column', overflowY:'auto',
+                    }}>
+                      {/* Panel header */}
+                      <div style={{ padding:'20px 20px 16px', borderBottom:'1px solid var(--border)', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+                        <div>
+                          <div style={{ fontSize:11, fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.8px' }}>{monthNames[month]} {year}</div>
+                          <div style={{ fontSize:24, fontWeight:900, color:'var(--text-primary)', fontFamily:'var(--font-display)' }}>
+                            {selectedDay} {monthNames[month]}
+                          </div>
+                          <div style={{ fontSize:12, color:'var(--text-muted)', marginTop:2 }}>{dayPanelEvents.length} event{dayPanelEvents.length !== 1 ? 's' : ''}</div>
+                        </div>
+                        <button onClick={() => setSelectedDay(null)} style={{ background:'var(--surface)', border:'1px solid var(--border)', borderRadius:8, width:36, height:36, cursor:'pointer', fontSize:18, color:'var(--text-secondary)', display:'flex', alignItems:'center', justifyContent:'center' }}>✕</button>
+                      </div>
+                      {/* Events list */}
+                      <div style={{ padding:16, flex:1 }}>
+                        {dayPanelEvents.length === 0 ? (
+                          <div style={{ textAlign:'center', color:'var(--text-muted)', fontSize:14, paddingTop:40 }}>No events this day</div>
+                        ) : (
+                          dayPanelEvents.map((ev, i) => (
+                            <div key={i} style={{
+                              background:'var(--surface)', border:'1px solid var(--border)',
+                              borderRadius:12, padding:'14px 16px', marginBottom:12,
+                              borderLeft:`4px solid ${ev.color}`,
+                            }}>
+                              {/* Type badge */}
+                              <div style={{ fontSize:10, fontWeight:700, color:'#fff', background:ev.color, borderRadius:4, padding:'2px 8px', display:'inline-block', marginBottom:8, textTransform:'uppercase', letterSpacing:'0.5px' }}>
+                                {ev.type === 'service' ? 'Planned Maintenance' : ev.type === 'schedule' ? 'Service Schedule' : 'Work Order'}
+                              </div>
+                              {/* Asset + service */}
+                              <div style={{ fontSize:15, fontWeight:800, color:'var(--text-primary)', marginBottom:4 }}>{ev.assetName}</div>
+                              <div style={{ fontSize:13, color:'var(--text-secondary)', marginBottom:6 }}>{ev.serviceName}</div>
+                              <div style={{ fontSize:11, color:'var(--text-muted)', marginBottom:12 }}>{ev.detail}</div>
+                              {/* Action buttons */}
+                              <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
+                                {ev.assetId && setCurrentPage && (
+                                  <button onClick={() => {
+                                    setSelectedDay(null);
+                                    sessionStorage.setItem('mechiq_open_asset', JSON.stringify({ assetId: ev.assetId, tab: 'service' }));
+                                    setCurrentPage('assets', 'units');
+                                  }} style={{ padding:'7px 14px', background:'var(--accent)', color:'#fff', border:'none', borderRadius:8, fontSize:12, fontWeight:700, cursor:'pointer' }}>
+                                    View Asset →
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
             );
           })()}

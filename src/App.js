@@ -36,6 +36,20 @@ function App() {
   // Navbar calls setCurrentPage(pageId, subPage)
   // Components that have internal tabs receive initialTab prop
   const setCurrentPage = (page, subPage = null) => {
+    // Check if navigating to assets from calendar (sessionStorage intent)
+    if (page === 'assets') {
+      const intent = sessionStorage.getItem('mechiq_open_asset');
+      if (intent) {
+        try {
+          const { assetId } = JSON.parse(intent);
+          if (assetId) {
+            setViewingAssetId(assetId);
+            setCurrentPageRaw('assetpage');
+            return;
+          }
+        } catch(e) {}
+      }
+    }
     setCurrentPageRaw(page);
     setCurrentSubPage(subPage);
   };
@@ -148,7 +162,7 @@ function App() {
       case 'downtime':
         return <Downtime userRole={effectiveUserRole} />;
       case 'maintenance':
-        return <Maintenance userRole={effectiveUserRole} initialTab={currentSubPage} />;
+        return <Maintenance userRole={effectiveUserRole} initialTab={currentSubPage} setCurrentPage={setCurrentPage} />;
       case 'forms':
         return (
           <Forms

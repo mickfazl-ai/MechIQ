@@ -286,7 +286,6 @@ const NAV_STRUCTURE = [
     children: [
       { id: 'maintenance', subPage: 'scheduled',   label: 'Planned Maintenance', roles: ['admin','supervisor','technician'] },
       { id: 'maintenance', subPage: 'work_orders', label: 'Work Orders',       roles: ['admin','supervisor','technician'] },
-      { id: 'maintenance', subPage: 'pm_tasks',    label: 'PM Tasks',          roles: ['admin','supervisor','technician'] },
       { id: 'maintenance', subPage: 'schedules',   label: 'Service Schedules', roles: ['admin','supervisor','technician'] },
       { id: 'maintenance', subPage: 'calendar',    label: 'Calendar',          roles: ['admin','supervisor','technician'] },
     ],
@@ -487,6 +486,15 @@ function Navbar({ currentPage, currentSubPage, setCurrentPage, onLogout, session
     window.addEventListener('resize', onResize);
     return () => window.removeEventListener('resize', onResize);
   }, [expanded, hasBanner]);
+
+  // Listen for programmatic navigation events from child components
+  useEffect(() => {
+    const onNav = (e) => {
+      if (e.detail?.page) handleNav(e.detail.page, e.detail.subPage || null);
+    };
+    window.addEventListener('mechiq-navigate', onNav);
+    return () => window.removeEventListener('mechiq-navigate', onNav);
+  }, []);
 
   return (
     <>
