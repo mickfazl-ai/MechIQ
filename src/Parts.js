@@ -930,6 +930,7 @@ export default function Parts({ userRole }) {
             </div>
           )}
         </div>
+      )}
 
       {/* Stocktake Tab */}
       {tab === 'stocktake' && (
