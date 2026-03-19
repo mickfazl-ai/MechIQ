@@ -160,8 +160,37 @@ function WorkOrdersTab({ asset, userRole }) {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ defect_description:'', priority:'Medium', assigned_to:'', due_date:'', comments:'' });
+  const [serviceTemplates, setServiceTemplates] = useState([]);
 
-  useEffect(() => { load(); }, [asset]);
+  useEffect(() => { load(); loadTemplates(); }, [asset]);
+
+  const loadTemplates = async () => {
+    const { data } = await supabase.from('service_sheet_templates').select('id,name,service_type').eq('company_id', asset.company_id).order('name');
+    setServiceTemplates(data || []);
+  };
+
+  // Match a work order description to a service sheet template by keyword
+  const findTemplate = (desc) => {
+    if (!desc) return null;
+    const keywords = desc.toLowerCase().split(/[\s\-\/,]+/).filter(k => k.length > 2);
+    return serviceTemplates.find(t => {
+      const tName = t.name.toLowerCase();
+      const tType = (t.service_type || '').toLowerCase();
+      return keywords.some(k => tName.includes(k) || tType.includes(k));
+    }) || null;
+  };
+
+  const openServiceSheet = (wo) => {
+    const tmpl = findTemplate(wo.defect_description);
+    sessionStorage.setItem('mechiq_open_form', JSON.stringify({
+      templateId: tmpl?.id || null,
+      assetName: asset.name,
+      serviceType: wo.defect_description?.slice(0, 60) || '',
+      workOrderId: wo.id,
+      showPicker: !tmpl,
+    }));
+    window.dispatchEvent(new CustomEvent('mechiq-navigate', { detail: { page: 'forms', subPage: 'service_sheets' } }));
+  };
 
   const load = async () => {
     setLoading(true);
@@ -243,11 +272,16 @@ function WorkOrdersTab({ asset, userRole }) {
                     <div style={{ fontSize:13, color:'var(--text-primary)', fontWeight:500 }}>{w.defect_description}</div>
                     {w.assigned_to && <div style={{ fontSize:11, color:'var(--text-muted)', marginTop:4 }}>Assigned: {w.assigned_to}</div>}
                   </div>
-                  {nextStatus && (
-                    <button onClick={() => updateStatus(w.id, nextStatus)} style={{ padding:'6px 14px', background:'var(--green-bg)', color:'var(--green)', border:'1px solid var(--green-border)', borderRadius:7, fontSize:11, fontWeight:700, cursor:'pointer', whiteSpace:'nowrap' }}>
-                      → {nextStatus}
+                  <div style={{ display:'flex', flexDirection:'column', gap:6, alignItems:'flex-end' }}>
+                    {nextStatus && (
+                      <button onClick={() => updateStatus(w.id, nextStatus)} style={{ padding:'6px 14px', background:'var(--green-bg)', color:'var(--green)', border:'1px solid var(--green-border)', borderRadius:7, fontSize:11, fontWeight:700, cursor:'pointer', whiteSpace:'nowrap' }}>
+                        → {nextStatus}
+                      </button>
+                    )}
+                    <button onClick={() => openServiceSheet(w)} style={{ padding:'6px 12px', background:'var(--accent-light)', color:'var(--accent)', border:'1px solid rgba(14,165,233,0.3)', borderRadius:7, fontSize:11, fontWeight:700, cursor:'pointer', whiteSpace:'nowrap' }}>
+                      📋 Service Sheet
                     </button>
-                  )}
+                  </div>
                 </div>
               </div>
             );
@@ -442,18 +476,23 @@ function ServiceTab({ asset }) {
                       </td>
                       <td style={{ padding:'11px 14px 11px 0' }}><span className={`traffic-light ${st.cls}`}><span style={{ width:6, height:6, borderRadius:'50%', background:'currentColor' }} />{st.label}</span></td>
                       <td style={{ padding:'11px 0' }}>
-                        <div style={{ display:'flex', gap:6, alignItems:'center' }}>
+                        <div style={{ display:'flex', gap:6, alignItems:'center', flexWrap:'wrap' }}>
                           <button onClick={() => markDone(s)} style={{ padding:'4px 10px', background:'var(--green-bg)', color:'var(--green)', border:'1px solid var(--green-border)', borderRadius:6, fontSize:11, fontWeight:700, cursor:'pointer' }}>✓ Done</button>
                           {(() => {
                             const tmpl = findTemplate(s.service_name);
-                            return tmpl ? (
+                            return (
                               <button onClick={() => {
-                                sessionStorage.setItem('mechiq_open_form', JSON.stringify({ templateId: tmpl.id, assetName: asset.name }));
+                                sessionStorage.setItem('mechiq_open_form', JSON.stringify({
+                                  templateId: tmpl?.id || null,
+                                  assetName: asset.name,
+                                  serviceType: s.service_name,
+                                  showPicker: !tmpl,
+                                }));
                                 window.dispatchEvent(new CustomEvent('mechiq-navigate', { detail: { page: 'forms', subPage: 'service_sheets' } }));
                               }} style={{ padding:'4px 10px', background:'var(--accent-light)', color:'var(--accent)', border:'1px solid rgba(14,165,233,0.3)', borderRadius:6, fontSize:11, fontWeight:700, cursor:'pointer' }}>
-                                📋 Service Sheet
+                                📋 {tmpl ? 'Service Sheet' : 'Start Sheet'}
                               </button>
-                            ) : null;
+                            );
                           })()}
                         </div>
                       </td>

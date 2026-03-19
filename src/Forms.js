@@ -825,21 +825,24 @@ function ServiceSheetsTab({ userRole }) {
   const fetchTemplates = async () => {
     const { data } = await supabase.from('service_sheet_templates').select('*').eq('company_id', userRole.company_id).order('created_at', { ascending: false });
     setTemplates(data || []); setLoading(false);
-    // Check if navigated here from Assets or Maintenance with a pre-selected template
+    // Check if navigated here from Assets, Maintenance or MachineProfile
     const intent = sessionStorage.getItem('mechiq_open_form');
     if (intent) {
       try {
-        const { templateId, assetName, serviceType } = JSON.parse(intent);
+        const { templateId, assetName, serviceType, showPicker } = JSON.parse(intent);
         sessionStorage.removeItem('mechiq_open_form');
-        const tmpl = (data || []).find(t => t.id === templateId);
-        if (tmpl) {
-          setSelectedTemplate(tmpl);
-          setForm(f => ({
-            ...f,
-            asset: assetName || f.asset,
-            service_type: serviceType || tmpl.service_type || '',
-          }));
-          setView('fill');
+        if (showPicker || !templateId) {
+          // No matched template — pre-fill asset/service and let user pick template from list
+          setForm(f => ({ ...f, asset: assetName || f.asset, service_type: serviceType || '' }));
+          // Stay on list view so user can pick a template — highlight with a banner
+          sessionStorage.setItem('mechiq_prefill', JSON.stringify({ assetName, serviceType }));
+        } else {
+          const tmpl = (data || []).find(t => t.id === templateId);
+          if (tmpl) {
+            setSelectedTemplate(tmpl);
+            setForm(f => ({ ...f, asset: assetName || f.asset, service_type: serviceType || tmpl.service_type || '' }));
+            setView('fill');
+          }
         }
       } catch(e) {}
     }
@@ -1345,9 +1348,32 @@ function ServiceSheetsTab({ userRole }) {
           {userRole && userRole.role !== 'technician' && <button className="btn-primary" style={{ background: 'linear-gradient(135deg, #00c2e0, #0090a8)', color: '#000', padding: '12px 24px' }} onClick={() => setShowAI(true)}>Generate with AI</button>}
         </div>
       ) : (
+        <>
+          {/* Prefill banner — shown when navigated from asset/maintenance without matched template */}
+          {(() => {
+            const prefill = (() => { try { const p = sessionStorage.getItem('mechiq_prefill'); if (p) { sessionStorage.removeItem('mechiq_prefill'); return JSON.parse(p); } } catch(e) {} return null; })();
+            return prefill ? (
+              <div style={{ background:'var(--accent-light)', border:'1px solid rgba(14,165,233,0.3)', borderRadius:10, padding:'12px 16px', marginBottom:16, display:'flex', alignItems:'center', gap:10 }}>
+                <span style={{ fontSize:16 }}>📋</span>
+                <div>
+                  <div style={{ fontSize:13, fontWeight:700, color:'var(--accent)' }}>Select a template for: {prefill.assetName}</div>
+                  {prefill.serviceType && <div style={{ fontSize:12, color:'var(--text-muted)' }}>Service: {prefill.serviceType}</div>}
+                </div>
+              </div>
+            ) : null;
+          })()}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '15px', marginTop: '20px' }}>
           {templates.map(t => (
-            <div key={t.id} className="form-card" style={{ cursor: 'pointer' }} onClick={() => { setSelectedTemplate(t); setView('fill'); }}>
+            <div key={t.id} className="form-card" style={{ cursor: 'pointer' }} onClick={() => {
+              setSelectedTemplate(t);
+              // Apply any prefilled asset/service from navigation intent
+              const prefill = (() => { try { return JSON.parse(sessionStorage.getItem('mechiq_prefill') || '{}'); } catch(e) { return {}; } })();
+              if (prefill.assetName) {
+                setForm(f => ({ ...f, asset: prefill.assetName, service_type: prefill.serviceType || t.service_type || '' }));
+                sessionStorage.removeItem('mechiq_prefill');
+              }
+              setView('fill');
+            }}>
               <h3 style={{ color: 'var(--text-primary)', marginBottom: '4px' }}>{t.name}</h3>
               {t.service_type && <p style={{ color: 'var(--text-muted)', fontSize: '12px', marginBottom: '8px', fontWeight: 600 }}>{t.service_type}</p>}
               <p style={{ color: '#a0b0b0', fontSize: '13px', marginBottom: '12px' }}>{t.description}</p>
@@ -1362,6 +1388,7 @@ function ServiceSheetsTab({ userRole }) {
             </div>
           )}
         </div>
+        </>
       )}
     </div>
   );
