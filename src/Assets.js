@@ -191,7 +191,7 @@ function QRModal({ asset, onClose }) {
 const TYPE_ICON = { 'Mobile Plant': '🚜', 'Fixed Plant': '🏭', 'Drilling Plant': '⛏️', 'Small Machinery': '⚙️', 'Vehicle': '🚗', 'Truck': '🚛', 'Excavator': '🚜', 'Generator': '⚡', 'Compressor': '💨' };
 function getIcon(type) { return TYPE_ICON[type] || '🔧'; }
 
-function AssetCard({ asset, index, onView, onDelete, onQR, onQuickLog, onEdit, userRole }) {
+function AssetCard({ asset, index, onView, onDelete, onQR, onQuickLog, onEdit, onServiceSheet, userRole }) {
   const [hovered, setHovered] = useState(false);
   const s = STATUS[asset.status] || { color: 'var(--text-muted)', bg: '#f1f5f9' };
   const canDelete = userRole?.role !== 'technician' && userRole?.role !== 'operator';
@@ -239,6 +239,7 @@ function AssetCard({ asset, index, onView, onDelete, onQR, onQuickLog, onEdit, u
       <div className="card-actions" style={{ padding: '0 18px 16px', display: 'flex', gap: '8px', flexWrap:'wrap' }}>
         <button onClick={() => onView(asset.id)} className="nav-pill nav-pill-primary" style={{ fontSize: '11px', padding: '6px 14px' }}>View →</button>
         <button onClick={() => onQR(asset)} className="nav-pill nav-pill-ghost" style={{ fontSize: '11px', padding: '6px 12px' }}>QR</button>
+        {onServiceSheet && <button onClick={() => onServiceSheet(asset)} style={{ fontSize:'11px', padding:'6px 12px', background:'var(--accent-light)', color:'var(--accent)', border:'1px solid rgba(14,165,233,0.3)', borderRadius:8, fontWeight:700, cursor:'pointer', transition:'all 0.15s' }}>📄 Service Sheet</button>}
         {canDelete && <button onClick={() => onEdit && onEdit(asset)} style={{ fontSize:'11px', padding:'6px 12px', background:'var(--surface-2)', color:'var(--text-secondary)', border:'1px solid var(--border)', borderRadius:8, fontWeight:700, cursor:'pointer', transition:'all 0.15s' }}>Edit</button>}
         {asset.status === 'Down' || asset.status === 'Maintenance' ? (
           <button onClick={() => onQuickLog && onQuickLog(asset, 'Running')} style={{ fontSize:'11px', padding:'6px 12px', background:'var(--green-bg)', color:'var(--green)', border:'1px solid var(--green-border)', borderRadius:8, fontWeight:700, cursor:'pointer', transition:'all 0.15s' }}>✓ Running</button>
@@ -257,6 +258,51 @@ function AssetCard({ asset, index, onView, onDelete, onQR, onQuickLog, onEdit, u
   );
 }
 
+// ─── Service Sheet Picker Modal ───────────────────────────────────────────────
+function ServiceSheetPickerModal({ asset, templates, onClose, onSelect }) {
+  const [selected, setSelected] = useState('');
+  return (
+    <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:300, display:'flex', alignItems:'center', justifyContent:'center', padding:16 }}>
+      <div style={{ background:'var(--bg)', borderRadius:16, width:'100%', maxWidth:440, boxShadow:'0 20px 60px rgba(0,0,0,0.3)', overflow:'hidden' }}>
+        <div style={{ padding:'18px 20px 14px', borderBottom:'1px solid var(--border)', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+          <div>
+            <div style={{ fontSize:16, fontWeight:800, color:'var(--text-primary)', fontFamily:'var(--font-display)' }}>📄 Service Sheet</div>
+            <div style={{ fontSize:12, color:'var(--text-muted)', marginTop:2 }}>{asset.name}</div>
+          </div>
+          <button onClick={onClose} style={{ background:'none', border:'none', cursor:'pointer', fontSize:20, color:'var(--text-muted)' }}>✕</button>
+        </div>
+        <div style={{ padding:20 }}>
+          {templates.length === 0 ? (
+            <div style={{ textAlign:'center', color:'var(--text-muted)', fontSize:13, padding:'20px 0' }}>
+              No service sheet templates found.<br/>Create one in Forms → Service Sheets first.
+            </div>
+          ) : (
+            <>
+              <div style={{ fontSize:12, color:'var(--text-muted)', marginBottom:12 }}>Choose a service sheet template:</div>
+              <div style={{ display:'flex', flexDirection:'column', gap:8, marginBottom:16 }}>
+                {templates.map(t => (
+                  <div key={t.id} onClick={() => setSelected(t.id)}
+                    style={{ padding:'12px 14px', borderRadius:10, border:`2px solid ${selected===t.id?'var(--accent)':'var(--border)'}`, background:selected===t.id?'var(--accent-light)':'var(--surface)', cursor:'pointer', transition:'all 0.15s' }}>
+                    <div style={{ fontSize:13, fontWeight:700, color:'var(--text-primary)' }}>{t.name}</div>
+                    {t.service_type && <div style={{ fontSize:11, color:'var(--text-muted)', marginTop:2 }}>{t.service_type}</div>}
+                  </div>
+                ))}
+              </div>
+              <div style={{ display:'flex', gap:8 }}>
+                <button onClick={onClose} style={{ flex:1, padding:'10px', background:'var(--surface)', border:'1px solid var(--border)', borderRadius:9, cursor:'pointer', fontSize:13, color:'var(--text-secondary)' }}>Cancel</button>
+                <button onClick={() => { if(selected) { const t=templates.find(x=>x.id===selected); onSelect(selected, t?.name||''); } }} disabled={!selected}
+                  style={{ flex:2, padding:'10px', background:selected?'var(--accent)':'var(--surface-2)', color:selected?'#fff':'var(--text-muted)', border:'none', borderRadius:9, cursor:selected?'pointer':'not-allowed', fontSize:13, fontWeight:700 }}>
+                  Open Service Sheet →
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Units Tab ─────────────────────────────────────────────────────────────────
 function UnitsTab({ userRole, onViewAsset, toast }) {
   const [assets, setAssets]   = useState([]);
@@ -268,8 +314,17 @@ function UnitsTab({ userRole, onViewAsset, toast }) {
   const [newAsset, setNewAsset] = useState({ name: '', type: '', location: '', status: 'Running', hourly_rate: '', target_hours: 8 });
   const [editAsset, setEditAsset] = useState(null);
   const [editSaving, setEditSaving] = useState(false);
+  const [serviceSheetAsset, setServiceSheetAsset] = useState(null);
+  const [serviceTemplates, setServiceTemplates] = useState([]);
 
-  useEffect(() => { if (userRole?.company_id) fetchAssets(); }, [userRole]);
+  useEffect(() => { if (userRole?.company_id) { fetchAssets(); fetchTemplates(); } }, [userRole]);
+
+  const fetchTemplates = async () => {
+    const { data } = await supabase.from('service_sheet_templates').select('id,name,service_type').eq('company_id', userRole.company_id).order('name');
+    setServiceTemplates(data || []);
+  };
+
+  const handleServiceSheet = (asset) => { setServiceSheetAsset(asset); };
 
   const fetchAssets = async () => {
     setLoading(true);
@@ -425,6 +480,22 @@ function UnitsTab({ userRole, onViewAsset, toast }) {
 
       {printAsset && <QRModal asset={printAsset} onClose={() => setPrintAsset(null)} />}
 
+      {/* Service Sheet Picker Modal */}
+      {serviceSheetAsset && (
+        <ServiceSheetPickerModal
+          asset={serviceSheetAsset}
+          templates={serviceTemplates}
+          onClose={() => setServiceSheetAsset(null)}
+          onSelect={(templateId, templateName) => {
+            setServiceSheetAsset(null);
+            sessionStorage.setItem('mechiq_open_form', JSON.stringify({
+              templateId, assetName: serviceSheetAsset.name, serviceType: templateName,
+            }));
+            window.dispatchEvent(new CustomEvent('mechiq-navigate', { detail: { page: 'forms', subPage: 'service_sheets' } }));
+          }}
+        />
+      )}
+
       {/* Header bar */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
@@ -509,7 +580,7 @@ function UnitsTab({ userRole, onViewAsset, toast }) {
           {filtered.map((asset, i) => (
             <AssetCard key={asset.id} asset={asset} index={i}
               onView={onViewAsset} onDelete={handleDelete} onQuickLog={handleQuickLog} onEdit={setEditAsset}
-              onQR={setPrintAsset} userRole={userRole} />
+              onQR={setPrintAsset} onServiceSheet={handleServiceSheet} userRole={userRole} />
           ))}
         </div>
       )}

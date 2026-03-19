@@ -419,19 +419,19 @@ function BuilderItem({ item, si, ii, onUpdate, onRemove }) {
   return (
     <div style={{ display: 'flex', gap: '8px', marginBottom: '8px', alignItems: 'center', background: 'var(--surface-2)', padding: '8px 10px', borderRadius: '6px', border: '1px solid var(--border)' }}>
       <input
-        placeholder={'Item description ' + (ii + 1)}
+        placeholder={'Item ' + (ii + 1)}
         value={item.label || ''}
         onChange={e => onUpdate(si, ii, { ...item, label: e.target.value })}
-        style={{ flex: 1, minWidth: 0, padding: '7px 10px', backgroundColor: '#060c0c', color: 'var(--text-primary)', border: '1px solid var(--border)', borderRadius: '4px', fontSize: '13px' }}
+        style={{ flex: 1, padding: '7px 10px', backgroundColor: '#060c0c', color: 'var(--text-primary)', border: '1px solid var(--border)', borderRadius: '4px', fontSize: '13px' }}
       />
       <select
         value={item.type || 'check'}
         onChange={e => onUpdate(si, ii, { ...item, type: e.target.value })}
-        style={{ width: '140px', flexShrink: 0, padding: '7px 8px', backgroundColor: '#060c0c', color: 'var(--accent)', border: '1px solid var(--border)', borderRadius: '4px', fontSize: '12px' }}
+        style={{ padding: '7px 8px', backgroundColor: '#060c0c', color: 'var(--accent)', border: '1px solid var(--border)', borderRadius: '4px', fontSize: '12px' }}
       >
         {INPUT_TYPES.map(t => <option key={t.id} value={t.id}>{t.label}</option>)}
       </select>
-      <button onClick={() => onRemove(si, ii)} style={{ backgroundColor: 'transparent', border: '1px solid #2a1a1a', color: 'var(--red)', padding: '5px 8px', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', flexShrink: 0 }}>X</button>
+      <button onClick={() => onRemove(si, ii)} style={{ backgroundColor: 'transparent', border: '1px solid #2a1a1a', color: 'var(--red)', padding: '5px 8px', borderRadius: '4px', cursor: 'pointer', fontSize: '12px' }}>X</button>
     </div>
   );
 }
@@ -825,6 +825,24 @@ function ServiceSheetsTab({ userRole }) {
   const fetchTemplates = async () => {
     const { data } = await supabase.from('service_sheet_templates').select('*').eq('company_id', userRole.company_id).order('created_at', { ascending: false });
     setTemplates(data || []); setLoading(false);
+    // Check if navigated here from Assets or Maintenance with a pre-selected template
+    const intent = sessionStorage.getItem('mechiq_open_form');
+    if (intent) {
+      try {
+        const { templateId, assetName, serviceType } = JSON.parse(intent);
+        sessionStorage.removeItem('mechiq_open_form');
+        const tmpl = (data || []).find(t => t.id === templateId);
+        if (tmpl) {
+          setSelectedTemplate(tmpl);
+          setForm(f => ({
+            ...f,
+            asset: assetName || f.asset,
+            service_type: serviceType || tmpl.service_type || '',
+          }));
+          setView('fill');
+        }
+      } catch(e) {}
+    }
   };
   const fetchSubmissions = async () => {
     const { data } = await supabase.from('service_sheet_submissions').select('*').eq('company_id', userRole.company_id).order('created_at', { ascending: false });

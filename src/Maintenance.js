@@ -183,12 +183,15 @@ function Maintenance({ userRole, initialTab, setCurrentPage }) {
   const [calMonth, setCalMonth] = useState(new Date());
   const [selectedDay, setSelectedDay] = useState(null);
   const [dayPanelEvents, setDayPanelEvents] = useState([]);
+  const [serviceTemplates, setServiceTemplates] = useState([]);
+  const [serviceSheetPrompt, setServiceSheetPrompt] = useState(null); // { ev, confirmed, selectedTemplate }
   const [newSchedule, setNewSchedule] = useState({ asset_id:'', asset_name:'', service_name:'', interval_type:'hours', interval_value:'', last_service_value:'', last_service_date:'', notes:'' });
   const [newTask, setNewTask] = useState({ asset:'', task:'', frequency:'', next_due:'', assigned_to:'' });
   const [newWO, setNewWO] = useState({ asset:'', defect_description:'', priority:'Medium', assigned_to:'', due_date:'', estimated_hours:'', comments:'' });
 
   useEffect(() => { if (initialTab) setActiveTab(initialTab); }, [initialTab]);
-  useEffect(() => { if (userRole?.company_id) { fetchTasks(); fetchWorkOrders(); fetchAssets(); fetchUsers(); fetchSchedules(); } }, [userRole]);
+  useEffect(() => { if (userRole?.company_id) { fetchTasks(); fetchWorkOrders(); fetchAssets(); fetchUsers(); fetchSchedules(); fetchServiceTemplates(); } }, [userRole]);
+  const fetchServiceTemplates = async () => { const { data } = await supabase.from('service_sheet_templates').select('id,name,service_type').eq('company_id', userRole.company_id).order('name'); setServiceTemplates(data || []); };
 
   const fetchTasks = async () => { setLoading(true); const { data } = await supabase.from('maintenance').select('*').eq('company_id', userRole.company_id).order('created_at', { ascending: false }); setTasks(data || []); setLoading(false); };
   const fetchWorkOrders = async () => { const { data } = await supabase.from('work_orders').select('*').eq('company_id', userRole.company_id).order('created_at', { ascending: false }); setWorkOrders(data || []); };
@@ -841,8 +844,22 @@ function Maintenance({ userRole, initialTab, setCurrentPage }) {
                                     setSelectedDay(null);
                                     sessionStorage.setItem('mechiq_open_asset', JSON.stringify({ assetId: ev.assetId, tab: 'service' }));
                                     setCurrentPage('assets', 'units');
-                                  }} style={{ padding:'7px 14px', background:'var(--accent)', color:'#fff', border:'none', borderRadius:8, fontSize:12, fontWeight:700, cursor:'pointer' }}>
+                                  }} style={{ padding:'7px 14px', background:'var(--surface-2)', color:'var(--text-secondary)', border:'1px solid var(--border)', borderRadius:8, fontSize:12, fontWeight:700, cursor:'pointer' }}>
                                     View Asset →
+                                  </button>
+                                )}
+                                {(ev.type === 'service' || ev.type === 'schedule') && (
+                                  <button onClick={() => {
+                                    // Find best matching template by service name keywords
+                                    const keywords = (ev.serviceName||'').toLowerCase().split(/[\s\-\/]+/);
+                                    const matched = serviceTemplates.find(t => {
+                                      const tName = t.name.toLowerCase();
+                                      const tType = (t.service_type||'').toLowerCase();
+                                      return keywords.some(k => k.length > 2 && (tName.includes(k) || tType.includes(k)));
+                                    });
+                                    setServiceSheetPrompt({ ev, matched, selectedTemplate: matched?.id || '' });
+                                  }} style={{ padding:'7px 14px', background:'var(--accent)', color:'#fff', border:'none', borderRadius:8, fontSize:12, fontWeight:700, cursor:'pointer' }}>
+                                    📄 Start Service Sheet
                                   </button>
                                 )}
                               </div>
@@ -860,6 +877,80 @@ function Maintenance({ userRole, initialTab, setCurrentPage }) {
       )}
 
     </div>
+
+    {/* Service Sheet Confirm + Template Picker Modal */}
+    {serviceSheetPrompt && (
+      <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:400, display:'flex', alignItems:'center', justifyContent:'center', padding:16 }}>
+        <div style={{ background:'var(--bg)', borderRadius:16, width:'100%', maxWidth:460, boxShadow:'0 20px 60px rgba(0,0,0,0.3)', overflow:'hidden' }}>
+          <div style={{ padding:'18px 20px 14px', borderBottom:'1px solid var(--border)', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+            <div>
+              <div style={{ fontSize:16, fontWeight:800, color:'var(--text-primary)', fontFamily:'var(--font-display)' }}>📄 Start Service Sheet</div>
+              <div style={{ fontSize:12, color:'var(--text-muted)', marginTop:2 }}>{serviceSheetPrompt.ev.assetName}</div>
+            </div>
+            <button onClick={() => setServiceSheetPrompt(null)} style={{ background:'none', border:'none', cursor:'pointer', fontSize:20, color:'var(--text-muted)' }}>✕</button>
+          </div>
+          <div style={{ padding:20 }}>
+            {/* Service being performed */}
+            <div style={{ background:'var(--surface)', borderRadius:10, padding:'12px 14px', marginBottom:16, borderLeft:'4px solid var(--accent)' }}>
+              <div style={{ fontSize:11, fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.5px', marginBottom:4 }}>Service Due</div>
+              <div style={{ fontSize:14, fontWeight:800, color:'var(--text-primary)' }}>{serviceSheetPrompt.ev.serviceName}</div>
+              <div style={{ fontSize:12, color:'var(--text-muted)', marginTop:2 }}>{serviceSheetPrompt.ev.detail}</div>
+            </div>
+
+            {/* Matched template */}
+            {serviceSheetPrompt.matched && (
+              <div style={{ background:'rgba(34,197,94,0.08)', border:'1px solid rgba(34,197,94,0.25)', borderRadius:10, padding:'10px 14px', marginBottom:14 }}>
+                <div style={{ fontSize:11, fontWeight:700, color:'var(--green)', textTransform:'uppercase', marginBottom:4 }}>✓ Suggested Template</div>
+                <div style={{ fontSize:13, fontWeight:700, color:'var(--text-primary)' }}>{serviceSheetPrompt.matched.name}</div>
+                {serviceSheetPrompt.matched.service_type && <div style={{ fontSize:11, color:'var(--text-muted)' }}>{serviceSheetPrompt.matched.service_type}</div>}
+              </div>
+            )}
+
+            {/* Template picker */}
+            <div style={{ marginBottom:16 }}>
+              <div style={{ fontSize:12, fontWeight:700, color:'var(--text-muted)', marginBottom:8 }}>
+                {serviceSheetPrompt.matched ? 'Or choose a different template:' : 'Select a template:'}
+              </div>
+              {serviceTemplates.length === 0 ? (
+                <div style={{ fontSize:12, color:'var(--text-muted)', padding:'10px 0' }}>No templates found — create one in Forms → Service Sheets first.</div>
+              ) : (
+                <div style={{ display:'flex', flexDirection:'column', gap:6, maxHeight:200, overflowY:'auto' }}>
+                  {serviceTemplates.map(t => (
+                    <div key={t.id} onClick={() => setServiceSheetPrompt(p => ({ ...p, selectedTemplate: t.id, matched: t }))}
+                      style={{ padding:'10px 14px', borderRadius:9, border:`2px solid ${serviceSheetPrompt.selectedTemplate===t.id?'var(--accent)':'var(--border)'}`, background:serviceSheetPrompt.selectedTemplate===t.id?'var(--accent-light)':'var(--surface)', cursor:'pointer', transition:'all 0.15s' }}>
+                      <div style={{ fontSize:13, fontWeight:700, color:'var(--text-primary)' }}>{t.name}</div>
+                      {t.service_type && <div style={{ fontSize:11, color:'var(--text-muted)', marginTop:1 }}>{t.service_type}</div>}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div style={{ display:'flex', gap:8 }}>
+              <button onClick={() => setServiceSheetPrompt(null)} style={{ flex:1, padding:'10px', background:'var(--surface)', border:'1px solid var(--border)', borderRadius:9, cursor:'pointer', fontSize:13, color:'var(--text-secondary)' }}>Cancel</button>
+              <button
+                disabled={!serviceSheetPrompt.selectedTemplate && !serviceSheetPrompt.matched}
+                onClick={() => {
+                  const templateId = serviceSheetPrompt.selectedTemplate || serviceSheetPrompt.matched?.id;
+                  const templateName = serviceTemplates.find(t => t.id === templateId)?.name || '';
+                  if (!templateId) return;
+                  setServiceSheetPrompt(null);
+                  setSelectedDay(null);
+                  sessionStorage.setItem('mechiq_open_form', JSON.stringify({
+                    templateId,
+                    assetName: serviceSheetPrompt.ev.assetName,
+                    serviceType: serviceSheetPrompt.ev.serviceName || templateName,
+                  }));
+                  window.dispatchEvent(new CustomEvent('mechiq-navigate', { detail: { page: 'forms', subPage: 'service_sheets' } }));
+                }}
+                style={{ flex:2, padding:'10px', background:(serviceSheetPrompt.selectedTemplate||serviceSheetPrompt.matched)?'var(--accent)':'var(--surface-2)', color:(serviceSheetPrompt.selectedTemplate||serviceSheetPrompt.matched)?'#fff':'var(--text-muted)', border:'none', borderRadius:9, fontSize:13, fontWeight:700, cursor:(serviceSheetPrompt.selectedTemplate||serviceSheetPrompt.matched)?'pointer':'not-allowed' }}>
+                  Open Service Sheet →
+                </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    )}
   );
 }
 
