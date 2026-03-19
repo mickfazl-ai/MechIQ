@@ -10,7 +10,6 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  // Validate Supabase session token — only authenticated users can call AI
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return res.status(401).json({ error: 'Unauthorised' });
@@ -22,8 +21,10 @@ export default async function handler(req, res) {
     return res.status(401).json({ error: 'Invalid session' });
   }
 
-  // Forward request body to Anthropic with the server-side API key
   try {
+    // Strip any tools param that causes issues
+    const { tools, ...bodyWithoutTools } = req.body;
+
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -31,12 +32,19 @@ export default async function handler(req, res) {
         'x-api-key': process.env.ANTHROPIC_API_KEY,
         'anthropic-version': '2023-06-01',
       },
-      body: JSON.stringify(req.body),
+      body: JSON.stringify(bodyWithoutTools),
     });
 
     const data = await response.json();
+
+    // Log errors from Anthropic for debugging
+    if (data.error) {
+      console.error('Anthropic API error:', JSON.stringify(data.error));
+    }
+
     return res.status(response.status).json(data);
   } catch (err) {
-    return res.status(500).json({ error: 'Upstream API error' });
+    console.error('Proxy error:', err.message);
+    return res.status(500).json({ error: 'Upstream API error', detail: err.message });
   }
 }

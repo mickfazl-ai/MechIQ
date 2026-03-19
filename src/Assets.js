@@ -191,7 +191,7 @@ function QRModal({ asset, onClose }) {
 const TYPE_ICON = { 'Mobile Plant': '🚜', 'Fixed Plant': '🏭', 'Drilling Plant': '⛏️', 'Small Machinery': '⚙️', 'Vehicle': '🚗', 'Truck': '🚛', 'Excavator': '🚜', 'Generator': '⚡', 'Compressor': '💨' };
 function getIcon(type) { return TYPE_ICON[type] || '🔧'; }
 
-function AssetCard({ asset, index, onView, onDelete, onQR, onQuickLog, userRole }) {
+function AssetCard({ asset, index, onView, onDelete, onQR, onQuickLog, onEdit, userRole }) {
   const [hovered, setHovered] = useState(false);
   const s = STATUS[asset.status] || { color: 'var(--text-muted)', bg: '#f1f5f9' };
   const canDelete = userRole?.role !== 'technician' && userRole?.role !== 'operator';
@@ -239,6 +239,7 @@ function AssetCard({ asset, index, onView, onDelete, onQR, onQuickLog, userRole 
       <div className="card-actions" style={{ padding: '0 18px 16px', display: 'flex', gap: '8px', flexWrap:'wrap' }}>
         <button onClick={() => onView(asset.id)} className="nav-pill nav-pill-primary" style={{ fontSize: '11px', padding: '6px 14px' }}>View →</button>
         <button onClick={() => onQR(asset)} className="nav-pill nav-pill-ghost" style={{ fontSize: '11px', padding: '6px 12px' }}>QR</button>
+        {canDelete && <button onClick={() => onEdit && onEdit(asset)} style={{ fontSize:'11px', padding:'6px 12px', background:'var(--surface-2)', color:'var(--text-secondary)', border:'1px solid var(--border)', borderRadius:8, fontWeight:700, cursor:'pointer', transition:'all 0.15s' }}>Edit</button>}
         {asset.status === 'Down' || asset.status === 'Maintenance' ? (
           <button onClick={() => onQuickLog && onQuickLog(asset, 'Running')} style={{ fontSize:'11px', padding:'6px 12px', background:'var(--green-bg)', color:'var(--green)', border:'1px solid var(--green-border)', borderRadius:8, fontWeight:700, cursor:'pointer', transition:'all 0.15s' }}>✓ Running</button>
         ) : (
@@ -265,6 +266,8 @@ function UnitsTab({ userRole, onViewAsset, toast }) {
   const [filter, setFilter]   = useState('All');
   const [search, setSearch]   = useState('');
   const [newAsset, setNewAsset] = useState({ name: '', type: '', location: '', status: 'Running', hourly_rate: '', target_hours: 8 });
+  const [editAsset, setEditAsset] = useState(null);
+  const [editSaving, setEditSaving] = useState(false);
 
   useEffect(() => { if (userRole?.company_id) fetchAssets(); }, [userRole]);
 
@@ -280,6 +283,28 @@ function UnitsTab({ userRole, onViewAsset, toast }) {
     const { error } = await supabase.from('assets').insert([{ ...newAsset, company_id: userRole.company_id }]);
     if (error) { toast('Error adding asset: ' + error.message, 'error'); }
     else { toast('Asset added successfully', 'success'); fetchAssets(); setNewAsset({ name: '', type: '', location: '', status: 'Running', hourly_rate: '', target_hours: 8 }); setShowForm(false); }
+  };
+
+  const handleEdit = async () => {
+    if (!editAsset) return;
+    setEditSaving(true);
+    const { error } = await supabase.from('assets').update({
+      name: editAsset.name, type: editAsset.type, location: editAsset.location,
+      status: editAsset.status, make: editAsset.make, model: editAsset.model,
+      year: editAsset.year ? parseInt(editAsset.year) : null,
+      hours: editAsset.hours ? parseFloat(editAsset.hours) : null,
+      target_hours: editAsset.target_hours ? parseFloat(editAsset.target_hours) : 8,
+      hourly_rate: editAsset.hourly_rate ? parseFloat(editAsset.hourly_rate) : null,
+      colour: editAsset.colour, serial_number: editAsset.serial_number,
+      registration: editAsset.registration, notes: editAsset.notes,
+      purchase_price: editAsset.purchase_price ? parseFloat(editAsset.purchase_price) : null,
+      purchase_date: editAsset.purchase_date || null,
+    }).eq('id', editAsset.id);
+    setEditSaving(false);
+    if (error) { toast('Error updating asset: ' + error.message, 'error'); return; }
+    toast(`${editAsset.name} updated successfully`, 'success');
+    setEditAsset(null);
+    fetchAssets();
   };
 
   const handleQuickLog = async (asset, newStatus) => {
@@ -351,6 +376,53 @@ function UnitsTab({ userRole, onViewAsset, toast }) {
 
   return (
     <div>
+      {/* Edit Asset Modal */}
+      {editAsset && (
+        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:1000, padding:20 }}>
+          <div style={{ background:'var(--surface)', borderRadius:16, padding:28, width:'100%', maxWidth:560, maxHeight:'85vh', overflowY:'auto', border:'1px solid var(--border)', boxShadow:'0 20px 60px rgba(0,0,0,0.3)' }}>
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:20 }}>
+              <div style={{ fontSize:17, fontWeight:800, color:'var(--text-primary)' }}>Edit Asset — {editAsset.asset_number}</div>
+              <button onClick={() => setEditAsset(null)} style={{ background:'none', border:'none', color:'var(--text-muted)', cursor:'pointer', fontSize:18 }}>✕</button>
+            </div>
+            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, marginBottom:14 }}>
+              {[
+                ['Name *','name','text'],['Type *','type','text'],
+                ['Make','make','text'],['Model','model','text'],
+                ['Year','year','number'],['Location','location','text'],
+                ['Colour','colour','text'],['Serial Number','serial_number','text'],
+                ['Current Hours','hours','number'],['Target Hrs/Day','target_hours','number'],
+                ['Hourly Rate ($)','hourly_rate','number'],['Purchase Price ($)','purchase_price','number'],
+                ['Purchase Date','purchase_date','date'],['Registration','registration','text'],
+              ].map(([label,key,type]) => (
+                <div key={key}>
+                  <div style={{ fontSize:10, fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.5px', marginBottom:5 }}>{label}</div>
+                  <input style={{ width:'100%', padding:'9px 12px', border:'1px solid var(--border)', borderRadius:8, background:'var(--surface-2)', color:'var(--text-primary)', fontSize:13, fontFamily:'inherit', outline:'none', boxSizing:'border-box' }}
+                    type={type} value={editAsset[key]||''} onChange={e => setEditAsset(p=>({...p,[key]:e.target.value}))} />
+                </div>
+              ))}
+              <div>
+                <div style={{ fontSize:10, fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.5px', marginBottom:5 }}>Status</div>
+                <select style={{ width:'100%', padding:'9px 12px', border:'1px solid var(--border)', borderRadius:8, background:'var(--surface-2)', color:'var(--text-primary)', fontSize:13, fontFamily:'inherit', outline:'none', boxSizing:'border-box' }}
+                  value={editAsset.status||'Running'} onChange={e => setEditAsset(p=>({...p,status:e.target.value}))}>
+                  <option>Running</option><option>Down</option><option>Maintenance</option><option>Standby</option>
+                </select>
+              </div>
+            </div>
+            <div style={{ marginBottom:14 }}>
+              <div style={{ fontSize:10, fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.5px', marginBottom:5 }}>Notes</div>
+              <textarea style={{ width:'100%', padding:'9px 12px', border:'1px solid var(--border)', borderRadius:8, background:'var(--surface-2)', color:'var(--text-primary)', fontSize:13, fontFamily:'inherit', outline:'none', boxSizing:'border-box', resize:'vertical', minHeight:70 }}
+                value={editAsset.notes||''} onChange={e => setEditAsset(p=>({...p,notes:e.target.value}))} />
+            </div>
+            <div style={{ display:'flex', gap:8 }}>
+              <button onClick={handleEdit} disabled={editSaving} style={{ flex:1, padding:'10px', background:'var(--accent)', color:'#fff', border:'none', borderRadius:8, fontSize:13, fontWeight:700, cursor:'pointer', opacity:editSaving?0.6:1 }}>
+                {editSaving ? 'Saving…' : 'Save Changes'}
+              </button>
+              <button onClick={() => setEditAsset(null)} style={{ padding:'10px 18px', background:'var(--surface-2)', color:'var(--text-secondary)', border:'1px solid var(--border)', borderRadius:8, fontSize:13, cursor:'pointer' }}>Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {printAsset && <QRModal asset={printAsset} onClose={() => setPrintAsset(null)} />}
 
       {/* Header bar */}
@@ -436,7 +508,7 @@ function UnitsTab({ userRole, onViewAsset, toast }) {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '16px' }}>
           {filtered.map((asset, i) => (
             <AssetCard key={asset.id} asset={asset} index={i}
-              onView={onViewAsset} onDelete={handleDelete} onQuickLog={handleQuickLog}
+              onView={onViewAsset} onDelete={handleDelete} onQuickLog={handleQuickLog} onEdit={setEditAsset}
               onQR={setPrintAsset} userRole={userRole} />
           ))}
         </div>
@@ -446,7 +518,7 @@ function UnitsTab({ userRole, onViewAsset, toast }) {
 }
 
 // ─── Step Indicator ────────────────────────────────────────────────────────────
-const STEPS = ['Basic Info', 'Specifications', 'Registration', 'Purchase Details', 'Complete'];
+const STEPS = ['Basic Info', 'Specifications', 'Registration', 'Purchase Details', 'Service Intervals', 'Complete'];
 
 function StepBar({ current }) {
   return (
@@ -528,6 +600,15 @@ function OnboardingTab({ userRole, onComplete, toast }) {
   const [form, setForm] = useState(empty);
   const set = k => e => setForm(f => ({ ...f, [k]: e.target.value }));
 
+  const DEFAULT_INTERVALS = [
+    { id: 'i250',    name: '250hr Service',    interval_type: 'hours', interval_value: 250,  enabled: false },
+    { id: 'i500',    name: '500hr Service',    interval_type: 'hours', interval_value: 500,  enabled: true  },
+    { id: 'i1000',   name: '1000hr Service',   interval_type: 'hours', interval_value: 1000, enabled: true  },
+    { id: 'annual',  name: 'Annual Inspection',interval_type: 'months',interval_value: 12,   enabled: true  },
+    { id: 'custom1', name: '',                 interval_type: 'hours', interval_value: '',   enabled: false, custom: true },
+  ];
+  const [intervals, setIntervals] = useState(DEFAULT_INTERVALS);
+
   useEffect(() => {
     supabase.from('assets').select('asset_number').eq('company_id', userRole.company_id).then(({ data }) => {
       const nums = (data||[]).map(a => parseInt((a.asset_number||'').replace(/\D/g,''),10)).filter(n=>!isNaN(n));
@@ -560,9 +641,26 @@ function OnboardingTab({ userRole, onComplete, toast }) {
       ...(isAdmin ? { purchase_date: form.purchase_date||null, purchase_price: parseFloat(form.purchase_price)||null, supplier: form.supplier, warranty_expiry: form.warranty_expiry||null, depreciation_snapshot: depr ? JSON.stringify(depr) : null } : {}),
     };
     const { data, error } = await supabase.from('assets').insert([payload]).select().single();
+    if (error) { setSaving(false); toast('Error saving asset: ' + error.message, 'error'); return; }
+    
+    // Save enabled service intervals
+    const enabledIntervals = intervals.filter(i => i.enabled && (i.name || !i.custom) && (i.interval_value));
+    if (enabledIntervals.length > 0) {
+      const scheduleRows = enabledIntervals.map(i => ({
+        company_id: userRole.company_id,
+        asset_id: data.id,
+        asset_name: data.name,
+        service_name: i.name,
+        interval_type: i.interval_type,
+        interval_value: parseFloat(i.interval_value),
+        last_service_value: parseFloat(form.hours) || 0,
+        next_due_value: (parseFloat(form.hours) || 0) + parseFloat(i.interval_value),
+        notes: '',
+      }));
+      await supabase.from('service_schedules').insert(scheduleRows);
+    }
     setSaving(false);
-    if (error) { toast('Error saving asset: ' + error.message, 'error'); return; }
-    setSavedAsset(data); setStep(4);
+    setSavedAsset(data); setStep(5);
     toast(`${data.asset_number} onboarded successfully! 🎉`, 'success');
   };
 
@@ -576,7 +674,7 @@ function OnboardingTab({ userRole, onComplete, toast }) {
   };
 
   const again = () => {
-    setForm(empty); setSavedAsset(null); setStep(0); setHasRego(null);
+    setForm(empty); setSavedAsset(null); setStep(0); setHasRego(null); setIntervals(DEFAULT_INTERVALS);
     supabase.from('assets').select('asset_number').eq('company_id', userRole.company_id).then(({ data }) => {
       const nums = (data||[]).map(a => parseInt((a.asset_number||'').replace(/\D/g,''),10)).filter(n=>!isNaN(n));
       const next = nums.length ? Math.max(...nums)+1 : 1;
@@ -717,7 +815,50 @@ function OnboardingTab({ userRole, onComplete, toast }) {
     </>
   );
 
-  const renderStep4 = () => {
+  const renderStep4 = () => (
+    <div>
+      <h3 style={{ fontFamily:'var(--font-display)', fontSize:18, fontWeight:800, color:'var(--text-primary)', marginBottom:6 }}>Service Intervals</h3>
+      <p style={{ fontSize:13, color:'var(--text-muted)', marginBottom:20 }}>Set up maintenance schedules for {form.name}. These will appear on the calendar and asset profile.</p>
+      <div style={{ display:'flex', flexDirection:'column', gap:10, marginBottom:20 }}>
+        {intervals.map((interval, idx) => (
+          <div key={interval.id} style={{ display:'flex', alignItems:'center', gap:12, padding:'14px 16px', background: interval.enabled ? 'var(--accent-light)' : 'var(--surface-2)', border:`1px solid ${interval.enabled ? 'rgba(14,165,233,0.3)' : 'var(--border)'}`, borderRadius:10, transition:'all 0.15s' }}>
+            <div onClick={() => setIntervals(prev => prev.map((x,i) => i===idx ? {...x, enabled:!x.enabled} : x))}
+              style={{ width:22, height:22, borderRadius:4, border:`2px solid ${interval.enabled ? 'var(--accent)' : 'var(--border)'}`, background: interval.enabled ? 'var(--accent)' : 'transparent', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', flexShrink:0, transition:'all 0.15s' }}>
+              {interval.enabled && <span style={{ color:'#fff', fontSize:12, fontWeight:800 }}>✓</span>}
+            </div>
+            {interval.custom ? (
+              <div style={{ display:'flex', gap:8, flex:1, flexWrap:'wrap' }}>
+                <input style={{ flex:2, minWidth:120, padding:'7px 10px', border:'1px solid var(--border)', borderRadius:7, background:'var(--surface)', color:'var(--text-primary)', fontSize:13, fontFamily:'inherit', outline:'none' }}
+                  placeholder="Service name (e.g. Grease & Lube)" value={interval.name}
+                  onChange={e => setIntervals(prev => prev.map((x,i) => i===idx ? {...x, name:e.target.value, enabled: !!e.target.value} : x))} />
+                <input style={{ width:80, padding:'7px 10px', border:'1px solid var(--border)', borderRadius:7, background:'var(--surface)', color:'var(--text-primary)', fontSize:13, fontFamily:'inherit', outline:'none' }}
+                  type="number" placeholder="Interval" value={interval.interval_value}
+                  onChange={e => setIntervals(prev => prev.map((x,i) => i===idx ? {...x, interval_value:e.target.value} : x))} />
+                <select style={{ padding:'7px 10px', border:'1px solid var(--border)', borderRadius:7, background:'var(--surface)', color:'var(--text-primary)', fontSize:13, fontFamily:'inherit', outline:'none' }}
+                  value={interval.interval_type}
+                  onChange={e => setIntervals(prev => prev.map((x,i) => i===idx ? {...x, interval_type:e.target.value} : x))}>
+                  <option value="hours">Hours</option>
+                  <option value="km">Kilometres</option>
+                  <option value="months">Months</option>
+                  <option value="days">Days</option>
+                </select>
+              </div>
+            ) : (
+              <div style={{ flex:1 }}>
+                <div style={{ fontSize:14, fontWeight:700, color:'var(--text-primary)' }}>{interval.name}</div>
+                <div style={{ fontSize:12, color:'var(--text-muted)', marginTop:2 }}>Every {interval.interval_value} {interval.interval_type} · Next due at {(parseFloat(form.hours)||0) + parseFloat(interval.interval_value)} {interval.interval_type}</div>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+      <div style={{ padding:'12px 16px', background:'var(--surface-2)', borderRadius:8, border:'1px solid var(--border)', fontSize:12, color:'var(--text-muted)' }}>
+        💡 Starting from current hours: <strong style={{ color:'var(--text-primary)' }}>{form.hours || 0} hrs</strong>. You can edit these later from the asset's Service Schedule tab.
+      </div>
+    </div>
+  );
+
+  const renderStep5 = () => {
     if (!savedAsset) return null;
     const qrVal = `https://maintain-iq.vercel.app/asset/${savedAsset.id}`;
     return (
@@ -826,10 +967,11 @@ function OnboardingTab({ userRole, onComplete, toast }) {
         {step === 2 && renderStep2()}
         {step === 3 && renderStep3()}
         {step === 4 && renderStep4()}
-        {step < 4 && (
+        {step === 5 && renderStep5()}
+        {step < 5 && (
           <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '24px', paddingTop: '20px', borderTop: '1px solid var(--border)' }}>
             <button className="nav-pill nav-pill-ghost" onClick={() => setStep(s => s-1)} disabled={step === 0}>← Back</button>
-            {step < 3
+            {step < 4
               ? <button className="nav-pill nav-pill-primary" onClick={() => setStep(s => s+1)} disabled={!canNext}>Next →</button>
               : <button className="nav-pill nav-pill-success" onClick={save} disabled={saving}>{saving ? 'Saving…' : 'Save & Generate QR'}</button>
             }

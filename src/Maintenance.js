@@ -190,7 +190,7 @@ function Maintenance({ userRole, initialTab }) {
 
   const fetchTasks = async () => { setLoading(true); const { data } = await supabase.from('maintenance').select('*').eq('company_id', userRole.company_id).order('created_at', { ascending: false }); setTasks(data || []); setLoading(false); };
   const fetchWorkOrders = async () => { const { data } = await supabase.from('work_orders').select('*').eq('company_id', userRole.company_id).order('created_at', { ascending: false }); setWorkOrders(data || []); };
-  const fetchAssets = async () => { const { data } = await supabase.from('assets').select('name').eq('company_id', userRole.company_id); setAssets(data || []); };
+  const fetchAssets = async () => { const { data } = await supabase.from('assets').select('name, hours').eq('company_id', userRole.company_id); setAssets(data || []); };
   const fetchUsers = async () => { const { data } = await supabase.from('user_roles').select('name').eq('company_id', userRole.company_id); setUsers(data || []); };
   const fetchSchedules = async () => { const { data } = await supabase.from('service_schedules').select('*').eq('company_id', userRole.company_id).order('next_due_date'); setSchedules(data || []); };
   
@@ -656,6 +656,25 @@ function Maintenance({ userRole, initialTab }) {
 
             // Gather all events for this month
             const events = {};
+
+            // Helper: estimate a date for hour/km-based schedules
+            const estimateDate = (s) => {
+              if (s.next_due_date) return s.next_due_date;
+              if ((s.interval_type === 'hours' || s.interval_type === 'km') && s.next_due_value) {
+                const assetData = assets.find(a => a.name === s.asset_name);
+                const currentVal = assetData?.hours || s.last_service_value || 0;
+                const remaining = s.next_due_value - currentVal;
+                if (remaining <= 0) return today; // overdue — show today
+                // Assume ~10 hrs/day for heavy equipment, ~50 km/day for vehicles
+                const dailyRate = s.interval_type === 'km' ? 50 : 10;
+                const daysUntilDue = Math.round(remaining / dailyRate);
+                const d = new Date();
+                d.setDate(d.getDate() + daysUntilDue);
+                return d.toISOString().split('T')[0];
+              }
+              return null;
+            };
+
             tasks.forEach(t => {
               if (t.next_due && t.next_due.startsWith(`${year}-${String(month+1).padStart(2,'0')}`)) {
                 const day = parseInt(t.next_due.split('-')[2]);
@@ -664,10 +683,16 @@ function Maintenance({ userRole, initialTab }) {
               }
             });
             schedules.forEach(s => {
-              if (s.next_due_date && s.next_due_date.startsWith(`${year}-${String(month+1).padStart(2,'0')}`)) {
-                const day = parseInt(s.next_due_date.split('-')[2]);
+              const dateStr = estimateDate(s);
+              if (dateStr && dateStr.startsWith(`${year}-${String(month+1).padStart(2,'0')}`)) {
+                const day = parseInt(dateStr.split('-')[2]);
                 if (!events[day]) events[day] = [];
-                events[day].push({ label: s.asset_name + ' — ' + s.service_name, color:'var(--purple)', type:'schedule' });
+                const assetData = assets.find(a => a.name === s.asset_name);
+                const currentVal = assetData?.hours || 0;
+                const remaining = s.next_due_value ? s.next_due_value - currentVal : null;
+                const suffix = remaining !== null ? ` (${remaining > 0 ? remaining + s.interval_type + ' to go' : 'OVERDUE'})` : '';
+                const isOverdue = remaining !== null && remaining <= 0;
+                events[day].push({ label: s.asset_name + ' — ' + s.service_name + suffix, color: isOverdue ? 'var(--red)' : 'var(--purple)', type:'schedule' });
               }
             });
             workOrders.filter(w=>w.status!=='Complete').forEach(w => {
@@ -693,7 +718,7 @@ function Maintenance({ userRole, initialTab }) {
                 </div>
                 {/* Legend */}
                 <div style={{ display:'flex', gap:16, marginBottom:16, flexWrap:'wrap' }}>
-                  {[['var(--accent)','Scheduled Service'],['var(--purple)','Service Schedule'],['var(--red)','Work Order Due']].map(([col,lbl]) => (
+                  {[['var(--accent)','Planned Maintenance'],['var(--purple)','Service Schedule'],['var(--red)','Work Order Due']].map(([col,lbl]) => (
                     <div key={lbl} style={{ display:'flex', alignItems:'center', gap:6, fontSize:12, color:'var(--text-muted)' }}>
                       <span style={{ width:10, height:10, borderRadius:2, background:col, display:'inline-block' }} />{lbl}
                     </div>

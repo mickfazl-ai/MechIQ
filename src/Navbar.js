@@ -284,7 +284,7 @@ const NAV_STRUCTURE = [
   },
   { id: 'maintenance',  label: 'Maintenance',  ik: 'maintenance',  roles: ['admin','supervisor','technician'], feature: 'maintenance',
     children: [
-      { id: 'maintenance', subPage: 'scheduled',   label: 'Scheduled Service', roles: ['admin','supervisor','technician'] },
+      { id: 'maintenance', subPage: 'scheduled',   label: 'Planned Maintenance', roles: ['admin','supervisor','technician'] },
       { id: 'maintenance', subPage: 'work_orders', label: 'Work Orders',       roles: ['admin','supervisor','technician'] },
       { id: 'maintenance', subPage: 'pm_tasks',    label: 'PM Tasks',          roles: ['admin','supervisor','technician'] },
       { id: 'maintenance', subPage: 'schedules',   label: 'Service Schedules', roles: ['admin','supervisor','technician'] },
