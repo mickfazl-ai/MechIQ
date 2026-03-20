@@ -2,6 +2,30 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from './supabase';
 
+// ─── Timezone & date format helpers ───────────────────────────────────────────
+const getUserTz = () => localStorage.getItem('mechiq_timezone') || Intl.DateTimeFormat().resolvedOptions().timeZone;
+const getDateFmt = () => localStorage.getItem('mechiq_date_format') || 'DD/MM/YYYY';
+
+// Get today's date string in user's timezone (YYYY-MM-DD)
+const getTodayInTz = (tz) => {
+  try {
+    const d = new Date();
+    const parts = new Intl.DateTimeFormat('en-CA', { timeZone: tz, year:'numeric', month:'2-digit', day:'2-digit' }).format(d);
+    return parts; // en-CA gives YYYY-MM-DD format
+  } catch(e) { return new Date().toISOString().split('T')[0]; }
+};
+
+// Format a date string for display using user's date format preference
+const formatDateDisplay = (dateStr, fmt) => {
+  if (!dateStr) return '—';
+  try {
+    const [y, m, d] = dateStr.split('-');
+    if (fmt === 'MM/DD/YYYY') return `${m}/${d}/${y}`;
+    if (fmt === 'YYYY-MM-DD') return `${y}-${m}-${d}`;
+    return `${d}/${m}/${y}`; // DD/MM/YYYY default
+  } catch(e) { return dateStr; }
+};
+
 // ─── Shared design tokens ──────────────────────────────────────────────────────
 const C = {
   bg: 'var(--bg)', surface: 'var(--surface)',
@@ -345,7 +369,7 @@ function Maintenance({ userRole, initialTab, setCurrentPage }) {
                     <Td><span style={{ fontWeight:700, color:C.textDark }}>{t.asset}</span></Td>
                     <Td>{t.task}</Td>
                     <Td><span style={{ background:C.borderLight, padding:'2px 8px', borderRadius:6, fontSize:11, fontWeight:600, color:C.textMid }}>{t.frequency}</span></Td>
-                    <Td style={{ whiteSpace:'nowrap' }}>{t.next_due}</Td>
+                    <Td style={{ whiteSpace:'nowrap' }}>{formatDateDisplay(t.next_due, getDateFmt())}</Td>
                     <Td><Badge text={t.status} /></Td>
                     <Td>{t.assigned_to || '—'}</Td>
                     <Td>
@@ -420,7 +444,7 @@ function Maintenance({ userRole, initialTab, setCurrentPage }) {
                     <Td style={{ maxWidth:200, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }} title={w.defect_description}>{w.defect_description}</Td>
                     <Td><Badge text={w.priority} map={PRIORITY_MAP} /></Td>
                     <Td>{w.assigned_to || '—'}</Td>
-                    <Td style={{ whiteSpace:'nowrap' }}>{w.due_date || '—'}</Td>
+                    <Td style={{ whiteSpace:'nowrap' }}>{formatDateDisplay(w.due_date, getDateFmt()) || '—'}</Td>
                     <Td>{w.estimated_hours ? w.estimated_hours + 'h' : '—'}</Td>
                     <Td><Badge text={w.status} /></Td>
                     <Td>
@@ -603,7 +627,7 @@ function Maintenance({ userRole, initialTab, setCurrentPage }) {
                       const hoursNow = assets.find(a => a.name === s.asset_name)?.hours || 0;
                       const remaining = s.interval_type === 'hours' || s.interval_type === 'km'
                         ? (s.next_due_value || 0) - hoursNow : null;
-                      const isOverdue = remaining !== null ? remaining <= 0 : s.next_due_date && s.next_due_date < new Date().toISOString().split('T')[0];
+                      const isOverdue = remaining !== null ? remaining <= 0 : s.next_due_date && s.next_due_date < getTodayInTz(getUserTz());
                       const isWarning = remaining !== null ? (remaining > 0 && remaining <= s.interval_value * 0.1) : false;
                       const statusColor = isOverdue ? 'var(--red)' : isWarning ? 'var(--amber)' : 'var(--green)';
                       const statusBg = isOverdue ? 'var(--red-bg)' : isWarning ? 'var(--amber-bg)' : 'var(--green-bg)';
@@ -619,7 +643,7 @@ function Maintenance({ userRole, initialTab, setCurrentPage }) {
                           <td style={{ padding:'11px 14px 11px 0', fontSize:13, fontWeight:700, color:statusColor }}>
                             {s.interval_type === 'hours' || s.interval_type === 'km'
                               ? `${s.next_due_value} ${s.interval_type}${remaining !== null ? ` (${remaining > 0 ? remaining + ' to go' : Math.abs(remaining) + ' overdue'})` : ''}`
-                              : s.next_due_date || '—'}
+                              : formatDateDisplay(s.next_due_date, getDateFmt()) || '—'}
                           </td>
                           <td style={{ padding:'11px 14px 11px 0' }}>
                             <span style={{ padding:'3px 9px', borderRadius:4, background:statusBg, color:statusColor, fontSize:10, fontWeight:700, border:`1px solid ${statusColor}40` }}>{statusLabel}</span>
@@ -657,7 +681,9 @@ function Maintenance({ userRole, initialTab, setCurrentPage }) {
             const month = calMonth.getMonth();
             const firstDay = new Date(year, month, 1).getDay();
             const daysInMonth = new Date(year, month + 1, 0).getDate();
-            const today = new Date().toISOString().split('T')[0];
+            const userTz = getUserTz();
+            const dateFmt = getDateFmt();
+            const today = getTodayInTz(userTz);
             const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 
             // Helper: estimate a date for hour/km-based schedules
@@ -813,9 +839,11 @@ function Maintenance({ userRole, initialTab, setCurrentPage }) {
                         <div>
                           <div style={{ fontSize:11, fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.8px' }}>{monthNames[month]} {year}</div>
                           <div style={{ fontSize:24, fontWeight:900, color:'var(--text-primary)', fontFamily:'var(--font-display)' }}>
-                            {selectedDay} {monthNames[month]}
+                            {formatDateDisplay(`${year}-${String(month+1).padStart(2,'0')}-${String(selectedDay).padStart(2,'0')}`, dateFmt)}
                           </div>
-                          <div style={{ fontSize:12, color:'var(--text-muted)', marginTop:2 }}>{dayPanelEvents.length} event{dayPanelEvents.length !== 1 ? 's' : ''}</div>
+                          <div style={{ fontSize:11, color:'var(--text-muted)', marginTop:2 }}>
+                            {dayPanelEvents.length} event{dayPanelEvents.length !== 1 ? 's' : ''} · {userTz.replace(/_/g,' ')}
+                          </div>
                         </div>
                         <button onClick={() => setSelectedDay(null)} style={{ background:'var(--surface)', border:'1px solid var(--border)', borderRadius:8, width:36, height:36, cursor:'pointer', fontSize:18, color:'var(--text-secondary)', display:'flex', alignItems:'center', justifyContent:'center' }}>✕</button>
                       </div>
