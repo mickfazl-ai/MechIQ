@@ -930,6 +930,185 @@ function FormatTheme({ userRole }) {
   );
 }
 
+// ─── Date & Time Settings ──────────────────────────────────────
+function DateTimeSettings({ userRole }) {
+  const [now, setNow] = React.useState(new Date());
+  const [detectedTz, setDetectedTz] = React.useState(Intl.DateTimeFormat().resolvedOptions().timeZone);
+  const [selectedTz, setSelectedTz] = React.useState(() => localStorage.getItem('mechiq_timezone') || Intl.DateTimeFormat().resolvedOptions().timeZone);
+  const [detecting, setDetecting] = React.useState(false);
+  const [dateFormat, setDateFormat] = React.useState(() => localStorage.getItem('mechiq_date_format') || 'DD/MM/YYYY');
+  const [timeFormat, setTimeFormat] = React.useState(() => localStorage.getItem('mechiq_time_format') || '12h');
+  const [locationName, setLocationName] = React.useState('');
+  const [saved, setSaved] = React.useState(false);
+
+  // Live clock
+  React.useEffect(() => {
+    const t = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(t);
+  }, []);
+
+  // Common Australian + global timezones
+  const TIMEZONES = [
+    { group: '🇦🇺 Australia', zones: [
+      'Australia/Sydney', 'Australia/Melbourne', 'Australia/Brisbane',
+      'Australia/Adelaide', 'Australia/Perth', 'Australia/Darwin', 'Australia/Hobart',
+    ]},
+    { group: '🌏 Asia Pacific', zones: [
+      'Pacific/Auckland', 'Pacific/Auckland', 'Asia/Singapore',
+      'Asia/Tokyo', 'Asia/Shanghai', 'Asia/Dubai',
+    ]},
+    { group: '🌍 Europe', zones: [
+      'Europe/London', 'Europe/Paris', 'Europe/Berlin',
+    ]},
+    { group: '🌎 Americas', zones: [
+      'America/New_York', 'America/Chicago', 'America/Denver',
+      'America/Los_Angeles', 'America/Vancouver',
+    ]},
+    { group: '🌐 UTC', zones: ['UTC'] },
+  ];
+
+  const formatTime = (date, tz) => {
+    try {
+      return date.toLocaleTimeString('en-AU', {
+        timeZone: tz,
+        hour: '2-digit', minute: '2-digit', second: '2-digit',
+        hour12: timeFormat === '12h',
+      });
+    } catch(e) { return '--:--:--'; }
+  };
+
+  const formatDate = (date, tz) => {
+    try {
+      const d = new Date(date.toLocaleString('en-AU', { timeZone: tz }));
+      const day   = String(d.getDate()).padStart(2, '0');
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const year  = d.getFullYear();
+      if (dateFormat === 'DD/MM/YYYY') return `${day}/${month}/${year}`;
+      if (dateFormat === 'MM/DD/YYYY') return `${month}/${day}/${year}`;
+      if (dateFormat === 'YYYY-MM-DD') return `${year}-${month}-${day}`;
+      return `${day}/${month}/${year}`;
+    } catch(e) { return '—'; }
+  };
+
+  const detectLocation = () => {
+    setDetecting(true);
+    if (!navigator.geolocation) {
+      alert('Geolocation is not supported by your browser.');
+      setDetecting(false);
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        // Use the browser's detected timezone (most accurate for current location)
+        const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        setDetectedTz(tz);
+        setSelectedTz(tz);
+        // Try to get a human-readable city name
+        try {
+          const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${pos.coords.latitude}&lon=${pos.coords.longitude}&format=json`);
+          const data = await res.json();
+          const city = data.address?.city || data.address?.town || data.address?.suburb || '';
+          const country = data.address?.country || '';
+          setLocationName([city, country].filter(Boolean).join(', '));
+        } catch(e) {}
+        setDetecting(false);
+      },
+      (err) => {
+        setDetectedTz(Intl.DateTimeFormat().resolvedOptions().timeZone);
+        setDetecting(false);
+        alert('Could not detect location. Please select your timezone manually.');
+      },
+      { timeout: 8000 }
+    );
+  };
+
+  const save = () => {
+    localStorage.setItem('mechiq_timezone', selectedTz);
+    localStorage.setItem('mechiq_date_format', dateFormat);
+    localStorage.setItem('mechiq_time_format', timeFormat);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2500);
+  };
+
+  const iStyle = { width:'100%', padding:'9px 12px', borderRadius:8, border:'1px solid var(--border)', background:'var(--bg)', color:'var(--text-primary)', fontSize:13, boxSizing:'border-box', fontFamily:'inherit' };
+
+  return (
+    <div>
+      <SectionHeader title="Date & Time" desc="Set your timezone, date format and clock display." />
+
+      {/* Live clock display */}
+      <div style={{ background:'var(--surface)', border:'1px solid var(--border)', borderRadius:14, padding:'24px', marginTop:16, marginBottom:20, textAlign:'center' }}>
+        <div style={{ fontSize:48, fontWeight:900, fontFamily:'var(--font-display)', color:'var(--accent)', letterSpacing:2, marginBottom:6 }}>
+          {formatTime(now, selectedTz)}
+        </div>
+        <div style={{ fontSize:16, fontWeight:600, color:'var(--text-secondary)', marginBottom:4 }}>
+          {formatDate(now, selectedTz)}
+        </div>
+        <div style={{ fontSize:12, color:'var(--text-muted)', display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}>
+          <span>🌏</span>
+          <span>{selectedTz}</span>
+          {locationName && <span>— {locationName}</span>}
+        </div>
+      </div>
+
+      {/* Detect location button */}
+      <div style={{ marginBottom:20, display:'flex', gap:10, alignItems:'center' }}>
+        <button onClick={detectLocation} disabled={detecting} style={{ padding:'9px 18px', background:detecting?'var(--surface-2)':'var(--accent)', color:detecting?'var(--text-muted)':'#fff', border:'none', borderRadius:9, fontSize:13, fontWeight:700, cursor:detecting?'wait':'pointer', display:'flex', alignItems:'center', gap:8 }}>
+          {detecting ? '⏳ Detecting…' : '📍 Auto-detect My Location'}
+        </button>
+        {detectedTz && detectedTz !== selectedTz && (
+          <span style={{ fontSize:12, color:'var(--text-muted)' }}>Detected: <strong>{detectedTz}</strong></span>
+        )}
+      </div>
+
+      {/* Timezone selector */}
+      <div style={{ marginBottom:16 }}>
+        <label style={{ fontSize:12, fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.5px', display:'block', marginBottom:6 }}>Timezone</label>
+        <select value={selectedTz} onChange={e => setSelectedTz(e.target.value)} style={iStyle}>
+          {TIMEZONES.map(g => (
+            <optgroup key={g.group} label={g.group}>
+              {g.zones.map(z => (
+                <option key={z} value={z}>
+                  {z.replace(/_/g,' ')} — {formatTime(now, z)}
+                </option>
+              ))}
+            </optgroup>
+          ))}
+        </select>
+      </div>
+
+      {/* Date format */}
+      <div style={{ marginBottom:16 }}>
+        <label style={{ fontSize:12, fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.5px', display:'block', marginBottom:6 }}>Date Format</label>
+        <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
+          {['DD/MM/YYYY','MM/DD/YYYY','YYYY-MM-DD'].map(fmt => (
+            <button key={fmt} onClick={() => setDateFormat(fmt)} style={{ padding:'8px 16px', borderRadius:9, border:`2px solid ${dateFormat===fmt?'var(--accent)':'var(--border)'}`, background:dateFormat===fmt?'var(--accent-light)':'var(--surface)', color:dateFormat===fmt?'var(--accent)':'var(--text-secondary)', fontSize:13, fontWeight:700, cursor:'pointer', fontFamily:'var(--font-mono)' }}>
+              {fmt}
+            </button>
+          ))}
+        </div>
+        <div style={{ fontSize:12, color:'var(--text-muted)', marginTop:8 }}>Preview: {formatDate(now, selectedTz)}</div>
+      </div>
+
+      {/* Time format */}
+      <div style={{ marginBottom:24 }}>
+        <label style={{ fontSize:12, fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.5px', display:'block', marginBottom:6 }}>Time Format</label>
+        <div style={{ display:'flex', gap:8 }}>
+          {[['12h','12-hour (AM/PM)'],['24h','24-hour']].map(([id, label]) => (
+            <button key={id} onClick={() => setTimeFormat(id)} style={{ padding:'8px 18px', borderRadius:9, border:`2px solid ${timeFormat===id?'var(--accent)':'var(--border)'}`, background:timeFormat===id?'var(--accent-light)':'var(--surface)', color:timeFormat===id?'var(--accent)':'var(--text-secondary)', fontSize:13, fontWeight:700, cursor:'pointer' }}>
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <button onClick={save} style={{ padding:'10px 28px', background:'var(--accent)', color:'#fff', border:'none', borderRadius:9, fontSize:13, fontWeight:700, cursor:'pointer' }}>
+        {saved ? '✓ Saved!' : 'Save Settings'}
+      </button>
+    </div>
+  );
+}
+
 // ─── Password Reset ───────────────────────────────────────────
 function PasswordReset({ userRole }) {
   const [sent, setSent] = React.useState(false);
@@ -976,6 +1155,7 @@ const ADMIN_TABS = [
 
 const PERSONAL_TABS = [
   { id: 'format',   label: 'Format & Theme', icon: '🎨' },
+  { id: 'datetime', label: 'Date & Time',    icon: '🕐' },
   { id: 'password', label: 'Password Reset', icon: '🔑' },
 ];
 
@@ -992,6 +1172,7 @@ function Settings({ userRole, initialTab, adminMode, personalMode }) {
     billing:  <Billing userRole={userRole} />,
     data:     <DataExport userRole={userRole} />,
     format:   <FormatTheme userRole={userRole} />,
+    datetime: <DateTimeSettings userRole={userRole} />,
     password: <PasswordReset userRole={userRole} />,
   };
 
