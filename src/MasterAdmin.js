@@ -228,6 +228,154 @@ function UsageWidget() {
   );
 }
 
+// ─── App Requests Kanban ──────────────────────────────────────
+function AppRequestsKanban({ requests, loading, onStatusChange, onAddNote, companies }) {
+  const [noteModal, setNoteModal] = useState(null); // { request }
+  const [noteText, setNoteText] = useState('');
+  const [aiLoading, setAiLoading] = useState(false);
+  const [filterCompany, setFilterCompany] = useState('');
+  const [filterType, setFilterType] = useState('');
+
+  const COLUMNS = [
+    { id: 'Pending',     label: '⏳ Pending',     color: 'var(--amber)' },
+    { id: 'Approved',    label: '✓ Approved',     color: 'var(--accent)' },
+    { id: 'In Progress', label: '⚡ In Progress',  color: 'var(--purple)' },
+    { id: 'Complete',    label: '✅ Complete',     color: 'var(--green)' },
+    { id: 'Rejected',    label: '✗ Rejected',     color: 'var(--red)' },
+  ];
+
+  const PRIORITY_COLOR = { Low:'var(--green)', Medium:'var(--amber)', High:'var(--red)', Critical:'#ff0040' };
+
+  const filtered = requests.filter(r => {
+    if (filterCompany && r.company_id !== filterCompany) return false;
+    if (filterType && r.type !== filterType) return false;
+    return true;
+  });
+
+  const getCompanyName = (id) => companies.find(c => c.id === id)?.name || id?.slice(0,8) || '—';
+
+  const generateAIResponse = async (req) => {
+    setAiLoading(true);
+    try {
+      const res = await fetch('/api/ai-insight', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ model: 'claude-sonnet-4-5', max_tokens: 400,
+          messages: [{ role: 'user', content: `You are a senior React developer reviewing a feature request for a fleet maintenance app called MechIQ. Write a brief admin response (2-3 sentences) acknowledging the request and explaining the implementation approach or timeline. Be helpful and specific.\n\nRequest: "${req.title}"\nDescription: ${req.description || 'None'}\nAI Draft: ${req.ai_draft || 'None'}` }]
+        })
+      });
+      const data = await res.json();
+      const text = data.content?.find(c => c.type === 'text')?.text || '';
+      setNoteText(text);
+    } catch(e) { setNoteText('Could not generate response.'); }
+    setAiLoading(false);
+  };
+
+  return (
+    <div>
+      {/* Filters */}
+      <div style={{ display:'flex', gap:10, marginBottom:20, flexWrap:'wrap', alignItems:'center' }}>
+        <select value={filterCompany} onChange={e => setFilterCompany(e.target.value)}
+          style={{ padding:'7px 12px', borderRadius:8, border:'1px solid var(--border)', background:'var(--surface)', color:'var(--text-primary)', fontSize:12, fontFamily:'inherit' }}>
+          <option value="">All Companies</option>
+          {companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+        </select>
+        <select value={filterType} onChange={e => setFilterType(e.target.value)}
+          style={{ padding:'7px 12px', borderRadius:8, border:'1px solid var(--border)', background:'var(--surface)', color:'var(--text-primary)', fontSize:12, fontFamily:'inherit' }}>
+          <option value="">All Types</option>
+          <option value="feature">Feature Request</option>
+          <option value="bug">Bug Report</option>
+          <option value="improvement">Improvement</option>
+          <option value="question">Question</option>
+        </select>
+        <div style={{ marginLeft:'auto', fontSize:12, color:'var(--text-muted)' }}>
+          {filtered.length} request{filtered.length !== 1 ? 's' : ''}
+        </div>
+      </div>
+
+      {loading ? <div style={{ padding:40, textAlign:'center', color:'var(--text-muted)' }}>Loading requests…</div> : (
+        <div style={{ display:'grid', gridTemplateColumns:'repeat(5,1fr)', gap:12, overflowX:'auto' }}>
+          {COLUMNS.map(col => {
+            const colRequests = filtered.filter(r => r.status === col.id);
+            return (
+              <div key={col.id} style={{ background:'var(--surface)', border:`1px solid var(--border)`, borderRadius:12, minHeight:300, display:'flex', flexDirection:'column' }}>
+                <div style={{ padding:'12px 14px', borderBottom:'1px solid var(--border)', borderTop:`3px solid ${col.color}`, borderRadius:'12px 12px 0 0' }}>
+                  <div style={{ fontSize:12, fontWeight:800, color:col.color }}>{col.label}</div>
+                  <div style={{ fontSize:11, color:'var(--text-muted)', marginTop:2 }}>{colRequests.length} item{colRequests.length !== 1 ? 's' : ''}</div>
+                </div>
+                <div style={{ padding:10, flex:1, display:'flex', flexDirection:'column', gap:8 }}>
+                  {colRequests.map(r => (
+                    <div key={r.id} style={{ background:'var(--surface-2)', border:'1px solid var(--border)', borderRadius:10, padding:'10px 12px' }}>
+                      <div style={{ fontSize:10, fontWeight:700, color:'var(--text-muted)', marginBottom:4 }}>{getCompanyName(r.company_id)}</div>
+                      <div style={{ fontSize:12, fontWeight:700, color:'var(--text-primary)', marginBottom:4, lineHeight:1.4 }}>{r.title}</div>
+                      <div style={{ display:'flex', gap:4, marginBottom:8, flexWrap:'wrap' }}>
+                        <span style={{ fontSize:10, fontWeight:600, padding:'1px 6px', borderRadius:4, background:PRIORITY_COLOR[r.priority]+'20', color:PRIORITY_COLOR[r.priority] }}>{r.priority}</span>
+                        <span style={{ fontSize:10, color:'var(--text-muted)', padding:'1px 6px', borderRadius:4, background:'var(--surface)', border:'1px solid var(--border)' }}>{r.type}</span>
+                        <span style={{ fontSize:10, color:'var(--accent)', fontWeight:700 }}>👍 {r.votes || 0}</span>
+                      </div>
+                      {r.admin_notes && (
+                        <div style={{ fontSize:10, color:'var(--accent)', background:'var(--accent-light)', borderRadius:6, padding:'4px 8px', marginBottom:8, lineHeight:1.4 }}>📝 {r.admin_notes.slice(0,80)}{r.admin_notes.length > 80 ? '…' : ''}</div>
+                      )}
+                      {/* Move to status buttons */}
+                      <div style={{ display:'flex', gap:4, flexWrap:'wrap' }}>
+                        {COLUMNS.filter(c => c.id !== col.id).slice(0,2).map(c => (
+                          <button key={c.id} onClick={() => onStatusChange(r.id, c.id)}
+                            style={{ fontSize:9, padding:'3px 7px', borderRadius:5, border:`1px solid ${c.color}`, background:'transparent', color:c.color, cursor:'pointer', fontWeight:700 }}>
+                            → {c.id}
+                          </button>
+                        ))}
+                        <button onClick={() => { setNoteModal(r); setNoteText(r.admin_notes || ''); }}
+                          style={{ fontSize:9, padding:'3px 7px', borderRadius:5, border:'1px solid var(--border)', background:'transparent', color:'var(--text-muted)', cursor:'pointer' }}>
+                          📝 Note
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Note / AI Response Modal */}
+      {noteModal && (
+        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.6)', zIndex:400, display:'flex', alignItems:'center', justifyContent:'center', padding:16 }}>
+          <div style={{ background:'var(--bg)', borderRadius:16, width:'100%', maxWidth:520, boxShadow:'0 20px 60px rgba(0,0,0,0.4)' }}>
+            <div style={{ padding:'18px 20px 14px', borderBottom:'1px solid var(--border)', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+              <div style={{ fontSize:15, fontWeight:800, color:'var(--text-primary)' }}>📝 Admin Note — {noteModal.title}</div>
+              <button onClick={() => setNoteModal(null)} style={{ background:'none', border:'none', cursor:'pointer', fontSize:20, color:'var(--text-muted)' }}>✕</button>
+            </div>
+            <div style={{ padding:20 }}>
+              <div style={{ background:'var(--surface)', borderRadius:10, padding:'10px 14px', marginBottom:14, fontSize:12, color:'var(--text-secondary)' }}>
+                <strong>{noteModal.submitted_by}</strong> · {noteModal.type} · {noteModal.priority} priority<br/>
+                {noteModal.description && <span style={{ color:'var(--text-muted)' }}>{noteModal.description}</span>}
+              </div>
+              <textarea value={noteText} onChange={e => setNoteText(e.target.value)} placeholder="Add admin note or response..." rows={4}
+                style={{ width:'100%', padding:'9px 12px', borderRadius:8, border:'1px solid var(--border)', background:'var(--bg)', color:'var(--text-primary)', fontSize:13, resize:'vertical', boxSizing:'border-box', fontFamily:'inherit', marginBottom:10 }} />
+              <div style={{ display:'flex', gap:8 }}>
+                <button onClick={() => generateAIResponse(noteModal)} disabled={aiLoading}
+                  style={{ padding:'9px 14px', background:'var(--surface-2)', border:'1px solid var(--border)', borderRadius:9, fontSize:12, fontWeight:700, cursor:'pointer', color:'var(--text-secondary)' }}>
+                  {aiLoading ? '⏳…' : '🤖 AI Response'}
+                </button>
+                <button onClick={async () => { await onAddNote(noteModal.id, noteText); setNoteModal(null); }}
+                  style={{ flex:1, padding:'10px', background:'var(--accent)', color:'#fff', border:'none', borderRadius:9, fontSize:13, fontWeight:700, cursor:'pointer' }}>
+                  Save Note
+                </button>
+                {/* Quick status update */}
+                <select onChange={e => { if(e.target.value) { onStatusChange(noteModal.id, e.target.value); setNoteModal(null); } }} defaultValue=""
+                  style={{ padding:'9px 10px', borderRadius:9, border:'1px solid var(--border)', background:'var(--surface)', color:'var(--text-secondary)', fontSize:12, fontFamily:'inherit' }}>
+                  <option value="">Move to…</option>
+                  {COLUMNS.map(c => <option key={c.id} value={c.id}>{c.id}</option>)}
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function MasterAdmin() {
   const [companies, setCompanies] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -237,6 +385,9 @@ function MasterAdmin() {
   const [search, setSearch] = useState('');
   const [pinAction, setPinAction] = useState(null);
   const [deleting, setDeleting] = useState(false);
+  const [masterTab, setMasterTab] = useState('companies'); // 'companies' | 'requests'
+  const [requests, setRequests] = useState([]);
+  const [requestsLoading, setRequestsLoading] = useState(false);
 
   useEffect(() => {
     if (!document.getElementById('ma-css')) {
@@ -244,6 +395,23 @@ function MasterAdmin() {
     }
     fetchCompanies();
   }, []);
+
+  const fetchRequests = async () => {
+    setRequestsLoading(true);
+    const { data } = await supabase.from('app_requests').select('*').order('created_at', { ascending: false });
+    setRequests(data || []);
+    setRequestsLoading(false);
+  };
+
+  const updateRequestStatus = async (id, status) => {
+    await supabase.from('app_requests').update({ status }).eq('id', id);
+    fetchRequests();
+  };
+
+  const addAdminNote = async (id, note) => {
+    await supabase.from('app_requests').update({ admin_notes: note }).eq('id', id);
+    fetchRequests();
+  };
 
   const fetchCompanies = async () => {
     setLoading(true);
@@ -351,6 +519,23 @@ function MasterAdmin() {
           <span style={{ fontSize:14 }}>⬡</span> Restore Master Admin
         </button>
       </div>
+
+      {/* Master tab switcher */}
+      <div style={{ display:'flex', gap:8, marginBottom:24 }}>
+        {[['companies','🏢 Companies'],['requests','🛠️ App Requests']].map(([id, label]) => (
+          <button key={id} onClick={() => { setMasterTab(id); if(id==='requests') fetchRequests(); }}
+            style={{ padding:'10px 20px', borderRadius:10, border:`2px solid ${masterTab===id?'var(--accent)':'var(--border)'}`, background:masterTab===id?'var(--accent-light)':'var(--surface)', color:masterTab===id?'var(--accent)':'var(--text-secondary)', fontSize:13, fontWeight:700, cursor:'pointer', fontFamily:'inherit' }}>
+            {label}{id==='requests' && requests.length > 0 ? ` (${requests.filter(r=>r.status==='Pending').length} pending)` : ''}
+          </button>
+        ))}
+      </div>
+
+      {/* App Requests Kanban */}
+      {masterTab === 'requests' && (
+        <AppRequestsKanban requests={requests} loading={requestsLoading} onStatusChange={updateRequestStatus} onAddNote={addAdminNote} companies={companies} />
+      )}
+
+      {masterTab === 'companies' && (<>
 
       {/* Stats */}
       <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:14, marginBottom:24 }}>
@@ -529,6 +714,7 @@ function MasterAdmin() {
           </div>
         )}
       </div>
+      </>)}
     </div>
   );
 }
