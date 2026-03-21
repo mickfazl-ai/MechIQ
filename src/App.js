@@ -156,7 +156,7 @@ function App() {
 
     switch (currentPage) {
       case 'dashboard':
-        return <Dashboard companyId={effectiveCompanyId} />;
+        return <Dashboard companyId={effectiveCompanyId} userRole={effectiveUserRole} />;
       case 'assets':
         return <Assets userRole={effectiveUserRole} onViewAsset={handleViewAsset} initialTab={currentSubPage || 'units'} key={currentSubPage} />;
       case 'downtime':
@@ -209,7 +209,7 @@ function App() {
       case 'master':
         return <MasterAdmin />;
       default:
-        return <Dashboard companyId={effectiveCompanyId} />;
+        return <Dashboard companyId={effectiveCompanyId} userRole={effectiveUserRole} />;
     }
   };
 
@@ -251,6 +251,9 @@ function App() {
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
             <button onClick={() => setShowTour(true)} style={{ padding: '5px 14px', background: 'rgba(255,255,255,0.2)', border: '1px solid rgba(255,255,255,0.4)', color: '#fff', borderRadius: 7, fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
+              🗺️ How It Works
+            </button>
+            <button onClick={() => setShowTour(true)} style={{ padding: '5px 14px', background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.3)', color: '#fff', borderRadius: 7, fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
               ▶ Guided Tour
             </button>
             <a href="mailto:info@mechiq.com.au?subject=MechIQ Demo Enquiry" style={{ padding: '5px 14px', background: '#fff', color: '#0ea5e9', borderRadius: 7, fontSize: 12, fontWeight: 800, textDecoration: 'none', display: 'flex', alignItems: 'center' }}>
