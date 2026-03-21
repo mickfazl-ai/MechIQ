@@ -319,9 +319,11 @@ const NAV_STRUCTURE = [
   },
   { id: 'settings',     label: 'Settings',     ik: 'settings',     roles: ['admin','supervisor'], feature: null,
     children: [
-      { id: 'settings', subPage: 'format',   label: 'Format & Theme', roles: ['admin','supervisor'] },
-      { id: 'settings', subPage: 'datetime', label: 'Date & Time',    roles: ['admin','supervisor'] },
-      { id: 'settings', subPage: 'password', label: 'Password Reset', roles: ['admin','supervisor'] },
+      { id: 'settings', subPage: 'format',       label: 'Format & Theme', roles: ['admin','supervisor'] },
+      { id: 'settings', subPage: 'datetime',     label: 'Date & Time',    roles: ['admin','supervisor'] },
+      { id: 'settings', subPage: 'sync',         label: 'OneDrive Sync',  roles: ['admin','supervisor'] },
+      { id: 'settings', subPage: 'app_modifier', label: 'App Requests',   roles: ['admin','supervisor'] },
+      { id: 'settings', subPage: 'password',     label: 'Password Reset', roles: ['admin','supervisor'] },
     ],
   },
 ];

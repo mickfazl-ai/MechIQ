@@ -1109,6 +1109,333 @@ function DateTimeSettings({ userRole }) {
   );
 }
 
+}
+
+// ─── OneDrive Sync ────────────────────────────────────────────
+const ONEDRIVE_CLIENT_ID = 'c02fd590-3d2b-4834-857a-22cd45adab00';
+const REDIRECT_URI = window.location.origin;
+
+function OneDriveSync({ userRole }) {
+  const [connected, setConnected]     = React.useState(false);
+  const [account, setAccount]         = React.useState(null);
+  const [folderPath, setFolderPath]   = React.useState(() => localStorage.getItem('mechiq_onedrive_folder') || 'MechIQ');
+  const [saved, setSaved]             = React.useState(false);
+  const [syncing, setSyncing]         = React.useState(false);
+  const [syncLog, setSyncLog]         = React.useState([]);
+  const [token, setToken]             = React.useState(() => localStorage.getItem('mechiq_onedrive_token') || null);
+  const [tokenExpiry, setTokenExpiry] = React.useState(() => localStorage.getItem('mechiq_onedrive_expiry') || null);
+
+  React.useEffect(() => {
+    if (window.location.hash.includes('access_token')) {
+      const params = new URLSearchParams(window.location.hash.replace('#', '?'));
+      const newToken = params.get('access_token');
+      const expiresIn = params.get('expires_in');
+      if (newToken) {
+        const expiry = Date.now() + parseInt(expiresIn || 3600) * 1000;
+        localStorage.setItem('mechiq_onedrive_token', newToken);
+        localStorage.setItem('mechiq_onedrive_expiry', String(expiry));
+        setToken(newToken); setTokenExpiry(String(expiry));
+        window.history.replaceState({}, '', window.location.pathname);
+      }
+    }
+    if (token && tokenExpiry && Date.now() < parseInt(tokenExpiry)) fetchAccount(token);
+    else if (token) { localStorage.removeItem('mechiq_onedrive_token'); localStorage.removeItem('mechiq_onedrive_expiry'); setToken(null); }
+  }, []);
+
+  const fetchAccount = async (t) => {
+    try {
+      const res = await fetch('https://graph.microsoft.com/v1.0/me', { headers: { Authorization: `Bearer ${t}` } });
+      if (res.ok) { const d = await res.json(); setAccount(d); setConnected(true); }
+      else { setConnected(false); setToken(null); localStorage.removeItem('mechiq_onedrive_token'); }
+    } catch(e) { setConnected(false); }
+  };
+
+  const connectOneDrive = () => {
+    const url = new URL('https://login.microsoftonline.com/common/oauth2/v2.0/authorize');
+    url.searchParams.set('client_id', ONEDRIVE_CLIENT_ID);
+    url.searchParams.set('response_type', 'token');
+    url.searchParams.set('redirect_uri', REDIRECT_URI);
+    url.searchParams.set('scope', 'Files.ReadWrite User.Read');
+    url.searchParams.set('response_mode', 'fragment');
+    window.location.href = url.toString();
+  };
+
+  const disconnect = () => { localStorage.removeItem('mechiq_onedrive_token'); localStorage.removeItem('mechiq_onedrive_expiry'); setToken(null); setConnected(false); setAccount(null); };
+  const saveFolder = () => { localStorage.setItem('mechiq_onedrive_folder', folderPath); setSaved(true); setTimeout(() => setSaved(false), 2500); };
+  const log = (msg) => setSyncLog(l => [...l, `${new Date().toLocaleTimeString()} — ${msg}`]);
+
+  const ensureFolder = async (path) => {
+    const parts = path.split('/').filter(Boolean);
+    let parentId = 'root';
+    for (const part of parts) {
+      const res = await fetch(`https://graph.microsoft.com/v1.0/me/drive/${parentId === 'root' ? 'root' : `items/${parentId}`}/children`, { headers: { Authorization: `Bearer ${token}` } });
+      const data = await res.json();
+      const existing = (data.value || []).find(i => i.name === part && i.folder);
+      if (existing) { parentId = existing.id; }
+      else {
+        const cr = await fetch(`https://graph.microsoft.com/v1.0/me/drive/${parentId === 'root' ? 'root' : `items/${parentId}`}/children`, { method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ name: part, folder: {}, '@microsoft.graph.conflictBehavior': 'rename' }) });
+        const nf = await cr.json(); parentId = nf.id;
+      }
+    }
+    return parentId;
+  };
+
+  const uploadFile = async (folderId, fileName, blob) => {
+    const res = await fetch(`https://graph.microsoft.com/v1.0/me/drive/items/${folderId}:/${fileName}:/content`, { method: 'PUT', headers: { Authorization: `Bearer ${token}`, 'Content-Type': blob.type || 'text/csv' }, body: blob });
+    return res.ok;
+  };
+
+  const toCSV = (rows) => {
+    if (!rows?.length) return '';
+    const headers = Object.keys(rows[0]);
+    return [headers.join(','), ...rows.map(r => headers.map(h => { const v = r[h]; if (v == null) return ''; const s = typeof v === 'object' ? JSON.stringify(v) : String(v); return s.includes(',') || s.includes('"') || s.includes('\n') ? `"${s.replace(/"/g,'""')}"` : s; }).join(','))].join('\n');
+  };
+
+  const syncNow = async () => {
+    if (!connected || !token) { alert('Please connect to OneDrive first.'); return; }
+    setSyncing(true); setSyncLog([]);
+    try {
+      const dateStr = new Date().toISOString().split('T')[0];
+      const fullPath = `${folderPath}/${dateStr}`;
+      log(`Creating folder: ${fullPath}`);
+      const folderId = await ensureFolder(fullPath);
+      log('✓ Folder ready');
+      const cid = userRole.company_id;
+      const [
+        { data: assets }, { data: maintenance }, { data: workOrders },
+        { data: downtime }, { data: parts }, { data: prestarts },
+        { data: serviceSheets }, { data: oilSamples }, { data: schedules },
+      ] = await Promise.all([
+        supabase.from('assets').select('*').eq('company_id', cid),
+        supabase.from('maintenance').select('*').eq('company_id', cid),
+        supabase.from('work_orders').select('*').eq('company_id', cid),
+        supabase.from('downtime').select('*').eq('company_id', cid),
+        supabase.from('parts').select('*').eq('company_id', cid),
+        supabase.from('form_submissions').select('*').eq('company_id', cid),
+        supabase.from('service_sheet_submissions').select('*').eq('company_id', cid),
+        supabase.from('oil_samples').select('*').eq('company_id', cid),
+        supabase.from('service_schedules').select('*').eq('company_id', cid),
+      ]);
+      const files = [
+        ['Assets.csv', assets], ['Maintenance.csv', maintenance],
+        ['WorkOrders.csv', workOrders], ['Downtime.csv', downtime],
+        ['Parts.csv', parts], ['Prestarts.csv', prestarts],
+        ['ServiceSheets.csv', serviceSheets], ['OilSamples.csv', oilSamples],
+        ['ServiceSchedules.csv', schedules],
+      ];
+      for (const [name, data] of files) {
+        if (!data?.length) { log(`⏭ ${name} — no data`); continue; }
+        const ok = await uploadFile(folderId, name, new Blob([toCSV(data)], { type: 'text/csv' }));
+        log(ok ? `✓ ${name} (${data.length} records)` : `✗ ${name} — failed`);
+      }
+      log('✅ Sync complete!');
+    } catch(e) { log(`✗ Error: ${e.message}`); }
+    setSyncing(false);
+  };
+
+  const iStyle = { width:'100%', padding:'9px 12px', borderRadius:8, border:'1px solid var(--border)', background:'var(--bg)', color:'var(--text-primary)', fontSize:13, boxSizing:'border-box', fontFamily:'inherit' };
+
+  return (
+    <div>
+      <SectionHeader title="OneDrive Sync" desc="Back up your MechIQ data automatically to Microsoft OneDrive." />
+      <div style={{ background:'var(--surface)', border:'1px solid var(--border)', borderRadius:14, padding:20, marginTop:16, marginBottom:20 }}>
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', flexWrap:'wrap', gap:12 }}>
+          <div style={{ display:'flex', alignItems:'center', gap:12 }}>
+            <div style={{ width:44, height:44, borderRadius:12, background:connected?'rgba(34,197,94,0.1)':'var(--surface-2)', border:`1px solid ${connected?'rgba(34,197,94,0.3)':'var(--border)'}`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:22 }}>☁️</div>
+            <div>
+              <div style={{ fontSize:14, fontWeight:700, color:'var(--text-primary)' }}>{connected ? `Connected — ${account?.displayName || account?.userPrincipalName || 'Microsoft Account'}` : 'Not connected'}</div>
+              <div style={{ fontSize:12, color:'var(--text-muted)', marginTop:2 }}>{connected ? account?.userPrincipalName : 'Sign in with your Microsoft account'}</div>
+            </div>
+          </div>
+          {connected ? <button onClick={disconnect} style={{ padding:'8px 16px', background:'var(--red-bg)', color:'var(--red)', border:'1px solid var(--red-border)', borderRadius:9, fontSize:12, fontWeight:700, cursor:'pointer' }}>Disconnect</button>
+          : <button onClick={connectOneDrive} style={{ padding:'10px 20px', background:'#0078d4', color:'#fff', border:'none', borderRadius:9, fontSize:13, fontWeight:700, cursor:'pointer' }}>🔗 Connect OneDrive</button>}
+        </div>
+      </div>
+      <div style={{ marginBottom:16 }}>
+        <label style={{ fontSize:12, fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.5px', display:'block', marginBottom:6 }}>OneDrive Folder Path</label>
+        <div style={{ display:'flex', gap:8 }}>
+          <input value={folderPath} onChange={e => setFolderPath(e.target.value)} placeholder="e.g. MechIQ or Documents/MechIQ/Backups" style={{ ...iStyle, flex:1 }} />
+          <button onClick={saveFolder} style={{ padding:'9px 18px', background:saved?'var(--green)':'var(--accent)', color:'#fff', border:'none', borderRadius:9, fontSize:13, fontWeight:700, cursor:'pointer', whiteSpace:'nowrap' }}>{saved ? '✓ Saved' : 'Save'}</button>
+        </div>
+        <div style={{ fontSize:12, color:'var(--text-muted)', marginTop:6 }}>Files sync to: <strong style={{ color:'var(--accent)' }}>OneDrive / {folderPath} / {new Date().toISOString().split('T')[0]}</strong></div>
+      </div>
+      <div style={{ background:'var(--surface)', border:'1px solid var(--border)', borderRadius:12, padding:16, marginBottom:20 }}>
+        <div style={{ fontSize:11, fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.5px', marginBottom:10 }}>What gets synced (9 CSV files)</div>
+        <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(180px,1fr))', gap:6 }}>
+          {['Assets','Maintenance','Work Orders','Downtime','Parts','Prestarts','Service Sheets','Oil Samples','Service Schedules'].map(f => (
+            <div key={f} style={{ display:'flex', alignItems:'center', gap:6, fontSize:12, color:'var(--text-secondary)' }}><span style={{ color:'var(--green)', fontWeight:700 }}>✓</span>{f}</div>
+          ))}
+        </div>
+        <div style={{ fontSize:11, color:'var(--text-muted)', marginTop:10 }}>Each sync creates a dated subfolder so backups are preserved (e.g. <code>MechIQ/2026-03-21/</code>).</div>
+      </div>
+      <button onClick={syncNow} disabled={!connected||syncing} style={{ padding:'11px 28px', background:connected&&!syncing?'#0078d4':'var(--surface-2)', color:connected&&!syncing?'#fff':'var(--text-muted)', border:'none', borderRadius:10, fontSize:14, fontWeight:700, cursor:connected&&!syncing?'pointer':'not-allowed', display:'flex', alignItems:'center', gap:10, marginBottom:16 }}>
+        {syncing ? '⏳ Syncing…' : '☁️ Sync to OneDrive Now'}
+      </button>
+      {syncLog.length > 0 && (
+        <div style={{ background:'var(--surface)', border:'1px solid var(--border)', borderRadius:12, padding:14 }}>
+          <div style={{ fontSize:11, fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.5px', marginBottom:8 }}>Sync Log</div>
+          <div style={{ fontFamily:'var(--font-mono)', fontSize:12, maxHeight:180, overflowY:'auto' }}>
+            {syncLog.map((l, i) => <div key={i} style={{ color:l.includes('✅')||l.includes('✓')?'var(--green)':l.includes('✗')?'var(--red)':'var(--text-secondary)', marginBottom:3 }}>{l}</div>)}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── App Modifier / Feature Requests ─────────────────────────
+function AppModifier({ userRole }) {
+  const [requests, setRequests]   = React.useState([]);
+  const [loading, setLoading]     = React.useState(true);
+  const [form, setForm]           = React.useState({ title:'', description:'', type:'feature', priority:'Medium' });
+  const [showForm, setShowForm]   = React.useState(false);
+  const [saving, setSaving]       = React.useState(false);
+  const [aiDraft, setAiDraft]     = React.useState(null);
+  const [aiLoading, setAiLoading] = React.useState(false);
+  const [saved, setSaved]         = React.useState(false);
+
+  React.useEffect(() => { loadRequests(); }, [userRole]);
+
+  const loadRequests = async () => {
+    setLoading(true);
+    const { data } = await supabase.from('app_requests').select('*').eq('company_id', userRole.company_id).order('created_at', { ascending: false });
+    setRequests(data || []);
+    setLoading(false);
+  };
+
+  const submitRequest = async () => {
+    if (!form.title.trim()) return;
+    setSaving(true);
+    await supabase.from('app_requests').insert({
+      company_id: userRole.company_id,
+      submitted_by: userRole.name || userRole.email,
+      title: form.title,
+      description: form.description,
+      type: form.type,
+      priority: form.priority,
+      status: 'Pending',
+      votes: 1,
+      ai_draft: aiDraft || null,
+    });
+    setForm({ title:'', description:'', type:'feature', priority:'Medium' });
+    setAiDraft(null);
+    setShowForm(false);
+    setSaving(false);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 3000);
+    loadRequests();
+  };
+
+  const vote = async (id, currentVotes) => {
+    await supabase.from('app_requests').update({ votes: (currentVotes || 0) + 1 }).eq('id', id);
+    loadRequests();
+  };
+
+  const generateAIDraft = async () => {
+    if (!form.title) return;
+    setAiLoading(true);
+    try {
+      const res = await fetch('/api/ai-insight', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ model: 'claude-sonnet-4-5', max_tokens: 600,
+          messages: [{ role: 'user', content: `You are a React developer. A user wants to modify a fleet maintenance app called MechIQ. Based on this request, write a brief technical implementation note for the developer (2-3 sentences max, practical). Request: "${form.title}". Context: ${form.description || 'No additional context.'}` }]
+        })
+      });
+      const data = await res.json();
+      const text = data.content?.find(c => c.type === 'text')?.text || '';
+      setAiDraft(text);
+    } catch(e) { setAiDraft('Could not generate AI draft.'); }
+    setAiLoading(false);
+  };
+
+  const STATUS_COLOR = { Pending:'var(--amber)', Approved:'var(--accent)', 'In Progress':'var(--purple)', Complete:'var(--green)', Rejected:'var(--red)' };
+  const iStyle = { width:'100%', padding:'9px 12px', borderRadius:8, border:'1px solid var(--border)', background:'var(--bg)', color:'var(--text-primary)', fontSize:13, boxSizing:'border-box', fontFamily:'inherit', marginBottom:10 };
+
+  return (
+    <div>
+      <SectionHeader title="App Requests" desc="Submit feature requests or bug reports. These are reviewed by the MechIQ team." />
+      {saved && <div style={{ background:'rgba(34,197,94,0.1)', border:'1px solid rgba(34,197,94,0.3)', borderRadius:10, padding:'12px 16px', marginTop:16, marginBottom:8, fontSize:13, fontWeight:700, color:'var(--green)' }}>✓ Request submitted! The MechIQ team will review it.</div>}
+      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginTop:16, marginBottom:16 }}>
+        <div style={{ fontSize:13, color:'var(--text-muted)' }}>{requests.length} request{requests.length !== 1 ? 's' : ''} from your company</div>
+        <button onClick={() => setShowForm(s => !s)} style={{ padding:'9px 18px', background:showForm?'var(--surface-2)':'var(--accent)', color:showForm?'var(--text-secondary)':'#fff', border:`1px solid ${showForm?'var(--border)':'var(--accent)'}`, borderRadius:9, fontSize:13, fontWeight:700, cursor:'pointer' }}>
+          {showForm ? '✕ Cancel' : '+ New Request'}
+        </button>
+      </div>
+
+      {showForm && (
+        <div style={{ background:'var(--surface)', border:'1px solid var(--border)', borderRadius:14, padding:20, marginBottom:20 }}>
+          <div style={{ fontSize:14, fontWeight:800, color:'var(--text-primary)', marginBottom:16 }}>New Request</div>
+          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10, marginBottom:2 }}>
+            <div>
+              <label style={{ fontSize:11, fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', display:'block', marginBottom:4 }}>Type</label>
+              <select value={form.type} onChange={e => setForm(f => ({...f, type:e.target.value}))} style={iStyle}>
+                <option value="feature">✨ Feature Request</option>
+                <option value="bug">🐛 Bug Report</option>
+                <option value="improvement">⚡ Improvement</option>
+                <option value="question">❓ Question</option>
+              </select>
+            </div>
+            <div>
+              <label style={{ fontSize:11, fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', display:'block', marginBottom:4 }}>Priority</label>
+              <select value={form.priority} onChange={e => setForm(f => ({...f, priority:e.target.value}))} style={iStyle}>
+                {['Low','Medium','High','Critical'].map(p => <option key={p}>{p}</option>)}
+              </select>
+            </div>
+          </div>
+          <label style={{ fontSize:11, fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', display:'block', marginBottom:4 }}>Title *</label>
+          <input value={form.title} onChange={e => setForm(f => ({...f, title:e.target.value}))} placeholder="e.g. Add export to CSV on dashboard" style={iStyle} />
+          <label style={{ fontSize:11, fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', display:'block', marginBottom:4 }}>Description</label>
+          <textarea value={form.description} onChange={e => setForm(f => ({...f, description:e.target.value}))} placeholder="Describe what you want in detail..." rows={4} style={{ ...iStyle, resize:'vertical' }} />
+          {aiDraft && (
+            <div style={{ background:'var(--accent-light)', border:'1px solid rgba(14,165,233,0.2)', borderRadius:10, padding:12, marginBottom:10 }}>
+              <div style={{ fontSize:11, fontWeight:700, color:'var(--accent)', marginBottom:6 }}>🤖 AI Implementation Note</div>
+              <div style={{ fontSize:12, color:'var(--text-secondary)', lineHeight:1.6 }}>{aiDraft}</div>
+            </div>
+          )}
+          <div style={{ display:'flex', gap:8 }}>
+            <button onClick={generateAIDraft} disabled={!form.title||aiLoading} style={{ padding:'9px 16px', background:'var(--surface-2)', color:'var(--text-secondary)', border:'1px solid var(--border)', borderRadius:9, fontSize:12, fontWeight:700, cursor:'pointer', opacity:!form.title?0.5:1 }}>
+              {aiLoading ? '⏳ Drafting…' : '🤖 AI Draft'}
+            </button>
+            <button onClick={submitRequest} disabled={!form.title||saving} style={{ flex:1, padding:'10px', background:form.title?'var(--accent)':'var(--surface-2)', color:form.title?'#fff':'var(--text-muted)', border:'none', borderRadius:9, fontSize:13, fontWeight:700, cursor:form.title?'pointer':'not-allowed' }}>
+              {saving ? '⏳ Submitting…' : '📤 Submit Request'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {loading ? <div style={{ padding:40, textAlign:'center', color:'var(--text-muted)' }}>Loading…</div> : requests.length === 0 ? (
+        <div style={{ padding:40, textAlign:'center', color:'var(--text-muted)', fontSize:13 }}>No requests yet. Submit your first one above!</div>
+      ) : (
+        <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+          {requests.map(r => (
+            <div key={r.id} style={{ background:'var(--surface)', border:'1px solid var(--border)', borderRadius:12, padding:'14px 16px', borderLeft:`4px solid ${STATUS_COLOR[r.status]||'var(--border)'}` }}>
+              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', gap:12 }}>
+                <div style={{ flex:1 }}>
+                  <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:6, flexWrap:'wrap' }}>
+                    <span style={{ fontSize:11, fontWeight:700, color:'#fff', background:STATUS_COLOR[r.status]||'var(--border)', padding:'2px 8px', borderRadius:20 }}>{r.status}</span>
+                    <span style={{ fontSize:11, color:'var(--text-muted)', fontWeight:600 }}>{r.type}</span>
+                    <span style={{ fontSize:11, color:'var(--text-muted)' }}>{r.priority} priority</span>
+                    <span style={{ fontSize:11, color:'var(--text-muted)' }}>· {r.submitted_by}</span>
+                  </div>
+                  <div style={{ fontSize:14, fontWeight:700, color:'var(--text-primary)', marginBottom:4 }}>{r.title}</div>
+                  {r.description && <div style={{ fontSize:12, color:'var(--text-secondary)', lineHeight:1.5, marginBottom:6 }}>{r.description}</div>}
+                  {r.ai_draft && (
+                    <div style={{ fontSize:11, color:'var(--accent)', background:'var(--accent-light)', borderRadius:8, padding:'6px 10px', marginTop:6 }}>🤖 {r.ai_draft}</div>
+                  )}
+                </div>
+                <button onClick={() => vote(r.id, r.votes)} style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:2, padding:'8px 12px', background:'var(--surface-2)', border:'1px solid var(--border)', borderRadius:10, cursor:'pointer', flexShrink:0 }}>
+                  <span style={{ fontSize:16 }}>👍</span>
+                  <span style={{ fontSize:13, fontWeight:800, color:'var(--accent)' }}>{r.votes || 0}</span>
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Password Reset ───────────────────────────────────────────
 function PasswordReset({ userRole }) {
   const [sent, setSent] = React.useState(false);
@@ -1154,9 +1481,11 @@ const ADMIN_TABS = [
 ];
 
 const PERSONAL_TABS = [
-  { id: 'format',   label: 'Format & Theme', icon: '🎨' },
-  { id: 'datetime', label: 'Date & Time',    icon: '🕐' },
-  { id: 'password', label: 'Password Reset', icon: '🔑' },
+  { id: 'format',       label: 'Format & Theme', icon: '🎨' },
+  { id: 'datetime',     label: 'Date & Time',    icon: '🕐' },
+  { id: 'sync',         label: 'OneDrive Sync',  icon: '☁️' },
+  { id: 'app_modifier', label: 'App Requests',   icon: '🛠️' },
+  { id: 'password',     label: 'Password Reset', icon: '🔑' },
 ];
 
 function Settings({ userRole, initialTab, adminMode, personalMode }) {
@@ -1171,9 +1500,11 @@ function Settings({ userRole, initialTab, adminMode, personalMode }) {
     users:    <UsersRoles userRole={userRole} />,
     billing:  <Billing userRole={userRole} />,
     data:     <DataExport userRole={userRole} />,
-    format:   <FormatTheme userRole={userRole} />,
-    datetime: <DateTimeSettings userRole={userRole} />,
-    password: <PasswordReset userRole={userRole} />,
+    format:       <FormatTheme userRole={userRole} />,
+    datetime:     <DateTimeSettings userRole={userRole} />,
+    sync:         <OneDriveSync userRole={userRole} />,
+    app_modifier: <AppModifier userRole={userRole} />,
+    password:     <PasswordReset userRole={userRole} />,
   };
 
   return (
