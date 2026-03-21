@@ -1109,8 +1109,6 @@ function DateTimeSettings({ userRole }) {
   );
 }
 
-}
-
 // ─── OneDrive Sync ────────────────────────────────────────────
 const ONEDRIVE_CLIENT_ID = 'c02fd590-3d2b-4834-857a-22cd45adab00';
 const REDIRECT_URI = window.location.origin;
