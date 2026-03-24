@@ -3,6 +3,7 @@ import { supabase } from './supabase';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
+import PaperScan from './PaperScan';
 
 // ─── SHARED AI HELPER ─────────────────────────────────────────────────────────
 // All AI calls route through /api/ai-insight (Vercel serverless proxy).
@@ -1394,14 +1395,41 @@ function ServiceSheetsTab({ userRole }) {
   );
 }
 
-function Forms({ userRole, initialTab }) {
-const [activeTab, setActiveTab] = useState(initialTab || 'prestarts');
+function Forms({ userRole, initialTab, prestartAsset, prestartAssetId, onClearPreload }) {
+  const [activeTab, setActiveTab] = useState(initialTab || 'prestarts');
   useEffect(() => { if (initialTab) setActiveTab(initialTab); }, [initialTab]);
+
+  const TABS = [
+    { id: 'prestarts',     label: 'Prestarts'        },
+    { id: 'service-sheets',label: 'Service Sheets'   },
+    { id: 'paper_scan',    label: 'Scan Paper Form'  },
+  ];
+
+  const tabStyle = (id) => ({
+    padding: '8px 18px',
+    border: 'none',
+    borderBottom: activeTab === id ? '2px solid #2d8cf0' : '2px solid transparent',
+    background: 'transparent',
+    color: activeTab === id ? '#2d8cf0' : '#6b7a8d',
+    fontWeight: activeTab === id ? 700 : 500,
+    fontSize: 13,
+    cursor: 'pointer',
+    fontFamily: 'Barlow, sans-serif',
+    transition: 'all 0.13s',
+  });
+
   return (
     <div>
-      
-      {activeTab === 'prestarts' && <PrestartTab userRole={userRole} />}
-      {activeTab === 'service-sheets' && <ServiceSheetsTab userRole={userRole} />}
+      <div style={{ display: 'flex', borderBottom: '1px solid #dde2ea', marginBottom: 20 }}>
+        {TABS.map(t => (
+          <button key={t.id} style={tabStyle(t.id)} onClick={() => setActiveTab(t.id)}>
+            {t.label}
+          </button>
+        ))}
+      </div>
+      {activeTab === 'prestarts'     && <PrestartTab userRole={userRole} prestartAsset={prestartAsset} prestartAssetId={prestartAssetId} onClearPreload={onClearPreload} />}
+      {activeTab === 'service-sheets'&& <ServiceSheetsTab userRole={userRole} />}
+      {activeTab === 'paper_scan'    && <PaperScan userRole={userRole} />}
     </div>
   );
 }
