@@ -16,6 +16,7 @@ import Settings from './Settings';
 import Chat from './Chat';
 import Parts from './Parts';
 import OilSampling from './OilSampling';
+import ScanPage from './ScanPage';
 import { supabase } from './supabase';
 import DemoTour from './DemoTour';
 
@@ -31,10 +32,12 @@ function App() {
   const [viewingCompany, setViewingCompany] = useState(null);
   const [showTour, setShowTour] = useState(false);
 
-  // Navbar calls setCurrentPage(pageId, subPage)
-  // Components that have internal tabs receive initialTab prop
+  // ── Public scan route — no auth needed ──────────────────────
+  const pathname = window.location.pathname;
+  const scanMatch = pathname.match(/^\/scan\/([a-f0-9-]{36})$/);
+  const partScanMatch = pathname.match(/^\/scan\/part\/([a-f0-9-]{36})$/);
+
   const setCurrentPage = (page, subPage = null) => {
-    // Check if navigating to assets from calendar (sessionStorage intent)
     if (page === 'assets') {
       const intent = sessionStorage.getItem('mechiq_open_asset');
       if (intent) {
@@ -148,6 +151,10 @@ function App() {
   const effectiveUserRole = viewingCompany
     ? { ...userRole, role: 'admin', company_id: viewingCompany.id, company_features: viewingCompany.features || {} }
     : userRole;
+
+  // ── Public scan route — render before auth check ─────────────
+  if (scanMatch) return <ScanPage assetId={scanMatch[1]} />;
+  if (partScanMatch) return <ScanPage partId={partScanMatch[1]} />;
 
   const renderPage = () => {
     if (userRole?.role === 'master' && currentPage === 'master' && !viewingCompany) return <MasterAdmin />;

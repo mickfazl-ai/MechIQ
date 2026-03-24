@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from './supabase';
+import LabelDesigner from './LabelDesigner';
 
 // ─── Shared styles ────────────────────────────────────────────────────────────
 const card = {
@@ -1471,11 +1472,12 @@ function PasswordReset({ userRole }) {
 
 // ─── Main Settings ──────────────────────────────────────────────────────────────────
 const ADMIN_TABS = [
-  { id: 'company', label: 'Company Details', icon: '🏢' },
-  { id: 'users',   label: 'Users & Roles',   icon: '👥' },
-  { id: 'notifs',  label: 'Notifications',   icon: '🔔' },
-  { id: 'billing', label: 'Contact & Plan',  icon: '💳' },
-  { id: 'data',    label: 'Data & Export',   icon: '📤' },
+  { id: 'company',          label: 'Company Details', icon: '🏢' },
+  { id: 'users',            label: 'Users & Roles',   icon: '👥' },
+  { id: 'notifs',           label: 'Notifications',   icon: '🔔' },
+  { id: 'billing',          label: 'Contact & Plan',  icon: '💳' },
+  { id: 'data',             label: 'Data & Export',   icon: '📤' },
+  { id: 'label_designer',   label: 'Label Designer',  icon: '🏷' },
 ];
 
 const PERSONAL_TABS = [
@@ -1502,7 +1504,8 @@ function Settings({ userRole, initialTab, adminMode, personalMode }) {
     datetime:     <DateTimeSettings userRole={userRole} />,
     sync:         <OneDriveSync userRole={userRole} />,
     app_modifier: <AppModifier userRole={userRole} />,
-    password:     <PasswordReset userRole={userRole} />,
+    password:        <PasswordReset userRole={userRole} />,
+    label_designer:  <LabelDesigner userRole={userRole?.role} companyId={userRole?.company_id} />,
   };
 
   return (
