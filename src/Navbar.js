@@ -473,7 +473,13 @@ function Navbar({ currentPage, currentSubPage, setCurrentPage, onLogout, session
     if (isMaster && !viewingCompany) {
       return [
         ...NAV_STRUCTURE.filter(i => i.id !== 'admin' && i.id !== 'settings'),
-        { id: 'master', label: 'Master Admin', ik: 'master', roles: ['master'] },
+        { id: 'master', label: 'Master Admin', ik: 'master', roles: ['master'],
+          children: [
+            { id: 'master', subPage: 'companies', label: 'Companies',       roles: ['master'] },
+            { id: 'master', subPage: 'register',  label: 'New Company',     roles: ['master'] },
+            { id: 'master', subPage: 'requests',  label: 'App Requests',    roles: ['master'] },
+          ]
+        },
       ];
     }
     return NAV_STRUCTURE

@@ -158,7 +158,7 @@ function App() {
   if (partScanMatch) return <ScanPage partId={partScanMatch[1]} />;
 
   const renderPage = () => {
-    if (userRole?.role === 'master' && currentPage === 'master' && !viewingCompany) return <MasterAdmin />;
+    if (userRole?.role === 'master' && currentPage === 'master' && !viewingCompany) return <MasterAdmin initialTab={currentSubPage || 'companies'} key={currentSubPage} />;
 
     switch (currentPage) {
       case 'dashboard':
@@ -213,7 +213,7 @@ function App() {
       case 'chat':
         return <Chat userRole={effectiveUserRole} />;
       case 'master':
-        return <MasterAdmin />;
+        return <MasterAdmin initialTab={currentSubPage || 'companies'} key={currentSubPage} />;
       default:
         return <Dashboard companyId={effectiveCompanyId} userRole={effectiveUserRole} />;
     }

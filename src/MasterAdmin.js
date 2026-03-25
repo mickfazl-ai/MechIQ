@@ -694,7 +694,7 @@ function NewCompanyForm({ onCreated }) {
   );
 }
 
-function MasterAdmin() {
+function MasterAdmin({ initialTab }) {
   const [companies, setCompanies] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState(null);
@@ -703,7 +703,8 @@ function MasterAdmin() {
   const [search, setSearch] = useState('');
   const [pinAction, setPinAction] = useState(null);
   const [deleting, setDeleting] = useState(false);
-  const [masterTab, setMasterTab] = useState('companies'); // 'companies' | 'requests' | 'register'
+  const [masterTab, setMasterTab] = useState(initialTab || 'companies');
+  useEffect(() => { if (initialTab) setMasterTab(initialTab); }, [initialTab]);
   const [requests, setRequests] = useState([]);
   const [requestsLoading, setRequestsLoading] = useState(false);
 
@@ -713,6 +714,10 @@ function MasterAdmin() {
     }
     fetchCompanies();
   }, []);
+
+  useEffect(() => {
+    if (masterTab === 'requests') fetchRequests();
+  }, [masterTab]);
 
   const fetchRequests = async () => {
     setRequestsLoading(true);
@@ -838,15 +843,7 @@ function MasterAdmin() {
         </button>
       </div>
 
-      {/* Master tab switcher */}
-      <div style={{ display:'flex', gap:8, marginBottom:24 }}>
-        {[['companies','🏢 Companies'],['requests','🛠️ App Requests'],['register','➕ New Company']].map(([id, label]) => (
-          <button key={id} onClick={() => { setMasterTab(id); if(id==='requests') fetchRequests(); }}
-            style={{ padding:'10px 20px', borderRadius:10, border:`2px solid ${masterTab===id?(id==='register'?'#16a34a':'var(--accent)'):'var(--border)'}`, background:masterTab===id?(id==='register'?'#f0fdf4':'var(--accent-light)'):'var(--surface)', color:masterTab===id?(id==='register'?'#16a34a':'var(--accent)'):'var(--text-secondary)', fontSize:13, fontWeight:700, cursor:'pointer', fontFamily:'inherit' }}>
-            {label}{id==='requests' && requests.length > 0 ? ` (${requests.filter(r=>r.status==='Pending').length} pending)` : ''}
-          </button>
-        ))}
-      </div>
+
 
       {/* App Requests Kanban */}
       {masterTab === 'requests' && (
