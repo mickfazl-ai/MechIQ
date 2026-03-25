@@ -55,21 +55,26 @@ const CSS = `
   .lp-nav-btn:hover { background:#1a7de8; transform:translateY(-1px); }
 
   /* ─── Hero ─── */
+  .lp-hero-section {
+    background:#0d1826;
+    position:relative;
+    overflow:hidden;
+  }
+  .lp-hero-section::before {
+    content:'';
+    position:absolute; inset:0;
+    background:
+      radial-gradient(ellipse 60% 50% at 70% 40%, rgba(45,140,240,0.12) 0%, transparent 70%),
+      radial-gradient(ellipse 40% 40% at 20% 80%, rgba(45,140,240,0.08) 0%, transparent 60%);
+    pointer-events:none;
+  }
   .lp-hero {
     min-height:100vh;
     display:grid; grid-template-columns:1fr 380px;
     align-items:center; gap:0;
     padding:100px 5vw 80px;
     max-width:1280px; margin:0 auto;
-    position:relative;
-  }
-  .lp-hero::before {
-    content:'';
-    position:fixed; top:0; left:0; right:0; bottom:0; z-index:-1;
-    background:
-      radial-gradient(ellipse 60% 50% at 70% 40%, rgba(45,140,240,0.06) 0%, transparent 70%),
-      radial-gradient(ellipse 40% 40% at 20% 80%, rgba(45,140,240,0.04) 0%, transparent 60%);
-    pointer-events:none;
+    position:relative; z-index:1;
   }
 
   .lp-hero-left { padding-right:48px; }
@@ -78,7 +83,7 @@ const CSS = `
     animation:lp-up 0.5s ease both;
   }
   .lp-hero-eyebrow::before { content:''; width:24px; height:2px; background:#2d8cf0; }
-  .lp-hero-eyebrow span { font-size:11px; font-weight:700; color:#2d8cf0; letter-spacing:2.5px; text-transform:uppercase; }
+  .lp-hero-eyebrow span { font-size:11px; font-weight:700; color:#60adf5; letter-spacing:2.5px; text-transform:uppercase; }
 
   .lp-hero-h1 {
     font-family:'Barlow Condensed',sans-serif;
@@ -90,7 +95,7 @@ const CSS = `
   .lp-hero-h1 em { color:#2d8cf0; font-style:normal; }
 
   .lp-hero-sub {
-    font-size:16px; color:rgba(26,36,51,0.55); line-height:1.8;
+    font-size:16px; color:rgba(255,255,255,0.65); line-height:1.8;
     max-width:480px; margin-bottom:36px; font-weight:400;
     animation:lp-up 0.5s 0.16s ease both;
   }
@@ -123,7 +128,7 @@ const CSS = `
     animation:lp-up 0.6s 0.12s cubic-bezier(0.16,1,0.3,1) both;
   }
   .lp-card-logo { text-align:center; padding-bottom:20px; margin-bottom:20px; border-bottom:1px solid rgba(26,36,51,0.1); }
-  .lp-card-logo .wm { font-family:'Barlow Condensed',sans-serif; font-size:24px; font-weight:900; letter-spacing:4px; color:#fff; }
+  .lp-card-logo .wm { font-family:'Barlow Condensed',sans-serif; font-size:24px; font-weight:900; letter-spacing:4px; color:#1a2433; }
   .lp-card-logo .wm span { color:#2d8cf0; }
   .lp-card-logo .tg { font-size:9px; color:rgba(26,36,51,0.38); letter-spacing:2.5px; text-transform:uppercase; margin-top:4px; }
 
@@ -141,8 +146,8 @@ const CSS = `
   .lp-inp {
     width:100%; padding:10px 12px; box-sizing:border-box;
     background:#f7f9fc !important;
-    color:#fff !important;
-    border:1px solid rgba(26,36,51,0.15) !important;
+    color:#1a2433 !important;
+    border:1px solid rgba(26,36,51,0.18) !important;
     border-radius:3px !important;
     font-size:14px !important; font-family:'Barlow',sans-serif !important;
     outline:none !important;
@@ -160,7 +165,7 @@ const CSS = `
   .lp-go:disabled { opacity:0.4; cursor:not-allowed; }
   .lp-err { padding:8px 12px; background:rgba(220,38,38,0.1); border:1px solid rgba(220,38,38,0.3); border-radius:3px; color:#f87171; font-size:12px; margin-bottom:10px; }
   .lp-ok  { padding:8px 12px; background:rgba(34,197,94,0.1); border:1px solid rgba(34,197,94,0.3); border-radius:3px; color:#86efac; font-size:12px; margin-bottom:10px; }
-  .lp-card-foot { margin-top:14px; padding-top:14px; border-top:1px solid rgba(255,255,255,0.07); }
+  .lp-card-foot { margin-top:14px; padding-top:14px; border-top:1px solid rgba(26,36,51,0.1); }
   .lp-card-foot-line { font-size:10px; color:rgba(26,36,51,0.32); text-align:center; line-height:1.7; }
   .lp-card-foot-link { color:#2d8cf0; background:none; border:none; cursor:pointer; font-size:10px; font-family:'Barlow',sans-serif; padding:0; text-decoration:underline; }
 
@@ -581,6 +586,7 @@ function Login({ onAuth }) {
       </nav>
 
       {/* Hero */}
+      <div className="lp-hero-section">
       <section className="lp-hero">
         <div className="lp-hero-left">
           <div className="lp-hero-eyebrow"><span>Built for Australian Heavy Industry</span></div>
@@ -644,6 +650,7 @@ function Login({ onAuth }) {
           </div>
         </div>
       </section>
+      </div>
 
       {/* Stats */}
       <div className="lp-stats">
