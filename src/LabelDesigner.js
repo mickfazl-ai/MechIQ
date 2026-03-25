@@ -153,6 +153,40 @@ export default function LabelDesigner({ userRole, companyId }) {
     }
     loadTemplates();
     loadAssets();
+
+    /* Listen for "Design Label" click from MachineProfile */
+    const handleAssetLabel = (e) => {
+      const { assetId, assetName, qrUrl } = e.detail || {};
+      if (!assetId) return;
+      /* Switch to 50x25 size and apply asset preset with this asset's QR */
+      setSizeId('50x25');
+      const W=200, H=100;
+      const id = (type) => Math.random().toString(36).slice(2,9);
+      setElements([
+        { id:id(), type:'rect',        x:0,      y:0,      w:W,      h:H*0.28, fill:'#0d1826', stroke:'transparent', strokeW:0, radius:0 },
+        { id:id(), type:'mechiq_logo', x:3,      y:2,      w:W*0.4,  h:H*0.22, colorMain:'#ffffff', colorAccent:'#2d8cf0' },
+        { id:id(), type:'text',        x:2,      y:H*0.30, w:W-4,    h:12,     text: assetName||'Asset Name', fontSize:9, fontFamily:'Barlow', color:'#1a2433', bold:true, italic:false, align:'left' },
+        { id:id(), type:'qr',          x:2,      y:H*0.46, w:H*0.5,  h:H*0.5,  assetUrl: qrUrl||'https://mechiq.com.au/scan/'+assetId, assetId, assetLabel:assetName },
+        { id:id(), type:'text',        x:H*0.55, y:H*0.48, w:W-H*0.58, h:10,   text:'Scan to start prestart', fontSize:6, fontFamily:'Barlow', color:'#555555', bold:false, italic:false, align:'left' },
+        { id:id(), type:'line',        x:0,      y:H*0.28, w:W,      h:2,      fill:'#2d8cf0', strokeW:1.5 },
+      ]);
+      setSelected(null);
+      setBgColor('#ffffff');
+    };
+
+    window.addEventListener('mechiq_open_label_designer', handleAssetLabel);
+
+    /* Also check sessionStorage on mount (page reload case) */
+    try {
+      const preset = sessionStorage.getItem('labelDesigner_preset');
+      if (preset) {
+        const { assetId, assetName, qrUrl } = JSON.parse(preset);
+        sessionStorage.removeItem('labelDesigner_preset');
+        handleAssetLabel({ detail: { assetId, assetName, qrUrl } });
+      }
+    } catch(e) {}
+
+    return () => window.removeEventListener('mechiq_open_label_designer', handleAssetLabel);
   }, []);
 
   const loadTemplates = async () => {
@@ -221,6 +255,102 @@ export default function LabelDesigner({ userRole, companyId }) {
           const tx = el.align==='center'?x+w/2 : el.align==='right'?x+w : x;
           ctx.fillText(line, tx, y+i*fs*1.3);
         });
+        ctx.restore();
+      }
+
+      if (el.type==='circle') {
+        ctx.save();
+        ctx.fillStyle = el.fill || '#1e88e5';
+        ctx.beginPath();
+        ctx.ellipse(x+w/2, y+h/2, w/2, h/2, 0, 0, Math.PI*2);
+        ctx.fill();
+        if ((el.strokeW||0)>0) {
+          ctx.strokeStyle = el.stroke||'#000';
+          ctx.lineWidth   = el.strokeW*sc;
+          ctx.stroke();
+        }
+        ctx.restore();
+      }
+
+      if (el.type==='triangle') {
+        ctx.save();
+        ctx.fillStyle = el.fill || '#1e88e5';
+        ctx.beginPath();
+        ctx.moveTo(x+w/2, y);
+        ctx.lineTo(x+w, y+h);
+        ctx.lineTo(x, y+h);
+        ctx.closePath();
+        ctx.fill();
+        if ((el.strokeW||0)>0) {
+          ctx.strokeStyle = el.stroke||'#000';
+          ctx.lineWidth   = el.strokeW*sc;
+          ctx.stroke();
+        }
+        ctx.restore();
+      }
+
+      if (el.type==='line') {
+        ctx.save();
+        ctx.strokeStyle = el.fill || '#1a2433';
+        ctx.lineWidth   = (el.strokeW||2)*sc;
+        ctx.lineCap     = 'round';
+        ctx.beginPath();
+        ctx.moveTo(x, y+h/2);
+        ctx.lineTo(x+w, y+h/2);
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      if (el.type==='star') {
+        ctx.save();
+        ctx.fillStyle = el.fill || '#f59e0b';
+        const cx2=x+w/2, cy2=y+h/2, outerR=Math.min(w,h)/2, innerR=outerR*0.45, pts=5;
+        ctx.beginPath();
+        for (let i=0;i<pts*2;i++) {
+          const ang = (i*Math.PI/pts) - Math.PI/2;
+          const r   = i%2===0 ? outerR : innerR;
+          if (i===0) ctx.moveTo(cx2+r*Math.cos(ang), cy2+r*Math.sin(ang));
+          else ctx.lineTo(cx2+r*Math.cos(ang), cy2+r*Math.sin(ang));
+        }
+        ctx.closePath();
+        ctx.fill();
+        if ((el.strokeW||0)>0) { ctx.strokeStyle=el.stroke||'#000'; ctx.lineWidth=el.strokeW*sc; ctx.stroke(); }
+        ctx.restore();
+      }
+
+      if (el.type==='arrow') {
+        ctx.save();
+        ctx.fillStyle = el.fill || '#1a2433';
+        const aw=w, ah=h, shaftH=ah*0.35, shaftY=y+ah/2-shaftH/2;
+        const headW=aw*0.35, shaftW=aw-headW;
+        ctx.beginPath();
+        ctx.moveTo(x, shaftY);
+        ctx.lineTo(x+shaftW, shaftY);
+        ctx.lineTo(x+shaftW, y);
+        ctx.lineTo(x+aw, y+ah/2);
+        ctx.lineTo(x+shaftW, y+ah);
+        ctx.lineTo(x+shaftW, shaftY+shaftH);
+        ctx.lineTo(x, shaftY+shaftH);
+        ctx.closePath();
+        ctx.fill();
+        if ((el.strokeW||0)>0) { ctx.strokeStyle=el.stroke||'#000'; ctx.lineWidth=el.strokeW*sc; ctx.stroke(); }
+        ctx.restore();
+      }
+
+      if (el.type==='mechiq_logo') {
+        ctx.save();
+        const lx=x, ly=y, lw=w, lh=h;
+        const fs = Math.max(6, lh*0.65);
+        ctx.font = `900 ${fs}px 'Barlow Condensed', Arial`;
+        ctx.textBaseline = 'middle';
+        ctx.textAlign = 'left';
+        /* MECH in dark */
+        ctx.fillStyle = el.colorMain || '#1a2433';
+        ctx.fillText('MECH', lx, ly+lh/2);
+        const mechW = ctx.measureText('MECH').width;
+        /* IQ in blue */
+        ctx.fillStyle = el.colorAccent || '#2d8cf0';
+        ctx.fillText('IQ', lx+mechW+1, ly+lh/2);
         ctx.restore();
       }
 
@@ -330,9 +460,15 @@ export default function LabelDesigner({ userRole, companyId }) {
 
     const { x, y } = toLabelCoords(cx,cy);
     let el;
-    if (tool==='text')  el = { id:newId(), type:'text',  x, y, w:80,  h:16, text:'Label text', fontSize:10, fontFamily:'Barlow', color:'#000000', bold:false, italic:false, align:'left' };
-    if (tool==='rect')  el = { id:newId(), type:'rect',  x, y, w:60,  h:20, fill:'#1e88e5', stroke:'#000000', strokeW:0, radius:0 };
-    if (tool==='qr')    el = { id:newId(), type:'qr',    x, y, w:40,  h:40, assetUrl:'https://mechiq.com.au', assetId:null };
+    if (tool==='text')        el = { id:newId(), type:'text',        x, y, w:80,  h:16, text:'Label text', fontSize:10, fontFamily:'Barlow', color:'#000000', bold:false, italic:false, align:'left' };
+    if (tool==='rect')        el = { id:newId(), type:'rect',        x, y, w:60,  h:20, fill:'#1e88e5', stroke:'#000000', strokeW:0, radius:0 };
+    if (tool==='circle')      el = { id:newId(), type:'circle',      x, y, w:30,  h:30, fill:'#1e88e5', stroke:'#000000', strokeW:0 };
+    if (tool==='triangle')    el = { id:newId(), type:'triangle',    x, y, w:40,  h:34, fill:'#1e88e5', stroke:'#000000', strokeW:0 };
+    if (tool==='line')        el = { id:newId(), type:'line',        x, y, w:60,  h:4,  fill:'#1a2433', strokeW:2 };
+    if (tool==='star')        el = { id:newId(), type:'star',        x, y, w:30,  h:30, fill:'#f59e0b', stroke:'#000000', strokeW:0 };
+    if (tool==='arrow')       el = { id:newId(), type:'arrow',       x, y, w:50,  h:20, fill:'#1a2433', stroke:'#000000', strokeW:0 };
+    if (tool==='mechiq_logo') el = { id:newId(), type:'mechiq_logo', x, y, w:60,  h:14, colorMain:'#1a2433', colorAccent:'#2d8cf0' };
+    if (tool==='qr')          el = { id:newId(), type:'qr',          x, y, w:40,  h:40, assetUrl:'https://mechiq.com.au', assetId:null };
     if (tool==='image') { triggerImageUpload(); return; }
     if (el) { setElements(p=>[...p,el]); setSelected(el.id); setTool('select'); }
     if (tool==='qr')    setShowAssets(true);
@@ -414,11 +550,13 @@ export default function LabelDesigner({ userRole, companyId }) {
   const applyPreset = (preset) => {
     const W = size.w, H = size.h;
     if (preset==='asset') setElements([
-      { id:newId(), type:'rect',  x:0,         y:0,    w:W,      h:H*0.3,  fill:'#1e88e5', stroke:'transparent', strokeW:0, radius:0 },
-      { id:newId(), type:'text',  x:2,         y:2,    w:W-4,    h:H*0.3-4, text:'ASSET NAME', fontSize:10, fontFamily:'Barlow', color:'#ffffff', bold:true, italic:false, align:'center' },
-      { id:newId(), type:'qr',    x:2,         y:H*0.32, w:H*0.6, h:H*0.6, assetUrl:'https://mechiq.com.au', assetId:null },
-      { id:newId(), type:'text',  x:H*0.65,    y:H*0.35, w:W-H*0.67, h:10, text:'ID: XXX-001', fontSize:7, fontFamily:'Barlow', color:'#333333', bold:false, italic:false, align:'left' },
-      { id:newId(), type:'text',  x:H*0.65,    y:H*0.5,  w:W-H*0.67, h:10, text:'Model: —', fontSize:7, fontFamily:'Barlow', color:'#666666', bold:false, italic:false, align:'left' },
+      { id:newId(), type:'rect',        x:0,      y:0,      w:W,      h:H*0.28, fill:'#0d1826', stroke:'transparent', strokeW:0, radius:0 },
+      { id:newId(), type:'mechiq_logo', x:3,      y:2,      w:W*0.4,  h:H*0.22, colorMain:'#ffffff', colorAccent:'#2d8cf0' },
+      { id:newId(), type:'text',        x:2,      y:H*0.30, w:W-4,    h:12,     text:'ASSET NAME', fontSize:9, fontFamily:'Barlow', color:'#1a2433', bold:true, italic:false, align:'left' },
+      { id:newId(), type:'qr',          x:2,      y:H*0.46, w:H*0.5,  h:H*0.5,  assetUrl:'https://mechiq.com.au/scan/', assetId:null },
+      { id:newId(), type:'text',        x:H*0.55, y:H*0.48, w:W-H*0.58, h:10,   text:'ID: XXX-001', fontSize:7, fontFamily:'Barlow', color:'#333333', bold:false, italic:false, align:'left' },
+      { id:newId(), type:'text',        x:H*0.55, y:H*0.62, w:W-H*0.58, h:10,   text:'Scan to start prestart', fontSize:6, fontFamily:'Barlow', color:'#666666', bold:false, italic:false, align:'left' },
+      { id:newId(), type:'line',        x:0,      y:H*0.28, w:W,      h:2,      fill:'#2d8cf0', strokeW:1.5 },
     ]);
     if (preset==='part') setElements([
       { id:newId(), type:'qr',    x:2,    y:2,  w:H-4,  h:H-4,  assetUrl:'https://mechiq.com.au', assetId:null },
@@ -465,6 +603,102 @@ export default function LabelDesigner({ userRole, companyId }) {
           ctx.fillText(line,tx,y+i*fs*1.3);
         });
       }
+      if (el.type==='circle') {
+        ctx.save();
+        ctx.fillStyle = el.fill || '#1e88e5';
+        ctx.beginPath();
+        ctx.ellipse(x+w/2, y+h/2, w/2, h/2, 0, 0, Math.PI*2);
+        ctx.fill();
+        if ((el.strokeW||0)>0) {
+          ctx.strokeStyle = el.stroke||'#000';
+          ctx.lineWidth   = el.strokeW*sc;
+          ctx.stroke();
+        }
+        ctx.restore();
+      }
+
+      if (el.type==='triangle') {
+        ctx.save();
+        ctx.fillStyle = el.fill || '#1e88e5';
+        ctx.beginPath();
+        ctx.moveTo(x+w/2, y);
+        ctx.lineTo(x+w, y+h);
+        ctx.lineTo(x, y+h);
+        ctx.closePath();
+        ctx.fill();
+        if ((el.strokeW||0)>0) {
+          ctx.strokeStyle = el.stroke||'#000';
+          ctx.lineWidth   = el.strokeW*sc;
+          ctx.stroke();
+        }
+        ctx.restore();
+      }
+
+      if (el.type==='line') {
+        ctx.save();
+        ctx.strokeStyle = el.fill || '#1a2433';
+        ctx.lineWidth   = (el.strokeW||2)*sc;
+        ctx.lineCap     = 'round';
+        ctx.beginPath();
+        ctx.moveTo(x, y+h/2);
+        ctx.lineTo(x+w, y+h/2);
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      if (el.type==='star') {
+        ctx.save();
+        ctx.fillStyle = el.fill || '#f59e0b';
+        const cx2=x+w/2, cy2=y+h/2, outerR=Math.min(w,h)/2, innerR=outerR*0.45, pts=5;
+        ctx.beginPath();
+        for (let i=0;i<pts*2;i++) {
+          const ang = (i*Math.PI/pts) - Math.PI/2;
+          const r   = i%2===0 ? outerR : innerR;
+          if (i===0) ctx.moveTo(cx2+r*Math.cos(ang), cy2+r*Math.sin(ang));
+          else ctx.lineTo(cx2+r*Math.cos(ang), cy2+r*Math.sin(ang));
+        }
+        ctx.closePath();
+        ctx.fill();
+        if ((el.strokeW||0)>0) { ctx.strokeStyle=el.stroke||'#000'; ctx.lineWidth=el.strokeW*sc; ctx.stroke(); }
+        ctx.restore();
+      }
+
+      if (el.type==='arrow') {
+        ctx.save();
+        ctx.fillStyle = el.fill || '#1a2433';
+        const aw=w, ah=h, shaftH=ah*0.35, shaftY=y+ah/2-shaftH/2;
+        const headW=aw*0.35, shaftW=aw-headW;
+        ctx.beginPath();
+        ctx.moveTo(x, shaftY);
+        ctx.lineTo(x+shaftW, shaftY);
+        ctx.lineTo(x+shaftW, y);
+        ctx.lineTo(x+aw, y+ah/2);
+        ctx.lineTo(x+shaftW, y+ah);
+        ctx.lineTo(x+shaftW, shaftY+shaftH);
+        ctx.lineTo(x, shaftY+shaftH);
+        ctx.closePath();
+        ctx.fill();
+        if ((el.strokeW||0)>0) { ctx.strokeStyle=el.stroke||'#000'; ctx.lineWidth=el.strokeW*sc; ctx.stroke(); }
+        ctx.restore();
+      }
+
+      if (el.type==='mechiq_logo') {
+        ctx.save();
+        const lx=x, ly=y, lw=w, lh=h;
+        const fs = Math.max(6, lh*0.65);
+        ctx.font = `900 ${fs}px 'Barlow Condensed', Arial`;
+        ctx.textBaseline = 'middle';
+        ctx.textAlign = 'left';
+        /* MECH in dark */
+        ctx.fillStyle = el.colorMain || '#1a2433';
+        ctx.fillText('MECH', lx, ly+lh/2);
+        const mechW = ctx.measureText('MECH').width;
+        /* IQ in blue */
+        ctx.fillStyle = el.colorAccent || '#2d8cf0';
+        ctx.fillText('IQ', lx+mechW+1, ly+lh/2);
+        ctx.restore();
+      }
+
       if (el.type==='qr') {
         const key=(el.assetUrl||'')+'__'+Math.round(w);
         if (imgCache.current[key]) ctx.drawImage(imgCache.current[key],x,y,w,h);
@@ -681,6 +915,49 @@ export default function LabelDesigner({ userRole, companyId }) {
                   <div className="ld-pf">
                     <span className="ld-pl">Corner radius</span>
                     <input className="ld-pi" type="number" min={0} max={50} value={sel.radius||0} onChange={e=>upd('radius',+e.target.value)} />
+                  </div>
+                </>
+              )}
+
+              {(sel.type==='circle'||sel.type==='triangle'||sel.type==='star'||sel.type==='arrow') && (
+                <>
+                  <div className="ld-pf">
+                    <span className="ld-pl">Fill colour</span>
+                    <input type="color" className="ld-pcol" value={sel.fill||'#1e88e5'} onChange={e=>upd('fill',e.target.value)} />
+                  </div>
+                  <div className="ld-pf">
+                    <span className="ld-pl">Border colour</span>
+                    <input type="color" className="ld-pcol" value={sel.stroke||'#000000'} onChange={e=>upd('stroke',e.target.value)} />
+                  </div>
+                  <div className="ld-pf">
+                    <span className="ld-pl">Border width</span>
+                    <input className="ld-pi" type="number" min={0} max={20} value={sel.strokeW||0} onChange={e=>upd('strokeW',+e.target.value)} />
+                  </div>
+                </>
+              )}
+
+              {sel.type==='line' && (
+                <>
+                  <div className="ld-pf">
+                    <span className="ld-pl">Line colour</span>
+                    <input type="color" className="ld-pcol" value={sel.fill||'#1a2433'} onChange={e=>upd('fill',e.target.value)} />
+                  </div>
+                  <div className="ld-pf">
+                    <span className="ld-pl">Thickness</span>
+                    <input className="ld-pi" type="number" min={1} max={20} value={sel.strokeW||2} onChange={e=>upd('strokeW',+e.target.value)} />
+                  </div>
+                </>
+              )}
+
+              {sel.type==='mechiq_logo' && (
+                <>
+                  <div className="ld-pf">
+                    <span className="ld-pl">MECH colour</span>
+                    <input type="color" className="ld-pcol" value={sel.colorMain||'#1a2433'} onChange={e=>upd('colorMain',e.target.value)} />
+                  </div>
+                  <div className="ld-pf">
+                    <span className="ld-pl">IQ colour</span>
+                    <input type="color" className="ld-pcol" value={sel.colorAccent||'#2d8cf0'} onChange={e=>upd('colorAccent',e.target.value)} />
                   </div>
                 </>
               )}

@@ -1133,7 +1133,7 @@ function AssetPage({ assetId, userRole, onStartPrestart, initialTab }) {
 
   if (!asset) return <div style={{ textAlign:'center', padding:'60px 20px', color:'var(--text-muted)', fontSize:14 }}>Asset not found</div>;
 
-  const qrUrl = `${window.location.origin}?asset=${assetId}`;
+  const qrUrl = `https://mechiq.com.au/scan/${assetId}`;
 
   const TABS = [
     { id:'overview',     label:'Overview' },
@@ -1173,6 +1173,23 @@ function AssetPage({ assetId, userRole, onStartPrestart, initialTab }) {
             <div style={{ padding:10, background:'var(--surface)', borderRadius:10, border:'1px solid var(--border)' }}>
               <QRCodeCanvas value={qrUrl} size={90} bgColor="#ffffff" fgColor="#1a2b3c" />
             </div>
+            <div style={{ fontSize:9, color:'var(--text-muted)', textAlign:'center', letterSpacing:'0.3px' }}>
+              mechiq.com.au/scan/{assetId?.slice(0,8)}…
+            </div>
+            <button
+              onClick={() => {
+                sessionStorage.setItem('labelDesigner_preset', JSON.stringify({
+                  assetId,
+                  assetName: asset.name,
+                  assetIdTag: asset.asset_number,
+                  qrUrl,
+                }));
+                window.dispatchEvent(new CustomEvent('mechiq_open_label_designer', { detail: { assetId, assetName: asset.name, qrUrl } }));
+              }}
+              style={{ fontSize:11, fontWeight:700, padding:'5px 12px', border:'1px solid var(--accent)', borderRadius:6, background:'var(--accent-light)', color:'var(--accent)', cursor:'pointer', fontFamily:'inherit', letterSpacing:'0.3px' }}
+            >
+              Design Label →
+            </button>
           </div>
         </div>
       </div>
