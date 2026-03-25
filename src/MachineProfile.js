@@ -1170,25 +1170,72 @@ function AssetPage({ assetId, userRole, onStartPrestart, initialTab }) {
             </div>
           </div>
           <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:8 }}>
-            <div style={{ padding:10, background:'var(--surface)', borderRadius:10, border:'1px solid var(--border)' }}>
-              <QRCodeCanvas value={qrUrl} size={90} bgColor="#ffffff" fgColor="#1a2b3c" />
+            <div style={{ padding:10, background:'#0d1826', borderRadius:10, border:'1px solid var(--border)' }}>
+              <QRCodeCanvas id={`qr-${assetId}`} value={qrUrl} size={90} bgColor="#ffffff" fgColor="#1a2b3c" />
             </div>
             <div style={{ fontSize:9, color:'var(--text-muted)', textAlign:'center', letterSpacing:'0.3px' }}>
-              mechiq.com.au/scan/{assetId?.slice(0,8)}…
+              Scan to prestart
             </div>
             <button
               onClick={() => {
-                sessionStorage.setItem('labelDesigner_preset', JSON.stringify({
-                  assetId,
-                  assetName: asset.name,
-                  assetIdTag: asset.asset_number,
-                  qrUrl,
-                }));
-                window.dispatchEvent(new CustomEvent('mechiq_open_label_designer', { detail: { assetId, assetName: asset.name, qrUrl } }));
+                /* Print the default label as PNG */
+                const canvas = document.createElement('canvas');
+                canvas.width = 400; canvas.height = 200;
+                const ctx = canvas.getContext('2d');
+                /* Dark header */
+                ctx.fillStyle = '#0d1826';
+                ctx.fillRect(0, 0, 400, 56);
+                /* Blue line */
+                ctx.fillStyle = '#2d8cf0';
+                ctx.fillRect(0, 56, 400, 3);
+                /* MECHIQ logo */
+                ctx.font = '900 22px Barlow Condensed, Arial';
+                ctx.fillStyle = '#ffffff';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('MECH', 10, 28);
+                const mw = ctx.measureText('MECH').width;
+                ctx.fillStyle = '#2d8cf0';
+                ctx.fillText('IQ', 10+mw+2, 28);
+                /* Asset tag label */
+                ctx.font = '700 9px Barlow, Arial';
+                ctx.fillStyle = 'rgba(255,255,255,0.5)';
+                ctx.fillText('MECH IQ · ASSET TAG', 200, 20);
+                /* Asset number */
+                ctx.font = '900 28px Barlow Condensed, Arial';
+                ctx.fillStyle = '#2d8cf0';
+                ctx.fillText(asset.asset_number || 'AST-001', 200, 40);
+                /* Background body */
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(0, 59, 400, 141);
+                /* Asset name */
+                ctx.font = '800 16px Barlow Condensed, Arial';
+                ctx.fillStyle = '#1a2433';
+                ctx.fillText(asset.name || 'Asset', 110, 85);
+                /* Type + location */
+                ctx.font = '400 11px Barlow, Arial';
+                ctx.fillStyle = '#6b7a8d';
+                const sub = [asset.type, asset.location].filter(Boolean).join(' · ');
+                ctx.fillText(sub.slice(0, 45), 110, 105);
+                /* QR code */
+                const qrEl = document.getElementById('qr-' + assetId);
+                if (qrEl) ctx.drawImage(qrEl, 6, 65, 95, 95);
+                /* Scan hint */
+                ctx.font = '600 9px Barlow, Arial';
+                ctx.fillStyle = '#2d8cf0';
+                ctx.fillText('Scan to start prestart or log job', 110, 135);
+                /* Border */
+                ctx.strokeStyle = '#dde2ea';
+                ctx.lineWidth = 1;
+                ctx.strokeRect(0.5, 0.5, 399, 199);
+                /* Download */
+                const link = document.createElement('a');
+                link.download = (asset.name||'asset').replace(/\s+/g,'-') + '-label.png';
+                link.href = canvas.toDataURL('image/png');
+                link.click();
               }}
               style={{ fontSize:11, fontWeight:700, padding:'5px 12px', border:'1px solid var(--accent)', borderRadius:6, background:'var(--accent-light)', color:'var(--accent)', cursor:'pointer', fontFamily:'inherit', letterSpacing:'0.3px' }}
             >
-              Design Label →
+              Print Label
             </button>
           </div>
         </div>
