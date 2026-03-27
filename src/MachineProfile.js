@@ -1077,6 +1077,212 @@ Respond ONLY with JSON, no markdown:
 }
 
 // ─── Main AssetPage ───────────────────────────────────────────────────────────
+/* ── ID Tag Modal — renders template with live asset data ── */
+function IDTagModal({ tmpl, asset, assetId, qrUrl, onClose }) {
+  const canvasRef = React.useRef(null);
+  const qrRef     = React.useRef(null);
+
+  const DIMS = {
+    '15x15':{w:60,h:60},'25x25':{w:100,h:100},'50x25':{w:200,h:100},
+    '100x50':{w:400,h:200},'150x100':{w:600,h:400},
+    'a4_2up':{w:794,h:560},'a4_4up':{w:794,h:560},
+  };
+
+  if (!tmpl) return null;
+
+  let elements = [];
+  try { elements = JSON.parse(tmpl.elements || '[]'); } catch(e) {}
+  const dim   = DIMS[tmpl.size] || { w:400, h:200 };
+  const scale = Math.min(1, 520 / dim.w);
+  const cw    = Math.round(dim.w * scale);
+  const ch    = Math.round(dim.h * scale);
+
+  /* substitute placeholder text with real asset data */
+  const substitute = (txt) => (txt || '')
+    .replace(/ASSET NAME/gi,    asset.name        || '')
+    .replace(/Asset Name/g,     asset.name        || '')
+    .replace(/Asset No\./gi,    asset.asset_number || '')
+    .replace(/Asset No/gi,      asset.asset_number || '')
+    .replace(/HK-001/gi,        asset.asset_number || '')
+    .replace(/AST-001/gi,       asset.asset_number || '')
+    .replace(/ID: XXX-001/gi,   asset.asset_number ? 'ID: '+asset.asset_number : '')
+    .replace(/Model: —/gi,      [asset.make, asset.model].filter(Boolean).join(' ') || '');
+
+  const drawCanvas = () => {
+    const cv  = canvasRef.current;
+    const qrC = qrRef.current;
+    if (!cv) return;
+    const ctx = cv.getContext('2d');
+    const sc  = scale;
+
+    ctx.clearRect(0, 0, cw, ch);
+    ctx.fillStyle = tmpl.background || '#ffffff';
+    ctx.fillRect(0, 0, cw, ch);
+
+    elements.forEach(el => {
+      const x = el.x * sc, y = el.y * sc, w = el.w * sc, h = el.h * sc;
+
+      if (el.type === 'rect') {
+        ctx.save();
+        ctx.fillStyle = el.fill || '#1e88e5';
+        const r = Math.min((el.radius || 0) * sc, w / 2, h / 2);
+        if (r > 0) {
+          ctx.beginPath();
+          ctx.moveTo(x + r, y); ctx.arcTo(x+w,y,x+w,y+h,r);
+          ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r);
+          ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); ctx.fill();
+        } else { ctx.fillRect(x, y, w, h); }
+        if ((el.strokeW || 0) > 0) { ctx.strokeStyle = el.stroke || '#000'; ctx.lineWidth = el.strokeW * sc; ctx.stroke(); }
+        ctx.restore();
+      }
+
+      if (el.type === 'text') {
+        ctx.save();
+        const fs = Math.max(6, (el.fontSize || 10) * sc);
+        ctx.font = (el.bold ? '700' : '400') + ' ' + fs + 'px ' + (el.fontFamily || 'Barlow') + ',Arial';
+        ctx.fillStyle = el.color || '#000000';
+        ctx.textAlign = el.align || 'left';
+        ctx.textBaseline = 'top';
+        const txt = substitute(el.text);
+        const tx = el.align === 'center' ? x + w/2 : el.align === 'right' ? x + w : x;
+        txt.split('\n').forEach((line, i) => ctx.fillText(line, tx, y + i * fs * 1.3));
+        ctx.restore();
+      }
+
+      if (el.type === 'mechiq_logo') {
+        ctx.save();
+        const fs = Math.max(6, h * 0.65);
+        ctx.font = '900 ' + fs + "px 'Barlow Condensed',Arial";
+        ctx.textBaseline = 'middle'; ctx.textAlign = 'left';
+        ctx.fillStyle = el.colorMain || '#1a2433';
+        ctx.fillText('MECH', x, y + h / 2);
+        const mw = ctx.measureText('MECH').width;
+        ctx.fillStyle = el.colorAccent || '#2d8cf0';
+        ctx.fillText('IQ', x + mw + 1, y + h / 2);
+        ctx.restore();
+      }
+
+      if (el.type === 'qr') {
+        /* draw QR from the hidden canvas ref */
+        if (qrC) ctx.drawImage(qrC, x, y, w, h);
+      }
+
+      if (el.type === 'line') {
+        ctx.save();
+        ctx.strokeStyle = el.fill || '#1a2433';
+        ctx.lineWidth = (el.strokeW || 2) * sc;
+        ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(x, y + h/2); ctx.lineTo(x + w, y + h/2); ctx.stroke();
+        ctx.restore();
+      }
+
+      if (el.type === 'circle') {
+        ctx.save();
+        ctx.fillStyle = el.fill || '#1e88e5';
+        ctx.beginPath(); ctx.ellipse(x+w/2, y+h/2, w/2, h/2, 0, 0, Math.PI*2); ctx.fill();
+        if ((el.strokeW||0)>0){ctx.strokeStyle=el.stroke||'#000';ctx.lineWidth=el.strokeW*sc;ctx.stroke();}
+        ctx.restore();
+      }
+
+      if (el.type === 'triangle') {
+        ctx.save(); ctx.fillStyle = el.fill || '#1e88e5';
+        ctx.beginPath(); ctx.moveTo(x+w/2,y); ctx.lineTo(x+w,y+h); ctx.lineTo(x,y+h); ctx.closePath(); ctx.fill();
+        ctx.restore();
+      }
+
+      if (el.type === 'star') {
+        ctx.save(); ctx.fillStyle = el.fill || '#f59e0b';
+        const cx2=x+w/2,cy2=y+h/2,outerR=Math.min(w,h)/2,innerR=outerR*0.45,pts=5;
+        ctx.beginPath();
+        for(let i=0;i<pts*2;i++){const ang=(i*Math.PI/pts)-Math.PI/2;const r=i%2===0?outerR:innerR;if(i===0)ctx.moveTo(cx2+r*Math.cos(ang),cy2+r*Math.sin(ang));else ctx.lineTo(cx2+r*Math.cos(ang),cy2+r*Math.sin(ang));}
+        ctx.closePath(); ctx.fill(); ctx.restore();
+      }
+
+      if (el.type === 'image' && el.src) {
+        const img = new Image(); img.src = el.src;
+        img.onload = () => { ctx.drawImage(img, x, y, w, h); };
+        if (img.complete) ctx.drawImage(img, x, y, w, h);
+      }
+    });
+  };
+
+  React.useEffect(() => {
+    /* slight delay so QRCodeCanvas has time to render */
+    const t = setTimeout(() => drawCanvas(), 120);
+    return () => clearTimeout(t);
+  }, [tmpl, asset, qrRef.current]);
+
+  const download = () => {
+    const cv = canvasRef.current; if (!cv) return;
+    const link = document.createElement('a');
+    link.download = (asset.name||'asset').replace(/\s+/g,'-') + '-ID-tag.png';
+    link.href = cv.toDataURL('image/png', 1.0);
+    link.click();
+  };
+
+  return (
+    <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.65)', zIndex:1000, display:'flex', alignItems:'center', justifyContent:'center', padding:16 }}
+      onClick={e => e.target===e.currentTarget && onClose()}>
+      <div style={{ background:'#fff', borderRadius:12, padding:28, maxWidth:620, width:'100%', boxShadow:'0 24px 80px rgba(0,0,0,0.35)' }}>
+
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:16 }}>
+          <div>
+            <div style={{ fontSize:11, fontWeight:700, color:'#8a96a3', letterSpacing:'1.2px', textTransform:'uppercase', marginBottom:2 }}>Machine ID Tag</div>
+            <div style={{ fontSize:16, fontWeight:800, color:'#1a2433' }}>{asset.name} — {asset.asset_number}</div>
+          </div>
+          <button onClick={onClose} style={{ border:'none', background:'none', fontSize:20, color:'#8a96a3', cursor:'pointer', padding:'4px 8px' }}>×</button>
+        </div>
+
+        {/* Hidden QR code — drawn into canvas by drawCanvas() */}
+        <div style={{ position:'absolute', left:-9999, top:-9999 }}>
+          <canvas ref={qrRef} id={'id-tag-qr-'+assetId} />
+        </div>
+        {/* We use QRCodeCanvas and copy its canvas via ref */}
+        <div style={{ position:'absolute', left:-9999, top:-9999 }}>
+          <QRCodeCanvas
+            ref={el => {
+              /* QRCodeCanvas renders a <canvas> — grab it */
+              if (el && el.querySelector) {
+                const c = el.querySelector ? el : el;
+                qrRef.current = c;
+              } else if (el) {
+                qrRef.current = el;
+              }
+            }}
+            value={qrUrl}
+            size={200}
+            bgColor="#ffffff"
+            fgColor="#1a2433"
+          />
+        </div>
+
+        <div style={{ background:'#f4f6f9', borderRadius:8, padding:16, marginBottom:20, display:'flex', justifyContent:'center', alignItems:'center' }}>
+          <canvas ref={canvasRef} width={cw} height={ch} style={{ display:'block', borderRadius:4, boxShadow:'0 2px 8px rgba(0,0,0,0.12)' }} />
+        </div>
+
+        <div style={{ fontSize:11, color:'#8a96a3', marginBottom:16, textAlign:'center' }}>
+          QR links to: <span style={{ color:'#2d8cf0', fontWeight:600 }}>{qrUrl}</span>
+        </div>
+
+        <div style={{ display:'flex', gap:10, justifyContent:'flex-end' }}>
+          <button onClick={onClose}
+            style={{ padding:'10px 22px', border:'1px solid #dde2ea', borderRadius:6, background:'#fff', color:'#3a4a5c', fontSize:13, fontWeight:600, cursor:'pointer', fontFamily:'inherit' }}>
+            Close
+          </button>
+          <button onClick={drawCanvas}
+            style={{ padding:'10px 22px', border:'1px solid #2d8cf0', borderRadius:6, background:'#fff', color:'#2d8cf0', fontSize:13, fontWeight:600, cursor:'pointer', fontFamily:'inherit' }}>
+            Re-render
+          </button>
+          <button onClick={download}
+            style={{ padding:'10px 22px', border:'none', borderRadius:6, background:'#2d8cf0', color:'#fff', fontSize:13, fontWeight:700, cursor:'pointer', fontFamily:'inherit' }}>
+            Download PNG
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function AssetPage({ assetId, userRole, onStartPrestart, initialTab }) {
   const [asset, setAsset]             = useState(null);
   const [recentPrestarts, setRecentPrestarts] = useState([]);
@@ -1185,7 +1391,7 @@ function AssetPage({ assetId, userRole, onStartPrestart, initialTab }) {
               <QRCodeCanvas id={`qr-${assetId}`} value={qrUrl} size={120} bgColor="#ffffff" fgColor="#1a2b3c" />
             </div>
             {/* Label template selector */}
-            <div style={{ fontSize:10, fontWeight:700, color:'var(--text-muted)', letterSpacing:'1px', textTransform:'uppercase', alignSelf:'flex-start' }}>Print Label</div>
+            <div style={{ fontSize:10, fontWeight:700, color:'var(--text-muted)', letterSpacing:'1px', textTransform:'uppercase', alignSelf:'flex-start' }}>Machine ID Tag</div>
             {labelTemplates.length > 0 ? (
               <select
                 value={selectedTemplate}
@@ -1206,88 +1412,22 @@ function AssetPage({ assetId, userRole, onStartPrestart, initialTab }) {
               disabled={!labelTemplates.length}
               style={{ width:'100%', fontSize:11, fontWeight:700, padding:'7px 12px', border:'1px solid var(--accent)', borderRadius:6, background:'var(--accent-light)', color:'var(--accent)', cursor:'pointer', fontFamily:'inherit', opacity: labelTemplates.length ? 1 : 0.4 }}
             >
-              Preview & Print →
+              Generate ID Tag →
             </button>
           </div>
         </div>
       </div>
 
       {/* ── Label Preview Modal ── */}
-      {showLabelPreview && (() => {
-        const tmpl = labelTemplates.find(t => t.id === selectedTemplate);
-        if (!tmpl) return null;
-        let elements = [];
-        try { elements = JSON.parse(tmpl.elements || '[]'); } catch(e) {}
-        const size = ['15x15','25x25','50x25','100x50','150x100','a4_2up','a4_4up'].includes(tmpl.size) ? tmpl.size : '100x50';
-        const DIMS = { '15x15':{w:60,h:60},'25x25':{w:100,h:100},'50x25':{w:200,h:100},'100x50':{w:400,h:200},'150x100':{w:600,h:400},'a4_2up':{w:400,h:200},'a4_4up':{w:200,h:150} };
-        const dim = DIMS[size] || {w:400,h:200};
-        const scale = Math.min(1, 520 / dim.w);
-        return (
-          <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.6)', zIndex:999, display:'flex', alignItems:'center', justifyContent:'center', padding:16 }}
-            onClick={e => e.target===e.currentTarget && setShowLabelPreview(false)}>
-            <div style={{ background:'#fff', borderRadius:12, padding:28, maxWidth:600, width:'100%', boxShadow:'0 24px 80px rgba(0,0,0,0.3)' }}>
-              <div style={{ fontSize:13, fontWeight:800, color:'#1a2433', letterSpacing:'1px', textTransform:'uppercase', marginBottom:16 }}>Label Preview — {tmpl.name}</div>
-              <div style={{ background:'#f4f6f9', borderRadius:8, padding:16, marginBottom:20, display:'flex', justifyContent:'center' }}>
-                <canvas
-                  className="mp-label-print-canvas" ref={el => {
-                    if (!el) return;
-                    const ctx = el.getContext('2d');
-                    const sc = scale;
-                    ctx.clearRect(0,0,el.width,el.height);
-                    ctx.fillStyle = tmpl.background || '#fff';
-                    ctx.fillRect(0,0,el.width,el.height);
-                    elements.forEach(el2 => {
-                      const x=el2.x*sc, y=el2.y*sc, w=el2.w*sc, h=el2.h*sc;
-                      if (el2.type==='rect') {
-                        ctx.fillStyle=el2.fill||'#1e88e5';
-                        if ((el2.radius||0)>0){const r=Math.min(el2.radius*sc,w/2,h/2);ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();ctx.fill();}
-                        else ctx.fillRect(x,y,w,h);
-                      }
-                      if (el2.type==='text') {
-                        const fs=Math.max(6,(el2.fontSize||10)*sc);
-                        ctx.font=(el2.bold?'700':'400')+' '+fs+'px '+(el2.fontFamily||'Barlow')+',Arial';
-                        ctx.fillStyle=el2.color||'#000';ctx.textAlign=el2.align||'left';ctx.textBaseline='top';
-                        /* Substitute asset data */
-                        let txt=(el2.text||'').replace(/ASSET NAME/gi, asset.name||'').replace(/ID: XXX-001/gi,'ID: '+(asset.asset_number||'')).replace(/HK-001/gi,asset.asset_number||'').replace(/Model: —/gi,(asset.make||'')+(asset.model?' '+asset.model:''));
-                        const tx=el2.align==='center'?x+w/2:el2.align==='right'?x+w:x;
-                        txt.split('\n').forEach((line,i)=>ctx.fillText(line,tx,y+i*fs*1.3));
-                      }
-                      if (el2.type==='mechiq_logo') {
-                        const fs=Math.max(6,h*0.65);ctx.font='900 '+fs+"px 'Barlow Condensed',Arial";ctx.textBaseline='middle';ctx.textAlign='left';
-                        ctx.fillStyle=el2.colorMain||'#1a2433';ctx.fillText('MECH',x,y+h/2);
-                        const mw=ctx.measureText('MECH').width;ctx.fillStyle=el2.colorAccent||'#2d8cf0';ctx.fillText('IQ',x+mw+1,y+h/2);
-                      }
-                      if (el2.type==='qr') {
-                        const qrEl=document.getElementById('qr-'+assetId);
-                        if (qrEl) ctx.drawImage(qrEl,x,y,w,h);
-                      }
-                      if (el2.type==='line'){ctx.save();ctx.strokeStyle=el2.fill||'#1a2433';ctx.lineWidth=(el2.strokeW||2)*sc;ctx.beginPath();ctx.moveTo(x,y+h/2);ctx.lineTo(x+w,y+h/2);ctx.stroke();ctx.restore();}
-                      if (el2.type==='circle'){ctx.save();ctx.fillStyle=el2.fill||'#1e88e5';ctx.beginPath();ctx.ellipse(x+w/2,y+h/2,w/2,h/2,0,0,Math.PI*2);ctx.fill();ctx.restore();}
-                    });
-                  }}
-                  width={Math.round(dim.w*scale)}
-                  height={Math.round(dim.h*scale)}
-                  style={{ display:'block', borderRadius:4 }}
-                />
-              </div>
-              <div style={{ display:'flex', gap:10, justifyContent:'flex-end' }}>
-                <button onClick={() => setShowLabelPreview(false)}
-                  style={{ padding:'9px 20px', border:'1px solid #dde2ea', borderRadius:6, background:'#fff', color:'#3a4a5c', fontSize:13, fontWeight:600, cursor:'pointer', fontFamily:'inherit' }}>
-                  Cancel
-                </button>
-                <button onClick={() => {
-                  const cv = document.querySelector('.mp-label-print-canvas');
-                  if (!cv) return;
-                  const link = document.createElement('a');
-                  link.download = (asset.name||'asset').replace(/\s+/g,'-')+'-'+tmpl.name+'.png';
-                  link.href = cv.toDataURL('image/png');
-                  link.click();
-                }}
-                  style={{ padding:'9px 20px', border:'none', borderRadius:6, background:'#2d8cf0', color:'#fff', fontSize:13, fontWeight:700, cursor:'pointer', fontFamily:'inherit' }}>
-                  Download PNG
-                </button>
-              </div>
-            </div>
+      {showLabelPreview && (
+        <IDTagModal
+          tmpl={labelTemplates.find(t => t.id === selectedTemplate)}
+          asset={asset}
+          assetId={assetId}
+          qrUrl={qrUrl}
+          onClose={() => setShowLabelPreview(false)}
+        />
+      )}
           </div>
         );
       })()}
