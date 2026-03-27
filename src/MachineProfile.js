@@ -1245,7 +1245,7 @@ function AssetPage({ assetId, userRole, onStartPrestart, initialTab }) {
                       }
                       if (el2.type==='text') {
                         const fs=Math.max(6,(el2.fontSize||10)*sc);
-                        ctx.font=\`\${el2.bold?'700':'400'} \${fs}px \${el2.fontFamily||'Barlow'},Arial\`;
+                        ctx.font=(el2.bold?'700':'400')+' '+fs+'px '+(el2.fontFamily||'Barlow')+',Arial';
                         ctx.fillStyle=el2.color||'#000';ctx.textAlign=el2.align||'left';ctx.textBaseline='top';
                         /* Substitute asset data */
                         let txt=(el2.text||'').replace(/ASSET NAME/gi, asset.name||'').replace(/ID: XXX-001/gi,'ID: '+(asset.asset_number||'')).replace(/HK-001/gi,asset.asset_number||'').replace(/Model: —/gi,(asset.make||'')+(asset.model?' '+asset.model:''));
@@ -1253,7 +1253,7 @@ function AssetPage({ assetId, userRole, onStartPrestart, initialTab }) {
                         txt.split('\n').forEach((line,i)=>ctx.fillText(line,tx,y+i*fs*1.3));
                       }
                       if (el2.type==='mechiq_logo') {
-                        const fs=Math.max(6,h*0.65);ctx.font=\`900 \${fs}px 'Barlow Condensed',Arial\`;ctx.textBaseline='middle';ctx.textAlign='left';
+                        const fs=Math.max(6,h*0.65);ctx.font='900 '+fs+"px 'Barlow Condensed',Arial";ctx.textBaseline='middle';ctx.textAlign='left';
                         ctx.fillStyle=el2.colorMain||'#1a2433';ctx.fillText('MECH',x,y+h/2);
                         const mw=ctx.measureText('MECH').width;ctx.fillStyle=el2.colorAccent||'#2d8cf0';ctx.fillText('IQ',x+mw+1,y+h/2);
                       }
