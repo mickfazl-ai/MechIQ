@@ -35,8 +35,8 @@ function App() {
 
   // ── Public scan route — no auth needed ──────────────────────
   const pathname = window.location.pathname;
-  const scanMatch = pathname.match(/^\/scan\/([a-f0-9-]{36})$/);
-  const partScanMatch = pathname.match(/^\/scan\/part\/([a-f0-9-]{36})$/);
+  const scanMatch = pathname.match(/^\/scan\/([a-f0-9-]{1,36}|\d+)$/);
+  const partScanMatch = pathname.match(/^\/scan\/part\/([a-f0-9-]{1,36}|\d+)$/);
 
   const setCurrentPage = (page, subPage = null) => {
     if (page === 'assets') {
