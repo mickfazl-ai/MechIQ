@@ -1428,9 +1428,6 @@ function AssetPage({ assetId, userRole, onStartPrestart, initialTab }) {
           onClose={() => setShowLabelPreview(false)}
         />
       )}
-          </div>
-        );
-      })()}
 
       {/* ── Prestart button ── */}
       <button className="mp-start-btn" onClick={() => onStartPrestart(asset.name)}>
