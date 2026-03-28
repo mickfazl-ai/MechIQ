@@ -120,14 +120,41 @@ function CompanyDetails({ userRole }) {
   const handleSave = async () => {
     setSaving(true);
     let logo_url = logoUrl;
+
     if (logo) {
-      const ext = logo.name.split('.').pop();
-      const path = `logos/${userRole.company_id}.${ext}`;
-      await supabase.storage.from('company-assets').upload(path, logo, { upsert: true });
-      const { data: urlData } = supabase.storage.from('company-assets').getPublicUrl(path);
-      logo_url = urlData.publicUrl;
+      try {
+        const ext = logo.name.split('.').pop().toLowerCase();
+        const path = `logos/${userRole.company_id}.${ext}`;
+        const { error: upErr } = await supabase.storage
+          .from('company-assets')
+          .upload(path, logo, { upsert: true, contentType: logo.type });
+
+        if (upErr) {
+          // Bucket may not exist — try creating it then retry
+          await supabase.storage.createBucket('company-assets', { public: true });
+          await supabase.storage.from('company-assets').upload(path, logo, { upsert: true, contentType: logo.type });
+        }
+
+        const { data: urlData } = supabase.storage.from('company-assets').getPublicUrl(path);
+        if (urlData?.publicUrl) logo_url = urlData.publicUrl;
+      } catch(e) {
+        console.error('Logo upload failed:', e);
+        alert('Logo upload failed: ' + e.message + '\n\nPlease create a public storage bucket called "company-assets" in Supabase Storage.');
+        setSaving(false);
+        return;
+      }
     }
-    await supabase.from('companies').update({ ...form, logo_url, features }).eq('id', userRole.company_id);
+
+    const { error } = await supabase.from('companies')
+      .update({ ...form, logo_url, features })
+      .eq('id', userRole.company_id);
+
+    if (error) {
+      alert('Save failed: ' + error.message);
+      setSaving(false);
+      return;
+    }
+
     setSaving(false); setSaved(true);
     setTimeout(() => setSaved(false), 3000);
   };
