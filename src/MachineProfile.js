@@ -1295,6 +1295,7 @@ function AssetPage({ assetId, userRole, onStartPrestart, initialTab }) {
   const [labelTemplates, setLabelTemplates] = useState([]);
   const [selectedTemplate, setSelectedTemplate] = useState('');
   const [showLabelPreview, setShowLabelPreview] = useState(false);
+  const [showQR, setShowQR] = useState(false);
 
   const loadLabelTemplates = async () => {
     const { data } = await supabase.from('label_templates').select('*').order('created_at', { ascending: false });
@@ -1385,35 +1386,25 @@ function AssetPage({ assetId, userRole, onStartPrestart, initialTab }) {
               ))}
             </div>
           </div>
-          <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:8, minWidth:140 }}>
-            {/* Hidden QR for canvas export */}
-            <div style={{ position:'absolute', opacity:0, pointerEvents:'none' }}>
-              <QRCodeCanvas id={`qr-${assetId}`} value={qrUrl} size={120} bgColor="#ffffff" fgColor="#1a2b3c" />
+          <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:8, minWidth:160 }}>
+            {/* Always-visible QR code */}
+            <div style={{ background:'#fff', padding:8, borderRadius:8, border:'1px solid var(--border)', cursor:'pointer' }}
+              onClick={() => setShowQR(q => !q)} title="Click to enlarge">
+              <QRCodeCanvas id={`qr-${assetId}`} value={qrUrl} size={80} bgColor="#ffffff" fgColor="#1a2433" level="H" />
             </div>
-            {/* Label template selector */}
-            <div style={{ fontSize:10, fontWeight:700, color:'var(--text-muted)', letterSpacing:'1px', textTransform:'uppercase', alignSelf:'flex-start' }}>Machine ID Tag</div>
-            {labelTemplates.length > 0 ? (
-              <select
-                value={selectedTemplate}
-                onChange={e => setSelectedTemplate(e.target.value)}
-                style={{ width:'100%', padding:'6px 8px', border:'1px solid var(--border)', borderRadius:6, background:'var(--surface)', color:'var(--text-primary)', fontSize:12, fontFamily:'inherit', outline:'none' }}
-              >
-                {labelTemplates.map(t => (
-                  <option key={t.id} value={t.id}>{t.name} ({t.size})</option>
-                ))}
-              </select>
-            ) : (
-              <div style={{ fontSize:11, color:'var(--text-muted)', textAlign:'center', lineHeight:1.5 }}>
-                No templates saved.<br/>Create one in<br/>Admin → Label Designer.
-              </div>
-            )}
-            <button
-              onClick={() => setShowLabelPreview(true)}
-              disabled={!labelTemplates.length}
-              style={{ width:'100%', fontSize:11, fontWeight:700, padding:'7px 12px', border:'1px solid var(--accent)', borderRadius:6, background:'var(--accent-light)', color:'var(--accent)', cursor:'pointer', fontFamily:'inherit', opacity: labelTemplates.length ? 1 : 0.4 }}
-            >
-              Generate ID Tag →
-            </button>
+            <div style={{ fontSize:9, color:'var(--text-muted)', textAlign:'center' }}>Scan to start prestart</div>
+            <div style={{ display:'flex', gap:6, width:'100%' }}>
+              <button onClick={() => setShowQR(true)}
+                style={{ flex:1, fontSize:10, fontWeight:700, padding:'5px 0', border:'1px solid var(--border)', borderRadius:5, background:'var(--surface)', color:'var(--text-secondary)', cursor:'pointer', fontFamily:'inherit' }}>
+                🔍 Enlarge
+              </button>
+              {labelTemplates.length > 0 && (
+                <button onClick={() => setShowLabelPreview(true)}
+                  style={{ flex:1, fontSize:10, fontWeight:700, padding:'5px 0', border:'1px solid var(--accent)', borderRadius:5, background:'var(--accent-light)', color:'var(--accent)', cursor:'pointer', fontFamily:'inherit' }}>
+                  🏷 ID Tag
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -1427,6 +1418,24 @@ function AssetPage({ assetId, userRole, onStartPrestart, initialTab }) {
           qrUrl={qrUrl}
           onClose={() => setShowLabelPreview(false)}
         />
+      )}
+
+      {/* ── QR Enlarge Modal ── */}
+      {showQR && (
+        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.7)', zIndex:1000, display:'flex', alignItems:'center', justifyContent:'center' }}
+          onClick={() => setShowQR(false)}>
+          <div style={{ background:'#fff', borderRadius:16, padding:32, textAlign:'center', boxShadow:'0 24px 80px rgba(0,0,0,0.4)' }}
+            onClick={e => e.stopPropagation()}>
+            <div style={{ fontSize:13, fontWeight:700, color:'#1a2433', marginBottom:4 }}>{asset.name}</div>
+            <div style={{ fontSize:11, color:'#6b7a8d', marginBottom:16 }}>{asset.asset_number} · Scan to start prestart</div>
+            <QRCodeCanvas value={qrUrl} size={240} bgColor="#ffffff" fgColor="#1a2433" level="H" />
+            <div style={{ fontSize:10, color:'#8a96a3', marginTop:12, wordBreak:'break-all', maxWidth:260 }}>{qrUrl}</div>
+            <button onClick={() => setShowQR(false)}
+              style={{ marginTop:16, padding:'8px 24px', border:'none', borderRadius:6, background:'#2d8cf0', color:'#fff', fontSize:13, fontWeight:700, cursor:'pointer' }}>
+              Close
+            </button>
+          </div>
+        </div>
       )}
 
       {/* ── Prestart button ── */}
