@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "main": "electron-main.js",
-  "homepage": "./",
+  "homepage": "/",
   "dependencies": {
     "@capacitor/android": "^8.2.0",
     "@capacitor/cli": "^8.2.0",
