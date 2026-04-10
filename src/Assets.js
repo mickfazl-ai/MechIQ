@@ -239,18 +239,8 @@ function AssetCard({ asset, index, onView, onDelete, onQR, onQuickLog, onEdit, o
       <div className="card-actions" style={{ padding: '0 18px 16px', display: 'flex', gap: '8px', flexWrap:'wrap' }}>
         <button onClick={() => onView(asset.id)} className="nav-pill nav-pill-primary" style={{ fontSize: '11px', padding: '6px 14px' }}>View →</button>
 
-        {asset.status === 'Down' || asset.status === 'Maintenance' ? (
-          <button onClick={() => onQuickLog && onQuickLog(asset, 'Running')} style={{ fontSize:'11px', padding:'6px 12px', background:'var(--green-bg)', color:'var(--green)', border:'1px solid var(--green-border)', borderRadius:8, fontWeight:700, cursor:'pointer', transition:'all 0.15s' }}>✓ Running</button>
-        ) : (
-          <button onClick={() => onQuickLog && onQuickLog(asset, 'Down')} style={{ fontSize:'11px', padding:'6px 12px', background:'var(--red-bg)', color:'var(--red)', border:'1px solid var(--red-border)', borderRadius:8, fontWeight:700, cursor:'pointer', transition:'all 0.15s' }}>🔴 Log Down</button>
-        )}
-        {canDelete && (
-          <button onClick={() => onDelete(asset.id, asset.name)} style={{ marginLeft: 'auto', padding: '6px 12px', background: 'transparent', border: '1px solid var(--red-border)', color: 'var(--red)', borderRadius: '8px', fontSize: '11px', fontWeight: 700, cursor: 'pointer', transition: 'all 0.15s', fontFamily:'var(--font-display)', letterSpacing:'0.5px', textTransform:'uppercase' }}
-            onMouseEnter={e => { e.currentTarget.style.background = 'var(--red-bg)'; }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}>
-            Delete
-          </button>
-        )}
+
+
       </div>
     </div>
   );
