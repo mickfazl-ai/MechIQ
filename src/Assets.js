@@ -647,7 +647,7 @@ function calcDepr(price, date, year) {
 }
 
 // ─── Onboarding Tab ────────────────────────────────────────────────────────────
-function OnboardingTab({ userRole, onComplete, toast, onEditAsset }) {
+function OnboardingTab({ userRole, onComplete, toast }) {
   const [step, setStep] = useState(0);
   const [saving, setSaving] = useState(false);
   const [savedAsset, setSavedAsset] = useState(null);
@@ -1083,12 +1083,10 @@ function OnboardingTab({ userRole, onComplete, toast, onEditAsset }) {
                         <td style={{ padding:'9px 14px', color:'var(--text-secondary)' }}>{a.purchase_price?'$'+Number(a.purchase_price).toLocaleString():'—'}</td>
                         <td style={{ padding:'9px 14px', color:'var(--text-muted)', fontSize:12 }}>{a.created_at?new Date(a.created_at).toLocaleDateString('en-AU',{day:'2-digit',month:'short',year:'numeric'}):'—'}</td>
                         <td style={{ padding:'9px 14px' }}>
-                          {onEditAsset && (
-                            <button onClick={() => onEditAsset(a)}
-                              style={{ padding:'4px 12px', background:'var(--surface-2)', color:'var(--text-secondary)', border:'1px solid var(--border)', borderRadius:6, fontSize:11, fontWeight:700, cursor:'pointer', whiteSpace:'nowrap' }}>
-                              ✏️ Edit
-                            </button>
-                          )}
+                          <button onClick={() => setEditAsset(a)}
+                            style={{ padding:'4px 12px', background:'var(--surface-2)', color:'var(--text-secondary)', border:'1px solid var(--border)', borderRadius:6, fontSize:11, fontWeight:700, cursor:'pointer', whiteSpace:'nowrap' }}>
+                            ✏️ Edit
+                          </button>
                         </td>
                       </tr>
                     );
