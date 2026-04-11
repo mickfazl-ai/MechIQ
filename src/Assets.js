@@ -943,7 +943,33 @@ function OnboardingTab({ userRole, onComplete, toast, onEditAsset }) {
     );
   };
 
-  const [onboardList, setOnboardList] = React.useState([]);
+  const [onboardList,   setOnboardList]   = React.useState([]);
+  const [editAsset,     setEditAsset]     = React.useState(null);
+  const [editSaving,    setEditSaving]    = React.useState(false);
+
+  const handleEdit = async () => {
+    if (!editAsset) return;
+    setEditSaving(true);
+    await supabase.from('assets').update({
+      name: editAsset.name, type: editAsset.type, location: editAsset.location,
+      status: editAsset.status, make: editAsset.make, model: editAsset.model,
+      year: editAsset.year ? parseInt(editAsset.year) : null,
+      hours: editAsset.hours ? parseFloat(editAsset.hours) : null,
+      target_hours: editAsset.target_hours ? parseFloat(editAsset.target_hours) : 8,
+      hourly_rate: editAsset.hourly_rate ? parseFloat(editAsset.hourly_rate) : null,
+      colour: editAsset.colour, serial_number: editAsset.serial_number,
+      registration: editAsset.registration, notes: editAsset.notes,
+      purchase_price: editAsset.purchase_price ? parseFloat(editAsset.purchase_price) : null,
+      purchase_date: editAsset.purchase_date || null,
+    }).eq('id', editAsset.id);
+    setEditSaving(false);
+    toast && toast(`${editAsset.name} updated`, 'success');
+    setEditAsset(null);
+    // Refresh list
+    supabase.from('assets').select('*').eq('company_id', userRole.company_id)
+      .order('created_at', { ascending: false })
+      .then(({ data }) => setOnboardList(data || []));
+  };
   const [showList, setShowList]       = React.useState(true);
   React.useEffect(() => {
     if (!userRole?.company_id) return;
@@ -966,6 +992,53 @@ function OnboardingTab({ userRole, onComplete, toast, onEditAsset }) {
           {onboardList.length} Registered
         </span>
       </div>
+
+      {/* Edit Asset Modal */}
+      {editAsset && (
+        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:1000, padding:20 }}>
+          <div style={{ background:'var(--surface)', borderRadius:16, padding:28, width:'100%', maxWidth:560, maxHeight:'85vh', overflowY:'auto', border:'1px solid var(--border)', boxShadow:'0 20px 60px rgba(0,0,0,0.3)' }}>
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:20 }}>
+              <div style={{ fontSize:17, fontWeight:800, color:'var(--text-primary)' }}>Edit Asset — {editAsset.asset_number}</div>
+              <button onClick={() => setEditAsset(null)} style={{ background:'none', border:'none', color:'var(--text-muted)', cursor:'pointer', fontSize:18 }}>✕</button>
+            </div>
+            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, marginBottom:14 }}>
+              {[
+                ['Name *','name','text'],['Type *','type','text'],
+                ['Make','make','text'],['Model','model','text'],
+                ['Year','year','number'],['Location','location','text'],
+                ['Colour','colour','text'],['Serial Number','serial_number','text'],
+                ['Current Hours','hours','number'],['Target Hrs/Day','target_hours','number'],
+                ['Hourly Rate ($)','hourly_rate','number'],['Purchase Price ($)','purchase_price','number'],
+                ['Purchase Date','purchase_date','date'],['Registration','registration','text'],
+              ].map(([label,key,type]) => (
+                <div key={key}>
+                  <div style={{ fontSize:10, fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.5px', marginBottom:5 }}>{label}</div>
+                  <input style={{ width:'100%', padding:'9px 12px', border:'1px solid var(--border)', borderRadius:8, background:'var(--surface-2)', color:'var(--text-primary)', fontSize:13, fontFamily:'inherit', outline:'none', boxSizing:'border-box' }}
+                    type={type} value={editAsset[key]||''} onChange={e => setEditAsset(p=>({...p,[key]:e.target.value}))} />
+                </div>
+              ))}
+              <div>
+                <div style={{ fontSize:10, fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.5px', marginBottom:5 }}>Status</div>
+                <select style={{ width:'100%', padding:'9px 12px', border:'1px solid var(--border)', borderRadius:8, background:'var(--surface-2)', color:'var(--text-primary)', fontSize:13, fontFamily:'inherit', outline:'none', boxSizing:'border-box' }}
+                  value={editAsset.status||'Running'} onChange={e => setEditAsset(p=>({...p,status:e.target.value}))}>
+                  <option>Running</option><option>Down</option><option>Maintenance</option><option>Standby</option><option>Active</option>
+                </select>
+              </div>
+            </div>
+            <div style={{ marginBottom:14 }}>
+              <div style={{ fontSize:10, fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.5px', marginBottom:5 }}>Notes</div>
+              <textarea style={{ width:'100%', padding:'9px 12px', border:'1px solid var(--border)', borderRadius:8, background:'var(--surface-2)', color:'var(--text-primary)', fontSize:13, fontFamily:'inherit', outline:'none', boxSizing:'border-box', resize:'vertical', minHeight:70 }}
+                value={editAsset.notes||''} onChange={e => setEditAsset(p=>({...p,notes:e.target.value}))} />
+            </div>
+            <div style={{ display:'flex', gap:8 }}>
+              <button onClick={handleEdit} disabled={editSaving} style={{ flex:1, padding:'10px', background:'var(--accent)', color:'#fff', border:'none', borderRadius:8, fontSize:13, fontWeight:700, cursor:'pointer', opacity:editSaving?0.6:1 }}>
+                {editSaving ? 'Saving…' : 'Save Changes'}
+              </button>
+              <button onClick={() => setEditAsset(null)} style={{ padding:'10px 18px', background:'var(--surface-2)', color:'var(--text-secondary)', border:'1px solid var(--border)', borderRadius:8, fontSize:13, cursor:'pointer' }}>Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Registered assets table */}
       {onboardList.length > 0 && (
@@ -1389,7 +1462,7 @@ function Assets({ userRole, onViewAsset, initialTab }) {
   const renderTab = () => {
     switch (activeTab) {
       case 'units':        return <UnitsTab userRole={userRole} onViewAsset={onViewAsset} toast={toast} />;
-      case 'onboarding':  return <OnboardingTab userRole={userRole} onComplete={() => setActiveTab('units')} toast={toast} onEditAsset={setEditAsset} />;
+      case 'onboarding':  return <OnboardingTab userRole={userRole} onComplete={() => setActiveTab('units')} toast={toast} />;
       case 'depreciation':return <DepreciationTab userRole={userRole} />;
       case 'tracker':     return <TrackerPlaceholder userRole={userRole} />;
       default:            return <UnitsTab userRole={userRole} onViewAsset={onViewAsset} toast={toast} />;
