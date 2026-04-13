@@ -530,13 +530,17 @@ function FeatureRow({ f }) {
 }
 
 function Login({ onAuth }) {
-  const [tab,    setTab]    = useState('login');
-  const [email,  setEmail]  = useState('');
-  const [pw,     setPw]     = useState('');
-  const [err,    setErr]    = useState('');
-  const [msg,    setMsg]    = useState('');
-  const [busy,   setBusy]   = useState(false);
-  const [policy, setPolicy] = useState(false);
+  const [tab,        setTab]        = useState('login');
+  const [email,      setEmail]      = useState('');
+  const [pw,         setPw]         = useState('');
+  const [err,        setErr]        = useState('');
+  const [msg,        setMsg]        = useState('');
+  const [busy,       setBusy]       = useState(false);
+  const [policy,     setPolicy]     = useState(false);
+  const [stayPrompt, setStayPrompt] = useState(null); // session to persist if user says yes
+  const [savedUser,  setSavedUser]  = useState(() => {
+    try { return JSON.parse(localStorage.getItem('mechiq_saved_user') || 'null'); } catch { return null; }
+  });
   const loginRef = useRef(null);
   const featRef  = useRef(null);
 
@@ -554,7 +558,10 @@ function Login({ onAuth }) {
       if (tab === 'login') {
         const { data, error } = await supabase.auth.signInWithPassword({ email, password: pw });
         if (error) throw error;
-        if (data.session) onAuth(data.session);
+        if (data.session) {
+          // Show "Stay signed in?" prompt before continuing
+          setStayPrompt({ session: data.session, email: data.session.user.email, name: data.session.user.user_metadata?.name || email.split('@')[0] });
+        }
       } else {
         const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin });
         if (error) throw error;
@@ -564,10 +571,103 @@ function Login({ onAuth }) {
     setBusy(false);
   };
 
+  const handleStayYes = () => {
+    // Save this user's identity (NOT the session token) so we can show "Welcome back"
+    localStorage.setItem('mechiq_saved_user', JSON.stringify({
+      email: stayPrompt.email,
+      name: stayPrompt.name,
+      savedAt: Date.now(),
+    }));
+    onAuth(stayPrompt.session);
+    setStayPrompt(null);
+  };
+
+  const handleStayNo = () => {
+    // Don't save — session will clear when browser closes (persistSession: false)
+    localStorage.removeItem('mechiq_saved_user');
+    onAuth(stayPrompt.session);
+    setStayPrompt(null);
+  };
+
+  const handleContinueAsSaved = async () => {
+    // Try to restore session — if it's expired, fall through to login
+    const { data } = await supabase.auth.getSession();
+    if (data?.session) {
+      onAuth(data.session);
+    } else {
+      // Session expired — pre-fill email and clear saved user
+      setEmail(savedUser.email);
+      setSavedUser(null);
+      localStorage.removeItem('mechiq_saved_user');
+    }
+  };
+
+  const handleSignInAsOther = () => {
+    // Clear saved user and show normal login
+    localStorage.removeItem('mechiq_saved_user');
+    setSavedUser(null);
+    supabase.auth.signOut();
+  };
+
   const scroll = (ref) => ref.current?.scrollIntoView({ behavior:'smooth', block:'start' });
 
   return (
     <div className="lp">
+
+      {/* ── Stay Signed In prompt ───────────────────────────────────────────── */}
+      {stayPrompt && (
+        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.6)', zIndex:2000, display:'flex', alignItems:'center', justifyContent:'center', padding:20 }}>
+          <div style={{ background:'#fff', borderRadius:20, padding:'36px 32px', width:'100%', maxWidth:400, textAlign:'center', boxShadow:'0 32px 80px rgba(0,0,0,0.25)' }}>
+            <div style={{ fontSize:40, marginBottom:12 }}>🔐</div>
+            <div style={{ fontSize:20, fontWeight:800, color:'#1a2b3c', marginBottom:8 }}>Stay signed in?</div>
+            <div style={{ fontSize:14, color:'#6b7a8d', marginBottom:6 }}>Signed in as</div>
+            <div style={{ fontSize:15, fontWeight:700, color:'#2d8cf0', marginBottom:8 }}>{stayPrompt.name}</div>
+            <div style={{ fontSize:12, color:'#a0b0b0', marginBottom:24 }}>{stayPrompt.email}</div>
+            <div style={{ background:'#fff8e1', border:'1px solid #ffe082', borderRadius:10, padding:'10px 14px', marginBottom:24, fontSize:12, color:'#7a6a00', textAlign:'left' }}>
+              ⚠️ <strong>Only choose "Yes" on your personal device.</strong> On shared or site computers, select "No" so your account signs out when the browser closes.
+            </div>
+            <div style={{ display:'flex', gap:10 }}>
+              <button onClick={handleStayNo}
+                style={{ flex:1, padding:'12px', background:'#f1f5f9', border:'1px solid #dde2ea', borderRadius:10, fontSize:14, fontWeight:700, color:'#6b7a8d', cursor:'pointer' }}>
+                No, sign out<br/>when I close
+              </button>
+              <button onClick={handleStayYes}
+                style={{ flex:1, padding:'12px', background:'linear-gradient(135deg,#2d8cf0,#1a6fd0)', border:'none', borderRadius:10, fontSize:14, fontWeight:700, color:'#fff', cursor:'pointer' }}>
+                Yes, keep me<br/>signed in
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Welcome Back screen (returning user with saved session) ─────────── */}
+      {savedUser && !stayPrompt && (
+        <div style={{ minHeight:'100vh', background:'linear-gradient(135deg,#0d1520 0%,#1a2b3c 100%)', display:'flex', alignItems:'center', justifyContent:'center', padding:20 }}>
+          <div style={{ background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.1)', borderRadius:24, padding:'48px 40px', width:'100%', maxWidth:400, textAlign:'center', backdropFilter:'blur(12px)' }}>
+            <div style={{ fontSize:20, fontWeight:800, color:'#fff', letterSpacing:'2px', marginBottom:32 }}>MECH<span style={{ color:'#2d8cf0' }}>IQ</span></div>
+            <div style={{ width:72, height:72, borderRadius:'50%', background:'linear-gradient(135deg,#2d8cf0,#1a6fd0)', display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 20px', fontSize:28, fontWeight:800, color:'#fff' }}>
+              {(savedUser.name||'?')[0].toUpperCase()}
+            </div>
+            <div style={{ fontSize:13, color:'#7a9ab8', marginBottom:4 }}>Welcome back</div>
+            <div style={{ fontSize:22, fontWeight:800, color:'#fff', marginBottom:4 }}>{savedUser.name}</div>
+            <div style={{ fontSize:13, color:'#4a7a9b', marginBottom:32 }}>{savedUser.email}</div>
+            <button onClick={handleContinueAsSaved}
+              style={{ width:'100%', padding:'14px', background:'linear-gradient(135deg,#2d8cf0,#1a6fd0)', border:'none', borderRadius:12, fontSize:15, fontWeight:700, color:'#fff', cursor:'pointer', marginBottom:12 }}>
+              Continue →
+            </button>
+            <button onClick={handleSignInAsOther}
+              style={{ width:'100%', padding:'12px', background:'transparent', border:'1px solid rgba(255,255,255,0.15)', borderRadius:12, fontSize:13, fontWeight:600, color:'#7a9ab8', cursor:'pointer' }}>
+              Sign in as someone else
+            </button>
+            <div style={{ fontSize:11, color:'#3a5a7a', marginTop:20 }}>
+              Not your device? Click "Sign in as someone else" to protect your account.
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Normal login page — only shown when no saved user ───────────────── */}
+      {!savedUser && !stayPrompt && <>
 
       {/* Nav */}
       <nav className="lp-nav">
@@ -743,6 +843,7 @@ function Login({ onAuth }) {
       )}
 
     </div>
+    </>}
   );
 }
 
