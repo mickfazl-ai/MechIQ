@@ -842,8 +842,8 @@ function Login({ onAuth }) {
         </div>
       )}
 
-    </div>
     </>}
+    </div>
   );
 }
 
