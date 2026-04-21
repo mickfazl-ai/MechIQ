@@ -2132,8 +2132,7 @@ Return ONLY valid JSON:
 No markdown, no explanation.`;
 
     try {
-      const data = await callAI([{ role: 'user', content: prompt }], 2000);
-      const text = (data.content || []).map(c => c.text || '').join('');
+      const text = await callAI([{ role: 'user', content: prompt }], 2000);
       let parsed;
       try {
         parsed = JSON.parse(text.replace(/```json|```/g, '').trim());
