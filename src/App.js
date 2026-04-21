@@ -20,6 +20,7 @@ import OilSampling from './OilSampling';
 import ScanPage from './ScanPage';
 import ForcePasswordChange from './ForcePasswordChange';
 import { supabase } from './supabase';
+import ContractorPortal from './ContractorPortal';
 import DemoTour from './DemoTour';
 
 function App() {
@@ -237,6 +238,7 @@ function App() {
   // ── Public scan route — render before auth check ─────────────
   if (scanMatch) return <ScanPage assetId={scanMatch[1]} />;
   if (partScanMatch) return <ScanPage partId={partScanMatch[1]} />;
+  if (pathname.startsWith('/contractor')) return <ContractorPortal />;
 
   const renderPage = () => {
     if (userRole?.role === 'master' && currentPage === 'master' && !viewingCompany) return <MasterAdmin initialTab={currentSubPage || 'companies'} key={currentSubPage} />;

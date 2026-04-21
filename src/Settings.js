@@ -1505,6 +1505,7 @@ const ADMIN_TABS = [
   { id: 'billing',          label: 'Contact & Plan',  icon: '💳' },
   { id: 'data',             label: 'Data & Export',   icon: '📤' },
   { id: 'assets_settings',  label: 'Assets',          icon: '🚛' },
+  { id: 'onboarding_admin', label: 'Plant Onboarding',icon: '🏗️' },
   { id: 'labels',           label: 'Labels',           icon: '🏷' },
 ];
 
@@ -2408,6 +2409,498 @@ function LabelPrint({ userRole }) {
   );
 }
 
+
+// ─── Plant Onboarding Admin ───────────────────────────────────────────────────
+function PlantOnboardingAdmin({ userRole }) {
+  const [tab, setTab] = React.useState('submissions');
+  const ts = (id) => ({
+    padding:'8px 18px', border:'none', background:'transparent',
+    borderBottom: tab===id ? '2px solid var(--accent)' : '2px solid transparent',
+    color: tab===id ? 'var(--accent)' : 'var(--text-muted)',
+    fontWeight: tab===id ? 700 : 500, fontSize:13, cursor:'pointer', fontFamily:'inherit', transition:'all 0.15s',
+  });
+  return (
+    <div>
+      <div style={{ display:'flex', borderBottom:'1px solid var(--border)', marginBottom:24 }}>
+        <button style={ts('submissions')} onClick={()=>setTab('submissions')}>📋 Submissions</button>
+        <button style={ts('contractors')} onClick={()=>setTab('contractors')}>👷 Contractors</button>
+        <button style={ts('checklists')} onClick={()=>setTab('checklists')}>✅ Compliance Checklists</button>
+      </div>
+      {tab==='submissions'  && <SubmissionsReview userRole={userRole} />}
+      {tab==='contractors'  && <ContractorManager userRole={userRole} />}
+      {tab==='checklists'   && <ComplianceChecklists userRole={userRole} />}
+    </div>
+  );
+}
+
+// ─── Submissions Review ───────────────────────────────────────────────────────
+function SubmissionsReview({ userRole }) {
+  const [subs,    setSubs]    = React.useState([]);
+  const [loading, setLoading] = React.useState(true);
+  const [selected,setSelected]= React.useState(null);
+  const [docs,    setDocs]    = React.useState([]);
+  const [checklists, setChecklists] = React.useState([]);
+  const [completions, setCompletions] = React.useState({});
+  const [rejectReason, setRejectReason] = React.useState('');
+  const [saving,  setSaving]  = React.useState(false);
+  const [labelInput, setLabelInput] = React.useState('');
+  const [filter,  setFilter]  = React.useState('pending');
+
+  React.useEffect(() => { if(userRole?.company_id) load(); }, [userRole]);
+
+  const load = async () => {
+    setLoading(true);
+    const [{ data:s }, { data:cl }] = await Promise.all([
+      supabase.from('plant_submissions').select('*, contractor_accounts(company_name,contact_name,email,phone)').eq('company_id', userRole.company_id).order('created_at',{ascending:false}),
+      supabase.from('compliance_checklists').select('*').eq('company_id', userRole.company_id),
+    ]);
+    setSubs(s||[]); setChecklists(cl||[]); setLoading(false);
+  };
+
+  const selectSub = async (sub) => {
+    setSelected(sub); setRejectReason(''); setLabelInput(sub.label_code||'');
+    const { data } = await supabase.from('submission_documents').select('*').eq('submission_id', sub.id);
+    setDocs(data||[]);
+    const { data:comps } = await supabase.from('compliance_completions').select('*').eq('submission_id', sub.id);
+    const map = {};
+    (comps||[]).forEach(c => { map[c.checklist_id] = c.completed_items || {}; });
+    setCompletions(map);
+  };
+
+  const toggleItem = (checklistId, itemId) => {
+    setCompletions(prev => {
+      const cl = { ...(prev[checklistId]||{}) };
+      cl[itemId] = !cl[itemId];
+      return { ...prev, [checklistId]: cl };
+    });
+  };
+
+  const saveCompletions = async () => {
+    for (const [checklistId, items] of Object.entries(completions)) {
+      await supabase.from('compliance_completions').upsert({
+        submission_id: selected.id, checklist_id: checklistId,
+        completed_items: items, completed_by: userRole.name || userRole.email,
+        completed_at: new Date().toISOString(),
+      }, { onConflict: 'submission_id,checklist_id' });
+    }
+  };
+
+  const setStatus = async (status) => {
+    setSaving(true);
+    await saveCompletions();
+    const update = { status, approved_by: userRole.name||userRole.email, approved_at: new Date().toISOString() };
+    if (status === 'rejected') update.rejection_reason = rejectReason;
+    if (labelInput) update.label_code = labelInput;
+    await supabase.from('plant_submissions').update(update).eq('id', selected.id);
+    // Assign label if provided
+    if (labelInput) {
+      await supabase.from('generated_labels').update({ asset_name: selected.name }).ilike('label_code', labelInput);
+    }
+    // Send mailto notification
+    const sub = selected;
+    const contractor = sub.contractor_accounts;
+    if (contractor?.email) {
+      const subj = status === 'approved'
+        ? `MechIQ — ${sub.name} Approved for Site`
+        : `MechIQ — ${sub.name} Requires Attention`;
+      const body = status === 'approved'
+        ? `Hi ${contractor.contact_name},\n\nYour plant submission has been approved:\n\nPlant: ${sub.name}\nType: ${sub.type}\nMake/Model: ${[sub.make,sub.model].filter(Boolean).join(' ')}\n${labelInput ? 'Site Label: '+labelInput+'\n' : ''}\nThe plant is now cleared for site. Please ensure it is fitted with the assigned label before commencing work.\n\nRegards,\nMechIQ Site Administration`
+        : `Hi ${contractor.contact_name},\n\nYour plant submission requires attention:\n\nPlant: ${sub.name}\nReason: ${rejectReason}\n\nPlease address the above and resubmit. Contact your site administrator if you have questions.\n\nRegards,\nMechIQ Site Administration`;
+      window.location.href = `mailto:${contractor.email}?subject=${encodeURIComponent(subj)}&body=${encodeURIComponent(body)}`;
+    }
+    setSaving(false);
+    setSelected(null);
+    load();
+  };
+
+  const addToAssets = async () => {
+    if (!selected) return;
+    setSaving(true);
+    const { data: asset } = await supabase.from('assets').insert([{
+      company_id:     userRole.company_id,
+      name:           selected.name,
+      type:           selected.type,
+      make:           selected.make,
+      model:          selected.model,
+      year:           selected.year,
+      serial_number:  selected.serial_number,
+      status:         'Active',
+      ownership_type: selected.hire_type === 'dry' ? 'dry_hire' : selected.hire_type === 'wet' ? 'wet_hire' : 'owned',
+      notes:          `Onboarded from contractor: ${selected.contractor_accounts?.company_name||''}`,
+    }]).select().single();
+    if (asset) {
+      await supabase.from('plant_submissions').update({ asset_id: asset.id, status:'compliant' }).eq('id', selected.id);
+    }
+    setSaving(false);
+    setSelected(null);
+    load();
+  };
+
+  const filtered = subs.filter(s => filter === 'all' || s.status === filter);
+  const SC = { pending:'#d97706', approved:'#16a34a', rejected:'#e11d48', compliant:'#2d8cf0' };
+  const iStyle = { width:'100%', padding:'8px 10px', border:'1px solid var(--border)', borderRadius:6, background:'var(--surface-2)', color:'var(--text-primary)', fontSize:13, fontFamily:'inherit', outline:'none', boxSizing:'border-box' };
+
+  // Relevant checklists for selected submission
+  const relevantChecklists = selected
+    ? checklists.filter(cl => !cl.plant_type || cl.plant_type.toLowerCase() === (selected.type||'').toLowerCase() || cl.plant_type === 'All')
+    : [];
+
+  return (
+    <div style={{ display:'grid', gridTemplateColumns: selected ? '1fr 1fr' : '1fr', gap:20 }}>
+      {/* List */}
+      <div>
+        <div style={{ display:'flex', gap:8, marginBottom:16, flexWrap:'wrap' }}>
+          {[['all','All'],['pending','Pending'],['approved','Approved'],['rejected','Rejected'],['compliant','On Site']].map(([v,l])=>(
+            <button key={v} onClick={()=>setFilter(v)}
+              style={{ padding:'5px 14px', borderRadius:20, border:`1px solid ${filter===v?'var(--accent)':'var(--border)'}`, background:filter===v?'var(--accent-light)':'var(--surface)', color:filter===v?'var(--accent)':'var(--text-muted)', fontSize:12, fontWeight:filter===v?700:500, cursor:'pointer' }}>
+              {l} {v!=='all'&&<span style={{ fontWeight:700 }}>({subs.filter(s=>s.status===(v==='compliant'?'compliant':v)).length})</span>}
+            </button>
+          ))}
+        </div>
+        {loading ? <div style={{ color:'var(--text-muted)', fontSize:13 }}>Loading…</div>
+        : filtered.length === 0 ? <div style={{ color:'var(--text-muted)', fontSize:13, fontStyle:'italic' }}>No submissions.</div>
+        : filtered.map(s => (
+          <div key={s.id} onClick={()=>selectSub(s)}
+            style={{ padding:'14px 16px', borderRadius:10, border:`1px solid ${selected?.id===s.id?'var(--accent)':'var(--border)'}`, background:selected?.id===s.id?'var(--accent-light)':'var(--surface)', marginBottom:8, cursor:'pointer', transition:'all 0.15s' }}>
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:6 }}>
+              <div style={{ fontWeight:700, color:'var(--text-primary)', fontSize:14 }}>{s.name}</div>
+              <span style={{ padding:'2px 10px', borderRadius:20, fontSize:11, fontWeight:700, background:(SC[s.status]||'#a0b0b0')+'18', color:SC[s.status]||'#a0b0b0', border:`1px solid ${SC[s.status]||'#a0b0b0'}30` }}>
+                {s.status}
+              </span>
+            </div>
+            <div style={{ fontSize:12, color:'var(--text-muted)' }}>
+              {[s.make,s.model].filter(Boolean).join(' ')} · {s.type} · {s.hire_type==='dry'?'Dry Hire':'Wet Hire'}
+            </div>
+            <div style={{ fontSize:11, color:'var(--text-faint)', marginTop:4 }}>
+              {s.contractor_accounts?.company_name} · {new Date(s.created_at).toLocaleDateString('en-AU',{day:'2-digit',month:'short',year:'numeric'})}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Detail panel */}
+      {selected && (
+        <div style={{ background:'var(--surface)', border:'1px solid var(--border)', borderRadius:12, padding:20, maxHeight:'80vh', overflowY:'auto' }}>
+          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:16 }}>
+            <div style={{ fontSize:16, fontWeight:800, color:'var(--text-primary)' }}>{selected.name}</div>
+            <button onClick={()=>setSelected(null)} style={{ background:'none', border:'none', fontSize:18, cursor:'pointer', color:'var(--text-muted)' }}>✕</button>
+          </div>
+
+          {/* Plant info */}
+          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8, marginBottom:16, fontSize:12 }}>
+            {[['Type',selected.type],['Make',selected.make],['Model',selected.model],['Year',selected.year],['Serial',selected.serial_number],['Capacity',selected.capacity],['Hire Type',selected.hire_type==='dry'?'Dry Hire':'Wet Hire']].filter(([,v])=>v).map(([k,v])=>(
+              <div key={k} style={{ padding:'8px 10px', background:'var(--surface-2)', borderRadius:7 }}>
+                <div style={{ fontSize:9, fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.5px', marginBottom:2 }}>{k}</div>
+                <div style={{ fontWeight:600, color:'var(--text-primary)' }}>{v}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* Contractor info */}
+          <div style={{ padding:'10px 12px', background:'var(--surface-2)', borderRadius:8, marginBottom:16, fontSize:12 }}>
+            <div style={{ fontSize:10, fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.5px', marginBottom:6 }}>Contractor</div>
+            <div style={{ fontWeight:700, color:'var(--text-primary)' }}>{selected.contractor_accounts?.company_name}</div>
+            <div style={{ color:'var(--text-secondary)' }}>{selected.contractor_accounts?.contact_name} · {selected.contractor_accounts?.email}</div>
+          </div>
+
+          {/* Documents */}
+          {docs.length > 0 && (
+            <div style={{ marginBottom:16 }}>
+              <div style={{ fontSize:11, fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.5px', marginBottom:8 }}>Documents</div>
+              {docs.map(d=>(
+                <div key={d.id} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'8px 10px', background:'var(--surface-2)', borderRadius:7, marginBottom:6 }}>
+                  <div>
+                    <div style={{ fontSize:13, fontWeight:600, color:'var(--text-primary)' }}>{d.document_type}</div>
+                    {d.expiry_date&&<div style={{ fontSize:11, color:'var(--text-muted)' }}>Expires: {d.expiry_date}</div>}
+                  </div>
+                  <div style={{ display:'flex', gap:8, alignItems:'center' }}>
+                    <button onClick={async()=>{await supabase.from('submission_documents').update({verified:!d.verified}).eq('id',d.id);const{data}=await supabase.from('submission_documents').select('*').eq('submission_id',selected.id);setDocs(data||[]);}}
+                      style={{ padding:'3px 10px', fontSize:11, fontWeight:700, borderRadius:5, cursor:'pointer', background:d.verified?'var(--green-bg)':'var(--surface)', border:`1px solid ${d.verified?'var(--green-border)':'var(--border)'}`, color:d.verified?'var(--green)':'var(--text-muted)' }}>
+                      {d.verified?'✓ Verified':'Verify'}
+                    </button>
+                    {d.file_url&&<a href={d.file_url} target="_blank" rel="noreferrer" style={{ fontSize:11, color:'var(--accent)', fontWeight:700 }}>View</a>}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Compliance checklists */}
+          {relevantChecklists.length > 0 && (
+            <div style={{ marginBottom:16 }}>
+              <div style={{ fontSize:11, fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.5px', marginBottom:8 }}>Compliance Checklists</div>
+              {relevantChecklists.map(cl=>(
+                <div key={cl.id} style={{ background:'var(--surface-2)', borderRadius:9, padding:'12px 14px', marginBottom:10 }}>
+                  <div style={{ fontWeight:700, color:'var(--text-primary)', fontSize:13, marginBottom:8 }}>{cl.name}</div>
+                  {(cl.items||[]).map((item,i)=>(
+                    <label key={i} style={{ display:'flex', alignItems:'center', gap:8, padding:'5px 0', cursor:'pointer', fontSize:13, color:'var(--text-secondary)' }}>
+                      <input type="checkbox" checked={!!(completions[cl.id]?.[item.id||i])} onChange={()=>toggleItem(cl.id, item.id||i)} style={{ width:15, height:15, accentColor:'var(--accent)' }} />
+                      {item.label}
+                      {item.required&&<span style={{ fontSize:10, color:'var(--red)', fontWeight:700 }}>Required</span>}
+                    </label>
+                  ))}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Label assign */}
+          <div style={{ marginBottom:16 }}>
+            <label style={{ display:'block', fontSize:11, fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.5px', marginBottom:5 }}>Assign Label Code</label>
+            <input style={iStyle} value={labelInput} onChange={e=>setLabelInput(e.target.value.toUpperCase())} placeholder="e.g. HK-001" />
+          </div>
+
+          {/* Reject reason */}
+          {selected.status !== 'compliant' && (
+            <div style={{ marginBottom:16 }}>
+              <label style={{ display:'block', fontSize:11, fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.5px', marginBottom:5 }}>Rejection Reason (if rejecting)</label>
+              <textarea style={{ ...iStyle, minHeight:60, resize:'vertical' }} value={rejectReason} onChange={e=>setRejectReason(e.target.value)} placeholder="Explain what needs to be addressed…" />
+            </div>
+          )}
+
+          {/* Action buttons */}
+          <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
+            {selected.status !== 'compliant' && (
+              <>
+                <button onClick={()=>setStatus('approved')} disabled={saving}
+                  style={{ flex:1, padding:'10px', background:'var(--green,#16a34a)', color:'#fff', border:'none', borderRadius:8, fontSize:13, fontWeight:700, cursor:'pointer', opacity:saving?0.6:1 }}>
+                  ✓ Approve
+                </button>
+                <button onClick={()=>{ if(!rejectReason.trim()){alert('Please enter a rejection reason');return;} setStatus('rejected');}} disabled={saving}
+                  style={{ flex:1, padding:'10px', background:'var(--red-bg,#fff1f2)', color:'var(--red,#e11d48)', border:'1px solid var(--red-border,#fecdd3)', borderRadius:8, fontSize:13, fontWeight:700, cursor:'pointer', opacity:saving?0.6:1 }}>
+                  ✕ Reject
+                </button>
+              </>
+            )}
+            {selected.status === 'approved' && !selected.asset_id && (
+              <button onClick={addToAssets} disabled={saving}
+                style={{ width:'100%', padding:'10px', background:'var(--accent)', color:'#fff', border:'none', borderRadius:8, fontSize:13, fontWeight:700, cursor:'pointer', opacity:saving?0.6:1 }}>
+                🚛 Add to Assets
+              </button>
+            )}
+            {selected.asset_id && (
+              <div style={{ width:'100%', padding:'10px 14px', background:'var(--green-bg,#f0fdf4)', border:'1px solid var(--green-border,#bbf7d0)', borderRadius:8, fontSize:13, fontWeight:700, color:'var(--green,#16a34a)', textAlign:'center' }}>
+                ✓ Added to Assets
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Contractor Manager ───────────────────────────────────────────────────────
+function ContractorManager({ userRole }) {
+  const [contractors, setContractors] = React.useState([]);
+  const [loading,     setLoading]     = React.useState(true);
+  const [showForm,    setShowForm]    = React.useState(false);
+  const [form,        setForm]        = React.useState({ company_name:'', contact_name:'', email:'', phone:'', abn:'' });
+  const [saving,      setSaving]      = React.useState(false);
+  const [newPin,      setNewPin]      = React.useState('');
+
+  React.useEffect(()=>{ if(userRole?.company_id) load(); },[userRole]);
+  const load = async () => {
+    setLoading(true);
+    const { data } = await supabase.from('contractor_accounts').select('id,company_name,contact_name,email,phone,abn,created_at').eq('company_id', userRole.company_id).order('created_at',{ascending:false});
+    setContractors(data||[]); setLoading(false);
+  };
+
+  const generatePin = () => Math.floor(100000 + Math.random() * 900000).toString();
+
+  const create = async () => {
+    if (!form.company_name||!form.contact_name||!form.email) { alert('Please fill Company Name, Contact Name and Email'); return; }
+    setSaving(true);
+    const pin = generatePin();
+    const { error } = await supabase.from('contractor_accounts').insert([{ ...form, company_id: userRole.company_id, pin }]);
+    if (error) { alert('Error: '+error.message); setSaving(false); return; }
+    setNewPin(pin);
+    setSaving(false);
+    setForm({ company_name:'', contact_name:'', email:'', phone:'', abn:'' });
+    load();
+  };
+
+  const iStyle = { width:'100%', padding:'9px 12px', border:'1px solid var(--border)', borderRadius:7, background:'var(--surface-2)', color:'var(--text-primary)', fontSize:13, fontFamily:'inherit', outline:'none', boxSizing:'border-box' };
+  const lStyle = { display:'block', fontSize:10, fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.5px', marginBottom:4 };
+
+  return (
+    <div>
+      {newPin && (
+        <div style={{ background:'var(--green-bg,#f0fdf4)', border:'1px solid var(--green-border,#bbf7d0)', borderRadius:10, padding:'16px 20px', marginBottom:20 }}>
+          <div style={{ fontSize:14, fontWeight:800, color:'var(--green,#16a34a)', marginBottom:6 }}>✓ Contractor Created</div>
+          <div style={{ fontSize:13, color:'var(--text-secondary)' }}>Share these login details with the contractor:</div>
+          <div style={{ marginTop:10, padding:'10px 14px', background:'#fff', borderRadius:8, border:'1px solid var(--green-border,#bbf7d0)', fontFamily:'monospace', fontSize:14 }}>
+            <div>Portal: <strong>mechiq.com.au/contractor</strong></div>
+            <div>Email: <strong>{form.email || 'their email'}</strong></div>
+            <div>PIN: <strong style={{ fontSize:20, letterSpacing:4, color:'var(--accent)' }}>{newPin}</strong></div>
+          </div>
+          <button onClick={()=>{
+            navigator.clipboard.writeText(`MechIQ Contractor Portal\nURL: mechiq.com.au/contractor\nPIN: ${newPin}`);
+          }} style={{ marginTop:10, padding:'6px 14px', background:'var(--accent)', color:'#fff', border:'none', borderRadius:7, fontSize:12, fontWeight:700, cursor:'pointer' }}>
+            Copy Details
+          </button>
+        </div>
+      )}
+
+      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:16 }}>
+        <div style={{ fontSize:14, fontWeight:700, color:'var(--text-primary)' }}>Registered Contractors ({contractors.length})</div>
+        <button onClick={()=>setShowForm(!showForm)} style={{ padding:'7px 16px', background:'var(--accent)', color:'#fff', border:'none', borderRadius:7, fontSize:12, fontWeight:700, cursor:'pointer' }}>+ Add Contractor</button>
+      </div>
+
+      {showForm && (
+        <div style={{ background:'var(--surface)', border:'1px solid var(--border)', borderRadius:10, padding:20, marginBottom:20 }}>
+          <div style={{ fontSize:14, fontWeight:700, color:'var(--text-primary)', marginBottom:14 }}>New Contractor Account</div>
+          <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(200px,1fr))', gap:12, marginBottom:14 }}>
+            {[['Company Name *','company_name'],['Contact Name *','contact_name'],['Email *','email'],['Phone','phone'],['ABN','abn']].map(([lbl,key])=>(
+              <div key={key}>
+                <label style={lStyle}>{lbl}</label>
+                <input style={iStyle} value={form[key]} onChange={e=>setForm(f=>({...f,[key]:e.target.value}))} type={key==='email'?'email':'text'} />
+              </div>
+            ))}
+          </div>
+          <div style={{ fontSize:12, color:'var(--text-muted)', marginBottom:14, padding:'8px 12px', background:'var(--accent-light)', borderRadius:7, border:'1px solid rgba(0,194,224,0.2)' }}>
+            💡 A 6-digit PIN will be auto-generated. Share it with the contractor so they can log in at <strong>mechiq.com.au/contractor</strong>
+          </div>
+          <div style={{ display:'flex', gap:8 }}>
+            <button onClick={create} disabled={saving} style={{ padding:'9px 20px', background:'var(--accent)', color:'#fff', border:'none', borderRadius:8, fontSize:13, fontWeight:700, cursor:'pointer', opacity:saving?0.6:1 }}>
+              {saving?'Creating…':'Create Account & Generate PIN'}
+            </button>
+            <button onClick={()=>setShowForm(false)} style={{ padding:'9px 16px', background:'var(--surface-2)', color:'var(--text-secondary)', border:'1px solid var(--border)', borderRadius:8, fontSize:13, cursor:'pointer' }}>Cancel</button>
+          </div>
+        </div>
+      )}
+
+      {loading ? <div style={{ color:'var(--text-muted)', fontSize:13 }}>Loading…</div> : contractors.length === 0 ? (
+        <div style={{ color:'var(--text-muted)', fontSize:13, fontStyle:'italic', padding:'20px 0' }}>No contractors registered yet.</div>
+      ) : (
+        <table style={{ width:'100%', borderCollapse:'collapse', fontSize:13 }}>
+          <thead>
+            <tr style={{ background:'var(--surface-2)', borderBottom:'2px solid var(--border)' }}>
+              {['Company','Contact','Email','Phone','ABN','Since'].map(h=><th key={h} style={{ padding:'9px 12px', textAlign:'left', fontSize:10, fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.5px' }}>{h}</th>)}
+            </tr>
+          </thead>
+          <tbody>
+            {contractors.map(c=>(
+              <tr key={c.id} style={{ borderBottom:'1px solid var(--border)' }}>
+                <td style={{ padding:'10px 12px', fontWeight:700, color:'var(--text-primary)' }}>{c.company_name}</td>
+                <td style={{ padding:'10px 12px', color:'var(--text-secondary)' }}>{c.contact_name}</td>
+                <td style={{ padding:'10px 12px', color:'var(--accent)', fontSize:12 }}>{c.email}</td>
+                <td style={{ padding:'10px 12px', color:'var(--text-muted)', fontSize:12 }}>{c.phone||'—'}</td>
+                <td style={{ padding:'10px 12px', color:'var(--text-muted)', fontSize:12 }}>{c.abn||'—'}</td>
+                <td style={{ padding:'10px 12px', color:'var(--text-muted)', fontSize:12 }}>{new Date(c.created_at).toLocaleDateString('en-AU',{day:'2-digit',month:'short',year:'numeric'})}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </div>
+  );
+}
+
+// ─── Compliance Checklists ────────────────────────────────────────────────────
+function ComplianceChecklists({ userRole }) {
+  const [checklists, setChecklists] = React.useState([]);
+  const [editing,    setEditing]    = React.useState(null);
+  const [form,       setForm]       = React.useState({ name:'', plant_type:'', site_name:'', items:[] });
+  const [loading,    setLoading]    = React.useState(true);
+
+  React.useEffect(()=>{ if(userRole?.company_id) load(); },[userRole]);
+  const load = async () => {
+    setLoading(true);
+    const { data } = await supabase.from('compliance_checklists').select('*').eq('company_id', userRole.company_id).order('created_at',{ascending:false});
+    setChecklists(data||[]); setLoading(false);
+  };
+
+  const newChecklist = () => { setEditing('new'); setForm({ name:'', plant_type:'All', site_name:'', items:[] }); };
+  const addItem = () => setForm(f=>({...f, items:[...f.items, { id:Date.now().toString(), label:'', required:false }]}));
+  const updateItem = (i,k,v) => setForm(f=>({...f, items:f.items.map((x,j)=>j===i?{...x,[k]:v}:x)}));
+  const removeItem = (i) => setForm(f=>({...f, items:f.items.filter((_,j)=>j!==i)}));
+
+  const save = async () => {
+    if (!form.name.trim()||form.items.length===0) { alert('Please add a name and at least one item'); return; }
+    if (editing==='new') {
+      await supabase.from('compliance_checklists').insert([{ ...form, company_id: userRole.company_id }]);
+    } else {
+      await supabase.from('compliance_checklists').update({ name:form.name, plant_type:form.plant_type, site_name:form.site_name, items:form.items }).eq('id', editing);
+    }
+    setEditing(null); load();
+  };
+
+  const del = async (id) => {
+    if (!window.confirm('Delete this checklist?')) return;
+    await supabase.from('compliance_checklists').delete().eq('id',id);
+    load();
+  };
+
+  const iStyle = { width:'100%', padding:'8px 10px', border:'1px solid var(--border)', borderRadius:6, background:'var(--surface-2)', color:'var(--text-primary)', fontSize:13, fontFamily:'inherit', outline:'none', boxSizing:'border-box' };
+  const lStyle = { display:'block', fontSize:10, fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.5px', marginBottom:4 };
+
+  return (
+    <div>
+      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:16 }}>
+        <div style={{ fontSize:14, fontWeight:700, color:'var(--text-primary)' }}>Site Compliance Checklists ({checklists.length})</div>
+        <button onClick={newChecklist} style={{ padding:'7px 16px', background:'var(--accent)', color:'#fff', border:'none', borderRadius:7, fontSize:12, fontWeight:700, cursor:'pointer' }}>+ New Checklist</button>
+      </div>
+
+      {editing && (
+        <div style={{ background:'var(--surface)', border:'1px solid var(--border)', borderRadius:10, padding:20, marginBottom:20 }}>
+          <div style={{ fontSize:14, fontWeight:700, color:'var(--text-primary)', marginBottom:14 }}>{editing==='new'?'New Checklist':'Edit Checklist'}</div>
+          <div style={{ display:'grid', gridTemplateColumns:'2fr 1fr 1fr', gap:12, marginBottom:14 }}>
+            <div><label style={lStyle}>Checklist Name *</label><input style={iStyle} value={form.name} onChange={e=>setForm(f=>({...f,name:e.target.value}))} placeholder="e.g. EWP Site Compliance" /></div>
+            <div><label style={lStyle}>Plant Type</label><input style={iStyle} value={form.plant_type} onChange={e=>setForm(f=>({...f,plant_type:e.target.value}))} placeholder="e.g. EWP, All" /></div>
+            <div><label style={lStyle}>Site Name</label><input style={iStyle} value={form.site_name} onChange={e=>setForm(f=>({...f,site_name:e.target.value}))} placeholder="e.g. Newcastle" /></div>
+          </div>
+          <div style={{ fontSize:11, fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.5px', marginBottom:10 }}>Checklist Items</div>
+          {form.items.map((item,i)=>(
+            <div key={item.id||i} style={{ display:'flex', gap:8, marginBottom:8, alignItems:'center' }}>
+              <input style={{ ...iStyle, flex:1 }} value={item.label} onChange={e=>updateItem(i,'label',e.target.value)} placeholder="e.g. Valid registration certificate" />
+              <label style={{ display:'flex', alignItems:'center', gap:5, fontSize:12, color:'var(--text-muted)', flexShrink:0, cursor:'pointer' }}>
+                <input type="checkbox" checked={item.required} onChange={e=>updateItem(i,'required',e.target.checked)} style={{ accentColor:'var(--accent)' }} />Required
+              </label>
+              <button onClick={()=>removeItem(i)} style={{ padding:'6px 10px', background:'var(--red-bg)', color:'var(--red)', border:'1px solid var(--red-border)', borderRadius:5, fontSize:11, fontWeight:700, cursor:'pointer', flexShrink:0 }}>✕</button>
+            </div>
+          ))}
+          <button onClick={addItem} style={{ padding:'6px 16px', background:'transparent', border:'1px dashed var(--border)', borderRadius:6, color:'var(--text-muted)', fontSize:12, fontWeight:600, cursor:'pointer', marginBottom:14 }}>+ Add Item</button>
+          <div style={{ display:'flex', gap:8 }}>
+            <button onClick={save} style={{ padding:'9px 20px', background:'var(--accent)', color:'#fff', border:'none', borderRadius:8, fontSize:13, fontWeight:700, cursor:'pointer' }}>Save Checklist</button>
+            <button onClick={()=>setEditing(null)} style={{ padding:'9px 16px', background:'var(--surface-2)', color:'var(--text-secondary)', border:'1px solid var(--border)', borderRadius:8, fontSize:13, cursor:'pointer' }}>Cancel</button>
+          </div>
+        </div>
+      )}
+
+      {loading ? <div style={{ color:'var(--text-muted)', fontSize:13 }}>Loading…</div>
+      : checklists.length===0 ? <div style={{ color:'var(--text-muted)', fontSize:13, fontStyle:'italic' }}>No checklists created yet. Create checklists to define compliance requirements for different plant types and sites.</div>
+      : checklists.map(cl=>(
+        <div key={cl.id} style={{ background:'var(--surface)', border:'1px solid var(--border)', borderRadius:10, padding:'14px 16px', marginBottom:10 }}>
+          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:8 }}>
+            <div>
+              <div style={{ fontWeight:700, color:'var(--text-primary)', fontSize:14 }}>{cl.name}</div>
+              <div style={{ fontSize:12, color:'var(--text-muted)', marginTop:2 }}>
+                Plant type: <strong>{cl.plant_type||'All'}</strong>
+                {cl.site_name&&<> · Site: <strong>{cl.site_name}</strong></>}
+                · {(cl.items||[]).length} item{(cl.items||[]).length!==1?'s':''}
+              </div>
+            </div>
+            <div style={{ display:'flex', gap:6 }}>
+              <button onClick={()=>{ setEditing(cl.id); setForm({ name:cl.name, plant_type:cl.plant_type||'', site_name:cl.site_name||'', items:cl.items||[] }); }}
+                style={{ padding:'4px 12px', background:'var(--surface-2)', color:'var(--text-secondary)', border:'1px solid var(--border)', borderRadius:6, fontSize:11, fontWeight:700, cursor:'pointer' }}>✏️ Edit</button>
+              <button onClick={()=>del(cl.id)}
+                style={{ padding:'4px 10px', background:'var(--red-bg)', color:'var(--red)', border:'1px solid var(--red-border)', borderRadius:6, fontSize:11, fontWeight:700, cursor:'pointer' }}>🗑</button>
+            </div>
+          </div>
+          <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
+            {(cl.items||[]).map((item,i)=>(
+              <span key={i} style={{ fontSize:11, padding:'2px 8px', borderRadius:5, background: item.required?'var(--red-bg)':'var(--surface-2)', color:item.required?'var(--red)':'var(--text-muted)', border:`1px solid ${item.required?'var(--red-border)':'var(--border)'}` }}>
+                {item.label}{item.required?' *':''}
+              </span>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function Settings({ userRole, initialTab, adminMode, personalMode }) {
   const TABS = adminMode ? ADMIN_TABS : PERSONAL_TABS;
   const defaultTab = adminMode ? 'company' : 'format';
@@ -2426,6 +2919,7 @@ function Settings({ userRole, initialTab, adminMode, personalMode }) {
     app_modifier: <AppModifier userRole={userRole} />,
     password:        <PasswordReset userRole={userRole} />,
     assets_settings:  <AssetsSettings userRole={userRole} />,
+    onboarding_admin: <PlantOnboardingAdmin userRole={userRole} />,
     labels:  <LabelsSection userRole={userRole} />,
   };
 
