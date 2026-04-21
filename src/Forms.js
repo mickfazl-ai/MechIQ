@@ -2066,6 +2066,245 @@ function ServiceSheetsTab({ userRole }) {
   );
 }
 
+
+// ─── Asset Forms Tab ─────────────────────────────────────────────────────────
+function AssetFormsTab({ userRole }) {
+  const [assets,        setAssets]        = React.useState([]);
+  const [prestartTmpls, setPrestartTmpls] = React.useState([]);
+  const [ssTmpls,       setSsTmpls]       = React.useState([]);
+  const [loading,       setLoading]       = React.useState(true);
+  const [generating,    setGenerating]    = React.useState({}); // assetId -> 'prestart'|'ss'|null
+  const [expanded,      setExpanded]      = React.useState({});
+  const [toast,         setToast]         = React.useState(null);
+
+  const showToast = (msg, type='success') => {
+    setToast({ msg, type });
+    setTimeout(() => setToast(null), 3500);
+  };
+
+  React.useEffect(() => {
+    if (userRole?.company_id) load();
+  }, [userRole]);
+
+  const load = async () => {
+    setLoading(true);
+    const [{ data: aD }, { data: pD }, { data: sD }] = await Promise.all([
+      supabase.from('assets').select('*').eq('company_id', userRole.company_id).order('asset_number'),
+      supabase.from('form_templates').select('id,name,description,asset_ids,created_at').eq('company_id', userRole.company_id),
+      supabase.from('service_sheet_templates').select('id,name,service_type,asset_ids,created_at').eq('company_id', userRole.company_id),
+    ]);
+    setAssets(aD || []);
+    setPrestartTmpls(pD || []);
+    setSsTmpls(sD || []);
+    setLoading(false);
+  };
+
+  const getAssignedPrestarts = (asset) =>
+    prestartTmpls.filter(t => Array.isArray(t.asset_ids) && t.asset_ids.includes(asset.id));
+
+  const getAssignedSS = (asset) =>
+    ssTmpls.filter(t => Array.isArray(t.asset_ids) && t.asset_ids.includes(asset.id));
+
+  const autoGenerate = async (asset, type) => {
+    setGenerating(g => ({ ...g, [asset.id]: type }));
+
+    const assetDesc = [
+      asset.name, asset.asset_number,
+      asset.type, asset.make, asset.model,
+      asset.year ? `Year: ${asset.year}` : null,
+      asset.engine_model ? `Engine: ${asset.engine_model}` : null,
+      asset.location ? `Location: ${asset.location}` : null,
+      asset.serial_number ? `Serial: ${asset.serial_number}` : null,
+    ].filter(Boolean).join(', ');
+
+    const isPrestart = type === 'prestart';
+
+    const prompt = isPrestart
+      ? `Generate a detailed prestart safety checklist for this piece of equipment: ${assetDesc}.
+Include relevant sections for: engine/fluid checks, safety systems, controls, tyres/undercarriage if applicable, lights, attachments, and any type-specific items.
+Return ONLY valid JSON:
+{"name":"[Asset Name] Pre-Start Checklist","description":"Pre-operational safety and functionality inspection for ${asset.name}","sections":[{"title":"Section Name","items":[{"label":"Check item description","type":"check"}]}]}
+Use types: check, photo, number, text. Include 4-8 sections with 4-8 items each. No markdown, no explanation.`
+      : `Generate a detailed service sheet template for this piece of equipment: ${assetDesc}.
+Include relevant sections for: fluids & filters, mechanical inspection, electrical systems, safety systems, and any type-specific service items. Include parts and labour sections.
+Return ONLY valid JSON:
+{"name":"${asset.name} Service Sheet","description":"Scheduled maintenance service sheet for ${asset.name}","service_type":"Scheduled Service","sections":[{"title":"Section Name","items":[{"label":"Item description","type":"check"}]}],"parts_template":[{"description":"Part name","part_number":"","quantity":1,"unit":"each"}],"labour_items":[{"description":"Labour task","estimated_hours":1}]}
+No markdown, no explanation.`;
+
+    try {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 1000,
+          messages: [{ role: 'user', content: prompt }],
+        }),
+      });
+      const data = await res.json();
+      const text = (data.content || []).map(c => c.text || '').join('');
+      let parsed;
+      try {
+        parsed = JSON.parse(text.replace(/```json|```/g, '').trim());
+      } catch {
+        showToast('AI returned invalid JSON — try again', 'error');
+        setGenerating(g => ({ ...g, [asset.id]: null }));
+        return;
+      }
+
+      // Save template and assign to this asset
+      const table = isPrestart ? 'form_templates' : 'service_sheet_templates';
+      const payload = {
+        ...parsed,
+        company_id: userRole.company_id,
+        asset_ids: [asset.id],
+      };
+      const { data: saved, error } = await supabase.from(table).insert([payload]).select().single();
+      if (error) {
+        showToast('Failed to save template: ' + error.message, 'error');
+      } else {
+        showToast(`✓ ${isPrestart ? 'Prestart' : 'Service sheet'} generated and assigned to ${asset.name}`);
+        await load();
+        setExpanded(e => ({ ...e, [asset.id]: true }));
+      }
+    } catch (err) {
+      showToast('Generation failed: ' + err.message, 'error');
+    }
+    setGenerating(g => ({ ...g, [asset.id]: null }));
+  };
+
+  const unassign = async (asset, tmplId, type) => {
+    const table = type === 'prestart' ? 'form_templates' : 'service_sheet_templates';
+    const tmpl = (type === 'prestart' ? prestartTmpls : ssTmpls).find(t => t.id === tmplId);
+    if (!tmpl) return;
+    const newIds = (tmpl.asset_ids || []).filter(id => id !== asset.id);
+    await supabase.from(table).update({ asset_ids: newIds }).eq('id', tmplId);
+    await load();
+  };
+
+  if (loading) return <div style={{ padding:40, textAlign:'center', color:'var(--text-muted)', fontSize:13 }}>Loading assets…</div>;
+
+  const sc = (s) => s === 'Down' ? 'var(--red)' : s === 'Maintenance' ? 'var(--amber)' : 'var(--green)';
+
+  return (
+    <div>
+      {/* Toast */}
+      {toast && (
+        <div style={{ position:'fixed', bottom:24, right:24, zIndex:3000, padding:'12px 20px', borderRadius:10, background: toast.type==='error'?'var(--red)':'#00c264', color:'#fff', fontSize:13, fontWeight:700, boxShadow:'0 8px 32px rgba(0,0,0,0.2)', animation:'fadeUp 0.2s ease' }}>
+          {toast.msg}
+        </div>
+      )}
+
+      <div style={{ marginBottom:16 }}>
+        <h3 style={{ margin:'0 0 4px', fontSize:16, fontWeight:800, color:'var(--text-primary)' }}>Asset Forms</h3>
+        <p style={{ margin:0, fontSize:13, color:'var(--text-muted)' }}>
+          Auto-generate prestart checklists and service sheet templates from each asset's information. Generated forms are immediately assigned to the asset.
+        </p>
+      </div>
+
+      {assets.length === 0 ? (
+        <div style={{ textAlign:'center', padding:40, color:'var(--text-muted)', fontSize:13 }}>No assets registered yet.</div>
+      ) : assets.map(asset => {
+        const assignedPS  = getAssignedPrestarts(asset);
+        const assignedSS  = getAssignedSS(asset);
+        const isExpanded  = expanded[asset.id];
+        const genState    = generating[asset.id];
+
+        return (
+          <div key={asset.id} style={{ border:'1px solid var(--border)', borderRadius:12, marginBottom:10, overflow:'hidden', background:'var(--surface)' }}>
+            {/* Row header */}
+            <div onClick={() => setExpanded(e => ({ ...e, [asset.id]: !e[asset.id] }))}
+              style={{ display:'flex', alignItems:'center', gap:12, padding:'13px 16px', cursor:'pointer', background: isExpanded ? 'var(--accent-light)' : 'var(--surface)' }}>
+              <span style={{ fontSize:11, fontWeight:800, color:'var(--accent)', fontFamily:'var(--font-mono)', flexShrink:0 }}>{asset.asset_number||'—'}</span>
+              <span style={{ fontSize:14, fontWeight:700, color:'var(--text-primary)', flex:1 }}>{asset.name}</span>
+              <span style={{ fontSize:11, color:'var(--text-muted)', flexShrink:0 }}>{[asset.make, asset.model].filter(Boolean).join(' ') || asset.type || '—'}</span>
+              <span style={{ fontSize:11, fontWeight:700, padding:'2px 8px', borderRadius:20, background:sc(asset.status)+'18', color:sc(asset.status), flexShrink:0 }}>{asset.status||'Active'}</span>
+              {/* Summary badges */}
+              <span style={{ fontSize:11, padding:'2px 8px', borderRadius:20, background: assignedPS.length>0?'#f0fdf4':'#f8fafc', color: assignedPS.length>0?'#16a34a':'var(--text-faint)', border:`1px solid ${assignedPS.length>0?'#bbf7d0':'var(--border)'}`, flexShrink:0 }}>
+                {assignedPS.length} prestart{assignedPS.length!==1?'s':''}
+              </span>
+              <span style={{ fontSize:11, padding:'2px 8px', borderRadius:20, background: assignedSS.length>0?'#f0f7ff':'#f8fafc', color: assignedSS.length>0?'#2d8cf0':'var(--text-faint)', border:`1px solid ${assignedSS.length>0?'#93c5fd':'var(--border)'}`, flexShrink:0 }}>
+                {assignedSS.length} service sheet{assignedSS.length!==1?'s':''}
+              </span>
+              <span style={{ fontSize:12, color:'var(--text-muted)', flexShrink:0 }}>{isExpanded ? '▲' : '▼'}</span>
+            </div>
+
+            {isExpanded && (
+              <div style={{ padding:'16px', borderTop:'1px solid var(--border)' }}>
+                {/* Asset info strip */}
+                <div style={{ display:'flex', gap:20, flexWrap:'wrap', marginBottom:16, padding:'10px 14px', background:'var(--surface-2)', borderRadius:8, fontSize:12, color:'var(--text-muted)' }}>
+                  {[
+                    ['Type', asset.type], ['Make', asset.make], ['Model', asset.model],
+                    ['Year', asset.year], ['Engine', asset.engine_model], ['Location', asset.location],
+                    ['Serial', asset.serial_number], ['Hours', asset.hours ? asset.hours+' hrs' : null],
+                  ].filter(([,v]) => v).map(([k,v]) => (
+                    <div key={k}><span style={{ fontWeight:700, color:'var(--text-secondary)' }}>{k}:</span> {v}</div>
+                  ))}
+                </div>
+
+                {/* Two columns: Prestarts | Service Sheets */}
+                <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16 }}>
+
+                  {/* Prestarts */}
+                  <div style={{ border:'1px solid var(--border)', borderRadius:10, padding:14 }}>
+                    <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:12 }}>
+                      <div style={{ fontSize:13, fontWeight:800, color:'var(--text-primary)' }}>✅ Prestart Checklists</div>
+                      <button onClick={() => autoGenerate(asset, 'prestart')} disabled={!!genState}
+                        style={{ padding:'6px 14px', background: genState==='prestart'?'#a0b0b0':'linear-gradient(135deg,var(--accent),#0090a8)', color:'#fff', border:'none', borderRadius:7, fontSize:11, fontWeight:700, cursor: genState?'not-allowed':'pointer', whiteSpace:'nowrap' }}>
+                        {genState==='prestart' ? '⏳ Generating…' : '✨ Auto-Generate'}
+                      </button>
+                    </div>
+                    {assignedPS.length === 0 ? (
+                      <div style={{ fontSize:12, color:'var(--text-faint)', fontStyle:'italic', padding:'8px 0' }}>No prestart forms assigned</div>
+                    ) : assignedPS.map(t => (
+                      <div key={t.id} style={{ display:'flex', alignItems:'center', gap:8, padding:'7px 10px', background:'var(--surface-2)', borderRadius:7, marginBottom:6 }}>
+                        <div style={{ flex:1, minWidth:0 }}>
+                          <div style={{ fontSize:12, fontWeight:700, color:'var(--text-primary)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{t.name}</div>
+                          <div style={{ fontSize:10, color:'var(--text-muted)' }}>{t.created_at ? new Date(t.created_at).toLocaleDateString('en-AU',{day:'2-digit',month:'short',year:'numeric'}) : ''}</div>
+                        </div>
+                        <button onClick={() => unassign(asset, t.id, 'prestart')}
+                          style={{ flexShrink:0, padding:'3px 8px', background:'var(--red-bg)', color:'var(--red)', border:'1px solid var(--red-border)', borderRadius:5, fontSize:10, fontWeight:700, cursor:'pointer' }}>
+                          Remove
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Service Sheets */}
+                  <div style={{ border:'1px solid var(--border)', borderRadius:10, padding:14 }}>
+                    <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:12 }}>
+                      <div style={{ fontSize:13, fontWeight:800, color:'var(--text-primary)' }}>📄 Service Sheet Templates</div>
+                      <button onClick={() => autoGenerate(asset, 'ss')} disabled={!!genState}
+                        style={{ padding:'6px 14px', background: genState==='ss'?'#a0b0b0':'linear-gradient(135deg,#6366f1,#4f46e5)', color:'#fff', border:'none', borderRadius:7, fontSize:11, fontWeight:700, cursor: genState?'not-allowed':'pointer', whiteSpace:'nowrap' }}>
+                        {genState==='ss' ? '⏳ Generating…' : '✨ Auto-Generate'}
+                      </button>
+                    </div>
+                    {assignedSS.length === 0 ? (
+                      <div style={{ fontSize:12, color:'var(--text-faint)', fontStyle:'italic', padding:'8px 0' }}>No service sheet templates assigned</div>
+                    ) : assignedSS.map(t => (
+                      <div key={t.id} style={{ display:'flex', alignItems:'center', gap:8, padding:'7px 10px', background:'var(--surface-2)', borderRadius:7, marginBottom:6 }}>
+                        <div style={{ flex:1, minWidth:0 }}>
+                          <div style={{ fontSize:12, fontWeight:700, color:'var(--text-primary)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{t.name}</div>
+                          {t.service_type && <div style={{ fontSize:10, color:'var(--accent)', fontWeight:600 }}>{t.service_type}</div>}
+                          <div style={{ fontSize:10, color:'var(--text-muted)' }}>{t.created_at ? new Date(t.created_at).toLocaleDateString('en-AU',{day:'2-digit',month:'short',year:'numeric'}) : ''}</div>
+                        </div>
+                        <button onClick={() => unassign(asset, t.id, 'ss')}
+                          style={{ flexShrink:0, padding:'3px 8px', background:'var(--red-bg)', color:'var(--red)', border:'1px solid var(--red-border)', borderRadius:5, fontSize:10, fontWeight:700, cursor:'pointer' }}>
+                          Remove
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 function Forms({ userRole, initialTab, prestartAsset, prestartAssetId, prestartAssetNumber, onClearPreload }) {
   const [activeTab, setActiveTab] = useState(initialTab || 'prestarts');
   useEffect(() => { if (initialTab) setActiveTab(initialTab); }, [initialTab]);
@@ -2073,6 +2312,7 @@ function Forms({ userRole, initialTab, prestartAsset, prestartAssetId, prestartA
   const TABS = [
     { id: 'prestarts',     label: 'Prestarts'        },
     { id: 'service-sheets',label: 'Service Sheets'   },
+    { id: 'assets',        label: '🚛 Assets'         },
     { id: 'paper_scan',    label: 'Scan Paper Form'  },
   ];
 
@@ -2100,6 +2340,7 @@ function Forms({ userRole, initialTab, prestartAsset, prestartAssetId, prestartA
       </div>
       {activeTab === 'prestarts'     && <PrestartTab userRole={userRole} prestartAsset={prestartAsset} prestartAssetId={prestartAssetId} prestartAssetNumber={prestartAssetNumber} onClearPreload={onClearPreload} />}
       {activeTab === 'service-sheets'&& <ServiceSheetsTab userRole={userRole} />}
+      {activeTab === 'assets'        && <AssetFormsTab userRole={userRole} />}
       {activeTab === 'paper_scan'    && <PaperScan userRole={userRole} />}
     </div>
   );
