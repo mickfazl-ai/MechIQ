@@ -584,6 +584,9 @@ function PrestartTab({ userRole, prestartAsset, prestartAssetId, prestartAssetNu
   const [templates, setTemplates] = useState([]);
   const [submissions, setSubmissions] = useState([]);
   const [assets, setAssets] = useState([]);
+  const [sortCol, setSortCol]   = useState('created_at');
+  const [sortDir, setSortDir]   = useState('desc');
+  const [assignModal, setAssignModal] = useState(null); // template being assigned
   const [view, setView] = useState('list');
   const [selectedTemplate, setSelectedTemplate] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -629,7 +632,7 @@ function PrestartTab({ userRole, prestartAsset, prestartAssetId, prestartAssetNu
     setSubmissions(data || []);
   };
   const fetchAssets = async () => {
-    const { data } = await supabase.from('assets').select('id, name, location').eq('company_id', userRole.company_id);
+    const { data } = await supabase.from('assets').select('id, name, asset_number, make, location').eq('company_id', userRole.company_id);
     setAssets(data || []);
   };
 
@@ -1037,6 +1040,7 @@ function PrestartTab({ userRole, prestartAsset, prestartAssetId, prestartAssetNu
           : [];
         const displayTemplates = assignedTemplates.length > 0 ? assignedTemplates : templates;
         return (
+
       <>
       {displayTemplates.length === 0 && templates.length === 0 ? (
         <div className="form-card" style={{ textAlign: 'center', padding: '40px' }}>
@@ -1044,32 +1048,129 @@ function PrestartTab({ userRole, prestartAsset, prestartAssetId, prestartAssetNu
           {userRole && userRole.role !== 'technician' && <button className="btn-primary" style={{ background: 'linear-gradient(135deg, #00c2e0, #0090a8)', color: '#000', padding: '12px 24px' }} onClick={() => setShowAI(true)}>Generate with AI</button>}
         </div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '15px', marginTop: '20px' }}>
-          {displayTemplates.map(t => (
-            <div key={t.id} className="form-card" style={{ cursor: 'pointer' }} onClick={() => { setSelectedTemplate(t); setView('fill'); }}>
-              <h3 style={{ color: 'var(--text-primary)', marginBottom: '8px' }}>{t.name}</h3>
-              <p style={{ color: '#a0b0b0', fontSize: '13px', marginBottom: '8px' }}>{t.description}</p>
-              <p style={{ color: '#a0b0b0', fontSize: '12px', marginBottom: '8px' }}>{(t.sections || []).length} sections</p>
-              {Array.isArray(t.asset_ids) && t.asset_ids.length > 0 && (
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginBottom: '8px' }}>
-                  {t.asset_ids.map(id => {
-                    const a = assets.find(x => x.id === id);
-                    return a ? (
-                      <span key={id} style={{ fontSize: '11px', fontWeight: 600, padding: '2px 8px', borderRadius: '20px', background: 'var(--accent-light)', color: 'var(--accent)', border: '1px solid rgba(0,194,224,0.3)' }}>{a.name}</span>
-                    ) : null;
+        <>
+        {/* Assign to Units Modal */}
+        {assignModal && (
+          <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:2000, display:'flex', alignItems:'center', justifyContent:'center', padding:20 }}
+            onClick={() => setAssignModal(null)}>
+            <div style={{ background:'var(--bg)', borderRadius:16, padding:28, width:'100%', maxWidth:460, boxShadow:'0 24px 80px rgba(0,0,0,0.25)' }}
+              onClick={e => e.stopPropagation()}>
+              <div style={{ fontSize:16, fontWeight:800, color:'var(--text-primary)', marginBottom:6 }}>Assign to Units</div>
+              <div style={{ fontSize:13, color:'var(--text-muted)', marginBottom:16 }}>{assignModal.name}</div>
+              <AssetPicker assets={assets} value={assignModal.asset_ids || []} onChange={async (ids) => {
+                await supabase.from('form_templates').update({ asset_ids: ids }).eq('id', assignModal.id);
+                setAssignModal(m => ({ ...m, asset_ids: ids }));
+                const { data } = await supabase.from('form_templates').select('*').eq('company_id', userRole.company_id).order('created_at', { ascending: false });
+                setTemplates(data || []);
+              }} />
+              <button onClick={() => setAssignModal(null)}
+                style={{ marginTop:16, width:'100%', padding:'10px', background:'var(--accent)', color:'#fff', border:'none', borderRadius:8, fontSize:13, fontWeight:700, cursor:'pointer' }}>
+                Done
+              </button>
+            </div>
+          </div>
+        )}
+        {/* Sortable list */}
+        {(() => {
+          const cols = [
+            { id:'name', label:'Name' },
+            { id:'asset', label:'Assigned Units' },
+            { id:'sections', label:'Sections' },
+            { id:'created_at', label:'Date Created' },
+          ];
+          const sorted = [...displayTemplates].sort((a, b) => {
+            let av, bv;
+            if (sortCol === 'name')       { av = (a.name||'').toLowerCase(); bv = (b.name||'').toLowerCase(); }
+            else if (sortCol === 'sections') { av = (a.sections||[]).length; bv = (b.sections||[]).length; }
+            else if (sortCol === 'asset') { av = (a.asset_ids||[]).length; bv = (b.asset_ids||[]).length; }
+            else                          { av = a.created_at||''; bv = b.created_at||''; }
+            if (av < bv) return sortDir === 'asc' ? -1 : 1;
+            if (av > bv) return sortDir === 'asc' ? 1 : -1;
+            return 0;
+          });
+          const toggleSort = (col) => {
+            if (sortCol === col) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
+            else { setSortCol(col); setSortDir('asc'); }
+          };
+          const SortIcon = ({ col }) => sortCol === col ? (sortDir === 'asc' ? ' ↑' : ' ↓') : ' ↕';
+          return (
+            <div style={{ marginTop:16, border:'1px solid var(--border)', borderRadius:12, overflow:'hidden', background:'var(--surface)' }}>
+              <table style={{ width:'100%', borderCollapse:'collapse', fontSize:13 }}>
+                <thead>
+                  <tr style={{ background:'var(--surface-2)', borderBottom:'2px solid var(--border)' }}>
+                    {cols.map(c => (
+                      <th key={c.id} onClick={() => toggleSort(c.id)}
+                        style={{ padding:'10px 14px', textAlign:'left', fontSize:11, fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.5px', cursor:'pointer', userSelect:'none', whiteSpace:'nowrap' }}>
+                        {c.label}<SortIcon col={c.id} />
+                      </th>
+                    ))}
+                    <th style={{ padding:'10px 14px', textAlign:'right', fontSize:11, fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.5px' }}>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {sorted.map((t, i) => {
+                    const assignedAssets = (t.asset_ids||[]).map(id => assets.find(a => a.id === id)).filter(Boolean);
+                    return (
+                      <tr key={t.id} style={{ borderBottom: i < sorted.length-1 ? '1px solid var(--border)' : 'none', transition:'background 0.1s' }}
+                        onMouseEnter={e => e.currentTarget.style.background='var(--surface-2)'}
+                        onMouseLeave={e => e.currentTarget.style.background='transparent'}>
+                        {/* Name */}
+                        <td style={{ padding:'12px 14px', cursor:'pointer' }} onClick={() => { setSelectedTemplate(t); setView('fill'); }}>
+                          <div style={{ fontWeight:700, color:'var(--text-primary)', marginBottom:2 }}>{t.name}</div>
+                          {t.description && <div style={{ fontSize:11, color:'var(--text-muted)', maxWidth:280, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{t.description}</div>}
+                        </td>
+                        {/* Assigned Units */}
+                        <td style={{ padding:'12px 14px' }}>
+                          {assignedAssets.length > 0 ? (
+                            <div style={{ display:'flex', flexWrap:'wrap', gap:4 }}>
+                              {assignedAssets.map(a => (
+                                <span key={a.id} style={{ fontSize:11, fontWeight:600, padding:'2px 8px', borderRadius:20, background:'var(--accent-light)', color:'var(--accent)', border:'1px solid rgba(0,194,224,0.3)', whiteSpace:'nowrap' }}>
+                                  {a.asset_number ? `${a.asset_number} · ` : ''}{a.name}
+                                </span>
+                              ))}
+                            </div>
+                          ) : (
+                            <span style={{ fontSize:11, color:'var(--text-faint)', fontStyle:'italic' }}>Unassigned</span>
+                          )}
+                        </td>
+                        {/* Sections */}
+                        <td style={{ padding:'12px 14px', color:'var(--text-muted)', fontSize:12 }}>
+                          {(t.sections||[]).length} section{(t.sections||[]).length !== 1 ? 's' : ''}
+                        </td>
+                        {/* Date Created */}
+                        <td style={{ padding:'12px 14px', color:'var(--text-muted)', fontSize:12, whiteSpace:'nowrap' }}>
+                          {t.created_at ? new Date(t.created_at).toLocaleDateString('en-AU', { day:'2-digit', month:'short', year:'numeric' }) : '—'}
+                        </td>
+                        {/* Actions */}
+                        <td style={{ padding:'12px 14px', textAlign:'right' }}>
+                          <div style={{ display:'flex', gap:6, justifyContent:'flex-end', flexWrap:'nowrap' }}>
+                            <button onClick={() => { setSelectedTemplate(t); setView('fill'); }}
+                              style={{ padding:'5px 12px', background:'var(--accent)', color:'#fff', border:'none', borderRadius:6, fontSize:11, fontWeight:700, cursor:'pointer', whiteSpace:'nowrap' }}>
+                              ▶ Start
+                            </button>
+                            {isAdmin && (
+                              <button onClick={() => setAssignModal({ ...t })}
+                                style={{ padding:'5px 12px', background:'var(--accent-light)', color:'var(--accent)', border:'1px solid rgba(0,194,224,0.3)', borderRadius:6, fontSize:11, fontWeight:700, cursor:'pointer', whiteSpace:'nowrap' }}>
+                                📌 Assign
+                              </button>
+                            )}
+                            {isAdmin && (
+                              <button onClick={e => deleteTemplate(t.id, e)}
+                                style={{ padding:'5px 10px', background:'var(--red-bg)', color:'var(--red)', border:'1px solid var(--red-border)', borderRadius:6, fontSize:11, fontWeight:700, cursor:'pointer' }}>
+                                🗑
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    );
                   })}
-                </div>
-              )}
-              <button className="btn-primary" style={{ marginTop: '4px', width: '100%' }}>Start Prestart</button>
-              {isAdmin && <button className="btn-delete" style={{ marginTop: '8px', width: '100%', padding: '6px' }} onClick={e => deleteTemplate(t.id, e)}>Delete Template</button>}
+                </tbody>
+              </table>
             </div>
-          ))}
-          {userRole && userRole.role !== 'technician' && (
-            <div className="form-card" style={{ cursor: 'pointer', border: '1px dashed #00c2e040', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '120px' }} onClick={() => setShowAI(true)}>
-              <p style={{ color: 'var(--accent)', fontSize: '14px', margin: 0 }}>Generate with AI</p>
-            </div>
-          )}
-        </div>
+          );
+        })()}
+        </>
       )}
       </>
         );
@@ -1083,6 +1184,9 @@ function ServiceSheetsTab({ userRole }) {
   const [templates, setTemplates] = useState([]);
   const [submissions, setSubmissions] = useState([]);
   const [assets, setAssets] = useState([]);
+  const [ssSortCol, setSsSortCol]       = useState('created_at');
+  const [ssSortDir, setSsSortDir]       = useState('desc');
+  const [ssAssignModal, setSsAssignModal] = useState(null);
   const [inventoryParts, setInventoryParts] = useState([]);
   const [view, setView] = useState('list');
   const [selectedTemplate, setSelectedTemplate] = useState(null);
@@ -1154,7 +1258,7 @@ function ServiceSheetsTab({ userRole }) {
     setSubmissions(data || []);
   };
   const fetchAssets = async () => {
-    const { data } = await supabase.from('assets').select('id, name, location').eq('company_id', userRole.company_id);
+    const { data } = await supabase.from('assets').select('id, name, asset_number, make, location').eq('company_id', userRole.company_id);
     setAssets(data || []);
   };
 
@@ -1811,40 +1915,149 @@ function ServiceSheetsTab({ userRole }) {
                 {userRole && userRole.role !== 'technician' && <button className="btn-primary" style={{ background: 'linear-gradient(135deg, #00c2e0, #0090a8)', color: '#000', padding: '12px 24px' }} onClick={() => setShowAI(true)}>Generate with AI</button>}
               </div>
             ) : (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '15px', marginTop: '20px' }}>
-                {displayTemplates.map(t => (
-                  <div key={t.id} className="form-card" style={{ cursor: 'pointer' }} onClick={() => {
-                    setSelectedTemplate(t);
-                    if (contextAssetName) {
-                      setForm(f => ({ ...f, asset: contextAssetName, service_type: ssIntent?.serviceType || t.service_type || '', _assetLocked: true, _assetNumber: ssIntent?.assetNumber || '' }));
-                      sessionStorage.removeItem('mechiq_prefill');
-                    }
-                    setView('fill');
-                  }}>
-                    <h3 style={{ color: 'var(--text-primary)', marginBottom: '4px' }}>{t.name}</h3>
-                    {t.service_type && <p style={{ color: 'var(--text-muted)', fontSize: '12px', marginBottom: '8px', fontWeight: 600 }}>{t.service_type}</p>}
-                    <p style={{ color: '#a0b0b0', fontSize: '13px', marginBottom: '8px' }}>{t.description}</p>
-                    <p style={{ color: '#a0b0b0', fontSize: '12px', marginBottom: '8px' }}>{(t.sections || []).length} sections</p>
-                    {Array.isArray(t.asset_ids) && t.asset_ids.length > 0 && (
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginBottom: '8px' }}>
-                        {t.asset_ids.map(id => {
-                          const a = assets.find(x => x.id === id);
-                          return a ? (
-                            <span key={id} style={{ fontSize: '11px', fontWeight: 600, padding: '2px 8px', borderRadius: '20px', background: 'var(--accent-light)', color: 'var(--accent)', border: '1px solid rgba(0,194,224,0.3)' }}>{a.name}</span>
-                          ) : null;
+              <>
+              {/* Assign to Units Modal */}
+              {ssAssignModal && (
+                <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:2000, display:'flex', alignItems:'center', justifyContent:'center', padding:20 }}
+                  onClick={() => setSsAssignModal(null)}>
+                  <div style={{ background:'var(--bg)', borderRadius:16, padding:28, width:'100%', maxWidth:460, boxShadow:'0 24px 80px rgba(0,0,0,0.25)' }}
+                    onClick={e => e.stopPropagation()}>
+                    <div style={{ fontSize:16, fontWeight:800, color:'var(--text-primary)', marginBottom:6 }}>Assign to Units</div>
+                    <div style={{ fontSize:13, color:'var(--text-muted)', marginBottom:16 }}>{ssAssignModal.name}</div>
+                    <AssetPicker assets={assets} value={ssAssignModal.asset_ids || []} onChange={async (ids) => {
+                      await supabase.from('service_sheet_templates').update({ asset_ids: ids }).eq('id', ssAssignModal.id);
+                      setSsAssignModal(m => ({ ...m, asset_ids: ids }));
+                      const { data } = await supabase.from('service_sheet_templates').select('*').eq('company_id', userRole.company_id).order('created_at', { ascending: false });
+                      setTemplates(data || []);
+                    }} />
+                    <button onClick={() => setSsAssignModal(null)}
+                      style={{ marginTop:16, width:'100%', padding:'10px', background:'var(--accent)', color:'#fff', border:'none', borderRadius:8, fontSize:13, fontWeight:700, cursor:'pointer' }}>
+                      Done
+                    </button>
+                  </div>
+                </div>
+              )}
+              {/* Sortable list */}
+              {(() => {
+                const cols = [
+                  { id:'name', label:'Name' },
+                  { id:'service_type', label:'Service Type' },
+                  { id:'asset', label:'Assigned Units' },
+                  { id:'sections', label:'Sections' },
+                  { id:'created_at', label:'Date Created' },
+                ];
+                const sorted = [...displayTemplates].sort((a, b) => {
+                  let av, bv;
+                  if (ssSortCol === 'name')         { av = (a.name||'').toLowerCase(); bv = (b.name||'').toLowerCase(); }
+                  else if (ssSortCol === 'service_type') { av = (a.service_type||'').toLowerCase(); bv = (b.service_type||'').toLowerCase(); }
+                  else if (ssSortCol === 'sections') { av = (a.sections||[]).length; bv = (b.sections||[]).length; }
+                  else if (ssSortCol === 'asset')   { av = (a.asset_ids||[]).length; bv = (b.asset_ids||[]).length; }
+                  else                              { av = a.created_at||''; bv = b.created_at||''; }
+                  if (av < bv) return ssSortDir === 'asc' ? -1 : 1;
+                  if (av > bv) return ssSortDir === 'asc' ? 1 : -1;
+                  return 0;
+                });
+                const toggleSort = (col) => {
+                  if (ssSortCol === col) setSsSortDir(d => d === 'asc' ? 'desc' : 'asc');
+                  else { setSsSortCol(col); setSsSortDir('asc'); }
+                };
+                const SortIcon = ({ col }) => ssSortCol === col ? (ssSortDir === 'asc' ? ' ↑' : ' ↓') : ' ↕';
+                return (
+                  <div style={{ marginTop:16, border:'1px solid var(--border)', borderRadius:12, overflow:'hidden', background:'var(--surface)' }}>
+                    <table style={{ width:'100%', borderCollapse:'collapse', fontSize:13 }}>
+                      <thead>
+                        <tr style={{ background:'var(--surface-2)', borderBottom:'2px solid var(--border)' }}>
+                          {cols.map(c => (
+                            <th key={c.id} onClick={() => toggleSort(c.id)}
+                              style={{ padding:'10px 14px', textAlign:'left', fontSize:11, fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.5px', cursor:'pointer', userSelect:'none', whiteSpace:'nowrap' }}>
+                              {c.label}<SortIcon col={c.id} />
+                            </th>
+                          ))}
+                          <th style={{ padding:'10px 14px', textAlign:'right', fontSize:11, fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.5px' }}>Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {sorted.map((t, i) => {
+                          const assignedAssets = (t.asset_ids||[]).map(id => assets.find(a => a.id === id)).filter(Boolean);
+                          return (
+                            <tr key={t.id} style={{ borderBottom: i < sorted.length-1 ? '1px solid var(--border)' : 'none', transition:'background 0.1s' }}
+                              onMouseEnter={e => e.currentTarget.style.background='var(--surface-2)'}
+                              onMouseLeave={e => e.currentTarget.style.background='transparent'}>
+                              {/* Name */}
+                              <td style={{ padding:'12px 14px', cursor:'pointer' }} onClick={() => {
+                                setSelectedTemplate(t);
+                                if (contextAssetName) {
+                                  setForm(f => ({ ...f, asset: contextAssetName, service_type: ssIntent?.serviceType || t.service_type || '', _assetLocked: true, _assetNumber: ssIntent?.assetNumber || '' }));
+                                  sessionStorage.removeItem('mechiq_prefill');
+                                }
+                                setView('fill');
+                              }}>
+                                <div style={{ fontWeight:700, color:'var(--text-primary)', marginBottom:2 }}>{t.name}</div>
+                                {t.description && <div style={{ fontSize:11, color:'var(--text-muted)', maxWidth:260, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{t.description}</div>}
+                              </td>
+                              {/* Service Type */}
+                              <td style={{ padding:'12px 14px' }}>
+                                {t.service_type ? <span style={{ fontSize:12, fontWeight:600, padding:'2px 8px', borderRadius:20, background:'var(--surface-2)', color:'var(--text-secondary)', border:'1px solid var(--border)' }}>{t.service_type}</span> : <span style={{ color:'var(--text-faint)', fontSize:12 }}>—</span>}
+                              </td>
+                              {/* Assigned Units */}
+                              <td style={{ padding:'12px 14px' }}>
+                                {assignedAssets.length > 0 ? (
+                                  <div style={{ display:'flex', flexWrap:'wrap', gap:4 }}>
+                                    {assignedAssets.map(a => (
+                                      <span key={a.id} style={{ fontSize:11, fontWeight:600, padding:'2px 8px', borderRadius:20, background:'var(--accent-light)', color:'var(--accent)', border:'1px solid rgba(0,194,224,0.3)', whiteSpace:'nowrap' }}>
+                                        {a.asset_number ? `${a.asset_number} · ` : ''}{a.name}
+                                      </span>
+                                    ))}
+                                  </div>
+                                ) : (
+                                  <span style={{ fontSize:11, color:'var(--text-faint)', fontStyle:'italic' }}>Unassigned</span>
+                                )}
+                              </td>
+                              {/* Sections */}
+                              <td style={{ padding:'12px 14px', color:'var(--text-muted)', fontSize:12 }}>
+                                {(t.sections||[]).length} section{(t.sections||[]).length !== 1 ? 's' : ''}
+                              </td>
+                              {/* Date Created */}
+                              <td style={{ padding:'12px 14px', color:'var(--text-muted)', fontSize:12, whiteSpace:'nowrap' }}>
+                                {t.created_at ? new Date(t.created_at).toLocaleDateString('en-AU', { day:'2-digit', month:'short', year:'numeric' }) : '—'}
+                              </td>
+                              {/* Actions */}
+                              <td style={{ padding:'12px 14px', textAlign:'right' }}>
+                                <div style={{ display:'flex', gap:6, justifyContent:'flex-end', flexWrap:'nowrap' }}>
+                                  <button onClick={() => {
+                                    setSelectedTemplate(t);
+                                    if (contextAssetName) {
+                                      setForm(f => ({ ...f, asset: contextAssetName, service_type: ssIntent?.serviceType || t.service_type || '', _assetLocked: true, _assetNumber: ssIntent?.assetNumber || '' }));
+                                      sessionStorage.removeItem('mechiq_prefill');
+                                    }
+                                    setView('fill');
+                                  }}
+                                    style={{ padding:'5px 12px', background:'var(--accent)', color:'#fff', border:'none', borderRadius:6, fontSize:11, fontWeight:700, cursor:'pointer', whiteSpace:'nowrap' }}>
+                                    ▶ Start
+                                  </button>
+                                  {isAdmin && (
+                                    <button onClick={() => setSsAssignModal({ ...t })}
+                                      style={{ padding:'5px 12px', background:'var(--accent-light)', color:'var(--accent)', border:'1px solid rgba(0,194,224,0.3)', borderRadius:6, fontSize:11, fontWeight:700, cursor:'pointer', whiteSpace:'nowrap' }}>
+                                      📌 Assign
+                                    </button>
+                                  )}
+                                  {isAdmin && (
+                                    <button onClick={e => deleteTemplate(t.id, e)}
+                                      style={{ padding:'5px 10px', background:'var(--red-bg)', color:'var(--red)', border:'1px solid var(--red-border)', borderRadius:6, fontSize:11, fontWeight:700, cursor:'pointer' }}>
+                                      🗑
+                                    </button>
+                                  )}
+                                </div>
+                              </td>
+                            </tr>
+                          );
                         })}
-                      </div>
-                    )}
-                    <button className="btn-primary" style={{ marginTop: '4px', width: '100%' }}>Start Service Sheet</button>
-                    {isAdmin && <button className="btn-delete" style={{ marginTop: '8px', width: '100%', padding: '6px' }} onClick={e => deleteTemplate(t.id, e)}>Delete Template</button>}
+                      </tbody>
+                    </table>
                   </div>
-                ))}
-                {userRole && userRole.role !== 'technician' && (
-                  <div className="form-card" style={{ cursor: 'pointer', border: '1px dashed #00c2e040', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '120px' }} onClick={() => setShowAI(true)}>
-                    <p style={{ color: 'var(--accent)', fontSize: '14px', margin: 0 }}>Generate with AI</p>
-                  </div>
-                )}
-              </div>
+                );
+              })()}
+              </>
             )}
           </>
         );
