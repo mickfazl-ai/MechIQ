@@ -1526,13 +1526,297 @@ function IDTagModal({ tmpl, asset, assetId, qrUrl, onClose }) {
   );
 }
 
-function AssetPage({ assetId, userRole, onStartPrestart, onStartServiceSheet, initialTab }) {
+
+// ─── Tab: Asset Settings ──────────────────────────────────────────────────────
+function AssetSettingsTab({ asset, userRole, onDeleted }) {
+  const [form,    setForm]    = React.useState({
+    name:           asset.name || '',
+    asset_number:   asset.asset_number || '',
+    type:           asset.type || '',
+    make:           asset.make || '',
+    model:          asset.model || '',
+    year:           asset.year || '',
+    serial_number:  asset.serial_number || '',
+    engine_number:  asset.engine_number || '',
+    location:       asset.location || '',
+    registration:   asset.registration || '',
+    reg_expiry:     asset.reg_expiry || '',
+    insurance:      asset.insurance || '',
+    ins_expiry:     asset.ins_expiry || '',
+    purchase_date:  asset.purchase_date || '',
+    purchase_price: asset.purchase_price || '',
+    target_hours:   asset.target_hours || '',
+    hourly_rate:    asset.hourly_rate || '',
+    status:         asset.status || 'Running',
+    notes:          asset.notes || '',
+  });
+  const [saving,   setSaving]   = React.useState(false);
+  const [saved,    setSaved]    = React.useState(false);
+  const [delStep,  setDelStep]  = React.useState(0); // 0=idle 1=confirm 2=type name
+  const [delInput, setDelInput] = React.useState('');
+  const [deleting, setDeleting] = React.useState(false);
+
+  const iStyle = { width:'100%', padding:'9px 12px', border:'1px solid #dde2ea', borderRadius:7, fontSize:13, color:'#1a2b3c', background:'#fff', outline:'none', boxSizing:'border-box' };
+  const lStyle = { display:'block', fontSize:11, fontWeight:700, color:'#6b7a8d', textTransform:'uppercase', letterSpacing:'0.5px', marginBottom:5 };
+
+  const handleSave = async () => {
+    setSaving(true);
+    const payload = {};
+    Object.entries(form).forEach(([k,v]) => { payload[k] = v || null; });
+    await supabase.from('assets').update(payload).eq('id', asset.id);
+    setSaving(false); setSaved(true);
+    setTimeout(() => setSaved(false), 3000);
+  };
+
+  const handleDelete = async () => {
+    if (delInput.trim().toLowerCase() !== asset.name.toLowerCase()) return;
+    setDeleting(true);
+    // Delete related records first
+    await Promise.all([
+      supabase.from('service_schedules').delete().eq('asset_id', asset.id),
+      supabase.from('form_submissions').delete().eq('asset', asset.name).eq('company_id', asset.company_id),
+      supabase.from('work_orders').delete().eq('asset', asset.name).eq('company_id', asset.company_id),
+    ]);
+    await supabase.from('assets').delete().eq('id', asset.id);
+    setDeleting(false);
+    if (onDeleted) onDeleted();
+  };
+
+  const field = (label, key, type='text', opts=null) => (
+    <div>
+      <label style={lStyle}>{label}</label>
+      {opts ? (
+        <select style={iStyle} value={form[key]||''} onChange={e=>setForm(f=>({...f,[key]:e.target.value}))}>
+          {opts.map(o=><option key={o} value={o}>{o}</option>)}
+        </select>
+      ) : (
+        <input style={iStyle} type={type} value={form[key]||''} onChange={e=>setForm(f=>({...f,[key]:e.target.value}))} />
+      )}
+    </div>
+  );
+
+  return (
+    <div>
+      {/* ── Asset Details ─────────────────────────────────────────────── */}
+      <div className="mp-card" style={{ marginBottom:16 }}>
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:18, paddingBottom:12, borderBottom:'1.5px solid var(--border)' }}>
+          <span style={{ fontFamily:'var(--font-display)', fontSize:15, fontWeight:800, textTransform:'uppercase', letterSpacing:'0.8px', color:'var(--text-primary)' }}>Asset Details</span>
+          <button onClick={handleSave} disabled={saving}
+            style={{ padding:'8px 20px', background:saved?'var(--green)':'var(--accent)', color:'#fff', border:'none', borderRadius:8, fontSize:13, fontWeight:700, cursor:'pointer', transition:'all 0.2s' }}>
+            {saving?'Saving…':saved?'✓ Saved':'Save Changes'}
+          </button>
+        </div>
+        <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(200px,1fr))', gap:14 }}>
+          {field('Asset Name',    'name')}
+          {field('Asset Number',  'asset_number')}
+          {field('Type',          'type')}
+          {field('Make',          'make')}
+          {field('Model',         'model')}
+          {field('Year',          'year')}
+          {field('Serial Number', 'serial_number')}
+          {field('Engine Number', 'engine_number')}
+          {field('Location',      'location')}
+          {field('Registration',  'registration')}
+          {field('Reg Expiry',    'reg_expiry',    'date')}
+          {field('Insurance',     'insurance')}
+          {field('Ins Expiry',    'ins_expiry',    'date')}
+          {field('Purchase Date', 'purchase_date', 'date')}
+          {field('Purchase Price','purchase_price','number')}
+          {field('Target Hrs/Day','target_hours',  'number')}
+          {field('Hourly Rate',   'hourly_rate',   'number')}
+          {field('Status',        'status', 'text', ['Running','Maintenance','Down','Standby','Active'])}
+        </div>
+        <div style={{ marginTop:14 }}>
+          <label style={lStyle}>Notes</label>
+          <textarea style={{ ...iStyle, minHeight:80, resize:'vertical', fontFamily:'inherit', fontSize:13 }}
+            value={form.notes||''} onChange={e=>setForm(f=>({...f,notes:e.target.value}))} />
+        </div>
+      </div>
+
+      {/* ── Danger Zone ───────────────────────────────────────────────── */}
+      <div className="mp-card" style={{ border:'1px solid var(--red-border)', background:'var(--red-bg)' }}>
+        <div style={{ fontFamily:'var(--font-display)', fontSize:15, fontWeight:800, textTransform:'uppercase', letterSpacing:'0.8px', color:'var(--red)', marginBottom:12, paddingBottom:12, borderBottom:'1px solid var(--red-border)' }}>
+          ⚠ Danger Zone
+        </div>
+
+        {delStep === 0 && (
+          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', flexWrap:'wrap', gap:12 }}>
+            <div>
+              <div style={{ fontSize:13, fontWeight:700, color:'var(--text-primary)', marginBottom:3 }}>Delete this asset</div>
+              <div style={{ fontSize:12, color:'var(--text-muted)' }}>Permanently removes the asset, service schedules, prestarts and work orders. This cannot be undone.</div>
+            </div>
+            <button onClick={()=>setDelStep(1)}
+              style={{ padding:'9px 20px', background:'transparent', border:'1.5px solid var(--red)', color:'var(--red)', borderRadius:8, fontSize:13, fontWeight:700, cursor:'pointer', flexShrink:0 }}>
+              Delete Asset
+            </button>
+          </div>
+        )}
+
+        {delStep === 1 && (
+          <div>
+            <div style={{ fontSize:13, fontWeight:700, color:'var(--red)', marginBottom:10 }}>Are you sure you want to delete <strong>{asset.name}</strong>?</div>
+            <div style={{ fontSize:12, color:'var(--text-muted)', marginBottom:16 }}>
+              This will permanently delete the asset and all associated records including service schedules, prestart submissions, and work orders.
+            </div>
+            <div style={{ display:'flex', gap:10 }}>
+              <button onClick={()=>setDelStep(0)} style={{ flex:1, padding:'10px', background:'var(--surface)', border:'1px solid var(--border)', borderRadius:8, fontSize:13, fontWeight:600, cursor:'pointer', color:'var(--text-secondary)' }}>Cancel</button>
+              <button onClick={()=>setDelStep(2)} style={{ flex:1, padding:'10px', background:'var(--red)', color:'#fff', border:'none', borderRadius:8, fontSize:13, fontWeight:700, cursor:'pointer' }}>Yes, I want to delete it</button>
+            </div>
+          </div>
+        )}
+
+        {delStep === 2 && (
+          <div>
+            <div style={{ fontSize:13, fontWeight:700, color:'var(--red)', marginBottom:8 }}>Final confirmation</div>
+            <div style={{ fontSize:12, color:'var(--text-muted)', marginBottom:12 }}>
+              Type <strong style={{ color:'var(--text-primary)' }}>{asset.name}</strong> to confirm deletion:
+            </div>
+            <input
+              style={{ ...iStyle, borderColor: delInput.trim().toLowerCase()===asset.name.toLowerCase() ? 'var(--green)' : '#fecdd3', marginBottom:12, background:'#fff' }}
+              placeholder={`Type "${asset.name}" to confirm`}
+              value={delInput}
+              onChange={e=>setDelInput(e.target.value)}
+            />
+            <div style={{ display:'flex', gap:10 }}>
+              <button onClick={()=>{setDelStep(0);setDelInput('');}} style={{ flex:1, padding:'10px', background:'var(--surface)', border:'1px solid var(--border)', borderRadius:8, fontSize:13, fontWeight:600, cursor:'pointer', color:'var(--text-secondary)' }}>Cancel</button>
+              <button
+                onClick={handleDelete}
+                disabled={deleting || delInput.trim().toLowerCase()!==asset.name.toLowerCase()}
+                style={{ flex:1, padding:'10px', background:delInput.trim().toLowerCase()===asset.name.toLowerCase()?'var(--red)':'#fca5a5', color:'#fff', border:'none', borderRadius:8, fontSize:13, fontWeight:700, cursor:delInput.trim().toLowerCase()===asset.name.toLowerCase()?'pointer':'not-allowed', transition:'all 0.2s' }}>
+                {deleting ? 'Deleting…' : '🗑 Permanently Delete'}
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+
+// ─── Tab: Prestart History ────────────────────────────────────────────────────
+function PrestartHistoryTab({ asset }) {
+  const [submissions, setSubmissions] = useState([]);
+  const [loading, setLoading]         = useState(true);
+
+  useEffect(() => {
+    supabase.from('form_submissions')
+      .select('*')
+      .eq('asset', asset.name)
+      .eq('company_id', asset.company_id)
+      .order('date', { ascending: false })
+      .then(({ data }) => { setSubmissions(data || []); setLoading(false); });
+  }, [asset]);
+
+  if (loading) return <Sk h="80px" />;
+
+  if (submissions.length === 0) return (
+    <div className="mp-card" style={{ textAlign:'center', padding:40, color:'var(--text-faint)' }}>
+      No prestart records for this asset yet.
+    </div>
+  );
+
+  return (
+    <div className="mp-card">
+      <div className="mp-section-title">Prestart Records ({submissions.length})</div>
+      <div style={{ overflowX:'auto' }}>
+        <table style={{ width:'100%', borderCollapse:'collapse', fontSize:13 }}>
+          <thead>
+            <tr style={{ borderBottom:'2px solid var(--border)' }}>
+              {['Date','Operator','Site','Hours','Status','Notes'].map(h => (
+                <th key={h} style={{ textAlign:'left', padding:'0 14px 10px 0', fontSize:10, fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.5px' }}>{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {submissions.map(s => {
+              const hasDefects = s.defects_found;
+              return (
+                <tr key={s.id} style={{ borderBottom:'1px solid var(--border)' }}>
+                  <td style={{ padding:'10px 14px 10px 0', fontWeight:600, color:'var(--text-primary)' }}>{s.date}</td>
+                  <td style={{ padding:'10px 14px 10px 0', color:'var(--text-secondary)' }}>{s.operator_name || '—'}</td>
+                  <td style={{ padding:'10px 14px 10px 0', color:'var(--text-muted)' }}>{s.site_area || '—'}</td>
+                  <td style={{ padding:'10px 14px 10px 0', color:'var(--accent)', fontWeight:600 }}>{s.hrs_start ? s.hrs_start + ' hrs' : '—'}</td>
+                  <td style={{ padding:'10px 14px 10px 0' }}>
+                    <span style={{ display:'inline-flex', alignItems:'center', gap:4, padding:'3px 10px', borderRadius:20, fontSize:11, fontWeight:700,
+                      background: hasDefects ? 'var(--red-bg)' : 'var(--green-bg)',
+                      color: hasDefects ? 'var(--red)' : 'var(--green)',
+                      border: `1px solid ${hasDefects ? 'var(--red-border)' : 'var(--green-border)'}` }}>
+                      {hasDefects ? '⚠ Defects' : '✓ Clear'}
+                    </span>
+                  </td>
+                  <td style={{ padding:'10px 14px 10px 0', color:'var(--text-muted)', fontSize:12, maxWidth:200, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{s.notes || '—'}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+// ─── Tab: Service History ─────────────────────────────────────────────────────
+function ServiceHistoryTab({ asset }) {
+  const [submissions, setSubmissions] = useState([]);
+  const [loading, setLoading]         = useState(true);
+
+  useEffect(() => {
+    supabase.from('service_sheet_submissions')
+      .select('*')
+      .eq('asset', asset.name)
+      .eq('company_id', asset.company_id)
+      .order('date', { ascending: false })
+      .then(({ data }) => { setSubmissions(data || []); setLoading(false); });
+  }, [asset]);
+
+  if (loading) return <Sk h="80px" />;
+
+  if (submissions.length === 0) return (
+    <div className="mp-card" style={{ textAlign:'center', padding:40, color:'var(--text-faint)' }}>
+      No service history for this asset yet.
+    </div>
+  );
+
+  return (
+    <div className="mp-card">
+      <div className="mp-section-title">Service History ({submissions.length})</div>
+      <div style={{ overflowX:'auto' }}>
+        <table style={{ width:'100%', borderCollapse:'collapse', fontSize:13 }}>
+          <thead>
+            <tr style={{ borderBottom:'2px solid var(--border)' }}>
+              {['Date','Technician','Service Type','Parts Cost','Labour Hrs','Notes'].map(h => (
+                <th key={h} style={{ textAlign:'left', padding:'0 14px 10px 0', fontSize:10, fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.5px' }}>{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {submissions.map(s => (
+              <tr key={s.id} style={{ borderBottom:'1px solid var(--border)' }}>
+                <td style={{ padding:'10px 14px 10px 0', fontWeight:600, color:'var(--text-primary)' }}>{s.date}</td>
+                <td style={{ padding:'10px 14px 10px 0', color:'var(--text-secondary)' }}>{s.technician || '—'}</td>
+                <td style={{ padding:'10px 14px 10px 0', color:'var(--accent)', fontWeight:600 }}>{s.service_type || '—'}</td>
+                <td style={{ padding:'10px 14px 10px 0', color:'#ff6b00', fontWeight:600 }}>{s.total_parts_cost ? '$'+parseFloat(s.total_parts_cost).toFixed(2) : '—'}</td>
+                <td style={{ padding:'10px 14px 10px 0', color:'var(--text-secondary)' }}>{s.total_labour_hours ? parseFloat(s.total_labour_hours).toFixed(1)+'h' : '—'}</td>
+                <td style={{ padding:'10px 14px 10px 0', color:'var(--text-muted)', fontSize:12, maxWidth:200, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{s.notes || '—'}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function AssetPage({ assetId, userRole, onStartPrestart, onStartServiceSheet, onBack, initialTab }) {
   const [asset, setAsset]             = useState(null);
   const [recentPrestarts, setRecentPrestarts] = useState([]);
   const [recentMaintenance, setRecentMaintenance] = useState([]);
   const [openWorkOrders, setOpenWorkOrders] = useState([]);
-  const [loading, setLoading]         = useState(true);
-  const [activeTab, setActiveTab]     = useState(initialTab || 'overview');
+  const [loading, setLoading]                         = useState(true);
+  const [activeTab, setActiveTab]                     = useState(initialTab || 'overview');
+  const [assignedPrestartTemplates, setAssignedPrestartTemplates] = useState([]);
+  const [showNoPrestartPrompt, setShowNoPrestartPrompt]           = useState(false);
 
   const isAdmin = ['admin','supervisor'].includes(userRole?.role);
   const [labelTemplates, setLabelTemplates] = useState([]);
@@ -1579,6 +1863,14 @@ function AssetPage({ assetId, userRole, onStartPrestart, onStartServiceSheet, in
       setRecentPrestarts(prestarts.data||[]);
       setRecentMaintenance(maintenance.data||[]);
       setOpenWorkOrders(workorders.data||[]);
+      // Load prestart templates assigned to this asset
+      const { data: tmplData } = await supabase.from('form_templates')
+        .select('id, name, description, sections')
+        .eq('company_id', assetData.company_id);
+      const assigned = (tmplData || []).filter(t =>
+        Array.isArray(t.asset_ids) && t.asset_ids.includes(assetData.id)
+      );
+      setAssignedPrestartTemplates(assigned);
     }
     setLoading(false);
   };
@@ -1596,13 +1888,16 @@ function AssetPage({ assetId, userRole, onStartPrestart, onStartServiceSheet, in
   const qrUrl = `${window.location.origin}/scan/${assetId}`;
 
   const TABS = [
-    { id:'overview',     label:'Overview' },
-    { id:'workorders',   label:`Work Orders${openWorkOrders.length > 0 ? ` (${openWorkOrders.length})` : ''}` },
-    { id:'service',      label:'Service Schedule' },
-    { id:'oil',          label:'Oil Sampling' },
-    { id:'downtime',     label:'Downtime' },
-    { id:'documents', label:'📂 Documents' },
+    { id:'overview',         label:'Overview' },
+    { id:'prestarts',        label:`Prestarts${recentPrestarts.length > 0 ? ` (${recentPrestarts.length})` : ''}` },
+    { id:'workorders',       label:`Work Orders${openWorkOrders.length > 0 ? ` (${openWorkOrders.length})` : ''}` },
+    { id:'service',          label:'Service Schedule' },
+    { id:'service_history',  label:'Service History' },
+    { id:'oil',              label:'Oil Sampling' },
+    { id:'downtime',         label:'Downtime' },
+    { id:'documents',        label:'📂 Documents' },
     ...(isAdmin ? [{ id:'depreciation', label:'💰 Depreciation' }] : []),
+    ...(isAdmin ? [{ id:'settings', label:'⚙️ Settings' }] : []),
   ];
 
   return (
@@ -1681,11 +1976,47 @@ function AssetPage({ assetId, userRole, onStartPrestart, onStartServiceSheet, in
         </div>
       )}
 
+      {/* ── No Prestart Assigned Prompt ── */}
+      {showNoPrestartPrompt && (
+        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:1000, display:'flex', alignItems:'center', justifyContent:'center', padding:20 }}
+          onClick={() => setShowNoPrestartPrompt(false)}>
+          <div style={{ background:'var(--bg)', borderRadius:16, padding:28, width:'100%', maxWidth:420, boxShadow:'0 24px 80px rgba(0,0,0,0.2)' }}
+            onClick={e => e.stopPropagation()}>
+            <div style={{ fontSize:32, textAlign:'center', marginBottom:12 }}>📋</div>
+            <div style={{ fontSize:17, fontWeight:800, color:'var(--text-primary)', textAlign:'center', marginBottom:8 }}>No Prestart Form Assigned</div>
+            <div style={{ fontSize:13, color:'var(--text-muted)', textAlign:'center', marginBottom:24, lineHeight:1.6 }}>
+              This unit doesn't have a prestart checklist assigned to it yet. Would you like to go to Forms to create one and assign it to this unit?
+            </div>
+            <div style={{ display:'flex', gap:10 }}>
+              <button onClick={() => setShowNoPrestartPrompt(false)}
+                style={{ flex:1, padding:'11px', background:'var(--surface-2)', border:'1px solid var(--border)', borderRadius:9, fontSize:13, fontWeight:600, color:'var(--text-secondary)', cursor:'pointer' }}>
+                Cancel
+              </button>
+              <button onClick={() => {
+                setShowNoPrestartPrompt(false);
+                window.dispatchEvent(new CustomEvent('mechiq-navigate', { detail: { page: 'forms', subPage: 'prestarts' } }));
+              }}
+                style={{ flex:2, padding:'11px', background:'linear-gradient(135deg,var(--accent),#0090a8)', border:'none', borderRadius:9, fontSize:13, fontWeight:700, color:'#fff', cursor:'pointer' }}>
+                Go to Forms → Create &amp; Assign
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ── Action buttons ── */}
       <div className="mp-action-row">
-        <button className="mp-action-btn prestart" onClick={() => onStartPrestart && onStartPrestart(asset.name, asset.id, asset.asset_number)}>
+        <button className="mp-action-btn prestart" onClick={() => {
+          if (assignedPrestartTemplates.length > 0) {
+            // Has assigned templates — go straight through
+            onStartPrestart && onStartPrestart(asset.name, asset.id, asset.asset_number);
+          } else {
+            // No assigned template — show prompt
+            setShowNoPrestartPrompt(true);
+          }
+        }}>
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
-          Start Prestart
+          Start Prestart{assignedPrestartTemplates.length > 0 ? '' : ' ⚠'}
         </button>
         <button className="mp-action-btn servicesheet" onClick={() => {
           if (onStartServiceSheet) {
@@ -1708,13 +2039,16 @@ function AssetPage({ assetId, userRole, onStartPrestart, onStartServiceSheet, in
       </div>
 
       {/* ── Tab content ── */}
-      {activeTab === 'overview'     && <OverviewTab asset={asset} recentPrestarts={recentPrestarts} recentMaintenance={recentMaintenance} />}
-      {activeTab === 'workorders'   && <WorkOrdersTab asset={asset} userRole={userRole} />}
-      {activeTab === 'service'      && <ServiceTab asset={asset} />}
-      {activeTab === 'oil'          && <OilTab asset={asset} userRole={userRole} />}
-      {activeTab === 'downtime'     && <DowntimeTab asset={asset} />}
-      {activeTab === 'documents'    && <DocumentsTab asset={asset} userRole={userRole} />}
-      {activeTab === 'depreciation' && isAdmin && <DepreciationTab asset={asset} userRole={userRole} />}
+      {activeTab === 'overview'        && <OverviewTab asset={asset} recentPrestarts={recentPrestarts} recentMaintenance={recentMaintenance} />}
+      {activeTab === 'prestarts'       && <PrestartHistoryTab asset={asset} />}
+      {activeTab === 'workorders'      && <WorkOrdersTab asset={asset} userRole={userRole} />}
+      {activeTab === 'service'         && <ServiceTab asset={asset} />}
+      {activeTab === 'service_history' && <ServiceHistoryTab asset={asset} />}
+      {activeTab === 'oil'             && <OilTab asset={asset} userRole={userRole} />}
+      {activeTab === 'downtime'        && <DowntimeTab asset={asset} />}
+      {activeTab === 'documents'       && <DocumentsTab asset={asset} userRole={userRole} />}
+      {activeTab === 'depreciation'    && isAdmin && <DepreciationTab asset={asset} userRole={userRole} />}
+      {activeTab === 'settings'        && isAdmin && <AssetSettingsTab asset={asset} userRole={userRole} onDeleted={() => onBack && onBack()} />}
     </div>
   );
 }
