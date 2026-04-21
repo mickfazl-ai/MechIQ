@@ -280,6 +280,7 @@ const NAV_STRUCTURE = [
       { id: 'assets', subPage: 'onboarding',   label: 'Onboarding',   roles: ['admin','supervisor'] },
       { id: 'assets', subPage: 'depreciation', label: 'Depreciation', roles: ['admin','supervisor'] },
       { id: 'assets', subPage: 'tracker',      label: 'Tracker',      roles: ['admin','supervisor'] },
+      { id: 'forms',  subPage: null,           label: 'Forms',        roles: ['admin','supervisor','technician','operator'] },
     ],
   },
   { id: 'maintenance',  label: 'Maintenance',  ik: 'maintenance',  roles: ['admin','supervisor','technician'], feature: 'maintenance',
@@ -290,12 +291,7 @@ const NAV_STRUCTURE = [
       { id: 'maintenance', subPage: 'calendar',    label: 'Calendar',          roles: ['admin','supervisor','technician'] },
     ],
   },
-  { id: 'forms',        label: 'Forms',        ik: 'forms',        roles: ['admin','supervisor','technician','operator'], feature: 'prestart',
-    children: [
-      { id: 'forms', subPage: 'prestarts',      label: 'Prestarts',      roles: ['admin','supervisor','technician','operator'] },
-      { id: 'forms', subPage: 'service-sheets', label: 'Service Sheets', roles: ['admin','supervisor','technician'] },
-    ],
-  },
+
   { id: 'scanner',      label: 'Scanner',      ik: 'scanner',      roles: ['technician','operator'], feature: 'scanner' },
   { id: 'chat',         label: 'Messages',     ik: 'chat',         roles: ['admin','supervisor','technician','operator'], feature: null },
   { id: 'parts',        label: 'Parts',        ik: 'parts',        roles: ['admin','supervisor','technician'], feature: null },
