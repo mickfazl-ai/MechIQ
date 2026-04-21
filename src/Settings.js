@@ -1505,7 +1505,7 @@ const ADMIN_TABS = [
   { id: 'billing',          label: 'Contact & Plan',  icon: '💳' },
   { id: 'data',             label: 'Data & Export',   icon: '📤' },
   { id: 'assets_settings',  label: 'Assets',          icon: '🚛' },
-  { id: 'label_designer',   label: 'Label Designer',  icon: '🏷' },
+  { id: 'labels',           label: 'Labels',           icon: '🏷' },
 ];
 
 const PERSONAL_TABS = [
@@ -1826,6 +1826,439 @@ function AssetsSettings({ userRole }) {
   );
 }
 
+
+// ─── Labels Section ───────────────────────────────────────────────────────────
+// Three sub-tabs: Designer | Generator | Print
+function LabelsSection({ userRole }) {
+  const [tab, setTab] = React.useState('designer');
+  const tabStyle = (id) => ({
+    padding: '8px 20px', border: 'none', background: 'transparent',
+    borderBottom: tab === id ? '2px solid var(--accent)' : '2px solid transparent',
+    color: tab === id ? 'var(--accent)' : 'var(--text-muted)',
+    fontWeight: tab === id ? 700 : 500, fontSize: 13, cursor: 'pointer',
+    fontFamily: 'inherit', transition: 'all 0.15s',
+  });
+  return (
+    <div>
+      <div style={{ display: 'flex', borderBottom: '1px solid var(--border)', marginBottom: 24 }}>
+        <button style={tabStyle('designer')} onClick={() => setTab('designer')}>🎨 Label Designer</button>
+        <button style={tabStyle('generator')} onClick={() => setTab('generator')}>⚡ Label Generator</button>
+        <button style={tabStyle('print')} onClick={() => setTab('print')}>🖨️ Print Labels</button>
+      </div>
+      {tab === 'designer'  && <LabelDesigner userRole={userRole?.role} companyId={userRole?.company_id} />}
+      {tab === 'generator' && <LabelGenerator userRole={userRole} />}
+      {tab === 'print'     && <LabelPrint userRole={userRole} />}
+    </div>
+  );
+}
+
+// ─── Label Generator ─────────────────────────────────────────────────────────
+function LabelGenerator({ userRole }) {
+  const [templates,  setTemplates]  = React.useState([]);
+  const [selectedT,  setSelectedT]  = React.useState(null);
+  const [count,      setCount]      = React.useState(10);
+  const [prefix,     setPrefix]     = React.useState('MIQ');
+  const [startNum,   setStartNum]   = React.useState(1);
+  const [generated,  setGenerated]  = React.useState([]);
+  const [loading,    setLoading]    = React.useState(false);
+  const [saved,      setSaved]      = React.useState(false);
+  const [existing,   setExisting]   = React.useState([]);
+  const [loadingEx,  setLoadingEx]  = React.useState(true);
+
+  React.useEffect(() => {
+    if (userRole?.company_id) {
+      supabase.from('label_templates').select('id,name,size').eq('company_id', userRole.company_id)
+        .then(({ data }) => setTemplates(data || []));
+      loadExisting();
+    }
+  }, [userRole]);
+
+  const loadExisting = async () => {
+    setLoadingEx(true);
+    const { data } = await supabase.from('generated_labels')
+      .select('*').eq('company_id', userRole.company_id)
+      .order('label_number');
+    setExisting(data || []);
+    setLoadingEx(false);
+  };
+
+  const generate = async () => {
+    if (!selectedT) { alert('Please select a label template first'); return; }
+    if (count < 1 || count > 500) { alert('Count must be between 1 and 500'); return; }
+    setLoading(true);
+    // Find highest existing number to avoid duplicates
+    const maxExisting = existing.reduce((m, l) => Math.max(m, l.label_number || 0), 0);
+    const start = Math.max(startNum, maxExisting + 1);
+    const rows = [];
+    for (let i = 0; i < count; i++) {
+      const num = start + i;
+      const label_code = `${prefix}-${String(num).padStart(3, '0')}`;
+      const qr_url = `https://www.mechiq.com.au/scan/label/${label_code}`;
+      rows.push({
+        company_id:   userRole.company_id,
+        template_id:  selectedT.id,
+        template_name: selectedT.name,
+        label_number: num,
+        label_code,
+        qr_url,
+        asset_id:     null,
+        asset_name:   null,
+        printed:      false,
+      });
+    }
+    const { data, error } = await supabase.from('generated_labels').insert(rows).select();
+    if (error) { alert('Error: ' + error.message); }
+    else {
+      setGenerated(data || []);
+      setSaved(true);
+      await loadExisting();
+      setTimeout(() => setSaved(false), 3000);
+    }
+    setLoading(false);
+  };
+
+  const deleteLabel = async (id) => {
+    await supabase.from('generated_labels').delete().eq('id', id);
+    await loadExisting();
+  };
+
+  const iStyle = { width: '100%', padding: '9px 12px', border: '1px solid var(--border)', borderRadius: 7, background: 'var(--surface-2)', color: 'var(--text-primary)', fontSize: 13, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' };
+  const lStyle = { display: 'block', fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 5 };
+
+  return (
+    <div>
+      {/* Generator form */}
+      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: 24, marginBottom: 20 }}>
+        <div style={{ fontSize: 15, fontWeight: 800, color: 'var(--text-primary)', marginBottom: 4 }}>Generate Labels</div>
+        <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 20 }}>
+          Generate a batch of unique labels with sequential numbers and QR codes. Each label links to its assigned asset.
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(200px,1fr))', gap: 14, marginBottom: 20 }}>
+          <div>
+            <label style={lStyle}>Label Template</label>
+            <select style={iStyle} value={selectedT?.id || ''} onChange={e => setSelectedT(templates.find(t => t.id === e.target.value) || null)}>
+              <option value="">Select template…</option>
+              {templates.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+            </select>
+          </div>
+          <div>
+            <label style={lStyle}>Prefix</label>
+            <input style={iStyle} value={prefix} onChange={e => setPrefix(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,6))} placeholder="MIQ" maxLength={6} />
+          </div>
+          <div>
+            <label style={lStyle}>Starting Number</label>
+            <input style={iStyle} type="number" min={1} value={startNum} onChange={e => setStartNum(Math.max(1, parseInt(e.target.value) || 1))} />
+          </div>
+          <div>
+            <label style={lStyle}>Number of Labels</label>
+            <input style={iStyle} type="number" min={1} max={500} value={count} onChange={e => setCount(Math.max(1, Math.min(500, parseInt(e.target.value) || 1)))} />
+          </div>
+        </div>
+        {/* Preview */}
+        {selectedT && (
+          <div style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 8, padding: '12px 16px', marginBottom: 16, fontSize: 12, color: 'var(--text-muted)' }}>
+            <strong style={{ color: 'var(--text-primary)' }}>Preview:</strong>{' '}
+            {prefix}-{String(startNum).padStart(3,'0')} → {prefix}-{String(startNum + count - 1).padStart(3,'0')}
+            {' '}· Template: <strong style={{ color: 'var(--accent)' }}>{selectedT.name}</strong>
+            {' '}· {count} label{count !== 1 ? 's' : ''}
+          </div>
+        )}
+        <button onClick={generate} disabled={loading || !selectedT}
+          style={{ padding: '11px 28px', background: loading || !selectedT ? 'var(--surface-2)' : 'var(--accent)', color: loading || !selectedT ? 'var(--text-muted)' : '#fff', border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: loading || !selectedT ? 'not-allowed' : 'pointer', transition: 'all 0.2s' }}>
+          {loading ? '⏳ Generating…' : saved ? '✓ Generated!' : `⚡ Generate ${count} Label${count !== 1 ? 's' : ''}`}
+        </button>
+      </div>
+
+      {/* Existing labels table */}
+      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: 24 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+          <div style={{ fontSize: 15, fontWeight: 800, color: 'var(--text-primary)' }}>Generated Labels ({existing.length})</div>
+          <button onClick={loadExisting} style={{ padding: '6px 14px', background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 7, fontSize: 12, cursor: 'pointer', color: 'var(--text-secondary)' }}>↻ Refresh</button>
+        </div>
+        {loadingEx ? (
+          <div style={{ color: 'var(--text-muted)', fontSize: 13 }}>Loading…</div>
+        ) : existing.length === 0 ? (
+          <div style={{ color: 'var(--text-muted)', fontSize: 13, fontStyle: 'italic' }}>No labels generated yet.</div>
+        ) : (
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+              <thead>
+                <tr style={{ background: 'var(--surface-2)', borderBottom: '2px solid var(--border)' }}>
+                  {['Label Code','Template','Asset Assigned','Printed',''].map(h => (
+                    <th key={h} style={{ padding: '9px 12px', textAlign: 'left', fontSize: 10, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', whiteSpace: 'nowrap' }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {existing.map(l => (
+                  <tr key={l.id} style={{ borderBottom: '1px solid var(--border)' }}>
+                    <td style={{ padding: '9px 12px', fontFamily: 'var(--font-mono)', fontWeight: 700, color: 'var(--accent)', fontSize: 13 }}>{l.label_code}</td>
+                    <td style={{ padding: '9px 12px', color: 'var(--text-secondary)', fontSize: 12 }}>{l.template_name || '—'}</td>
+                    <td style={{ padding: '9px 12px' }}>
+                      {l.asset_name
+                        ? <span style={{ padding: '2px 8px', borderRadius: 20, background: 'var(--green-bg)', color: 'var(--green)', fontSize: 11, fontWeight: 700 }}>{l.asset_name}</span>
+                        : <span style={{ color: 'var(--text-faint)', fontSize: 12, fontStyle: 'italic' }}>Unassigned</span>}
+                    </td>
+                    <td style={{ padding: '9px 12px' }}>
+                      <span style={{ padding: '2px 8px', borderRadius: 20, fontSize: 11, fontWeight: 700, background: l.printed ? 'var(--accent-light)' : 'var(--surface-2)', color: l.printed ? 'var(--accent)' : 'var(--text-faint)', border: '1px solid ' + (l.printed ? 'rgba(0,194,224,0.3)' : 'var(--border)') }}>
+                        {l.printed ? '✓ Printed' : 'Not printed'}
+                      </span>
+                    </td>
+                    <td style={{ padding: '9px 12px', textAlign: 'right' }}>
+                      <button onClick={() => { if (window.confirm('Delete label ' + l.label_code + '?')) deleteLabel(l.id); }}
+                        style={{ padding: '3px 10px', background: 'var(--red-bg)', color: 'var(--red)', border: '1px solid var(--red-border)', borderRadius: 5, fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>
+                        🗑
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── Label Print ──────────────────────────────────────────────────────────────
+function LabelPrint({ userRole }) {
+  const [labels,     setLabels]     = React.useState([]);
+  const [templates,  setTemplates]  = React.useState([]);
+  const [loading,    setLoading]    = React.useState(true);
+  const [selected,   setSelected]   = React.useState(new Set());
+  const [paperSize,  setPaperSize]  = React.useState('A4');
+  const [cols,       setCols]       = React.useState(3);
+  const [rows,       setRows]       = React.useState(8);
+  const [gap,        setGap]        = React.useState(4);
+  const [filterAssigned, setFilterAssigned] = React.useState('all');
+  const [filterTemplate, setFilterTemplate] = React.useState('');
+  const printRef = React.useRef(null);
+
+  React.useEffect(() => {
+    if (userRole?.company_id) load();
+  }, [userRole]);
+
+  const load = async () => {
+    setLoading(true);
+    const [{ data: lD }, { data: tD }] = await Promise.all([
+      supabase.from('generated_labels').select('*').eq('company_id', userRole.company_id).order('label_number'),
+      supabase.from('label_templates').select('id,name').eq('company_id', userRole.company_id),
+    ]);
+    setLabels(lD || []);
+    setTemplates(tD || []);
+    setLoading(false);
+  };
+
+  const PAPER_SIZES = {
+    'A4':     { w: 210, h: 297, label: 'A4 (210×297mm)' },
+    'A3':     { w: 297, h: 420, label: 'A3 (297×420mm)' },
+    'Letter': { w: 216, h: 279, label: 'US Letter (216×279mm)' },
+    'A5':     { w: 148, h: 210, label: 'A5 (148×210mm)' },
+  };
+
+  const filtered = labels.filter(l => {
+    if (filterAssigned === 'assigned'   && !l.asset_name) return false;
+    if (filterAssigned === 'unassigned' && l.asset_name) return false;
+    if (filterTemplate && l.template_id !== filterTemplate) return false;
+    return true;
+  });
+
+  const toggleSelect = (id) => setSelected(s => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; });
+  const selectAll    = () => setSelected(new Set(filtered.map(l => l.id)));
+  const clearAll     = () => setSelected(new Set());
+
+  const selectedLabels = filtered.filter(l => selected.has(l.id));
+  const perPage = cols * rows;
+  const pageCount = Math.ceil(selectedLabels.length / perPage);
+
+  const handlePrint = () => {
+    const printWin = window.open('', '_blank');
+    const paper = PAPER_SIZES[paperSize];
+    const labelW = Math.floor((paper.w - (cols + 1) * gap) / cols);
+    const labelH = Math.floor((paper.h - (rows + 1) * gap) / rows);
+
+    const labelHtml = selectedLabels.map((l, i) => `
+      <div class="label" style="width:${labelW}mm;height:${labelH}mm;display:inline-flex;flex-direction:column;align-items:center;justify-content:center;border:1px solid #ccc;border-radius:4px;margin:${gap/2}mm;padding:2mm;box-sizing:border-box;page-break-inside:avoid;vertical-align:top;">
+        <div style="font-family:monospace;font-size:10px;font-weight:700;color:#1a2433;margin-bottom:2px;">${l.label_code}</div>
+        ${l.asset_name ? `<div style="font-size:7px;color:#666;margin-bottom:2px;text-align:center;">${l.asset_name}</div>` : ''}
+        <img src="https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${encodeURIComponent(l.qr_url)}" style="width:${Math.min(labelH*0.55, labelW*0.7)}mm;height:${Math.min(labelH*0.55, labelW*0.7)}mm;" />
+        <div style="font-size:6px;color:#999;margin-top:2px;">mechiq.com.au</div>
+      </div>
+    `).join('');
+
+    printWin.document.write(`
+      <!DOCTYPE html><html><head><title>MechIQ Labels</title>
+      <style>
+        @page { size: ${paperSize === 'Letter' ? '216mm 279mm' : paperSize}; margin: ${gap}mm; }
+        body { margin:0; padding:0; font-family:sans-serif; }
+        .page { width:${paper.w}mm; display:flex; flex-wrap:wrap; align-items:flex-start; page-break-after:always; }
+        @media print { body { -webkit-print-color-adjust:exact; } }
+      </style></head><body>
+      ${Array.from({ length: pageCount }, (_, p) => `
+        <div class="page">
+          ${labelHtml.slice ? selectedLabels.slice(p * perPage, (p + 1) * perPage).map((l) => `
+            <div style="width:${labelW}mm;height:${labelH}mm;display:inline-flex;flex-direction:column;align-items:center;justify-content:center;border:1px solid #ccc;border-radius:4px;margin:${gap/2}mm;padding:2mm;box-sizing:border-box;vertical-align:top;">
+              <div style="font-family:monospace;font-size:10px;font-weight:700;color:#1a2433;margin-bottom:2px;">${l.label_code}</div>
+              ${l.asset_name ? `<div style="font-size:7px;color:#666;margin-bottom:2px;text-align:center;">${l.asset_name}</div>` : ''}
+              <img src="https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${encodeURIComponent(l.qr_url)}" style="width:${Math.min(labelH*0.55, labelW*0.7)}mm;height:${Math.min(labelH*0.55, labelW*0.7)}mm;" />
+              <div style="font-size:6px;color:#999;margin-top:2px;">mechiq.com.au</div>
+            </div>
+          `).join('') : ''}
+        </div>
+      `).join('')}
+      </body></html>
+    `);
+    printWin.document.close();
+    printWin.focus();
+    setTimeout(() => { printWin.print(); }, 800);
+
+    // Mark as printed
+    supabase.from('generated_labels').update({ printed: true }).in('id', [...selected]);
+  };
+
+  const iStyle = { padding: '8px 10px', border: '1px solid var(--border)', borderRadius: 6, background: 'var(--surface-2)', color: 'var(--text-primary)', fontSize: 13, fontFamily: 'inherit', outline: 'none' };
+
+  if (loading) return <div style={{ color: 'var(--text-muted)', fontSize: 13, padding: 20 }}>Loading…</div>;
+
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: '280px 1fr', gap: 20 }}>
+      {/* Settings panel */}
+      <div>
+        <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: 20, marginBottom: 16 }}>
+          <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--text-primary)', marginBottom: 16 }}>Print Settings</div>
+          <div style={{ marginBottom: 12 }}>
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 5 }}>Paper Size</label>
+            <select style={{ ...iStyle, width: '100%' }} value={paperSize} onChange={e => setPaperSize(e.target.value)}>
+              {Object.entries(PAPER_SIZES).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
+            </select>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 12 }}>
+            <div>
+              <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 5 }}>Columns</label>
+              <input style={{ ...iStyle, width: '100%' }} type="number" min={1} max={10} value={cols} onChange={e => setCols(Math.max(1, Math.min(10, parseInt(e.target.value) || 1)))} />
+            </div>
+            <div>
+              <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 5 }}>Rows</label>
+              <input style={{ ...iStyle, width: '100%' }} type="number" min={1} max={20} value={rows} onChange={e => setRows(Math.max(1, Math.min(20, parseInt(e.target.value) || 1)))} />
+            </div>
+          </div>
+          <div style={{ marginBottom: 12 }}>
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 5 }}>Gap (mm)</label>
+            <input style={{ ...iStyle, width: '100%' }} type="number" min={0} max={20} value={gap} onChange={e => setGap(Math.max(0, Math.min(20, parseInt(e.target.value) || 0)))} />
+          </div>
+          <div style={{ background: 'var(--surface-2)', borderRadius: 8, padding: '10px 12px', fontSize: 12, color: 'var(--text-muted)', marginBottom: 16 }}>
+            <div><strong style={{ color: 'var(--text-secondary)' }}>{cols} × {rows}</strong> = {perPage} labels per page</div>
+            <div style={{ marginTop: 3 }}><strong style={{ color: 'var(--text-secondary)' }}>{selectedLabels.length}</strong> selected → <strong style={{ color: 'var(--accent)' }}>{pageCount}</strong> page{pageCount !== 1 ? 's' : ''}</div>
+          </div>
+          <button onClick={handlePrint} disabled={selectedLabels.length === 0}
+            style={{ width: '100%', padding: '12px', background: selectedLabels.length === 0 ? 'var(--surface-2)' : 'var(--accent)', color: selectedLabels.length === 0 ? 'var(--text-muted)' : '#fff', border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: selectedLabels.length === 0 ? 'not-allowed' : 'pointer' }}>
+            🖨️ Print {selectedLabels.length > 0 ? selectedLabels.length + ' Label' + (selectedLabels.length !== 1 ? 's' : '') : ''}
+          </button>
+        </div>
+
+        {/* Filters */}
+        <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: 20 }}>
+          <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--text-primary)', marginBottom: 12 }}>Filters</div>
+          <div style={{ marginBottom: 10 }}>
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 5 }}>Assignment</label>
+            <select style={{ ...iStyle, width: '100%' }} value={filterAssigned} onChange={e => setFilterAssigned(e.target.value)}>
+              <option value="all">All Labels</option>
+              <option value="assigned">Assigned to Asset</option>
+              <option value="unassigned">Unassigned</option>
+            </select>
+          </div>
+          <div>
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 5 }}>Template</label>
+            <select style={{ ...iStyle, width: '100%' }} value={filterTemplate} onChange={e => setFilterTemplate(e.target.value)}>
+              <option value="">All Templates</option>
+              {templates.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+            </select>
+          </div>
+        </div>
+      </div>
+
+      {/* Label list + preview */}
+      <div>
+        {/* Preview */}
+        <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: 20, marginBottom: 16 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+            <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--text-primary)' }}>
+              Page Preview — {PAPER_SIZES[paperSize]?.label}
+            </div>
+            <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{cols}×{rows} layout · {perPage} per page</div>
+          </div>
+          {/* Scaled preview */}
+          <div style={{ border: '1px solid var(--border)', borderRadius: 6, background: '#fff', padding: 8, overflowX: 'auto' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: `${gap}px`, maxWidth: 480, margin: '0 auto' }}>
+              {Array.from({ length: Math.min(perPage, 24) }).map((_, i) => {
+                const l = selectedLabels[i];
+                return (
+                  <div key={i} style={{ aspectRatio: '1', border: '1px solid #dde', borderRadius: 3, background: l ? '#f8fcff' : '#f8f8f8', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 2, minWidth: 0 }}>
+                    {l ? (
+                      <>
+                        <div style={{ fontSize: 7, fontFamily: 'monospace', fontWeight: 700, color: '#1a2433', textAlign: 'center', lineHeight: 1.2 }}>{l.label_code}</div>
+                        <div style={{ width: '60%', aspectRatio: '1', background: '#1a2433', borderRadius: 1, margin: '1px 0' }} />
+                        {l.asset_name && <div style={{ fontSize: 5, color: '#666', textAlign: 'center', lineHeight: 1.2, maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{l.asset_name}</div>}
+                      </>
+                    ) : (
+                      <div style={{ width: '60%', aspectRatio: '1', background: '#eee', borderRadius: 1 }} />
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+            {perPage > 24 && <div style={{ textAlign: 'center', fontSize: 11, color: 'var(--text-muted)', marginTop: 6 }}>Showing first 24 of {perPage} cells</div>}
+          </div>
+        </div>
+
+        {/* Label selection table */}
+        <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: 20 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+            <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--text-primary)' }}>
+              Select Labels to Print ({selected.size} of {filtered.length} selected)
+            </div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button onClick={selectAll} style={{ padding: '5px 12px', background: 'var(--accent-light)', color: 'var(--accent)', border: '1px solid rgba(0,194,224,0.3)', borderRadius: 6, fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>Select All</button>
+              <button onClick={clearAll} style={{ padding: '5px 12px', background: 'var(--surface-2)', color: 'var(--text-secondary)', border: '1px solid var(--border)', borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>Clear</button>
+            </div>
+          </div>
+          {filtered.length === 0 ? (
+            <div style={{ color: 'var(--text-muted)', fontSize: 13, fontStyle: 'italic', padding: '20px 0' }}>No labels match the current filters.</div>
+          ) : (
+            <div style={{ maxHeight: 320, overflowY: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                <thead style={{ position: 'sticky', top: 0, background: 'var(--surface)' }}>
+                  <tr style={{ borderBottom: '2px solid var(--border)' }}>
+                    <th style={{ width: 32, padding: '8px 10px' }} />
+                    {['Label Code','Template','Asset','Printed'].map(h => <th key={h} style={{ padding: '8px 10px', textAlign: 'left', fontSize: 10, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{h}</th>)}
+                  </tr>
+                </thead>
+                <tbody>
+                  {filtered.map(l => (
+                    <tr key={l.id} onClick={() => toggleSelect(l.id)}
+                      style={{ borderBottom: '1px solid var(--border)', cursor: 'pointer', background: selected.has(l.id) ? 'var(--accent-light)' : 'transparent', transition: 'background 0.1s' }}>
+                      <td style={{ padding: '8px 10px' }}>
+                        <div style={{ width: 16, height: 16, borderRadius: 3, border: '1.5px solid ' + (selected.has(l.id) ? 'var(--accent)' : 'var(--border)'), background: selected.has(l.id) ? 'var(--accent)' : '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, color: '#fff' }}>
+                          {selected.has(l.id) ? '✓' : ''}
+                        </div>
+                      </td>
+                      <td style={{ padding: '8px 10px', fontFamily: 'var(--font-mono)', fontWeight: 700, color: 'var(--accent)' }}>{l.label_code}</td>
+                      <td style={{ padding: '8px 10px', color: 'var(--text-muted)', fontSize: 12 }}>{l.template_name || '—'}</td>
+                      <td style={{ padding: '8px 10px' }}>{l.asset_name ? <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--green)' }}>{l.asset_name}</span> : <span style={{ fontSize: 11, color: 'var(--text-faint)', fontStyle: 'italic' }}>Unassigned</span>}</td>
+                      <td style={{ padding: '8px 10px' }}><span style={{ fontSize: 11, color: l.printed ? 'var(--accent)' : 'var(--text-faint)' }}>{l.printed ? '✓' : '—'}</span></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function Settings({ userRole, initialTab, adminMode, personalMode }) {
   const TABS = adminMode ? ADMIN_TABS : PERSONAL_TABS;
   const defaultTab = adminMode ? 'company' : 'format';
@@ -1844,7 +2277,7 @@ function Settings({ userRole, initialTab, adminMode, personalMode }) {
     app_modifier: <AppModifier userRole={userRole} />,
     password:        <PasswordReset userRole={userRole} />,
     assets_settings:  <AssetsSettings userRole={userRole} />,
-    label_designer:  <LabelDesigner userRole={userRole?.role} companyId={userRole?.company_id} />,
+    labels:  <LabelsSection userRole={userRole} />,
   };
 
   return (
