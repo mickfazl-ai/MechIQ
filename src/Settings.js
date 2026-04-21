@@ -1538,6 +1538,82 @@ function AssetSettingsRow({ asset, onSaved }) {
 
   const blankSch = { service_name: '', interval_type: 'hours', interval_value: '', next_due_override: '', notes: '' };
   const [newSch, setNewSch] = React.useState(blankSch);
+  // Label assign
+  const [assignedLabel, setAssignedLabel] = React.useState(null);
+  const [labelInput,    setLabelInput]    = React.useState('');
+  const [labelSaving,   setLabelSaving]   = React.useState(false);
+  const [labelMsg,      setLabelMsg]      = React.useState('');
+  const [cameraActive,  setCameraActive]  = React.useState(false);
+  const videoRef = React.useRef(null);
+  const streamRef = React.useRef(null);
+
+  React.useEffect(() => {
+    if (open) loadAssignedLabel();
+    return () => stopCamera();
+  }, [open]);
+
+  const loadAssignedLabel = async () => {
+    const { data } = await supabase.from('generated_labels')
+      .select('id,label_code,qr_url,printed')
+      .eq('asset_id', asset.id)
+      .maybeSingle();
+    setAssignedLabel(data || null);
+  };
+
+  const startCamera = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+      streamRef.current = stream;
+      if (videoRef.current) videoRef.current.srcObject = stream;
+      setCameraActive(true);
+      // Simple QR scanning via periodic canvas capture
+      scanFromCamera();
+    } catch(e) {
+      setLabelMsg('Camera not available — please enter the label code manually');
+    }
+  };
+
+  const stopCamera = () => {
+    if (streamRef.current) { streamRef.current.getTracks().forEach(t => t.stop()); streamRef.current = null; }
+    setCameraActive(false);
+  };
+
+  const scanFromCamera = () => {
+    // Polling approach — user points camera then we grab a frame
+    // Full QR decode would need jsQR library; for now we just stop camera and user confirms code
+    setLabelMsg('Point camera at label QR code, then enter the label code below');
+  };
+
+  const assignLabel = async (code) => {
+    if (!code.trim()) return;
+    setLabelSaving(true); setLabelMsg('');
+    stopCamera();
+    // Find label by code
+    const { data: label } = await supabase.from('generated_labels')
+      .select('id,label_code,asset_id')
+      .ilike('label_code', code.trim())
+      .maybeSingle();
+    if (!label) {
+      setLabelMsg('Label not found: ' + code.trim()); setLabelSaving(false); return;
+    }
+    if (label.asset_id && label.asset_id !== asset.id) {
+      setLabelMsg('This label is already assigned to another asset'); setLabelSaving(false); return;
+    }
+    // Unassign previous label from this asset
+    await supabase.from('generated_labels').update({ asset_id: null, asset_name: null }).eq('asset_id', asset.id);
+    // Assign new label
+    await supabase.from('generated_labels').update({ asset_id: asset.id, asset_name: asset.name }).eq('id', label.id);
+    setLabelInput(''); setLabelMsg('✓ Label ' + label.label_code + ' assigned to ' + asset.name);
+    setLabelSaving(false);
+    loadAssignedLabel();
+  };
+
+  const unassignLabel = async () => {
+    if (!assignedLabel) return;
+    if (!window.confirm('Remove label ' + assignedLabel.label_code + ' from this asset?')) return;
+    await supabase.from('generated_labels').update({ asset_id: null, asset_name: null }).eq('id', assignedLabel.id);
+    setAssignedLabel(null); setLabelMsg('Label removed');
+  };
 
   const fStyle = { width:'100%', padding:'8px 10px', border:'1px solid #dde2ea', borderRadius:6, fontSize:13, color:'#1a2b3c', background:'#fff', outline:'none', boxSizing:'border-box' };
   const lStyle = { display:'block', fontSize:10, fontWeight:700, color:'#6b7a8d', textTransform:'uppercase', letterSpacing:'0.5px', marginBottom:4 };
@@ -1704,7 +1780,7 @@ function AssetSettingsRow({ asset, onSaved }) {
         <div style={{ padding:'16px', borderTop:'1px solid #dde2ea', background:'#fff' }}>
           {/* Sub-tabs */}
           <div style={{ display:'flex', background:'#f1f5f9', borderRadius:8, padding:3, marginBottom:16, width:'fit-content' }}>
-            {[['info','📋 Asset Info'],['intervals','🔧 Service Intervals']].map(([id,lbl]) => (
+            {[['info','📋 Asset Info'],['intervals','🔧 Service Intervals'],['label','🏷 Label']].map(([id,lbl]) => (
               <button key={id} onClick={() => setTab(id)} style={{ padding:'7px 18px', border:'none', borderRadius:6, background:tab===id?'#fff':'transparent', color:tab===id?'#1a2b3c':'#6b7a8d', fontWeight:tab===id?700:500, fontSize:13, cursor:'pointer', boxShadow:tab===id?'0 1px 4px rgba(0,0,0,0.1)':'none', transition:'all 0.15s' }}>{lbl}</button>
             ))}
           </div>
@@ -1771,6 +1847,79 @@ function AssetSettingsRow({ asset, onSaved }) {
                 </>
               )}
             </>
+          )}
+          {tab === 'label' && (
+            <div>
+              {/* Currently assigned label */}
+              {assignedLabel ? (
+                <div style={{ background:'#f0fdf4', border:'1px solid #bbf7d0', borderRadius:10, padding:'14px 16px', marginBottom:16, display:'flex', alignItems:'center', gap:14 }}>
+                  <div style={{ flex:1 }}>
+                    <div style={{ fontSize:11, fontWeight:700, color:'#166534', textTransform:'uppercase', letterSpacing:'0.5px', marginBottom:3 }}>✓ Label Assigned</div>
+                    <div style={{ fontSize:16, fontWeight:800, color:'#1a2b3c', fontFamily:'var(--font-mono)' }}>{assignedLabel.label_code}</div>
+                    <div style={{ fontSize:11, color:'#6b7a8d', marginTop:2 }}>
+                      {assignedLabel.qr_url}
+                      {assignedLabel.printed && <span style={{ marginLeft:8, color:'var(--accent)', fontWeight:700 }}>· Printed</span>}
+                    </div>
+                  </div>
+                  <button onClick={unassignLabel}
+                    style={{ padding:'6px 14px', background:'#fff1f2', border:'1px solid #fecdd3', borderRadius:7, fontSize:12, fontWeight:700, color:'#e94560', cursor:'pointer' }}>
+                    Remove
+                  </button>
+                </div>
+              ) : (
+                <div style={{ background:'#f8fafc', border:'1px solid #dde2ea', borderRadius:10, padding:'12px 16px', marginBottom:16, fontSize:12, color:'#6b7a8d', fontStyle:'italic' }}>
+                  No label assigned to this asset yet.
+                </div>
+              )}
+
+              {/* Assign form */}
+              <div style={{ background:'#f8fafc', border:'1px solid #dde2ea', borderRadius:10, padding:'16px' }}>
+                <div style={{ fontSize:13, fontWeight:700, color:'#1a2b3c', marginBottom:4 }}>Assign a Label</div>
+                <div style={{ fontSize:12, color:'#6b7a8d', marginBottom:14, lineHeight:1.5 }}>
+                  Scan the QR code on the physical label using your camera, or type the label code manually (e.g. <strong>HK-001</strong>).
+                </div>
+
+                {/* Camera section */}
+                <div style={{ marginBottom:14 }}>
+                  {!cameraActive ? (
+                    <button onClick={startCamera}
+                      style={{ display:'flex', alignItems:'center', gap:8, padding:'10px 18px', background:'#1a2b3c', color:'#fff', border:'none', borderRadius:8, fontSize:13, fontWeight:700, cursor:'pointer' }}>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                      📷 Scan QR Code
+                    </button>
+                  ) : (
+                    <div>
+                      <video ref={videoRef} autoPlay playsInline muted style={{ width:'100%', maxWidth:320, borderRadius:8, border:'2px solid var(--accent)', display:'block', marginBottom:8 }} />
+                      <button onClick={stopCamera} style={{ padding:'6px 14px', background:'#f8fafc', border:'1px solid #dde2ea', borderRadius:6, fontSize:12, fontWeight:600, color:'#6b7a8d', cursor:'pointer' }}>✕ Close Camera</button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Manual input */}
+                <div style={{ display:'flex', gap:8, alignItems:'flex-end' }}>
+                  <div style={{ flex:1 }}>
+                    <label style={{ display:'block', fontSize:10, fontWeight:700, color:'#6b7a8d', textTransform:'uppercase', letterSpacing:'0.5px', marginBottom:5 }}>Label Code</label>
+                    <input style={{ ...fStyle, fontFamily:'var(--font-mono)', fontSize:14, fontWeight:700, letterSpacing:'1px' }}
+                      value={labelInput} onChange={e => setLabelInput(e.target.value.toUpperCase())}
+                      placeholder="e.g. HK-001"
+                      onKeyDown={e => e.key === 'Enter' && assignLabel(labelInput)} />
+                  </div>
+                  <button onClick={() => assignLabel(labelInput)} disabled={!labelInput.trim() || labelSaving}
+                    style={{ padding:'9px 20px', background: !labelInput.trim() || labelSaving ? '#e5e7eb' : 'var(--accent)', color: !labelInput.trim() || labelSaving ? '#9ca3af' : '#fff', border:'none', borderRadius:7, fontSize:13, fontWeight:700, cursor: !labelInput.trim() || labelSaving ? 'not-allowed' : 'pointer', whiteSpace:'nowrap' }}>
+                    {labelSaving ? 'Assigning…' : 'Assign'}
+                  </button>
+                </div>
+
+                {labelMsg && (
+                  <div style={{ marginTop:10, padding:'8px 12px', borderRadius:7, fontSize:12, fontWeight:600,
+                    background: labelMsg.startsWith('✓') ? '#f0fdf4' : '#fff1f2',
+                    color: labelMsg.startsWith('✓') ? '#166534' : '#e94560',
+                    border: `1px solid ${labelMsg.startsWith('✓') ? '#bbf7d0' : '#fecdd3'}` }}>
+                    {labelMsg}
+                  </div>
+                )}
+              </div>
+            </div>
           )}
         </div>
       )}
