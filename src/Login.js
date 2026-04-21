@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { supabase } from './supabase';
+import { supabase, persistSessionForDevice, clearPersistedSession, getDeviceFingerprint } from './supabase';
 
 const CSS = `
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap');
@@ -768,10 +768,21 @@ function Login({ onAuth }) {
     try {
       const saved = JSON.parse(localStorage.getItem('mechiq_saved_user') || 'null');
       if (!saved) return null;
-      const TWELVE_HOURS = 12 * 60 * 60 * 1000;
-      if (Date.now() - (saved.savedAt || 0) > TWELVE_HOURS) {
+      // 24hr expiry
+      const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
+      if (Date.now() - (saved.savedAt || 0) > TWENTY_FOUR_HOURS) {
         localStorage.removeItem('mechiq_saved_user');
         return null;
+      }
+      // Device fingerprint check — only show Welcome Back on the same device
+      if (saved.deviceFp) {
+        try {
+          const currentFp = getDeviceFingerprint();
+          if (saved.deviceFp !== currentFp) {
+            localStorage.removeItem('mechiq_saved_user');
+            return null;
+          }
+        } catch {}
       }
       return saved;
     } catch { return null; }
@@ -806,11 +817,12 @@ function Login({ onAuth }) {
   };
 
   const handleStayYes = () => {
-    localStorage.setItem('mechiq_saved_user', JSON.stringify({ email: stayPrompt.email, name: stayPrompt.name, savedAt: Date.now() }));
+    // Persist session with device fingerprint + 24hr expiry
+    persistSessionForDevice(stayPrompt.name, stayPrompt.email);
     onAuth(stayPrompt.session); setStayPrompt(null);
   };
   const handleStayNo = () => {
-    localStorage.removeItem('mechiq_saved_user');
+    clearPersistedSession();
     onAuth(stayPrompt.session); setStayPrompt(null);
   };
   const handleContinueAsSaved = async () => {
@@ -819,7 +831,7 @@ function Login({ onAuth }) {
     else { setEmail(savedUser.email); setSavedUser(null); localStorage.removeItem('mechiq_saved_user'); }
   };
   const handleSignInAsOther = () => {
-    localStorage.removeItem('mechiq_saved_user'); setSavedUser(null); supabase.auth.signOut();
+    clearPersistedSession(); setSavedUser(null); supabase.auth.signOut();
   };
   const scroll = (ref) => ref.current?.scrollIntoView({ behavior:'smooth', block:'start' });
 
@@ -844,7 +856,7 @@ function Login({ onAuth }) {
               return (
                 <div style={{ background:'rgba(245,158,11,0.08)', border:'1px solid rgba(245,158,11,0.2)', borderRadius:8, padding:'10px 14px', marginBottom:24, fontSize:12, color:'rgba(251,191,36,0.9)', textAlign:'left' }}>
                   {deviceIcon} Detected: <strong>{isTablet ? 'Tablet' : isMobile ? 'Mobile' : 'Desktop / Laptop'}</strong>
-                  <div style={{ marginTop:5, color:'rgba(200,216,232,0.6)' }}>⚠ <strong style={{color:'rgba(251,191,36,0.9)'}}>Personal {deviceLabel} only.</strong> Session expires in 12 hours. On shared devices, select No.</div>
+                  <div style={{ marginTop:5, color:'rgba(200,216,232,0.6)' }}>⚠ <strong style={{color:'rgba(251,191,36,0.9)'}}>Personal {deviceLabel} only.</strong> Session stays active for 24 hours on this device. On shared devices, select No.</div>
                 </div>
               );
             })()}
@@ -853,7 +865,7 @@ function Login({ onAuth }) {
                 No, sign out<br/>when I close
               </button>
               <button onClick={handleStayYes} style={{ flex:1, padding:'12px', background:'linear-gradient(135deg,#00c2e0,#0090a8)', border:'none', borderRadius:8, fontSize:13, fontWeight:700, color:'#fff', cursor:'pointer', fontFamily:'Inter,sans-serif', boxShadow:'0 0 20px rgba(0,194,224,0.3)' }}>
-                Yes, keep me<br/>signed in
+                Yes, stay signed in<br/>for 24 hours
               </button>
             </div>
           </div>
