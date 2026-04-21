@@ -597,6 +597,7 @@ function PrestartTab({ userRole, prestartAsset, prestartAssetId, prestartAssetNu
   const [signatureData, setSignatureData] = useState('');
   const [form, setForm] = useState({ asset: '', operator_name: '', site_area: '', hrs_start: '', date: new Date().toISOString().split('T')[0], notes: '', responses: {} });
   const [builder, setBuilder] = useState({ name: '', description: '', sections: [], asset_ids: [] });
+  const [editingTemplateId, setEditingTemplateId] = useState(null); // null = new, id = editing existing
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [filters, setFilters] = useState({ search: '', asset: '', dateFrom: '', dateTo: '', status: 'all' });
   const isAdmin = userRole && (userRole.role === 'admin' || userRole.role === 'master');
@@ -740,8 +741,13 @@ function PrestartTab({ userRole, prestartAsset, prestartAssetId, prestartAssetNu
 
   const saveTemplate = async () => {
     if (!builder.name || builder.sections.length === 0) { alert('Please add a name and at least one section'); return; }
-    const { error } = await supabase.from('form_templates').insert([{ ...builder, company_id: userRole.company_id }]);
-    if (!error) { fetchTemplates(); setView('list'); setBuilder({ name: '', description: '', sections: [], asset_ids: [] }); setAiPreview(null); }
+    let error;
+    if (editingTemplateId) {
+      ({ error } = await supabase.from('form_templates').update({ name: builder.name, description: builder.description, sections: builder.sections, asset_ids: builder.asset_ids }).eq('id', editingTemplateId));
+    } else {
+      ({ error } = await supabase.from('form_templates').insert([{ ...builder, company_id: userRole.company_id }]));
+    }
+    if (!error) { fetchTemplates(); setView('list'); setBuilder({ name: '', description: '', sections: [], asset_ids: [] }); setAiPreview(null); setEditingTemplateId(null); }
   };
 
   const updateItem = (si, ii, v) => setBuilder(prev => ({ ...prev, sections: prev.sections.map((sec, i) => i === si ? { ...sec, items: sec.items.map((item, j) => j === ii ? v : item) } : sec) }));
@@ -814,7 +820,7 @@ function PrestartTab({ userRole, prestartAsset, prestartAssetId, prestartAssetNu
           <h2>{aiPreview ? 'AI Generated - Review and Edit' : 'Form Builder'}</h2>
           <div style={{ display: 'flex', gap: '10px' }}>
             <button className="btn-primary" style={{ background: 'linear-gradient(135deg, #00c2e0, #0090a8)', color: '#000' }} onClick={() => setShowAI(true)}>Generate with AI</button>
-            <button className="btn-primary" onClick={() => { setView('list'); setAiPreview(null); }}>Back</button>
+            <button className="btn-primary" onClick={() => { setView('list'); setAiPreview(null); setEditingTemplateId(null); }}>Back</button>
           </div>
         </div>
         {aiPreview && <div style={{ background: 'var(--green-bg)', border: '1px solid #00c264', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}><p style={{ color: 'var(--green)', margin: 0, fontSize: '13px' }}>AI generated - review and edit before saving.</p></div>}
@@ -1149,6 +1155,16 @@ function PrestartTab({ userRole, prestartAsset, prestartAssetId, prestartAssetNu
                               ▶ Start
                             </button>
                             {isAdmin && (
+                              <button onClick={() => {
+                                setEditingTemplateId(t.id);
+                                setBuilder({ name: t.name, description: t.description || '', sections: t.sections || [], asset_ids: t.asset_ids || [] });
+                                setView('builder');
+                              }}
+                                style={{ padding:'5px 12px', background:'var(--surface-2)', color:'var(--text-secondary)', border:'1px solid var(--border)', borderRadius:6, fontSize:11, fontWeight:700, cursor:'pointer', whiteSpace:'nowrap' }}>
+                                ✏️ Edit
+                              </button>
+                            )}
+                            {isAdmin && (
                               <button onClick={() => setAssignModal({ ...t })}
                                 style={{ padding:'5px 12px', background:'var(--accent-light)', color:'var(--accent)', border:'1px solid rgba(0,194,224,0.3)', borderRadius:6, fontSize:11, fontWeight:700, cursor:'pointer', whiteSpace:'nowrap' }}>
                                 📌 Assign
@@ -1200,6 +1216,7 @@ function ServiceSheetsTab({ userRole }) {
   const [isSigning, setIsSigning] = useState(false);
   const [signatureData, setSignatureData] = useState('');
   const [builder, setBuilder] = useState({ name: '', description: '', service_type: '', sections: [], parts_template: [], labour_items: [], asset_ids: [] });
+  const [ssEditingTemplateId, setSsEditingTemplateId] = useState(null);
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [filters, setFilters] = useState({ search: '', asset: '', dateFrom: '', dateTo: '', tech: '' });
   const [form, setForm] = useState({ asset: '', technician: '', date: new Date().toISOString().split('T')[0], odometer: '', service_type: '', notes: '', responses: {}, parts: [{ name: '', qty: '', cost: '', part_id: null }], labour: [{ description: '', hours: '' }] });
@@ -1366,8 +1383,13 @@ function ServiceSheetsTab({ userRole }) {
 
   const saveTemplate = async () => {
     if (!builder.name) { alert('Please add a template name'); return; }
-    const { error } = await supabase.from('service_sheet_templates').insert([{ ...builder, company_id: userRole.company_id }]);
-    if (!error) { fetchTemplates(); setView('list'); setBuilder({ name: '', description: '', service_type: '', sections: [], parts_template: [], labour_items: [], asset_ids: [] }); setAiPreview(null); }
+    let error;
+    if (ssEditingTemplateId) {
+      ({ error } = await supabase.from('service_sheet_templates').update({ name: builder.name, description: builder.description, service_type: builder.service_type, sections: builder.sections, parts_template: builder.parts_template, labour_items: builder.labour_items, asset_ids: builder.asset_ids }).eq('id', ssEditingTemplateId));
+    } else {
+      ({ error } = await supabase.from('service_sheet_templates').insert([{ ...builder, company_id: userRole.company_id }]));
+    }
+    if (!error) { fetchTemplates(); setView('list'); setBuilder({ name: '', description: '', service_type: '', sections: [], parts_template: [], labour_items: [], asset_ids: [] }); setAiPreview(null); setSsEditingTemplateId(null); }
     else alert('Error: ' + error.message);
   };
 
@@ -1690,7 +1712,7 @@ function ServiceSheetsTab({ userRole }) {
           <h2>{aiPreview ? 'AI Generated - Review and Edit' : 'Service Sheet Builder'}</h2>
           <div style={{ display: 'flex', gap: '10px' }}>
             <button className="btn-primary" style={{ background: 'linear-gradient(135deg, #00c2e0, #0090a8)', color: '#000' }} onClick={() => setShowAI(true)}>Generate with AI</button>
-            <button className="btn-primary" onClick={() => { setView('list'); setAiPreview(null); }}>Back</button>
+            <button className="btn-primary" onClick={() => { setView('list'); setAiPreview(null); setSsEditingTemplateId(null); }}>Back</button>
           </div>
         </div>
         {aiPreview && <div style={{ background: 'var(--green-bg)', border: '1px solid #00c264', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}><p style={{ color: 'var(--green)', margin: 0, fontSize: '13px' }}>AI generated - review and edit before saving.</p></div>}
@@ -2035,6 +2057,16 @@ function ServiceSheetsTab({ userRole }) {
                                     style={{ padding:'5px 12px', background:'var(--accent)', color:'#fff', border:'none', borderRadius:6, fontSize:11, fontWeight:700, cursor:'pointer', whiteSpace:'nowrap' }}>
                                     ▶ Start
                                   </button>
+                                  {isAdmin && (
+                                    <button onClick={() => {
+                                      setSsEditingTemplateId(t.id);
+                                      setBuilder({ name: t.name, description: t.description || '', service_type: t.service_type || '', sections: t.sections || [], parts_template: t.parts_template || [], labour_items: t.labour_items || [], asset_ids: t.asset_ids || [] });
+                                      setView('builder');
+                                    }}
+                                      style={{ padding:'5px 12px', background:'var(--surface-2)', color:'var(--text-secondary)', border:'1px solid var(--border)', borderRadius:6, fontSize:11, fontWeight:700, cursor:'pointer', whiteSpace:'nowrap' }}>
+                                      ✏️ Edit
+                                    </button>
+                                  )}
                                   {isAdmin && (
                                     <button onClick={() => setSsAssignModal({ ...t })}
                                       style={{ padding:'5px 12px', background:'var(--accent-light)', color:'var(--accent)', border:'1px solid rgba(0,194,224,0.3)', borderRadius:6, fontSize:11, fontWeight:700, cursor:'pointer', whiteSpace:'nowrap' }}>
