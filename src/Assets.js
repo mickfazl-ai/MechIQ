@@ -304,6 +304,8 @@ function UnitsTab({ userRole, onViewAsset, toast }) {
   const [editSaving, setEditSaving] = useState(false);
   const [serviceSheetAsset, setServiceSheetAsset] = useState(null);
   const [serviceTemplates, setServiceTemplates] = useState([]);
+  const [sortCol, setSortCol] = useState('name');
+  const [sortDir, setSortDir] = useState('asc');
 
   useEffect(() => { if (userRole?.company_id) { fetchAssets(); fetchTemplates(); } }, [userRole]);
 
@@ -548,10 +550,20 @@ function UnitsTab({ userRole, onViewAsset, toast }) {
         </div>
       )}
 
-      {/* Cards grid */}
+      {/* Sortable list */}
       {loading ? (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '16px' }}>
-          {[0,1,2,3,4,5].map(i => <AssetCardSkeleton key={i} />)}
+        <div style={{ background:'var(--surface)', border:'1px solid var(--border)', borderRadius:12, overflow:'hidden' }}>
+          {[0,1,2,3,4,5].map(i => (
+            <div key={i} style={{ display:'flex', gap:16, padding:'14px 18px', borderBottom:'1px solid var(--border)', alignItems:'center' }}>
+              <div style={{ width:36, height:36, borderRadius:8, background:'var(--surface-2)' }} />
+              <div style={{ flex:1 }}><div style={{ width:'40%', height:13, background:'var(--surface-2)', borderRadius:4, marginBottom:6 }} /><div style={{ width:'25%', height:10, background:'var(--surface-2)', borderRadius:4 }} /></div>
+              <div style={{ width:'10%', height:12, background:'var(--surface-2)', borderRadius:4 }} />
+              <div style={{ width:'10%', height:12, background:'var(--surface-2)', borderRadius:4 }} />
+              <div style={{ width:'8%', height:12, background:'var(--surface-2)', borderRadius:4 }} />
+              <div style={{ width:'8%', height:12, background:'var(--surface-2)', borderRadius:4 }} />
+              <div style={{ width:'8%', height:24, background:'var(--surface-2)', borderRadius:6 }} />
+            </div>
+          ))}
         </div>
       ) : filtered.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '64px 20px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '16px' }}>
@@ -563,15 +575,121 @@ function UnitsTab({ userRole, onViewAsset, toast }) {
             {search || filter !== 'All' ? 'Try adjusting your filters or search term.' : 'Add your first asset or use Onboarding to register equipment.'}
           </div>
         </div>
-      ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '16px' }}>
-          {filtered.map((asset, i) => (
-            <AssetCard key={asset.id} asset={asset} index={i}
-              onView={onViewAsset} onDelete={handleDelete} onQuickLog={handleQuickLog} onEdit={setEditAsset}
-              onQR={setPrintAsset} onServiceSheet={handleServiceSheet} userRole={userRole} />
-          ))}
-        </div>
-      )}
+      ) : (() => {
+        const COLS = [
+          { id:'asset_number', label:'Asset No.' },
+          { id:'name',         label:'Name'       },
+          { id:'type',         label:'Type'       },
+          { id:'make',         label:'Make / Model'},
+          { id:'location',     label:'Location'   },
+          { id:'status',       label:'Status'     },
+          { id:'hours',        label:'Hours'      },
+          { id:'created_at',   label:'Date Added' },
+        ];
+        const sortVal = (a, col) => {
+          if (col === 'make') return ([a.make, a.model].filter(Boolean).join(' ') || '').toLowerCase();
+          if (col === 'hours') return parseFloat(a.hours) || 0;
+          if (col === 'created_at') return a.created_at || '';
+          return (a[col] || '').toString().toLowerCase();
+        };
+        const sorted = [...filtered].sort((a, b) => {
+          const av = sortVal(a, sortCol), bv = sortVal(b, sortCol);
+          if (av < bv) return sortDir === 'asc' ? -1 : 1;
+          if (av > bv) return sortDir === 'asc' ? 1 : -1;
+          return 0;
+        });
+        const toggleSort = (col) => {
+          if (sortCol === col) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
+          else { setSortCol(col); setSortDir('asc'); }
+        };
+        const SC = { Running:'var(--green)', Down:'var(--red)', Maintenance:'var(--amber)', Active:'var(--green)', Standby:'var(--purple)' };
+        const TYPE_ICONS = { Generator:'⚡', Compressor:'💨', Excavator:'🏗️', Vehicle:'🚛', Truck:'🚚', Crane:'🏗️', Welder:'🔧', default:'⚙️' };
+        const typeIcon = (t) => { const k = Object.keys(TYPE_ICONS).find(k => (t||'').toLowerCase().includes(k.toLowerCase())); return TYPE_ICONS[k] || TYPE_ICONS.default; };
+        return (
+          <div style={{ background:'var(--surface)', border:'1px solid var(--border)', borderRadius:12, overflow:'hidden' }}>
+            <table style={{ width:'100%', borderCollapse:'collapse', fontSize:13 }}>
+              <thead>
+                <tr style={{ background:'var(--surface-2)', borderBottom:'2px solid var(--border)' }}>
+                  {COLS.map(c => (
+                    <th key={c.id} onClick={() => toggleSort(c.id)}
+                      style={{ padding:'10px 14px', textAlign:'left', fontSize:10, fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.5px', cursor:'pointer', userSelect:'none', whiteSpace:'nowrap' }}>
+                      {c.label}
+                      <span style={{ marginLeft:4, opacity: sortCol===c.id ? 1 : 0.3 }}>{sortCol===c.id ? (sortDir==='asc' ? '↑' : '↓') : '↕'}</span>
+                    </th>
+                  ))}
+                  <th style={{ padding:'10px 14px', textAlign:'right', fontSize:10, fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.5px' }}>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {sorted.map((asset, i) => {
+                  const sc = SC[asset.status] || 'var(--text-muted)';
+                  return (
+                    <tr key={asset.id}
+                      style={{ borderBottom: i < sorted.length-1 ? '1px solid var(--border)' : 'none', cursor:'pointer', transition:'background 0.1s' }}
+                      onMouseEnter={e => e.currentTarget.style.background='var(--surface-2)'}
+                      onMouseLeave={e => e.currentTarget.style.background='transparent'}
+                      onClick={() => onViewAsset && onViewAsset(asset.id)}>
+                      {/* Asset No */}
+                      <td style={{ padding:'12px 14px' }}>
+                        <span style={{ fontFamily:'var(--font-mono)', fontSize:12, fontWeight:700, color:'var(--accent)' }}>{asset.asset_number || '—'}</span>
+                      </td>
+                      {/* Name */}
+                      <td style={{ padding:'12px 14px' }}>
+                        <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+                          <div style={{ width:32, height:32, borderRadius:8, background:'var(--surface-2)', border:'1px solid var(--border)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:15, flexShrink:0 }}>
+                            {typeIcon(asset.type)}
+                          </div>
+                          <div>
+                            <div style={{ fontWeight:700, color:'var(--text-primary)', fontSize:13 }}>{asset.name}</div>
+                            {asset.type && <div style={{ fontSize:11, color:'var(--text-muted)' }}>{asset.type}</div>}
+                          </div>
+                        </div>
+                      </td>
+                      {/* Type */}
+                      <td style={{ padding:'12px 14px', color:'var(--text-secondary)', fontSize:12 }}>{asset.type || '—'}</td>
+                      {/* Make/Model */}
+                      <td style={{ padding:'12px 14px', color:'var(--text-secondary)', fontSize:12, maxWidth:160, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+                        {[asset.make, asset.model].filter(Boolean).join(' ') || '—'}
+                      </td>
+                      {/* Location */}
+                      <td style={{ padding:'12px 14px', color:'var(--text-secondary)', fontSize:12 }}>{asset.location || '—'}</td>
+                      {/* Status */}
+                      <td style={{ padding:'12px 14px' }}>
+                        <span style={{ display:'inline-flex', alignItems:'center', gap:5, padding:'3px 10px', borderRadius:20, fontSize:11, fontWeight:700, background:sc+'18', color:sc, border:`1px solid ${sc}30` }}>
+                          <span style={{ width:5, height:5, borderRadius:'50%', background:sc }} />
+                          {asset.status || 'Active'}
+                        </span>
+                      </td>
+                      {/* Hours */}
+                      <td style={{ padding:'12px 14px', color:'var(--accent)', fontWeight:700, fontSize:13 }}>
+                        {asset.hours ? Number(asset.hours).toLocaleString() + ' hrs' : '—'}
+                      </td>
+                      {/* Date Added */}
+                      <td style={{ padding:'12px 14px', color:'var(--text-muted)', fontSize:12, whiteSpace:'nowrap' }}>
+                        {asset.created_at ? new Date(asset.created_at).toLocaleDateString('en-AU',{day:'2-digit',month:'short',year:'numeric'}) : '—'}
+                      </td>
+                      {/* Actions */}
+                      <td style={{ padding:'12px 14px', textAlign:'right' }} onClick={e => e.stopPropagation()}>
+                        <div style={{ display:'flex', gap:6, justifyContent:'flex-end' }}>
+                          <button onClick={() => onViewAsset && onViewAsset(asset.id)}
+                            style={{ padding:'5px 12px', background:'var(--accent)', color:'#fff', border:'none', borderRadius:6, fontSize:11, fontWeight:700, cursor:'pointer', whiteSpace:'nowrap' }}>
+                            View →
+                          </button>
+                          <button onClick={() => setPrintAsset(asset)}
+                            style={{ padding:'5px 10px', background:'var(--surface-2)', color:'var(--text-secondary)', border:'1px solid var(--border)', borderRadius:6, fontSize:11, fontWeight:700, cursor:'pointer' }}
+                            title="Print QR">
+                            📄
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        );
+      })()}
     </div>
   );
 }
