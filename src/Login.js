@@ -13,7 +13,7 @@ const CSS = `
   .lp {
     min-height:100vh;
     background:#f4f6f9;
-    color:#e8ecf2;
+    color:#1a2433;
     font-family:'Barlow', sans-serif;
     font-size:15px;
     line-height:1.6;
@@ -56,6 +56,7 @@ const CSS = `
   .lp-nav-btn:hover { background:#1a7de8; transform:translateY(-1px); }
 
   /* ─── Hero ─── */
+  .lp-hero-section { color:#e8ecf2; }
   .lp-hero-section {
     background:#0d1826;
     position:relative;
@@ -181,9 +182,10 @@ const CSS = `
   .lp-stat { padding:28px 16px; text-align:center; border-right:1px solid rgba(255,255,255,0.06); }
   .lp-stat:last-child { border-right:none; }
   .lp-stat-n { font-family:'Barlow Condensed',sans-serif; font-size:32px; font-weight:900; color:#2d8cf0; letter-spacing:1px; }
-  .lp-stat-l { font-size:10px; color:rgba(26,36,51,0.42); font-weight:600; margin-top:5px; letter-spacing:1.5px; text-transform:uppercase; }
+  .lp-stat-l { font-size:10px; color:rgba(26,36,51,0.6); font-weight:600; margin-top:5px; letter-spacing:1.5px; text-transform:uppercase; }
 
   /* ─── About strip ─── */
+  .lp-about { color:#e8ecf2; }
   .lp-about {
     max-width:1280px; margin:0 auto;
     padding:80px 5vw;
@@ -194,14 +196,14 @@ const CSS = `
   .lp-about-h { font-family:'Barlow Condensed',sans-serif; font-size:clamp(26px,2.8vw,40px); font-weight:900; text-transform:uppercase; color:#fff; line-height:1.1; letter-spacing:0.5px; }
   .lp-feats .lp-about-h { color:#1a2433; }
   .lp-feats .lp-about-label { color:#2d8cf0; }
-  .lp-about-body { font-size:15px; color:rgba(26,36,51,0.55); line-height:1.85; }
+  .lp-about-body { font-size:15px; color:rgba(255,255,255,0.72); line-height:1.85; }
   .lp-about-body p + p { margin-top:16px; }
 
   /* ─── Features ─── */
   .lp-feats { background:#f4f6f9; border-top:1px solid rgba(26,36,51,0.08); border-bottom:1px solid rgba(255,255,255,0.05); }
   .lp-feats-inner { max-width:1280px; margin:0 auto; padding:80px 5vw; }
   .lp-feats-head { margin-bottom:48px; display:grid; grid-template-columns:1fr 1fr; gap:40px; align-items:end; }
-  .lp-feats-intro { font-size:14px; color:rgba(26,36,51,0.65); line-height:1.8; }
+  .lp-feats-intro { font-size:14px; color:rgba(26,36,51,0.72); line-height:1.8; }
 
   /* Accordion */
   .lp-acc { border:1px solid rgba(26,36,51,0.1); border-radius:3px; overflow:hidden; }
@@ -254,7 +256,7 @@ const CSS = `
   .lp-acc-pt {
     display:flex; gap:10px; align-items:baseline;
     font-size:13px; color:rgba(26,36,51,0.5); line-height:1.55;
-    padding:4px 0; border-bottom:1px solid rgba(255,255,255,0.04);
+    padding:4px 0; border-bottom:1px solid rgba(26,36,51,0.06);
   }
   .lp-acc-pt::before { content:'—'; color:#2d8cf0; flex-shrink:0; font-size:11px; }
 
@@ -273,21 +275,22 @@ const CSS = `
     border-radius:0 3px 3px 0;
   }
   .lp-acc-connects-label { font-size:9px; font-weight:700; color:#2d8cf0; letter-spacing:2px; text-transform:uppercase; margin-bottom:8px; }
-  .lp-acc-connects-text { font-size:12px; color:rgba(26,36,51,0.48); line-height:1.7; }
+  .lp-acc-connects-text { font-size:12px; color:rgba(26,36,51,0.68); line-height:1.7; }
 
   /* ─── CTA ─── */
   .lp-cta {
     max-width:1280px; margin:0 auto;
     padding:100px 5vw; text-align:center;
   }
-  .lp-cta-h { font-family:'Barlow Condensed',sans-serif; font-size:clamp(32px,4vw,56px); font-weight:900; text-transform:uppercase; color:#fff; letter-spacing:0.5px; margin-bottom:16px; }
+  .lp-cta-h { font-family:'Barlow Condensed',sans-serif; font-size:clamp(32px,4vw,56px); font-weight:900; text-transform:uppercase; color:#1a2433; letter-spacing:0.5px; margin-bottom:16px; }
   .lp-cta-h span { color:#2d8cf0; }
-  .lp-cta-sub { font-size:15px; color:rgba(26,36,51,0.48); max-width:440px; margin:0 auto 36px; line-height:1.8; }
+  .lp-cta-sub { font-size:15px; color:rgba(26,36,51,0.65); max-width:440px; margin:0 auto 36px; line-height:1.8; }
   .lp-cta-acts { display:flex; gap:12px; justify-content:center; flex-wrap:wrap; }
-  .lp-cta-note { margin-top:20px; font-size:11px; color:rgba(26,36,51,0.25); }
+  .lp-cta-note { margin-top:20px; font-size:11px; color:rgba(26,36,51,0.5); }
   .lp-cta-note a { color:#2d8cf0; text-decoration:none; }
 
   /* ─── Footer ─── */
+  .lp-footer { color:#1a2433; }
   .lp-footer {
     border-top:1px solid rgba(26,36,51,0.1);
     padding:24px 5vw;
