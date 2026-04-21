@@ -33,8 +33,9 @@ const CSS = `
   .lp-nav-logo {
     font-family:'Barlow Condensed',sans-serif;
     font-size:24px; font-weight:900; letter-spacing:4px; color:#fff;
+    text-shadow: -1px -1px 0 rgba(0,0,0,0.55), 1px -1px 0 rgba(0,0,0,0.55), -1px 1px 0 rgba(0,0,0,0.55), 1px 1px 0 rgba(0,0,0,0.55), 0 2px 8px rgba(0,0,0,0.4);
   }
-  .lp-nav-logo span { color:#2d8cf0; }
+  .lp-nav-logo span { color:#2d8cf0; text-shadow: -1px -1px 0 rgba(0,0,20,0.6), 1px -1px 0 rgba(0,0,20,0.6), -1px 1px 0 rgba(0,0,20,0.6), 1px 1px 0 rgba(0,0,20,0.6); }
   .lp-nav-sep { width:1px; height:26px; background:rgba(26,36,51,0.15); }
   .lp-nav-tag { font-size:10px; font-weight:600; color:rgba(26,36,51,0.42); letter-spacing:2px; text-transform:uppercase; }
   .lp-nav-right { display:flex; gap:8px; align-items:center; }
@@ -91,6 +92,7 @@ const CSS = `
     line-height:1.0; letter-spacing:-0.5px; text-transform:uppercase;
     color:#ffffff; margin-bottom:20px;
     animation:lp-up 0.5s 0.08s ease both;
+    text-shadow: 2px 2px 0 rgba(0,0,0,0.4), -1px -1px 0 rgba(0,0,0,0.3), 0 4px 16px rgba(0,0,0,0.3);
   }
   .lp-hero-h1 em { color:#2d8cf0; font-style:normal; }
 
@@ -109,13 +111,13 @@ const CSS = `
   }
   .lp-btn-primary:hover { background:#1a7de8; transform:translateY(-1px); box-shadow:0 8px 24px rgba(45,140,240,0.3); }
   .lp-btn-secondary {
-    padding:13px 24px; background:transparent;
-    border:1px solid rgba(255,255,255,0.18); border-radius:4px;
-    color:rgba(26,36,51,0.65); font-size:13px; font-weight:600; cursor:pointer;
+    padding:13px 24px; background:rgba(255,255,255,0.08);
+    border:1.5px solid rgba(255,255,255,0.45); border-radius:4px;
+    color:rgba(255,255,255,0.92); font-size:13px; font-weight:700; cursor:pointer;
     font-family:'Barlow',sans-serif; letter-spacing:0.3px; transition:all 0.15s;
-    display:inline-flex; align-items:center;
+    display:inline-flex; align-items:center; backdrop-filter:blur(4px);
   }
-  .lp-btn-secondary:hover { border-color:#2d8cf0; color:#2d8cf0; }
+  .lp-btn-secondary:hover { background:rgba(255,255,255,0.15); border-color:#fff; color:#fff; }
 
   /* ─── Login card ─── */
   .lp-card {
@@ -223,11 +225,11 @@ const CSS = `
 
   .lp-acc-meta { padding:22px 16px; }
   .lp-acc-title { font-size:14px; font-weight:700; color:#e8ecf2; letter-spacing:0.2px; margin-bottom:3px; }
-  .lp-acc-hint { font-size:12px; color:rgba(26,36,51,0.42); }
+  .lp-acc-hint { font-size:12px; color:rgba(255,255,255,0.55); }
 
   .lp-acc-chev {
     padding-right:20px; font-size:10px;
-    color:rgba(26,36,51,0.32); transition:transform 0.22s, color 0.15s;
+    color:rgba(255,255,255,0.45); transition:transform 0.22s, color 0.15s;
     display:flex; align-items:center; justify-content:center;
   }
   .lp-acc-row.open .lp-acc-chev { transform:rotate(180deg); color:#2d8cf0; }
@@ -539,7 +541,17 @@ function Login({ onAuth }) {
   const [policy,     setPolicy]     = useState(false);
   const [stayPrompt, setStayPrompt] = useState(null); // session to persist if user says yes
   const [savedUser,  setSavedUser]  = useState(() => {
-    try { return JSON.parse(localStorage.getItem('mechiq_saved_user') || 'null'); } catch { return null; }
+    try {
+      const saved = JSON.parse(localStorage.getItem('mechiq_saved_user') || 'null');
+      if (!saved) return null;
+      // Auto-expire after 12 hours
+      const TWELVE_HOURS = 12 * 60 * 60 * 1000;
+      if (Date.now() - (saved.savedAt || 0) > TWELVE_HOURS) {
+        localStorage.removeItem('mechiq_saved_user');
+        return null;
+      }
+      return saved;
+    } catch { return null; }
   });
   const loginRef = useRef(null);
   const featRef  = useRef(null);
@@ -623,9 +635,19 @@ function Login({ onAuth }) {
             <div style={{ fontSize:14, color:'#6b7a8d', marginBottom:6 }}>Signed in as</div>
             <div style={{ fontSize:15, fontWeight:700, color:'#2d8cf0', marginBottom:8 }}>{stayPrompt.name}</div>
             <div style={{ fontSize:12, color:'#a0b0b0', marginBottom:24 }}>{stayPrompt.email}</div>
-            <div style={{ background:'#fff8e1', border:'1px solid #ffe082', borderRadius:10, padding:'10px 14px', marginBottom:24, fontSize:12, color:'#7a6a00', textAlign:'left' }}>
-              ⚠️ <strong>Only choose "Yes" on your personal device.</strong> On shared or site computers, select "No" so your account signs out when the browser closes.
-            </div>
+            {(() => {
+              const ua = navigator.userAgent;
+              const isMobile = /iPhone|iPad|Android/i.test(ua);
+              const isTablet = /iPad|Android(?!.*Mobile)/i.test(ua);
+              const deviceLabel = isTablet ? 'tablet' : isMobile ? 'phone' : 'computer';
+              const deviceIcon = isTablet ? '📱' : isMobile ? '📱' : '💻';
+              return (
+                <div style={{ background:'#fff8e1', border:'1px solid #ffe082', borderRadius:10, padding:'10px 14px', marginBottom:24, fontSize:12, color:'#7a6a00', textAlign:'left' }}>
+                  {deviceIcon} Detected: <strong>{isTablet ? 'Tablet' : isMobile ? 'Mobile' : 'Desktop / Laptop'}</strong>
+                  <div style={{ marginTop:5 }}>⚠️ <strong>Only choose "Yes" on your personal {deviceLabel}.</strong> Session expires after 12 hours. On shared site {deviceLabel}s, select "No".</div>
+                </div>
+              );
+            })()}
             <div style={{ display:'flex', gap:10 }}>
               <button onClick={handleStayNo}
                 style={{ flex:1, padding:'12px', background:'#f1f5f9', border:'1px solid #dde2ea', borderRadius:10, fontSize:14, fontWeight:700, color:'#6b7a8d', cursor:'pointer' }}>
