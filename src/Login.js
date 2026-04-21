@@ -192,6 +192,8 @@ const CSS = `
   .lp-about-label { font-family:'Barlow Condensed',sans-serif; font-size:13px; font-weight:700; color:#2d8cf0; letter-spacing:3px; text-transform:uppercase; margin-bottom:16px; display:flex; align-items:center; gap:10px; }
   .lp-about-label::before { content:''; width:20px; height:2px; background:#2d8cf0; }
   .lp-about-h { font-family:'Barlow Condensed',sans-serif; font-size:clamp(26px,2.8vw,40px); font-weight:900; text-transform:uppercase; color:#fff; line-height:1.1; letter-spacing:0.5px; }
+  .lp-feats .lp-about-h { color:#1a2433; }
+  .lp-feats .lp-about-label { color:#2d8cf0; }
   .lp-about-body { font-size:15px; color:rgba(26,36,51,0.55); line-height:1.85; }
   .lp-about-body p + p { margin-top:16px; }
 
@@ -199,7 +201,7 @@ const CSS = `
   .lp-feats { background:#f4f6f9; border-top:1px solid rgba(26,36,51,0.08); border-bottom:1px solid rgba(255,255,255,0.05); }
   .lp-feats-inner { max-width:1280px; margin:0 auto; padding:80px 5vw; }
   .lp-feats-head { margin-bottom:48px; display:grid; grid-template-columns:1fr 1fr; gap:40px; align-items:end; }
-  .lp-feats-intro { font-size:14px; color:rgba(26,36,51,0.48); line-height:1.8; }
+  .lp-feats-intro { font-size:14px; color:rgba(26,36,51,0.65); line-height:1.8; }
 
   /* Accordion */
   .lp-acc { border:1px solid rgba(26,36,51,0.1); border-radius:3px; overflow:hidden; }
@@ -218,18 +220,18 @@ const CSS = `
   .lp-acc-num {
     padding:22px 0 22px 24px;
     font-family:'Barlow Condensed',sans-serif; font-size:28px; font-weight:900;
-    color:rgba(255,255,255,0.1); line-height:1; transition:color 0.2s;
+    color:rgba(26,36,51,0.15) !important; line-height:1; transition:color 0.2s;
     align-self:stretch; display:flex; align-items:center;
   }
   .lp-acc-row.open .lp-acc-num { color:#2d8cf0; }
 
   .lp-acc-meta { padding:22px 16px; }
-  .lp-acc-title { font-size:14px; font-weight:700; color:#e8ecf2; letter-spacing:0.2px; margin-bottom:3px; }
-  .lp-acc-hint { font-size:12px; color:rgba(255,255,255,0.55); }
+  .lp-acc-title { font-size:14px; font-weight:700; color:#1a2433 !important; letter-spacing:0.2px; margin-bottom:3px; }
+  .lp-acc-hint { font-size:12px; color:rgba(26,36,51,0.6) !important; }
 
   .lp-acc-chev {
     padding-right:20px; font-size:10px;
-    color:rgba(255,255,255,0.45); transition:transform 0.22s, color 0.15s;
+    color:rgba(26,36,51,0.45) !important; transition:transform 0.22s, color 0.15s;
     display:flex; align-items:center; justify-content:center;
   }
   .lp-acc-row.open .lp-acc-chev { transform:rotate(180deg); color:#2d8cf0; }
