@@ -2374,6 +2374,35 @@ function LabelPrint({ userRole, labels, allLabels, onBack, onPrinted }) {
   const [templates,  setTemplates]  = React.useState({});
   const [printing,   setPrinting]   = React.useState(false);
 
+  // Label size presets (px dimensions match LabelDesigner SIZES)
+  const LABEL_SIZES = {
+    '15x15':   { wmm:15,  hmm:15  },
+    '25x25':   { wmm:25,  hmm:25  },
+    '50x25':   { wmm:50,  hmm:25  },
+    '100x50':  { wmm:100, hmm:50  },
+    '150x100': { wmm:150, hmm:100 },
+    'a4_2up':  { wmm:210, hmm:148 },
+    'a4_4up':  { wmm:210, hmm:148 },
+  };
+
+  // Auto-tile: calculate best cols/rows from label size vs paper size
+  const autoTile = React.useCallback(() => {
+    if (!labels.length) return;
+    // Get template for first label
+    const firstLabel = labels[0];
+    const tmpl = templates[firstLabel?.template_id];
+    if (!tmpl || !tmpl.size) return;
+    const lsz = LABEL_SIZES[tmpl.size];
+    if (!lsz) return;
+    const paper = PAPER[paperSize];
+    const newCols = Math.max(1, Math.floor((paper.w - gap) / (lsz.wmm + gap)));
+    const newRows = Math.max(1, Math.floor((paper.h - gap) / (lsz.hmm + gap)));
+    setCols(newCols);
+    setRows(newRows);
+  }, [templates, labels, paperSize, gap]);
+
+  React.useEffect(() => { autoTile(); }, [templates, paperSize]);
+
   const PAPER = {
     A4:     { w:210, h:297, label:'A4 (210×297mm)' },
     A3:     { w:297, h:420, label:'A3 (297×420mm)' },
@@ -2472,6 +2501,10 @@ function LabelPrint({ userRole, labels, allLabels, onBack, onPrinted }) {
               <strong style={{ color: 'var(--text-secondary)' }}>{cols}×{rows}</strong> = {perPage} per page ·{' '}
               <strong style={{ color: 'var(--accent)' }}>{pageCount}</strong> page{pageCount !== 1 ? 's' : ''}
             </div>
+            <button onClick={autoTile}
+              style={{ width:'100%', padding:'9px', background:'var(--surface-2)', color:'var(--text-secondary)', border:'1px solid var(--border)', borderRadius:8, fontSize:12, fontWeight:600, cursor:'pointer', marginBottom:10 }}>
+              🔲 Auto-fit to Label Size
+            </button>
             <button onClick={handlePrint} disabled={printing}
               style={{ width:'100%', padding:'12px', background: printing ? 'var(--surface-2)' : 'var(--accent)', color: printing ? 'var(--text-muted)' : '#fff', border:'none', borderRadius:8, fontSize:13, fontWeight:700, cursor: printing ? 'not-allowed' : 'pointer', boxShadow: printing ? 'none' : '0 4px 14px rgba(0,194,224,0.3)' }}>
               {printing ? '⏳ Preparing…' : `🖨️ Print ${labels.length} Label${labels.length!==1?'s':''}`}
@@ -2520,12 +2553,26 @@ function LabelPrint({ userRole, labels, allLabels, onBack, onPrinted }) {
                             if (el.type==='qr'){
                               const qrData=l?l.qr_url:(el.assetUrl||'https://mechiq.com.au');
                               const px=Math.max(60,Math.round(ew));
-                              const key=`${qrData}__${px}`;
+                              const key=`qr__${qrData}__${px}`;
                               const cache=window.__mechiq_qr_cache||(window.__mechiq_qr_cache={});
                               if(cache[key]){ctx.drawImage(cache[key],ex,ey,ew,eh);}
                               else{const img=new Image();img.crossOrigin='anonymous';
                                 img.src=`https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(qrData)}&size=${px}x${px}&bgcolor=ffffff&color=000000&margin=2`;
-                                img.onload=()=>{cache[key]=img;cv.dispatchEvent(new Event('qrloaded'));};}
+                                img.onload=()=>{cache[key]=img;
+                                  const c=cv; if(!c) return;
+                                  const ctx2=c.getContext('2d'); ctx2.drawImage(img,ex,ey,ew,eh);};}
+                            }
+                            if (el.type==='image'&&el.src){
+                              const key=`img__${el.src.slice(0,60)}`;
+                              const cache=window.__mechiq_qr_cache||(window.__mechiq_qr_cache={});
+                              if(cache[key]){ctx.drawImage(cache[key],ex,ey,ew,eh);}
+                              else{const img=new Image();
+                                // base64 images don't need crossOrigin
+                                if(!el.src.startsWith('data:')) img.crossOrigin='anonymous';
+                                img.src=el.src;
+                                img.onload=()=>{cache[key]=img;
+                                  const c=cv; if(!c) return;
+                                  const ctx2=c.getContext('2d'); ctx2.drawImage(img,ex,ey,ew,eh);};}
                             }
                           });
                         }}
