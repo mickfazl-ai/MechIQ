@@ -1978,133 +1978,128 @@ function AssetsSettings({ userRole }) {
 
 // ─── Labels Section ───────────────────────────────────────────────────────────
 function LabelsSection({ userRole }) {
-  const [tab,          setTab]          = React.useState('generator');
-  const [printQueue,   setPrintQueue]   = React.useState([]); // labels passed from generator to print
+  const [tab, setTab] = React.useState('generator');
+  const [printQueue, setPrintQueue] = React.useState([]);
 
-  const goToPrint = (labels) => { setPrintQueue(labels); setTab('print'); };
-
-  const tabStyle = (id) => ({
+  const ts = (id) => ({
     padding: '8px 20px', border: 'none', background: 'transparent',
     borderBottom: tab === id ? '2px solid var(--accent)' : '2px solid transparent',
     color: tab === id ? 'var(--accent)' : 'var(--text-muted)',
     fontWeight: tab === id ? 700 : 500, fontSize: 13, cursor: 'pointer',
     fontFamily: 'inherit', transition: 'all 0.15s',
   });
+
   return (
     <div>
       <div style={{ display: 'flex', borderBottom: '1px solid var(--border)', marginBottom: 24 }}>
-        <button style={tabStyle('designer')} onClick={() => setTab('designer')}>🎨 Label Designer</button>
-        <button style={tabStyle('generator')} onClick={() => { setTab('generator'); setPrintQueue([]); }}>⚡ Label Generator</button>
+        <button style={ts('designer')} onClick={() => setTab('designer')}>🎨 Label Designer</button>
+        <button style={ts('generator')} onClick={() => { setTab('generator'); setPrintQueue([]); }}>⚡ Label Generator</button>
       </div>
-      {tab === 'designer'  && <LabelDesigner userRole={userRole?.role} companyId={userRole?.company_id} />}
-      {tab === 'generator' && !printQueue.length && <LabelGenerator userRole={userRole} onPrint={goToPrint} />}
-      {tab === 'generator' && printQueue.length > 0 && (
-        <div>
-          {/* Back button */}
-          <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:20 }}>
-            <button onClick={() => setPrintQueue([])}
-              style={{ display:'flex', alignItems:'center', gap:6, padding:'7px 14px', background:'var(--surface-2)', border:'1px solid var(--border)', borderRadius:7, fontSize:13, fontWeight:600, color:'var(--text-secondary)', cursor:'pointer' }}>
-              ← Back to Labels
-            </button>
-            <div style={{ fontSize:14, fontWeight:700, color:'var(--text-primary)' }}>
-              🖨️ Print Setup — <span style={{ color:'var(--accent)' }}>{printQueue.length} label{printQueue.length!==1?'s':''} selected</span>
-            </div>
-          </div>
-          <LabelPrint userRole={userRole} initialQueue={printQueue} onClearQueue={() => setPrintQueue([])} />
-        </div>
+      {tab === 'designer' && <LabelDesigner userRole={userRole?.role} companyId={userRole?.company_id} />}
+      {tab === 'generator' && (
+        <LabelGenerator
+          userRole={userRole}
+          printQueue={printQueue}
+          setPrintQueue={setPrintQueue}
+        />
       )}
     </div>
   );
 }
 
 // ─── Label Generator ─────────────────────────────────────────────────────────
-function LabelGenerator({ userRole, onPrint }) {
+function LabelGenerator({ userRole, printQueue, setPrintQueue }) {
   const [templates,  setTemplates]  = React.useState([]);
   const [selectedT,  setSelectedT]  = React.useState(null);
   const [count,      setCount]      = React.useState(10);
   const [prefix,     setPrefix]     = React.useState('MIQ');
   const [startNum,   setStartNum]   = React.useState(1);
-  const [generated,  setGenerated]  = React.useState([]);
   const [loading,    setLoading]    = React.useState(false);
   const [saved,      setSaved]      = React.useState(false);
-  const [existing,   setExisting]   = React.useState([]);
-  const [loadingEx,  setLoadingEx]  = React.useState(true);
+  const [labels,     setLabels]     = React.useState([]);
+  const [loadingLbls,setLoadingLbls]= React.useState(true);
   const [selected,   setSelected]   = React.useState(new Set());
   const [rangeFrom,  setRangeFrom]  = React.useState('');
   const [rangeTo,    setRangeTo]    = React.useState('');
+  const [showPrint,  setShowPrint]  = React.useState(false);
 
-  React.useEffect(() => {
-    if (userRole?.company_id) {
-      supabase.from('label_templates').select('id,name,size').eq('company_id', userRole.company_id)
-        .then(({ data }) => setTemplates(data || []));
-      loadExisting();
-    }
-  }, [userRole]);
+  React.useEffect(() => { if (userRole?.company_id) init(); }, [userRole]);
 
-  const loadExisting = async () => {
-    setLoadingEx(true);
+  const init = async () => {
     try {
-      const { data, error } = await supabase.from('generated_labels')
-        .select('*').eq('company_id', userRole.company_id)
-        .order('label_number');
-      if (error) { console.warn('generated_labels table error:', error.message); setExisting([]); }
-      else setExisting(data || []);
-    } catch(e) { console.warn('generated_labels not available:', e.message); setExisting([]); }
-    setLoadingEx(false);
+      const { data: t } = await supabase.from('label_templates').select('id,name,size').eq('company_id', userRole.company_id);
+      setTemplates(t || []);
+    } catch(e) {}
+    loadLabels();
+  };
+
+  const loadLabels = async () => {
+    setLoadingLbls(true);
+    try {
+      const { data } = await supabase.from('generated_labels').select('*').eq('company_id', userRole.company_id).order('label_number');
+      setLabels(data || []);
+    } catch(e) { setLabels([]); }
+    setLoadingLbls(false);
   };
 
   const generate = async () => {
-    if (!selectedT) { alert('Please select a label template first'); return; }
-    if (count < 1 || count > 500) { alert('Count must be between 1 and 500'); return; }
+    if (!selectedT) { alert('Select a label template first'); return; }
     setLoading(true);
-    // Find highest existing number to avoid duplicates
-    const maxExisting = existing.reduce((m, l) => Math.max(m, l.label_number || 0), 0);
-    const start = Math.max(startNum, maxExisting + 1);
-    const rows = [];
-    for (let i = 0; i < count; i++) {
-      const num = start + i;
-      const label_code = `${prefix}-${String(num).padStart(3, '0')}`;
-      const qr_url = `https://www.mechiq.com.au/scan/label/${label_code}`;
-      rows.push({
-        company_id:   userRole.company_id,
-        template_id:  selectedT.id,
-        template_name: selectedT.name,
-        label_number: num,
-        label_code,
-        qr_url,
-        asset_id:     null,
-        asset_name:   null,
-        printed:      false,
-      });
-    }
-    const { data, error } = await supabase.from('generated_labels').insert(rows).select();
+    const maxNum = labels.reduce((m, l) => Math.max(m, l.label_number || 0), 0);
+    const start = Math.max(startNum, maxNum + 1);
+    const rows = Array.from({ length: count }, (_, i) => ({
+      company_id:    userRole.company_id,
+      template_id:   selectedT.id,
+      template_name: selectedT.name,
+      label_number:  start + i,
+      label_code:    `${prefix}-${String(start + i).padStart(3, '0')}`,
+      qr_url:        `https://www.mechiq.com.au/scan/label/${prefix}-${String(start + i).padStart(3, '0')}`,
+      asset_id: null, asset_name: null, printed: false,
+    }));
+    const { error } = await supabase.from('generated_labels').insert(rows);
     if (error) { alert('Error: ' + error.message); }
-    else {
-      setGenerated(data || []);
-      setSaved(true);
-      await loadExisting();
-      setTimeout(() => setSaved(false), 3000);
-    }
+    else { setSaved(true); setTimeout(() => setSaved(false), 3000); await loadLabels(); }
     setLoading(false);
   };
 
   const deleteLabel = async (id) => {
+    if (!window.confirm('Delete this label?')) return;
     await supabase.from('generated_labels').delete().eq('id', id);
-    await loadExisting();
+    setSelected(s => { const n = new Set(s); n.delete(id); return n; });
+    loadLabels();
   };
 
+  const toggle = (id) => setSelected(s => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; });
+
+  const applyRange = () => {
+    const from = labels.findIndex(l => l.label_code.toUpperCase() === rangeFrom.trim().toUpperCase());
+    const to   = labels.findIndex(l => l.label_code.toUpperCase() === rangeTo.trim().toUpperCase());
+    if (from === -1 || to === -1) { alert('Label codes not found'); return; }
+    const s = Math.min(from, to), e = Math.max(from, to);
+    setSelected(new Set(labels.slice(s, e + 1).map(l => l.id)));
+  };
+
+  const selectedLabels = labels.filter(l => selected.has(l.id));
   const iStyle = { width: '100%', padding: '9px 12px', border: '1px solid var(--border)', borderRadius: 7, background: 'var(--surface-2)', color: 'var(--text-primary)', fontSize: 13, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' };
-  const lStyle = { display: 'block', fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 5 };
+  const lStyle = { display: 'block', fontSize: 10, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 5 };
+
+  if (showPrint) return (
+    <LabelPrint
+      userRole={userRole}
+      labels={selectedLabels}
+      allLabels={labels}
+      onBack={() => setShowPrint(false)}
+      onPrinted={loadLabels}
+    />
+  );
 
   return (
     <div>
-      {/* Generator form */}
+      {/* Generate form */}
       <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: 24, marginBottom: 20 }}>
         <div style={{ fontSize: 15, fontWeight: 800, color: 'var(--text-primary)', marginBottom: 4 }}>Generate Labels</div>
-        <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 20 }}>
-          Generate a batch of unique labels with sequential numbers and QR codes. Each label links to its assigned asset.
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(200px,1fr))', gap: 14, marginBottom: 20 }}>
+        <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 20 }}>Generate a batch of unique labels with QR codes. Each label links to its assigned asset.</div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(180px,1fr))', gap: 14, marginBottom: 16 }}>
           <div>
             <label style={lStyle}>Label Template</label>
             <select style={iStyle} value={selectedT?.id || ''} onChange={e => setSelectedT(templates.find(t => t.id === e.target.value) || null)}>
@@ -2114,106 +2109,86 @@ function LabelGenerator({ userRole, onPrint }) {
           </div>
           <div>
             <label style={lStyle}>Prefix</label>
-            <input style={iStyle} value={prefix} onChange={e => setPrefix(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,6))} placeholder="MIQ" maxLength={6} />
+            <input style={iStyle} value={prefix} onChange={e => setPrefix(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,6))} placeholder="MIQ" />
           </div>
           <div>
             <label style={lStyle}>Starting Number</label>
-            <input style={iStyle} type="number" min={1} value={startNum} onChange={e => setStartNum(Math.max(1, parseInt(e.target.value) || 1))} />
+            <input style={iStyle} type="number" min={1} value={startNum} onChange={e => setStartNum(Math.max(1, parseInt(e.target.value)||1))} />
           </div>
           <div>
             <label style={lStyle}>Number of Labels</label>
-            <input style={iStyle} type="number" min={1} max={500} value={count} onChange={e => setCount(Math.max(1, Math.min(500, parseInt(e.target.value) || 1)))} />
+            <input style={iStyle} type="number" min={1} max={500} value={count} onChange={e => setCount(Math.max(1, Math.min(500, parseInt(e.target.value)||1)))} />
           </div>
         </div>
-        {/* Preview */}
         {selectedT && (
-          <div style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 8, padding: '12px 16px', marginBottom: 16, fontSize: 12, color: 'var(--text-muted)' }}>
-            <strong style={{ color: 'var(--text-primary)' }}>Preview:</strong>{' '}
-            {prefix}-{String(startNum).padStart(3,'0')} → {prefix}-{String(startNum + count - 1).padStart(3,'0')}
-            {' '}· Template: <strong style={{ color: 'var(--accent)' }}>{selectedT.name}</strong>
-            {' '}· {count} label{count !== 1 ? 's' : ''}
+          <div style={{ fontSize: 12, color: 'var(--text-muted)', padding: '8px 12px', background: 'var(--surface-2)', borderRadius: 7, marginBottom: 14 }}>
+            Preview: <strong style={{ color: 'var(--accent)', fontFamily: 'monospace' }}>{prefix}-{String(startNum).padStart(3,'0')}</strong> → <strong style={{ color: 'var(--accent)', fontFamily: 'monospace' }}>{prefix}-{String(startNum+count-1).padStart(3,'0')}</strong> · {count} label{count!==1?'s':''}
           </div>
         )}
         <button onClick={generate} disabled={loading || !selectedT}
-          style={{ padding: '11px 28px', background: loading || !selectedT ? 'var(--surface-2)' : 'var(--accent)', color: loading || !selectedT ? 'var(--text-muted)' : '#fff', border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: loading || !selectedT ? 'not-allowed' : 'pointer', transition: 'all 0.2s' }}>
-          {loading ? '⏳ Generating…' : saved ? '✓ Generated!' : `⚡ Generate ${count} Label${count !== 1 ? 's' : ''}`}
+          style={{ padding: '10px 24px', background: loading||!selectedT ? 'var(--surface-2)' : 'var(--accent)', color: loading||!selectedT ? 'var(--text-muted)' : '#fff', border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: loading||!selectedT ? 'not-allowed' : 'pointer' }}>
+          {loading ? '⏳ Generating…' : saved ? '✓ Done!' : `⚡ Generate ${count} Label${count!==1?'s':''}`}
         </button>
       </div>
 
-      {/* Generated labels table with selection */}
+      {/* Labels table */}
       <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: 24 }}>
-        {/* Header row */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, flexWrap: 'wrap', gap: 10 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 10 }}>
           <div style={{ fontSize: 15, fontWeight: 800, color: 'var(--text-primary)' }}>
-            Generated Labels ({existing.length})
-            {selected.size > 0 && <span style={{ marginLeft: 10, fontSize: 13, fontWeight: 600, color: 'var(--accent)' }}>{selected.size} selected</span>}
+            Generated Labels ({labels.length})
+            {selected.size > 0 && <span style={{ marginLeft: 10, fontSize: 13, color: 'var(--accent)', fontWeight: 600 }}>{selected.size} selected</span>}
           </div>
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-            <button onClick={loadExisting} style={{ padding: '6px 12px', background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 7, fontSize: 12, cursor: 'pointer', color: 'var(--text-secondary)' }}>↻ Refresh</button>
-            {existing.length > 0 && <>
-              <button onClick={() => setSelected(new Set(existing.map(l => l.id)))}
-                style={{ padding: '6px 12px', background: 'var(--accent-light)', color: 'var(--accent)', border: '1px solid rgba(0,194,224,0.3)', borderRadius: 7, fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
-                Select All
-              </button>
-              <button onClick={() => setSelected(new Set())}
-                style={{ padding: '6px 12px', background: 'var(--surface-2)', color: 'var(--text-muted)', border: '1px solid var(--border)', borderRadius: 7, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
-                Clear
-              </button>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <button onClick={loadLabels} style={{ padding: '6px 12px', background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 6, fontSize: 12, cursor: 'pointer', color: 'var(--text-secondary)' }}>↻ Refresh</button>
+            {labels.length > 0 && <>
+              <button onClick={() => setSelected(new Set(labels.map(l=>l.id)))} style={{ padding: '6px 12px', background: 'var(--accent-light)', color: 'var(--accent)', border: '1px solid rgba(0,194,224,0.3)', borderRadius: 6, fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>Select All</button>
+              <button onClick={() => setSelected(new Set())} style={{ padding: '6px 12px', background: 'var(--surface-2)', color: 'var(--text-muted)', border: '1px solid var(--border)', borderRadius: 6, fontSize: 12, cursor: 'pointer' }}>Clear</button>
             </>}
           </div>
         </div>
 
         {/* Range selector */}
-        {existing.length > 0 && (
+        {labels.length > 0 && (
           <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 14, padding: '10px 14px', background: 'var(--surface-2)', borderRadius: 8, flexWrap: 'wrap' }}>
             <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)' }}>Select range:</span>
             <input value={rangeFrom} onChange={e => setRangeFrom(e.target.value.toUpperCase())} placeholder="From e.g. HK-001"
-              style={{ width: 120, padding: '5px 9px', border: '1px solid var(--border)', borderRadius: 6, fontSize: 12, fontFamily: 'var(--font-mono)', background: 'var(--surface)', color: 'var(--text-primary)', outline: 'none' }} />
+              style={{ width: 120, padding: '5px 9px', border: '1px solid var(--border)', borderRadius: 6, fontSize: 12, fontFamily: 'monospace', background: 'var(--surface)', color: 'var(--text-primary)', outline: 'none' }} />
             <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>→</span>
             <input value={rangeTo} onChange={e => setRangeTo(e.target.value.toUpperCase())} placeholder="To e.g. HK-010"
-              style={{ width: 120, padding: '5px 9px', border: '1px solid var(--border)', borderRadius: 6, fontSize: 12, fontFamily: 'var(--font-mono)', background: 'var(--surface)', color: 'var(--text-primary)', outline: 'none' }} />
-            <button onClick={() => {
-              const from = existing.findIndex(l => l.label_code.toUpperCase() === rangeFrom.trim());
-              const to   = existing.findIndex(l => l.label_code.toUpperCase() === rangeTo.trim());
-              if (from === -1 || to === -1) { alert('Label codes not found in list'); return; }
-              const start = Math.min(from, to), end = Math.max(from, to);
-              setSelected(new Set(existing.slice(start, end + 1).map(l => l.id)));
-            }} style={{ padding: '5px 14px', background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: 6, fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
-              Apply Range
-            </button>
+              style={{ width: 120, padding: '5px 9px', border: '1px solid var(--border)', borderRadius: 6, fontSize: 12, fontFamily: 'monospace', background: 'var(--surface)', color: 'var(--text-primary)', outline: 'none' }} />
+            <button onClick={applyRange} style={{ padding: '5px 14px', background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: 6, fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>Apply</button>
           </div>
         )}
 
-        {loadingEx ? (
-          <div style={{ color: 'var(--text-muted)', fontSize: 13 }}>Loading…</div>
-        ) : existing.length === 0 ? (
-          <div style={{ color: 'var(--text-muted)', fontSize: 13, fontStyle: 'italic' }}>No labels generated yet.</div>
+        {loadingLbls ? (
+          <div style={{ color: 'var(--text-muted)', fontSize: 13, padding: '20px 0' }}>Loading…</div>
+        ) : labels.length === 0 ? (
+          <div style={{ color: 'var(--text-muted)', fontSize: 13, fontStyle: 'italic', padding: '20px 0' }}>No labels generated yet.</div>
         ) : (
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
               <thead>
                 <tr style={{ background: 'var(--surface-2)', borderBottom: '2px solid var(--border)' }}>
-                  <th style={{ padding: '9px 12px', width: 36 }}>
+                  <th style={{ width: 36, padding: '9px 12px' }}>
                     <input type="checkbox"
-                      checked={selected.size === existing.length && existing.length > 0}
-                      onChange={e => e.target.checked ? setSelected(new Set(existing.map(l=>l.id))) : setSelected(new Set())}
+                      checked={selected.size === labels.length && labels.length > 0}
+                      onChange={e => e.target.checked ? setSelected(new Set(labels.map(l=>l.id))) : setSelected(new Set())}
                       style={{ width: 15, height: 15, accentColor: 'var(--accent)', cursor: 'pointer' }} />
                   </th>
                   {['Label Code','Template','Asset Assigned','Printed',''].map(h => (
-                    <th key={h} style={{ padding: '9px 12px', textAlign: 'left', fontSize: 10, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', whiteSpace: 'nowrap' }}>{h}</th>
+                    <th key={h} style={{ padding: '9px 12px', textAlign: 'left', fontSize: 10, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
-                {existing.map(l => (
-                  <tr key={l.id} onClick={() => { const n = new Set(selected); n.has(l.id) ? n.delete(l.id) : n.add(l.id); setSelected(n); }}
+                {labels.map(l => (
+                  <tr key={l.id} onClick={() => toggle(l.id)}
                     style={{ borderBottom: '1px solid var(--border)', cursor: 'pointer', background: selected.has(l.id) ? 'var(--accent-light)' : 'transparent', transition: 'background 0.1s' }}>
                     <td style={{ padding: '9px 12px' }} onClick={e => e.stopPropagation()}>
-                      <input type="checkbox" checked={selected.has(l.id)}
-                        onChange={() => { const n = new Set(selected); n.has(l.id) ? n.delete(l.id) : n.add(l.id); setSelected(n); }}
+                      <input type="checkbox" checked={selected.has(l.id)} onChange={() => toggle(l.id)}
                         style={{ width: 15, height: 15, accentColor: 'var(--accent)', cursor: 'pointer' }} />
                     </td>
-                    <td style={{ padding: '9px 12px', fontFamily: 'var(--font-mono)', fontWeight: 700, color: 'var(--accent)', fontSize: 13 }}>{l.label_code}</td>
+                    <td style={{ padding: '9px 12px', fontFamily: 'monospace', fontWeight: 700, color: 'var(--accent)' }}>{l.label_code}</td>
                     <td style={{ padding: '9px 12px', color: 'var(--text-secondary)', fontSize: 12 }}>{l.template_name || '—'}</td>
                     <td style={{ padding: '9px 12px' }}>
                       {l.asset_name
@@ -2226,10 +2201,8 @@ function LabelGenerator({ userRole, onPrint }) {
                       </span>
                     </td>
                     <td style={{ padding: '9px 12px', textAlign: 'right' }} onClick={e => e.stopPropagation()}>
-                      <button onClick={() => { if (window.confirm('Delete label ' + l.label_code + '?')) deleteLabel(l.id); }}
-                        style={{ padding: '3px 10px', background: 'var(--red-bg)', color: 'var(--red)', border: '1px solid var(--red-border)', borderRadius: 5, fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>
-                        🗑
-                      </button>
+                      <button onClick={() => deleteLabel(l.id)}
+                        style={{ padding: '3px 10px', background: 'var(--red-bg)', color: 'var(--red)', border: '1px solid var(--red-border)', borderRadius: 5, fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>🗑</button>
                     </td>
                   </tr>
                 ))}
@@ -2240,18 +2213,12 @@ function LabelGenerator({ userRole, onPrint }) {
 
         {/* Print selected bar */}
         {selected.size > 0 && (
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 16, padding: '12px 16px', background: 'linear-gradient(135deg,var(--accent-light),rgba(0,194,224,0.08))', border: '1px solid rgba(0,194,224,0.25)', borderRadius: 9 }}>
-            <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--accent)' }}>
-              🖨️ {selected.size} label{selected.size !== 1 ? 's' : ''} selected
-            </div>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 16, padding: '12px 16px', background: 'var(--accent-light)', border: '1px solid rgba(0,194,224,0.25)', borderRadius: 9 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--accent)' }}>🖨️ {selected.size} label{selected.size!==1?'s':''} selected</div>
             <div style={{ display: 'flex', gap: 8 }}>
-              <button onClick={() => setSelected(new Set())}
-                style={{ padding: '7px 14px', background: 'transparent', border: '1px solid rgba(0,194,224,0.3)', borderRadius: 7, fontSize: 12, fontWeight: 600, color: 'var(--accent)', cursor: 'pointer' }}>
-                Clear
-              </button>
-              <button onClick={() => { const labels = existing.filter(l => selected.has(l.id)); onPrint && onPrint(labels); }}
-                style={{ padding: '7px 20px', background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: 7, fontSize: 13, fontWeight: 700, cursor: 'pointer', boxShadow: '0 2px 10px rgba(0,194,224,0.3)' }}>
-                → Go to Print Setup
+              <button onClick={() => setSelected(new Set())} style={{ padding: '7px 14px', background: 'transparent', border: '1px solid rgba(0,194,224,0.3)', borderRadius: 7, fontSize: 12, fontWeight: 600, color: 'var(--accent)', cursor: 'pointer' }}>Clear</button>
+              <button onClick={() => setShowPrint(true)} style={{ padding: '7px 20px', background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: 7, fontSize: 13, fontWeight: 700, cursor: 'pointer', boxShadow: '0 2px 10px rgba(0,194,224,0.3)' }}>
+                → Print Setup
               </button>
             </div>
           </div>
@@ -2262,436 +2229,125 @@ function LabelGenerator({ userRole, onPrint }) {
 }
 
 // ─── Label Print ──────────────────────────────────────────────────────────────
+function LabelPrint({ userRole, labels, allLabels, onBack, onPrinted }) {
+  const [paperSize, setPaperSize] = React.useState('A4');
+  const [cols,      setCols]      = React.useState(3);
+  const [rows,      setRows]      = React.useState(8);
+  const [gap,       setGap]       = React.useState(4);
 
-// ─── LabelCanvas — renders a label template with real QR + asset data ─────────
-// Mirrors LabelDesigner's canvas render exactly, substituting per-label data
-const LABEL_SIZES = [
-  { id:'15x15',   w:60,  h:60  },
-  { id:'25x25',   w:100, h:100 },
-  { id:'50x25',   w:200, h:100 },
-  { id:'100x50',  w:400, h:200 },
-  { id:'150x100', w:600, h:400 },
-  { id:'a4_2up',  w:794, h:560 },
-  { id:'a4_4up',  w:794, h:560 },
-];
-
-function LabelCanvas({ template, label, width, height }) {
-  const canvasRef = React.useRef(null);
-  const imgCache  = React.useRef({});
-
-  const render = React.useCallback(() => {
-    const cv = canvasRef.current; if (!cv) return;
-    const ctx = cv.getContext('2d');
-    if (!template) return;
-
-    const elements = JSON.parse(template.elements || '[]');
-    const bgColor  = template.background || '#ffffff';
-    const size     = LABEL_SIZES.find(s => s.id === template.size) || LABEL_SIZES[2];
-    const sc       = width / size.w;
-
-    cv.width  = width;
-    cv.height = height || size.h * sc;
-
-    ctx.fillStyle = bgColor;
-    ctx.fillRect(0, 0, cv.width, cv.height);
-
-    elements.forEach(el => {
-      const x=el.x*sc, y=el.y*sc, w=el.w*sc, h=el.h*sc;
-
-      if (el.type === 'rect') {
-        ctx.save();
-        ctx.fillStyle = el.fill || '#1e88e5';
-        const r = Math.min((el.radius||0)*sc, w/2, h/2);
-        if (r > 0) {
-          ctx.beginPath();
-          ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r);
-          ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r);
-          ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); ctx.fill();
-        } else { ctx.fillRect(x,y,w,h); }
-        if ((el.strokeW||0)>0) { ctx.strokeStyle=el.stroke||'#000'; ctx.lineWidth=el.strokeW*sc; ctx.strokeRect(x,y,w,h); }
-        ctx.restore();
-      }
-
-      if (el.type === 'circle') {
-        ctx.save(); ctx.fillStyle = el.fill||'#1e88e5';
-        ctx.beginPath(); ctx.ellipse(x+w/2,y+h/2,w/2,h/2,0,0,Math.PI*2); ctx.fill();
-        if ((el.strokeW||0)>0) { ctx.strokeStyle=el.stroke||'#000'; ctx.lineWidth=el.strokeW*sc; ctx.stroke(); }
-        ctx.restore();
-      }
-
-      if (el.type === 'triangle') {
-        ctx.save(); ctx.fillStyle = el.fill||'#1e88e5';
-        ctx.beginPath(); ctx.moveTo(x+w/2,y); ctx.lineTo(x+w,y+h); ctx.lineTo(x,y+h); ctx.closePath(); ctx.fill();
-        ctx.restore();
-      }
-
-      if (el.type === 'line') {
-        ctx.save(); ctx.strokeStyle=el.fill||'#1a2433'; ctx.lineWidth=(el.strokeW||2)*sc; ctx.lineCap='round';
-        ctx.beginPath(); ctx.moveTo(x,y+h/2); ctx.lineTo(x+w,y+h/2); ctx.stroke();
-        ctx.restore();
-      }
-
-      if (el.type === 'text') {
-        ctx.save();
-        const fs = Math.max(6,(el.fontSize||10)*sc);
-        ctx.font = `${el.bold?'700':'400'} ${el.italic?'italic ':''} ${fs}px ${el.fontFamily||'Barlow'},Arial`;
-        ctx.fillStyle = el.color||'#000';
-        ctx.textAlign = el.align||'left';
-        ctx.textBaseline = 'top';
-        // Substitute placeholders: {code} → label_code, {asset} → asset_name
-        const raw = (el.text||'')
-          .replace(/\{code\}/g, label?.label_code||'')
-          .replace(/\{asset\}/g, label?.asset_name||'')
-          .replace(/\{number\}/g, String(label?.label_number||''));
-        raw.split('\n').forEach((line,i) => {
-          const tx = el.align==='center'?x+w/2 : el.align==='right'?x+w : x;
-          ctx.fillText(line, tx, y+i*fs*1.3);
-        });
-        ctx.restore();
-      }
-
-      if (el.type === 'mechiq_logo') {
-        ctx.save();
-        const fs = Math.max(6, h*0.65);
-        ctx.font = `900 ${fs}px 'Barlow Condensed',Arial`;
-        ctx.textBaseline = 'middle';
-        ctx.fillStyle = el.colorMain||'#1a2433';
-        ctx.fillText('MECH', x, y+h/2);
-        const mw = ctx.measureText('MECH').width;
-        ctx.fillStyle = el.colorAccent||'#2d8cf0';
-        ctx.fillText('IQ', x+mw+1, y+h/2);
-        ctx.restore();
-      }
-
-      if (el.type === 'qr') {
-        // Use the label's own QR URL if it's a QR element
-        const qrData = label?.qr_url || el.assetUrl || 'https://mechiq.com.au';
-        const px  = Math.max(60, Math.round(w));
-        const key = `${qrData}__${px}`;
-        const src = `https://api.qrserver.com/v1/create-qr-code/?size=${px}x${px}&data=${encodeURIComponent(qrData)}`;
-        if (imgCache.current[key]) {
-          ctx.drawImage(imgCache.current[key], x, y, w, h);
-        } else {
-          const img = new Image(); img.crossOrigin='anonymous';
-          img.src = src;
-          img.onload = () => { imgCache.current[key]=img; render(); };
-        }
-      }
-
-      if (el.type === 'image' && el.src) {
-        const key = el.src.slice(0,40);
-        if (imgCache.current[key]) {
-          ctx.drawImage(imgCache.current[key], x, y, w, h);
-        } else {
-          const img = new Image(); img.src = el.src;
-          img.onload = () => { imgCache.current[key]=img; render(); };
-        }
-      }
-    });
-  }, [template, label, width, height]);
-
-  React.useEffect(() => { render(); }, [render]);
-
-  if (!template) return null;
-  const size = LABEL_SIZES.find(s => s.id === template.size) || LABEL_SIZES[2];
-  const h = height || Math.round(size.h * (width / size.w));
-
-  return <canvas ref={canvasRef} width={width} height={h} style={{ display:'block', width, height:h }} />;
-}
-
-function LabelPrint({ userRole, initialQueue, onClearQueue }) {
-  const [labels,     setLabels]     = React.useState([]);
-  const [templates,  setTemplates]  = React.useState([]);
-  const [loading,    setLoading]    = React.useState(true);
-  const [selected,   setSelected]   = React.useState(new Set());
-  const [paperSize,  setPaperSize]  = React.useState('A4');
-  const [cols,       setCols]       = React.useState(3);
-  const [rows,       setRows]       = React.useState(8);
-  const [gap,        setGap]        = React.useState(4);
-  const [filterAssigned, setFilterAssigned] = React.useState('all');
-  const [filterTemplate, setFilterTemplate] = React.useState('');
-  const printRef = React.useRef(null);
-
-  React.useEffect(() => {
-    if (userRole?.company_id) load();
-  }, [userRole]);
-
-  const load = async () => {
-    setLoading(true);
-    try {
-      const [{ data: lD, error: lE }, { data: tD }] = await Promise.all([
-        supabase.from('generated_labels').select('*').eq('company_id', userRole.company_id).order('label_number'),
-        supabase.from('label_templates').select('*').eq('company_id', userRole.company_id),
-      ]);
-      if (lE) console.warn('generated_labels error:', lE.message);
-      setLabels(lD || []);
-      setTemplates(tD || []);
-    } catch(e) { console.warn('LabelPrint load error:', e.message); }
-    setLoading(false);
-  };
-
-  const PAPER_SIZES = {
-    'A4':     { w: 210, h: 297, label: 'A4 (210×297mm)' },
-    'A3':     { w: 297, h: 420, label: 'A3 (297×420mm)' },
-    'Letter': { w: 216, h: 279, label: 'US Letter (216×279mm)' },
-    'A5':     { w: 148, h: 210, label: 'A5 (148×210mm)' },
-  };
-
-  const filtered = labels.filter(l => {
-    if (filterAssigned === 'assigned'   && !l.asset_name) return false;
-    if (filterAssigned === 'unassigned' && l.asset_name) return false;
-    if (filterTemplate && l.template_id !== filterTemplate) return false;
-    return true;
-  });
-
-  const toggleSelect = (id) => setSelected(s => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; });
-  const selectAll    = () => setSelected(new Set(filtered.map(l => l.id)));
-  const clearAll     = () => setSelected(new Set());
-
-  const selectedLabels = filtered.filter(l => selected.has(l.id));
+  const PAPER = { A4:{w:210,h:297,label:'A4 (210×297mm)'}, A3:{w:297,h:420,label:'A3 (297×420mm)'}, A5:{w:148,h:210,label:'A5 (148×210mm)'}, Letter:{w:216,h:279,label:'US Letter'} };
   const perPage = cols * rows;
-  const pageCount = Math.ceil(selectedLabels.length / perPage);
+  const pageCount = Math.ceil(labels.length / perPage);
+  const paper = PAPER[paperSize];
 
-  const handlePrint = async () => {
-    // Render each selected label to a canvas, convert to data URL, then print
-    const paper = PAPER_SIZES[paperSize];
-    const PX_PER_MM = 3.7795; // 96dpi
-    const labelWmm = Math.floor((paper.w - (cols + 1) * gap) / cols);
-    const labelHmm = Math.floor((paper.h - (rows + 1) * gap) / rows);
-    const labelWpx = Math.round(labelWmm * PX_PER_MM);
-    const labelHpx = Math.round(labelHmm * PX_PER_MM);
-
-    // Render all labels to canvas data URLs
-    const imgCache = {};
-    const renderLabel = (label) => new Promise(resolve => {
-      const tmpl = templates.find(t => t.id === label.template_id);
-      if (!tmpl) { resolve(null); return; }
-      const elements = JSON.parse(tmpl.elements || '[]');
-      const size = LABEL_SIZES.find(s => s.id === tmpl.size) || LABEL_SIZES[2];
-      const sc = labelWpx / size.w;
-      const cv = document.createElement('canvas');
-      cv.width = labelWpx; cv.height = labelHpx;
-      const ctx = cv.getContext('2d');
-      ctx.fillStyle = tmpl.background || '#ffffff';
-      ctx.fillRect(0, 0, labelWpx, labelHpx);
-
-      let pendingImgs = 0;
-      const done = () => { if (pendingImgs === 0) resolve(cv.toDataURL('image/png')); };
-
-      elements.forEach(el => {
-        const x=el.x*sc, y=el.y*sc, w=el.w*sc, h=el.h*sc;
-        if (el.type==='rect') {
-          ctx.save(); ctx.fillStyle=el.fill||'#1e88e5';
-          const r=Math.min((el.radius||0)*sc,w/2,h/2);
-          if (r>0){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();ctx.fill();}
-          else{ctx.fillRect(x,y,w,h);}
-          if((el.strokeW||0)>0){ctx.strokeStyle=el.stroke||'#000';ctx.lineWidth=el.strokeW*sc;ctx.strokeRect(x,y,w,h);}
-          ctx.restore();
-        }
-        if (el.type==='circle') {
-          ctx.save();ctx.fillStyle=el.fill||'#1e88e5';ctx.beginPath();ctx.ellipse(x+w/2,y+h/2,w/2,h/2,0,0,Math.PI*2);ctx.fill();ctx.restore();
-        }
-        if (el.type==='line') {
-          ctx.save();ctx.strokeStyle=el.fill||'#1a2433';ctx.lineWidth=(el.strokeW||2)*sc;ctx.lineCap='round';
-          ctx.beginPath();ctx.moveTo(x,y+h/2);ctx.lineTo(x+w,y+h/2);ctx.stroke();ctx.restore();
-        }
-        if (el.type==='text') {
-          ctx.save();
-          const fs=Math.max(6,(el.fontSize||10)*sc);
-          ctx.font=`${el.bold?'700':'400'} ${fs}px ${el.fontFamily||'Arial'}`;
-          ctx.fillStyle=el.color||'#000';ctx.textAlign=el.align||'left';ctx.textBaseline='top';
-          const raw=(el.text||'').replace(/\{code\}/g,label.label_code||'').replace(/\{asset\}/g,label.asset_name||'').replace(/\{number\}/g,String(label.label_number||''));
-          raw.split('\n').forEach((line,i)=>{
-            const tx=el.align==='center'?x+w/2:el.align==='right'?x+w:x;
-            ctx.fillText(line,tx,y+i*fs*1.3);
-          });
-          ctx.restore();
-        }
-        if (el.type==='mechiq_logo') {
-          ctx.save();const fs=Math.max(6,h*0.65);ctx.font=`900 ${fs}px Arial`;ctx.textBaseline='middle';
-          ctx.fillStyle=el.colorMain||'#1a2433';ctx.fillText('MECH',x,y+h/2);
-          const mw=ctx.measureText('MECH').width;ctx.fillStyle=el.colorAccent||'#2d8cf0';ctx.fillText('IQ',x+mw+1,y+h/2);ctx.restore();
-        }
-        if (el.type==='qr') {
-          const qrData=label.qr_url||el.assetUrl||'https://mechiq.com.au';
-          const px=Math.max(60,Math.round(w));
-          const key=`${qrData}__${px}`;
-          const src=`https://api.qrserver.com/v1/create-qr-code/?size=${px}x${px}&data=${encodeURIComponent(qrData)}`;
-          pendingImgs++;
-          const img = imgCache[key] ? null : new Image();
-          if (imgCache[key]) { ctx.drawImage(imgCache[key],x,y,w,h); pendingImgs--; done(); }
-          else { img.crossOrigin='anonymous'; img.src=src; img.onload=()=>{ imgCache[key]=img; ctx.drawImage(img,x,y,w,h); pendingImgs--; done(); }; img.onerror=()=>{ pendingImgs--; done(); }; }
-        }
-      });
-      if (pendingImgs === 0) resolve(cv.toDataURL('image/png'));
-    });
-
-    const dataUrls = await Promise.all(selectedLabels.map(renderLabel));
-    const printWin = window.open('', '_blank');
-    const pageLabelImgs = (page) => selectedLabels.slice(page*perPage,(page+1)*perPage)
-      .map((l,i)=>{
-        const src = dataUrls[page*perPage+i];
-        return src
-          ? `<img src="${src}" style="width:${labelWmm}mm;height:${labelHmm}mm;display:inline-block;margin:${gap/2}mm;vertical-align:top;"/>`
-          : `<div style="width:${labelWmm}mm;height:${labelHmm}mm;display:inline-block;margin:${gap/2}mm;border:1px dashed #ccc;"></div>`;
-      }).join('');
-
-    printWin.document.write(`<!DOCTYPE html><html><head><title>MechIQ Labels</title>
+  const handlePrint = () => {
+    const labelW = Math.floor((paper.w - (cols+1)*gap) / cols);
+    const labelH = Math.floor((paper.h - (rows+1)*gap) / rows);
+    const win = window.open('', '_blank');
+    const labelsHtml = labels.map(l => `
+      <div style="width:${labelW}mm;height:${labelH}mm;display:inline-flex;flex-direction:column;align-items:center;justify-content:center;border:1px solid #ccc;border-radius:3px;margin:${gap/2}mm;padding:2mm;box-sizing:border-box;vertical-align:top;page-break-inside:avoid;">
+        <div style="font-family:monospace;font-size:10px;font-weight:700;color:#1a2433;margin-bottom:2px;">${l.label_code}</div>
+        ${l.asset_name ? `<div style="font-size:7px;color:#666;margin-bottom:2px;text-align:center;">${l.asset_name}</div>` : ''}
+        <img src="https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${encodeURIComponent(l.qr_url)}" style="width:${Math.min(labelH*0.5,labelW*0.65)}mm;height:${Math.min(labelH*0.5,labelW*0.65)}mm;" />
+        <div style="font-size:6px;color:#999;margin-top:1px;">mechiq.com.au</div>
+      </div>`).join('');
+    win.document.write(`<!DOCTYPE html><html><head><title>MechIQ Labels</title>
       <style>
-        @page{size:${paperSize==='Letter'?'216mm 279mm':paperSize};margin:${gap}mm;}
-        body{margin:0;padding:0;}
-        .page{display:block;page-break-after:always;}
-        @media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact;}}
+        @page { size:${paperSize==='Letter'?'216mm 279mm':paperSize}; margin:${gap}mm; }
+        body { margin:0; padding:0; }
+        .page { width:${paper.w}mm; display:flex; flex-wrap:wrap; align-items:flex-start; }
+        @media print { body { -webkit-print-color-adjust:exact; print-color-adjust:exact; } }
       </style></head><body>
-      ${Array.from({length:pageCount},(_,p)=>`<div class="page">${pageLabelImgs(p)}</div>`).join('')}
+      <div class="page">${labelsHtml}</div>
+      <script>window.onload=()=>{window.print();}<\/script>
       </body></html>`);
-    printWin.document.close();
-    printWin.focus();
-    setTimeout(()=>{ printWin.print(); }, 1200);
-    supabase.from('generated_labels').update({printed:true}).in('id',[...selected]);
+    win.document.close();
+    supabase.from('generated_labels').update({ printed: true }).in('id', labels.map(l=>l.id));
+    if (onPrinted) onPrinted();
   };
 
   const iStyle = { padding: '8px 10px', border: '1px solid var(--border)', borderRadius: 6, background: 'var(--surface-2)', color: 'var(--text-primary)', fontSize: 13, fontFamily: 'inherit', outline: 'none' };
 
-  if (loading) return <div style={{ color: 'var(--text-muted)', fontSize: 13, padding: 20 }}>Loading…</div>;
-
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '280px 1fr', gap: 20 }}>
-      {/* Settings panel */}
-      <div>
-        <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: 20, marginBottom: 16 }}>
-          <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--text-primary)', marginBottom: 16 }}>Print Settings</div>
-          <div style={{ marginBottom: 12 }}>
-            <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 5 }}>Paper Size</label>
-            <select style={{ ...iStyle, width: '100%' }} value={paperSize} onChange={e => setPaperSize(e.target.value)}>
-              {Object.entries(PAPER_SIZES).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
-            </select>
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 12 }}>
-            <div>
-              <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 5 }}>Columns</label>
-              <input style={{ ...iStyle, width: '100%' }} type="number" min={1} max={10} value={cols} onChange={e => setCols(Math.max(1, Math.min(10, parseInt(e.target.value) || 1)))} />
-            </div>
-            <div>
-              <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 5 }}>Rows</label>
-              <input style={{ ...iStyle, width: '100%' }} type="number" min={1} max={20} value={rows} onChange={e => setRows(Math.max(1, Math.min(20, parseInt(e.target.value) || 1)))} />
-            </div>
-          </div>
-          <div style={{ marginBottom: 12 }}>
-            <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 5 }}>Gap (mm)</label>
-            <input style={{ ...iStyle, width: '100%' }} type="number" min={0} max={20} value={gap} onChange={e => setGap(Math.max(0, Math.min(20, parseInt(e.target.value) || 0)))} />
-          </div>
-          <div style={{ background: 'var(--surface-2)', borderRadius: 8, padding: '10px 12px', fontSize: 12, color: 'var(--text-muted)', marginBottom: 16 }}>
-            <div><strong style={{ color: 'var(--text-secondary)' }}>{cols} × {rows}</strong> = {perPage} labels per page</div>
-            <div style={{ marginTop: 3 }}><strong style={{ color: 'var(--text-secondary)' }}>{selectedLabels.length}</strong> selected → <strong style={{ color: 'var(--accent)' }}>{pageCount}</strong> page{pageCount !== 1 ? 's' : ''}</div>
-          </div>
-          <button onClick={handlePrint} disabled={selectedLabels.length === 0}
-            style={{ width: '100%', padding: '12px', background: selectedLabels.length === 0 ? 'var(--surface-2)' : 'var(--accent)', color: selectedLabels.length === 0 ? 'var(--text-muted)' : '#fff', border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: selectedLabels.length === 0 ? 'not-allowed' : 'pointer' }}>
-            🖨️ Print {selectedLabels.length > 0 ? selectedLabels.length + ' Label' + (selectedLabels.length !== 1 ? 's' : '') : ''}
-          </button>
-        </div>
-
-        {/* Filters */}
-        <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: 20 }}>
-          <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--text-primary)', marginBottom: 12 }}>Filters</div>
-          <div style={{ marginBottom: 10 }}>
-            <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 5 }}>Assignment</label>
-            <select style={{ ...iStyle, width: '100%' }} value={filterAssigned} onChange={e => setFilterAssigned(e.target.value)}>
-              <option value="all">All Labels</option>
-              <option value="assigned">Assigned to Asset</option>
-              <option value="unassigned">Unassigned</option>
-            </select>
-          </div>
-          <div>
-            <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 5 }}>Template</label>
-            <select style={{ ...iStyle, width: '100%' }} value={filterTemplate} onChange={e => setFilterTemplate(e.target.value)}>
-              <option value="">All Templates</option>
-              {templates.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-            </select>
-          </div>
+    <div>
+      {/* Back */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
+        <button onClick={onBack} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 7, fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)', cursor: 'pointer' }}>
+          ← Back to Labels
+        </button>
+        <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary)' }}>
+          🖨️ Print Setup — <span style={{ color: 'var(--accent)' }}>{labels.length} label{labels.length!==1?'s':''} selected</span>
         </div>
       </div>
 
-      {/* Label list + preview */}
-      <div>
-        {/* Preview */}
-        <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: 20, marginBottom: 16 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-            <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--text-primary)' }}>
-              Page Preview — {PAPER_SIZES[paperSize]?.label}
+      <div style={{ display: 'grid', gridTemplateColumns: '260px 1fr', gap: 20 }}>
+        {/* Settings */}
+        <div>
+          <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: 20, marginBottom: 16 }}>
+            <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--text-primary)', marginBottom: 16 }}>Print Settings</div>
+            {[
+              ['Paper Size', <select style={{...iStyle,width:'100%'}} value={paperSize} onChange={e=>setPaperSize(e.target.value)}>
+                {Object.entries(PAPER).map(([k,v])=><option key={k} value={k}>{v.label}</option>)}
+              </select>],
+              ['Columns', <input style={{...iStyle,width:'100%'}} type="number" min={1} max={10} value={cols} onChange={e=>setCols(Math.max(1,Math.min(10,parseInt(e.target.value)||1)))} />],
+              ['Rows per page', <input style={{...iStyle,width:'100%'}} type="number" min={1} max={20} value={rows} onChange={e=>setRows(Math.max(1,Math.min(20,parseInt(e.target.value)||1)))} />],
+              ['Gap (mm)', <input style={{...iStyle,width:'100%'}} type="number" min={0} max={20} value={gap} onChange={e=>setGap(Math.max(0,Math.min(20,parseInt(e.target.value)||0)))} />],
+            ].map(([lbl,inp]) => (
+              <div key={lbl} style={{ marginBottom: 12 }}>
+                <label style={{ display: 'block', fontSize: 10, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 5 }}>{lbl}</label>
+                {inp}
+              </div>
+            ))}
+            <div style={{ padding: '10px 12px', background: 'var(--surface-2)', borderRadius: 8, fontSize: 12, color: 'var(--text-muted)', marginBottom: 16 }}>
+              <strong style={{ color: 'var(--text-secondary)' }}>{cols}×{rows}</strong> = {perPage} per page · <strong style={{ color: 'var(--accent)' }}>{pageCount}</strong> page{pageCount!==1?'s':''}
             </div>
-            <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{cols}×{rows} layout · {perPage} per page</div>
+            <button onClick={handlePrint}
+              style={{ width: '100%', padding: '12px', background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 14px rgba(0,194,224,0.3)' }}>
+              🖨️ Print {labels.length} Label{labels.length!==1?'s':''}
+            </button>
           </div>
-          {/* Scaled preview */}
-          <div style={{ border: '1px solid var(--border)', borderRadius: 6, background: '#fff', padding: 8, overflowX: 'auto' }}>
+        </div>
+
+        {/* Preview */}
+        <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: 20 }}>
+          <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--text-primary)', marginBottom: 14 }}>
+            Page Preview — {PAPER[paperSize].label} · {cols}×{rows} layout
+          </div>
+          <div style={{ border: '2px solid var(--border)', borderRadius: 6, background: '#fff', padding: 10, overflowX: 'auto' }}>
             <div style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: `${gap}px`, maxWidth: 480, margin: '0 auto' }}>
-              {Array.from({ length: Math.min(perPage, 24) }).map((_, i) => {
-                const l = selectedLabels[i];
+              {Array.from({ length: Math.min(perPage, 30) }).map((_, i) => {
+                const l = labels[i];
                 return (
-                  <div key={i} style={{ border: '1px solid #dde', borderRadius: 3, background: l ? '#fff' : '#f8f8f8', overflow: 'hidden', minWidth: 0 }}>
-                    {l ? (() => {
-                      const tmpl = templates.find(t => t.id === l.template_id);
-                      return tmpl
-                        ? <LabelCanvas template={tmpl} label={l} width={80} />
-                        : <div style={{ padding: 4, fontSize: 7, fontFamily: 'monospace', fontWeight: 700, color: '#1a2433', textAlign: 'center' }}>{l.label_code}</div>;
-                    })() : (
-                      <div style={{ width: '100%', aspectRatio: '1', background: '#eee' }} />
+                  <div key={i} style={{ aspectRatio: '1', border: '1px solid #dde', borderRadius: 3, background: l ? '#f0f8ff' : '#f8f8f8', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 3, minWidth: 0 }}>
+                    {l ? (
+                      <>
+                        <div style={{ fontSize: 7, fontFamily: 'monospace', fontWeight: 700, color: '#1a2433', textAlign: 'center', lineHeight: 1.2 }}>{l.label_code}</div>
+                        <div style={{ width: '55%', aspectRatio: '1', background: '#1a2433', borderRadius: 1, margin: '1px 0' }} />
+                        {l.asset_name && <div style={{ fontSize: 5, color: '#666', textAlign: 'center', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '100%' }}>{l.asset_name}</div>}
+                      </>
+                    ) : (
+                      <div style={{ width: '55%', aspectRatio: '1', background: '#eee', borderRadius: 1 }} />
                     )}
                   </div>
                 );
               })}
             </div>
-            {perPage > 24 && <div style={{ textAlign: 'center', fontSize: 11, color: 'var(--text-muted)', marginTop: 6 }}>Showing first 24 of {perPage} cells</div>}
+            {perPage > 30 && <div style={{ textAlign: 'center', fontSize: 11, color: 'var(--text-muted)', marginTop: 8 }}>Showing first 30 of {perPage} cells</div>}
           </div>
-        </div>
-
-        {/* Label selection table */}
-        <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: 20 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-            <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--text-primary)' }}>
-              Select Labels to Print ({selected.size} of {filtered.length} selected)
-            </div>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <button onClick={selectAll} style={{ padding: '5px 12px', background: 'var(--accent-light)', color: 'var(--accent)', border: '1px solid rgba(0,194,224,0.3)', borderRadius: 6, fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>Select All</button>
-              <button onClick={clearAll} style={{ padding: '5px 12px', background: 'var(--surface-2)', color: 'var(--text-secondary)', border: '1px solid var(--border)', borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>Clear</button>
-            </div>
+          {/* Label list */}
+          <div style={{ marginTop: 16, maxHeight: 200, overflowY: 'auto' }}>
+            {labels.map((l,i) => (
+              <div key={l.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '5px 0', borderBottom: '1px solid var(--border)', fontSize: 12 }}>
+                <span style={{ fontFamily: 'monospace', fontWeight: 700, color: 'var(--accent)' }}>{l.label_code}</span>
+                <span style={{ color: 'var(--text-muted)' }}>{l.asset_name || 'Unassigned'}</span>
+              </div>
+            ))}
           </div>
-          {filtered.length === 0 ? (
-            <div style={{ color: 'var(--text-muted)', fontSize: 13, fontStyle: 'italic', padding: '20px 0' }}>No labels match the current filters.</div>
-          ) : (
-            <div style={{ maxHeight: 320, overflowY: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-                <thead style={{ position: 'sticky', top: 0, background: 'var(--surface)' }}>
-                  <tr style={{ borderBottom: '2px solid var(--border)' }}>
-                    <th style={{ width: 32, padding: '8px 10px' }} />
-                    {['Label Code','Template','Asset','Printed'].map(h => <th key={h} style={{ padding: '8px 10px', textAlign: 'left', fontSize: 10, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{h}</th>)}
-                  </tr>
-                </thead>
-                <tbody>
-                  {filtered.map(l => (
-                    <tr key={l.id} onClick={() => toggleSelect(l.id)}
-                      style={{ borderBottom: '1px solid var(--border)', cursor: 'pointer', background: selected.has(l.id) ? 'var(--accent-light)' : 'transparent', transition: 'background 0.1s' }}>
-                      <td style={{ padding: '8px 10px' }}>
-                        <div style={{ width: 16, height: 16, borderRadius: 3, border: '1.5px solid ' + (selected.has(l.id) ? 'var(--accent)' : 'var(--border)'), background: selected.has(l.id) ? 'var(--accent)' : '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, color: '#fff' }}>
-                          {selected.has(l.id) ? '✓' : ''}
-                        </div>
-                      </td>
-                      <td style={{ padding: '8px 10px', fontFamily: 'var(--font-mono)', fontWeight: 700, color: 'var(--accent)' }}>{l.label_code}</td>
-                      <td style={{ padding: '8px 10px', color: 'var(--text-muted)', fontSize: 12 }}>{l.template_name || '—'}</td>
-                      <td style={{ padding: '8px 10px' }}>{l.asset_name ? <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--green)' }}>{l.asset_name}</span> : <span style={{ fontSize: 11, color: 'var(--text-faint)', fontStyle: 'italic' }}>Unassigned</span>}</td>
-                      <td style={{ padding: '8px 10px' }}><span style={{ fontSize: 11, color: l.printed ? 'var(--accent)' : 'var(--text-faint)' }}>{l.printed ? '✓' : '—'}</span></td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
         </div>
       </div>
     </div>
   );
 }
-
 
 
 // ─── Asset Onboarding Wrapper ─────────────────────────────────────────────────
