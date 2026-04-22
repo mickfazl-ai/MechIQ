@@ -1504,7 +1504,6 @@ const ADMIN_TABS = [
   { id: 'notifs',           label: 'Notifications',   icon: '🔔' },
   { id: 'billing',          label: 'Contact & Plan',  icon: '💳' },
   { id: 'data',             label: 'Data & Export',   icon: '📤' },
-  { id: 'assets_settings',  label: 'Assets',          icon: '🚛' },
   { id: 'onboarding_admin', label: 'Plant Onboarding',icon: '🏗️' },
   { id: 'labels',           label: 'Labels',           icon: '🏷' },
 ];
@@ -2864,11 +2863,13 @@ function PlantOnboardingAdmin({ userRole }) {
     <div>
       <div style={{ display:'flex', borderBottom:'1px solid var(--border)', marginBottom:24 }}>
         <button style={ts('register')} onClick={()=>setTab('register')}>🚛 Register Asset</button>
+        <button style={ts('assets')} onClick={()=>setTab('assets')}>⚙️ Asset Settings</button>
         <button style={ts('submissions')} onClick={()=>setTab('submissions')}>📋 Contractor Submissions</button>
         <button style={ts('contractors')} onClick={()=>setTab('contractors')}>👷 Contractors</button>
         <button style={ts('checklists')} onClick={()=>setTab('checklists')}>✅ Compliance Checklists</button>
       </div>
       {tab==='register'     && <AssetOnboardingWrapper userRole={userRole} />}
+      {tab==='assets'       && <AssetsSettings userRole={userRole} />}
       {tab==='submissions'  && <SubmissionsReview userRole={userRole} />}
       {tab==='contractors'  && <ContractorManager userRole={userRole} />}
       {tab==='checklists'   && <ComplianceChecklists userRole={userRole} />}
