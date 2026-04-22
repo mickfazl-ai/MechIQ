@@ -3350,20 +3350,23 @@ function Settings({ userRole, initialTab, adminMode, personalMode }) {
   const [activeTab, setActiveTab] = useState(initialTab || defaultTab);
   useEffect(() => { if (initialTab) setActiveTab(initialTab); }, [initialTab]);
 
-  const content = {
-    company:  <CompanyDetails userRole={userRole} />,
-    notifs:   <Notifications userRole={userRole} />,
-    users:    <UsersRoles userRole={userRole} />,
-    billing:  <Billing userRole={userRole} />,
-    data:     <DataExport userRole={userRole} />,
-    format:       <FormatTheme userRole={userRole} />,
-    datetime:     <DateTimeSettings userRole={userRole} />,
-    sync:         <OneDriveSync userRole={userRole} />,
-    app_modifier: <AppModifier userRole={userRole} />,
-    password:        <PasswordReset userRole={userRole} />,
-    assets_settings:  <AssetsSettings userRole={userRole} />,
-    onboarding_admin: <PlantOnboardingAdmin userRole={userRole} />,
-    labels:  <LabelsSection userRole={userRole} />,
+  const renderTab = () => {
+    switch(activeTab) {
+      case 'company':          return <CompanyDetails userRole={userRole} />;
+      case 'notifs':           return <Notifications userRole={userRole} />;
+      case 'users':            return <UsersRoles userRole={userRole} />;
+      case 'billing':          return <Billing userRole={userRole} />;
+      case 'data':             return <DataExport userRole={userRole} />;
+      case 'format':           return <FormatTheme userRole={userRole} />;
+      case 'datetime':         return <DateTimeSettings userRole={userRole} />;
+      case 'sync':             return <OneDriveSync userRole={userRole} />;
+      case 'app_modifier':     return <AppModifier userRole={userRole} />;
+      case 'password':         return <PasswordReset userRole={userRole} />;
+      case 'assets_settings':  return <AssetsSettings userRole={userRole} />;
+      case 'onboarding_admin': return <PlantOnboardingAdmin userRole={userRole} />;
+      case 'labels':           return <LabelsSection userRole={userRole} />;
+      default:                 return null;
+    }
   };
 
   return (
@@ -3376,9 +3379,7 @@ function Settings({ userRole, initialTab, adminMode, personalMode }) {
           {adminMode ? 'Manage your company profile, team and account preferences.' : 'Personalise your MechIQ experience.'}
         </p>
       </div>
-
-
-      {content[activeTab]}
+      {renderTab()}
     </div>
   );
 }
