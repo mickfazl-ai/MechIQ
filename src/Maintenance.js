@@ -1,6 +1,7 @@
 // MechIQ Maintenance v2 - Calendar + Service Schedules
 import React, { useState, useEffect } from 'react';
 import { supabase } from './supabase';
+import Calendar from './Calendar';
 
 // ─── Timezone & date format helpers ───────────────────────────────────────────
 const getUserTz = () => localStorage.getItem('mechiq_timezone') || Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -670,21 +671,9 @@ function Maintenance({ userRole, initialTab, setCurrentPage }) {
       )}
 
 
-      {/* ── Calendar Tab → now its own page ── */}
+      {/* ── Calendar Tab ── */}
       {activeTab === 'calendar' && (
-        <div style={{ padding: '40px 20px', textAlign: 'center' }}>
-          <div style={{ fontSize: 48, marginBottom: 16 }}>📅</div>
-          <div style={{ fontSize: 18, fontWeight: 800, color: 'var(--text-primary)', marginBottom: 8 }}>Calendar has moved</div>
-          <div style={{ fontSize: 14, color: 'var(--text-muted)', marginBottom: 24 }}>The maintenance calendar is now its own page in the sidebar.</div>
-          {setCurrentPage && (
-            <button
-              onClick={() => setCurrentPage('calendar')}
-              style={{ padding: '12px 28px', background: 'linear-gradient(135deg, var(--accent), #0090a8)', color: '#fff', border: 'none', borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: 'pointer' }}
-            >
-              Go to Calendar →
-            </button>
-          )}
-        </div>
+        <Calendar userRole={userRole} />
       )}
 
     </div>
