@@ -2696,41 +2696,152 @@ function LabelPrint({ userRole, initialQueue, onClearQueue }) {
 // We import Assets dynamically to avoid circular deps — instead we inline a
 // lightweight redirect that tells the Assets component to show its onboarding tab
 function AssetOnboardingWrapper({ userRole }) {
-  const [done, setDone] = React.useState(false);
+  const EMPTY = { name:'', asset_number:'', type:'', make:'', model:'', year:'', serial_number:'', engine_model:'', location:'', status:'Active', hours:'', hourly_rate:'', target_hours:'8', purchase_price:'', purchase_date:'', notes:'' };
+  const [form,   setForm]   = React.useState(EMPTY);
+  const [saving, setSaving] = React.useState(false);
+  const [done,   setDone]   = React.useState(null); // saved asset name
+  const F = (k, v) => setForm(f => ({ ...f, [k]: v }));
+
+  React.useEffect(() => {
+    // Auto-generate next asset number
+    supabase.from('assets').select('asset_number').eq('company_id', userRole.company_id)
+      .then(({ data }) => {
+        const nums = (data||[]).map(a => parseInt((a.asset_number||'').replace(/\D/g,''),10)).filter(n=>!isNaN(n));
+        const next = nums.length ? Math.max(...nums)+1 : 1;
+        setForm(f => ({ ...f, asset_number: `AST-${String(next).padStart(4,'0')}` }));
+      });
+  }, [userRole.company_id]);
+
+  const save = async () => {
+    if (!form.name.trim() || !form.type.trim()) { alert('Asset Name and Type are required'); return; }
+    setSaving(true);
+    const { data, error } = await supabase.from('assets').insert([{
+      company_id:    userRole.company_id,
+      name:          form.name,
+      asset_number:  form.asset_number,
+      type:          form.type,
+      make:          form.make || null,
+      model:         form.model || null,
+      year:          form.year ? parseInt(form.year) : null,
+      serial_number: form.serial_number || null,
+      engine_model:  form.engine_model || null,
+      location:      form.location || null,
+      status:        form.status,
+      hours:         form.hours ? parseFloat(form.hours) : 0,
+      target_hours:  form.target_hours ? parseFloat(form.target_hours) : 8,
+      hourly_rate:   form.hourly_rate ? parseFloat(form.hourly_rate) : null,
+      purchase_price:form.purchase_price ? parseFloat(form.purchase_price) : null,
+      purchase_date: form.purchase_date || null,
+      notes:         form.notes || null,
+      ownership_type:'owned',
+    }]).select().single();
+    setSaving(false);
+    if (error) { alert('Error: ' + error.message); return; }
+    setDone(data.name);
+  };
+
+  const iStyle = { width:'100%', padding:'9px 12px', border:'1px solid var(--border)', borderRadius:7, background:'var(--surface-2)', color:'var(--text-primary)', fontSize:13, fontFamily:'inherit', outline:'none', boxSizing:'border-box', transition:'border-color 0.15s' };
+  const lStyle = { display:'block', fontSize:10, fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.5px', marginBottom:5 };
 
   if (done) return (
-    <div style={{ textAlign:'center', padding:'40px 20px' }}>
-      <div style={{ fontSize:40, marginBottom:12 }}>✅</div>
-      <div style={{ fontSize:18, fontWeight:800, color:'var(--text-primary)', marginBottom:8 }}>Asset registered successfully</div>
-      <div style={{ fontSize:14, color:'var(--text-muted)', marginBottom:24 }}>The asset has been added to your fleet register.</div>
-      <button onClick={()=>setDone(false)}
-        style={{ padding:'10px 24px', background:'var(--accent)', color:'#fff', border:'none', borderRadius:8, fontSize:14, fontWeight:700, cursor:'pointer' }}>
-        Register Another Asset
-      </button>
+    <div style={{ textAlign:'center', padding:'60px 20px', background:'var(--surface)', border:'1px solid var(--border)', borderRadius:12 }}>
+      <div style={{ fontSize:44, marginBottom:14 }}>✅</div>
+      <div style={{ fontSize:18, fontWeight:800, color:'var(--text-primary)', marginBottom:6 }}>{done} registered successfully</div>
+      <div style={{ fontSize:13, color:'var(--text-muted)', marginBottom:28 }}>The asset has been added to your fleet. You can now assign service intervals, labels and forms from the Assets page.</div>
+      <div style={{ display:'flex', gap:10, justifyContent:'center', flexWrap:'wrap' }}>
+        <button onClick={()=>{ setDone(null); setForm(EMPTY); }}
+          style={{ padding:'10px 24px', background:'var(--accent)', color:'#fff', border:'none', borderRadius:8, fontSize:13, fontWeight:700, cursor:'pointer' }}>
+          Register Another
+        </button>
+        <button onClick={()=>window.dispatchEvent(new CustomEvent('mechiq-navigate', { detail: { page:'assets', subPage:'units' } }))}
+          style={{ padding:'10px 20px', background:'var(--surface-2)', color:'var(--text-secondary)', border:'1px solid var(--border)', borderRadius:8, fontSize:13, fontWeight:600, cursor:'pointer' }}>
+          View Assets →
+        </button>
+      </div>
     </div>
   );
 
-  // Navigate to Assets → Onboarding tab via custom event
-  const goToAssets = () => {
-    window.dispatchEvent(new CustomEvent('mechiq-navigate', { detail: { page: 'assets', subPage: 'onboarding' } }));
-  };
-
   return (
-    <div>
-      <div style={{ padding:'16px 20px', background:'var(--accent-light)', border:'1px solid rgba(0,194,224,0.25)', borderRadius:10, marginBottom:20, display:'flex', alignItems:'center', justifyContent:'space-between', gap:16 }}>
-        <div>
-          <div style={{ fontSize:14, fontWeight:700, color:'var(--text-primary)', marginBottom:3 }}>Register Company-Owned Plant</div>
-          <div style={{ fontSize:13, color:'var(--text-muted)' }}>Use this to onboard your own fleet — excavators, generators, vehicles and other company assets.</div>
-        </div>
-        <button onClick={goToAssets}
-          style={{ padding:'10px 20px', background:'var(--accent)', color:'#fff', border:'none', borderRadius:8, fontSize:13, fontWeight:700, cursor:'pointer', whiteSpace:'nowrap', flexShrink:0 }}>
-          Open Full Wizard →
-        </button>
+    <div style={{ background:'var(--surface)', border:'1px solid var(--border)', borderRadius:12, padding:28 }}>
+      <div style={{ fontSize:16, fontWeight:800, color:'var(--text-primary)', marginBottom:4 }}>🚛 Register Company-Owned Asset</div>
+      <div style={{ fontSize:13, color:'var(--text-muted)', marginBottom:24 }}>Add plant and equipment owned by your company to the fleet register.</div>
+
+      {/* Section: Identity */}
+      <div style={{ fontSize:11, fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.5px', marginBottom:12, paddingBottom:8, borderBottom:'1px solid var(--border)' }}>Asset Identity</div>
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(200px,1fr))', gap:12, marginBottom:20 }}>
+        {[
+          ['Asset Name *', 'name', 'text'],
+          ['Asset Number', 'asset_number', 'text'],
+          ['Type *', 'type', 'text'],
+          ['Make', 'make', 'text'],
+          ['Model', 'model', 'text'],
+          ['Year', 'year', 'number'],
+          ['Serial Number', 'serial_number', 'text'],
+          ['Engine Model', 'engine_model', 'text'],
+        ].map(([label, key, type]) => (
+          <div key={key}>
+            <label style={lStyle}>{label}</label>
+            <input style={iStyle} type={type} value={form[key]} onChange={e => F(key, e.target.value)}
+              placeholder={key==='type'?'e.g. Excavator, Generator…':key==='asset_number'?'Auto-generated':''}/>
+          </div>
+        ))}
       </div>
-      <div style={{ padding:'14px 16px', background:'var(--surface)', border:'1px solid var(--border)', borderRadius:10, fontSize:13, color:'var(--text-muted)' }}>
-        <strong style={{ color:'var(--text-primary)' }}>Tip:</strong> The full asset registration wizard (6-step) is available via the button above, or you can go to <strong>Assets → Units → Add Asset</strong> for quick-add.
-        <br/><br/>
-        For <strong>contractor-supplied plant</strong> (dry hire or wet hire), use the <strong>Contractor Submissions</strong> tab — contractors log in at <a href="https://www.mechiq.com.au/contractor" target="_blank" rel="noreferrer" style={{ color:'var(--accent)' }}>mechiq.com.au/contractor</a> to submit their plant for approval.
+
+      {/* Section: Operation */}
+      <div style={{ fontSize:11, fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.5px', marginBottom:12, paddingBottom:8, borderBottom:'1px solid var(--border)' }}>Operational Details</div>
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(200px,1fr))', gap:12, marginBottom:20 }}>
+        <div>
+          <label style={lStyle}>Location / Site</label>
+          <input style={iStyle} value={form.location} onChange={e=>F('location',e.target.value)} placeholder="e.g. Newcastle" />
+        </div>
+        <div>
+          <label style={lStyle}>Status</label>
+          <select style={iStyle} value={form.status} onChange={e=>F('status',e.target.value)}>
+            <option>Active</option><option>Running</option><option>Maintenance</option><option>Down</option><option>Standby</option>
+          </select>
+        </div>
+        <div>
+          <label style={lStyle}>Current Hours</label>
+          <input style={iStyle} type="number" value={form.hours} onChange={e=>F('hours',e.target.value)} placeholder="0" />
+        </div>
+        <div>
+          <label style={lStyle}>Target Hrs / Day</label>
+          <input style={iStyle} type="number" value={form.target_hours} onChange={e=>F('target_hours',e.target.value)} placeholder="8" />
+        </div>
+      </div>
+
+      {/* Section: Purchase */}
+      <div style={{ fontSize:11, fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.5px', marginBottom:12, paddingBottom:8, borderBottom:'1px solid var(--border)' }}>Purchase Details</div>
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(200px,1fr))', gap:12, marginBottom:20 }}>
+        <div>
+          <label style={lStyle}>Purchase Price ($)</label>
+          <input style={iStyle} type="number" value={form.purchase_price} onChange={e=>F('purchase_price',e.target.value)} placeholder="0.00" />
+        </div>
+        <div>
+          <label style={lStyle}>Purchase Date</label>
+          <input style={iStyle} type="date" value={form.purchase_date} onChange={e=>F('purchase_date',e.target.value)} />
+        </div>
+        <div>
+          <label style={lStyle}>Hourly Rate ($/hr)</label>
+          <input style={iStyle} type="number" value={form.hourly_rate} onChange={e=>F('hourly_rate',e.target.value)} placeholder="0.00" />
+        </div>
+      </div>
+
+      {/* Notes */}
+      <div style={{ marginBottom:24 }}>
+        <label style={lStyle}>Notes</label>
+        <textarea style={{ ...iStyle, minHeight:70, resize:'vertical' }} value={form.notes} onChange={e=>F('notes',e.target.value)} placeholder="Any additional information…" />
+      </div>
+
+      <div style={{ display:'flex', gap:10 }}>
+        <button onClick={save} disabled={saving}
+          style={{ padding:'11px 28px', background:saving?'var(--surface-2)':'var(--accent)', color:saving?'var(--text-muted)':'#fff', border:'none', borderRadius:8, fontSize:14, fontWeight:700, cursor:saving?'not-allowed':'pointer', transition:'all 0.2s', boxShadow:saving?'none':'0 4px 14px rgba(0,194,224,0.25)' }}>
+          {saving ? 'Registering…' : '✓ Register Asset'}
+        </button>
+        <button onClick={()=>setForm(EMPTY)}
+          style={{ padding:'11px 18px', background:'var(--surface-2)', color:'var(--text-secondary)', border:'1px solid var(--border)', borderRadius:8, fontSize:13, fontWeight:600, cursor:'pointer' }}>
+          Clear
+        </button>
       </div>
     </div>
   );
