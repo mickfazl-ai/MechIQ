@@ -2690,9 +2690,55 @@ function LabelPrint({ userRole, initialQueue, onClearQueue }) {
 }
 
 
+
+// ─── Asset Onboarding Wrapper ─────────────────────────────────────────────────
+// Renders the existing OnboardingTab from Assets.js inside the Onboarding page
+// We import Assets dynamically to avoid circular deps — instead we inline a
+// lightweight redirect that tells the Assets component to show its onboarding tab
+function AssetOnboardingWrapper({ userRole }) {
+  const [done, setDone] = React.useState(false);
+
+  if (done) return (
+    <div style={{ textAlign:'center', padding:'40px 20px' }}>
+      <div style={{ fontSize:40, marginBottom:12 }}>✅</div>
+      <div style={{ fontSize:18, fontWeight:800, color:'var(--text-primary)', marginBottom:8 }}>Asset registered successfully</div>
+      <div style={{ fontSize:14, color:'var(--text-muted)', marginBottom:24 }}>The asset has been added to your fleet register.</div>
+      <button onClick={()=>setDone(false)}
+        style={{ padding:'10px 24px', background:'var(--accent)', color:'#fff', border:'none', borderRadius:8, fontSize:14, fontWeight:700, cursor:'pointer' }}>
+        Register Another Asset
+      </button>
+    </div>
+  );
+
+  // Navigate to Assets → Onboarding tab via custom event
+  const goToAssets = () => {
+    window.dispatchEvent(new CustomEvent('mechiq-navigate', { detail: { page: 'assets', subPage: 'onboarding' } }));
+  };
+
+  return (
+    <div>
+      <div style={{ padding:'16px 20px', background:'var(--accent-light)', border:'1px solid rgba(0,194,224,0.25)', borderRadius:10, marginBottom:20, display:'flex', alignItems:'center', justifyContent:'space-between', gap:16 }}>
+        <div>
+          <div style={{ fontSize:14, fontWeight:700, color:'var(--text-primary)', marginBottom:3 }}>Register Company-Owned Plant</div>
+          <div style={{ fontSize:13, color:'var(--text-muted)' }}>Use this to onboard your own fleet — excavators, generators, vehicles and other company assets.</div>
+        </div>
+        <button onClick={goToAssets}
+          style={{ padding:'10px 20px', background:'var(--accent)', color:'#fff', border:'none', borderRadius:8, fontSize:13, fontWeight:700, cursor:'pointer', whiteSpace:'nowrap', flexShrink:0 }}>
+          Open Full Wizard →
+        </button>
+      </div>
+      <div style={{ padding:'14px 16px', background:'var(--surface)', border:'1px solid var(--border)', borderRadius:10, fontSize:13, color:'var(--text-muted)' }}>
+        <strong style={{ color:'var(--text-primary)' }}>Tip:</strong> The full asset registration wizard (6-step) is available via the button above, or you can go to <strong>Assets → Units → Add Asset</strong> for quick-add.
+        <br/><br/>
+        For <strong>contractor-supplied plant</strong> (dry hire or wet hire), use the <strong>Contractor Submissions</strong> tab — contractors log in at <a href="https://www.mechiq.com.au/contractor" target="_blank" rel="noreferrer" style={{ color:'var(--accent)' }}>mechiq.com.au/contractor</a> to submit their plant for approval.
+      </div>
+    </div>
+  );
+}
+
 // ─── Plant Onboarding Admin ───────────────────────────────────────────────────
 function PlantOnboardingAdmin({ userRole }) {
-  const [tab, setTab] = React.useState('submissions');
+  const [tab, setTab] = React.useState('register');
   const ts = (id) => ({
     padding:'8px 18px', border:'none', background:'transparent',
     borderBottom: tab===id ? '2px solid var(--accent)' : '2px solid transparent',
@@ -2702,10 +2748,12 @@ function PlantOnboardingAdmin({ userRole }) {
   return (
     <div>
       <div style={{ display:'flex', borderBottom:'1px solid var(--border)', marginBottom:24 }}>
-        <button style={ts('submissions')} onClick={()=>setTab('submissions')}>📋 Submissions</button>
+        <button style={ts('register')} onClick={()=>setTab('register')}>🚛 Register Asset</button>
+        <button style={ts('submissions')} onClick={()=>setTab('submissions')}>📋 Contractor Submissions</button>
         <button style={ts('contractors')} onClick={()=>setTab('contractors')}>👷 Contractors</button>
         <button style={ts('checklists')} onClick={()=>setTab('checklists')}>✅ Compliance Checklists</button>
       </div>
+      {tab==='register'     && <AssetOnboardingWrapper userRole={userRole} />}
       {tab==='submissions'  && <SubmissionsReview userRole={userRole} />}
       {tab==='contractors'  && <ContractorManager userRole={userRole} />}
       {tab==='checklists'   && <ComplianceChecklists userRole={userRole} />}

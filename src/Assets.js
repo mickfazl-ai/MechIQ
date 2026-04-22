@@ -1577,7 +1577,7 @@ function Assets({ userRole, onViewAsset, initialTab }) {
   const renderTab = () => {
     switch (activeTab) {
       case 'units':        return <UnitsTab userRole={userRole} onViewAsset={onViewAsset} toast={toast} />;
-      case 'onboarding':  return <OnboardingTab userRole={userRole} onComplete={() => setActiveTab('units')} toast={toast} />;
+      case 'onboarding':  window.dispatchEvent(new CustomEvent('mechiq-navigate', { detail: { page: 'onboarding' } })); return null;
       case 'depreciation':return <DepreciationTab userRole={userRole} />;
       case 'tracker':     return <TrackerPlaceholder userRole={userRole} />;
       default:            return <UnitsTab userRole={userRole} onViewAsset={onViewAsset} toast={toast} />;
@@ -1592,7 +1592,6 @@ function Assets({ userRole, onViewAsset, initialTab }) {
 
   const TABS = [
     { id:'units',       label:'Fleet Units',  icon:'🚛' },
-    { id:'onboarding',  label:'Onboarding',   icon:'➕' },
     { id:'depreciation',label:'Depreciation', icon:'📉' },
     { id:'tracker',     label:'Tracker',      icon:'📡' },
   ];
