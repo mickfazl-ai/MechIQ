@@ -2575,8 +2575,7 @@ function LabelPrint({ userRole, labels, allLabels, onBack, onPrinted }) {
                         let t=el.text||'';
                         t=t.replace(/\{asset_name\}/gi,l.asset_name||'').replace(/\{label_code\}/gi,l.label_code||'').replace(/\{asset_number\}/gi,l.label_code||'');
                         const tx2=el.align==='center'?ex+ew/2:el.align==='right'?ex+ew:ex;
-                        t.split('
-').forEach((line,ii)=>ctx.fillText(line,tx2,ey+ii*fs*1.3));
+                        t.split('\\n').forEach((line,ii)=>ctx.fillText(line,tx2,ey+ii*fs*1.3));
                         ctx.restore();
                       }
                       if(el.type==='mechiq_logo'){
