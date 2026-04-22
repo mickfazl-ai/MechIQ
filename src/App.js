@@ -288,6 +288,8 @@ function App() {
         return <Reports companyId={effectiveCompanyId} userRole={effectiveUserRole} initialTab={currentSubPage} />;
       case 'users':
         return <Users companyId={effectiveCompanyId} userRole={effectiveUserRole} />;
+      case 'onboarding':
+        return <Settings userRole={effectiveUserRole} initialTab='onboarding_admin' adminMode />;
       case 'admin':
         return <Settings userRole={effectiveUserRole} initialTab={currentSubPage || 'company'} key={currentSubPage} adminMode />;
       case 'settings':
