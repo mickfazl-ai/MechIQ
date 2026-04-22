@@ -2030,9 +2030,7 @@ function LabelGenerator({ userRole, onPrint }) {
   const [saved,      setSaved]      = React.useState(false);
   const [existing,   setExisting]   = React.useState([]);
   const [loadingEx,  setLoadingEx]  = React.useState(true);
-  const [selected,   setSelected]   = React.useState(() => initialQueue && initialQueue.length > 0 ? new Set(initialQueue.map(l=>l.id)) : new Set());
-  // If initialQueue arrives after mount, sync it
-  React.useEffect(() => { if (initialQueue && initialQueue.length > 0) setSelected(new Set(initialQueue.map(l=>l.id))); }, [initialQueue?.length]); // ids selected for printing
+  const [selected,   setSelected]   = React.useState(new Set());
   const [rangeFrom,  setRangeFrom]  = React.useState('');
   const [rangeTo,    setRangeTo]    = React.useState('');
 
