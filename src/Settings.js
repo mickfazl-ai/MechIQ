@@ -1979,7 +1979,7 @@ function AssetsSettings({ userRole }) {
 
 // ─── Labels Section ───────────────────────────────────────────────────────────
 function LabelsSection({ userRole }) {
-  const [tab,          setTab]          = React.useState('designer');
+  const [tab,          setTab]          = React.useState('generator');
   const [printQueue,   setPrintQueue]   = React.useState([]); // labels passed from generator to print
 
   const goToPrint = (labels) => { setPrintQueue(labels); setTab('print'); };
@@ -2044,10 +2044,13 @@ function LabelGenerator({ userRole, onPrint }) {
 
   const loadExisting = async () => {
     setLoadingEx(true);
-    const { data } = await supabase.from('generated_labels')
-      .select('*').eq('company_id', userRole.company_id)
-      .order('label_number');
-    setExisting(data || []);
+    try {
+      const { data, error } = await supabase.from('generated_labels')
+        .select('*').eq('company_id', userRole.company_id)
+        .order('label_number');
+      if (error) { console.warn('generated_labels table error:', error.message); setExisting([]); }
+      else setExisting(data || []);
+    } catch(e) { console.warn('generated_labels not available:', e.message); setExisting([]); }
     setLoadingEx(false);
   };
 
@@ -2416,12 +2419,15 @@ function LabelPrint({ userRole, initialQueue, onClearQueue }) {
 
   const load = async () => {
     setLoading(true);
-    const [{ data: lD }, { data: tD }] = await Promise.all([
-      supabase.from('generated_labels').select('*').eq('company_id', userRole.company_id).order('label_number'),
-      supabase.from('label_templates').select('*').eq('company_id', userRole.company_id),
-    ]);
-    setLabels(lD || []);
-    setTemplates(tD || []);
+    try {
+      const [{ data: lD, error: lE }, { data: tD }] = await Promise.all([
+        supabase.from('generated_labels').select('*').eq('company_id', userRole.company_id).order('label_number'),
+        supabase.from('label_templates').select('*').eq('company_id', userRole.company_id),
+      ]);
+      if (lE) console.warn('generated_labels error:', lE.message);
+      setLabels(lD || []);
+      setTemplates(tD || []);
+    } catch(e) { console.warn('LabelPrint load error:', e.message); }
     setLoading(false);
   };
 
