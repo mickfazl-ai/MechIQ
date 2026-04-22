@@ -1978,9 +1978,12 @@ function AssetsSettings({ userRole }) {
 
 
 // ─── Labels Section ───────────────────────────────────────────────────────────
-// Three sub-tabs: Designer | Generator | Print
 function LabelsSection({ userRole }) {
-  const [tab, setTab] = React.useState('designer');
+  const [tab,          setTab]          = React.useState('designer');
+  const [printQueue,   setPrintQueue]   = React.useState([]); // labels passed from generator to print
+
+  const goToPrint = (labels) => { setPrintQueue(labels); setTab('print'); };
+
   const tabStyle = (id) => ({
     padding: '8px 20px', border: 'none', background: 'transparent',
     borderBottom: tab === id ? '2px solid var(--accent)' : '2px solid transparent',
@@ -1992,18 +1995,31 @@ function LabelsSection({ userRole }) {
     <div>
       <div style={{ display: 'flex', borderBottom: '1px solid var(--border)', marginBottom: 24 }}>
         <button style={tabStyle('designer')} onClick={() => setTab('designer')}>🎨 Label Designer</button>
-        <button style={tabStyle('generator')} onClick={() => setTab('generator')}>⚡ Label Generator</button>
-        <button style={tabStyle('print')} onClick={() => setTab('print')}>🖨️ Print Labels</button>
+        <button style={tabStyle('generator')} onClick={() => { setTab('generator'); setPrintQueue([]); }}>⚡ Label Generator</button>
       </div>
       {tab === 'designer'  && <LabelDesigner userRole={userRole?.role} companyId={userRole?.company_id} />}
-      {tab === 'generator' && <LabelGenerator userRole={userRole} />}
-      {tab === 'print'     && <LabelPrint userRole={userRole} />}
+      {tab === 'generator' && !printQueue.length && <LabelGenerator userRole={userRole} onPrint={goToPrint} />}
+      {tab === 'generator' && printQueue.length > 0 && (
+        <div>
+          {/* Back button */}
+          <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:20 }}>
+            <button onClick={() => setPrintQueue([])}
+              style={{ display:'flex', alignItems:'center', gap:6, padding:'7px 14px', background:'var(--surface-2)', border:'1px solid var(--border)', borderRadius:7, fontSize:13, fontWeight:600, color:'var(--text-secondary)', cursor:'pointer' }}>
+              ← Back to Labels
+            </button>
+            <div style={{ fontSize:14, fontWeight:700, color:'var(--text-primary)' }}>
+              🖨️ Print Setup — <span style={{ color:'var(--accent)' }}>{printQueue.length} label{printQueue.length!==1?'s':''} selected</span>
+            </div>
+          </div>
+          <LabelPrint userRole={userRole} initialQueue={printQueue} onClearQueue={() => setPrintQueue([])} />
+        </div>
+      )}
     </div>
   );
 }
 
 // ─── Label Generator ─────────────────────────────────────────────────────────
-function LabelGenerator({ userRole }) {
+function LabelGenerator({ userRole, onPrint }) {
   const [templates,  setTemplates]  = React.useState([]);
   const [selectedT,  setSelectedT]  = React.useState(null);
   const [count,      setCount]      = React.useState(10);
@@ -2014,6 +2030,11 @@ function LabelGenerator({ userRole }) {
   const [saved,      setSaved]      = React.useState(false);
   const [existing,   setExisting]   = React.useState([]);
   const [loadingEx,  setLoadingEx]  = React.useState(true);
+  const [selected,   setSelected]   = React.useState(() => initialQueue && initialQueue.length > 0 ? new Set(initialQueue.map(l=>l.id)) : new Set());
+  // If initialQueue arrives after mount, sync it
+  React.useEffect(() => { if (initialQueue && initialQueue.length > 0) setSelected(new Set(initialQueue.map(l=>l.id))); }, [initialQueue?.length]); // ids selected for printing
+  const [rangeFrom,  setRangeFrom]  = React.useState('');
+  const [rangeTo,    setRangeTo]    = React.useState('');
 
   React.useEffect(() => {
     if (userRole?.company_id) {
@@ -2119,12 +2140,50 @@ function LabelGenerator({ userRole }) {
         </button>
       </div>
 
-      {/* Existing labels table */}
+      {/* Generated labels table with selection */}
       <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: 24 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-          <div style={{ fontSize: 15, fontWeight: 800, color: 'var(--text-primary)' }}>Generated Labels ({existing.length})</div>
-          <button onClick={loadExisting} style={{ padding: '6px 14px', background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 7, fontSize: 12, cursor: 'pointer', color: 'var(--text-secondary)' }}>↻ Refresh</button>
+        {/* Header row */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, flexWrap: 'wrap', gap: 10 }}>
+          <div style={{ fontSize: 15, fontWeight: 800, color: 'var(--text-primary)' }}>
+            Generated Labels ({existing.length})
+            {selected.size > 0 && <span style={{ marginLeft: 10, fontSize: 13, fontWeight: 600, color: 'var(--accent)' }}>{selected.size} selected</span>}
+          </div>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+            <button onClick={loadExisting} style={{ padding: '6px 12px', background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 7, fontSize: 12, cursor: 'pointer', color: 'var(--text-secondary)' }}>↻ Refresh</button>
+            {existing.length > 0 && <>
+              <button onClick={() => setSelected(new Set(existing.map(l => l.id)))}
+                style={{ padding: '6px 12px', background: 'var(--accent-light)', color: 'var(--accent)', border: '1px solid rgba(0,194,224,0.3)', borderRadius: 7, fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
+                Select All
+              </button>
+              <button onClick={() => setSelected(new Set())}
+                style={{ padding: '6px 12px', background: 'var(--surface-2)', color: 'var(--text-muted)', border: '1px solid var(--border)', borderRadius: 7, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
+                Clear
+              </button>
+            </>}
+          </div>
         </div>
+
+        {/* Range selector */}
+        {existing.length > 0 && (
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 14, padding: '10px 14px', background: 'var(--surface-2)', borderRadius: 8, flexWrap: 'wrap' }}>
+            <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)' }}>Select range:</span>
+            <input value={rangeFrom} onChange={e => setRangeFrom(e.target.value.toUpperCase())} placeholder="From e.g. HK-001"
+              style={{ width: 120, padding: '5px 9px', border: '1px solid var(--border)', borderRadius: 6, fontSize: 12, fontFamily: 'var(--font-mono)', background: 'var(--surface)', color: 'var(--text-primary)', outline: 'none' }} />
+            <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>→</span>
+            <input value={rangeTo} onChange={e => setRangeTo(e.target.value.toUpperCase())} placeholder="To e.g. HK-010"
+              style={{ width: 120, padding: '5px 9px', border: '1px solid var(--border)', borderRadius: 6, fontSize: 12, fontFamily: 'var(--font-mono)', background: 'var(--surface)', color: 'var(--text-primary)', outline: 'none' }} />
+            <button onClick={() => {
+              const from = existing.findIndex(l => l.label_code.toUpperCase() === rangeFrom.trim());
+              const to   = existing.findIndex(l => l.label_code.toUpperCase() === rangeTo.trim());
+              if (from === -1 || to === -1) { alert('Label codes not found in list'); return; }
+              const start = Math.min(from, to), end = Math.max(from, to);
+              setSelected(new Set(existing.slice(start, end + 1).map(l => l.id)));
+            }} style={{ padding: '5px 14px', background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: 6, fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
+              Apply Range
+            </button>
+          </div>
+        )}
+
         {loadingEx ? (
           <div style={{ color: 'var(--text-muted)', fontSize: 13 }}>Loading…</div>
         ) : existing.length === 0 ? (
@@ -2134,6 +2193,12 @@ function LabelGenerator({ userRole }) {
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
               <thead>
                 <tr style={{ background: 'var(--surface-2)', borderBottom: '2px solid var(--border)' }}>
+                  <th style={{ padding: '9px 12px', width: 36 }}>
+                    <input type="checkbox"
+                      checked={selected.size === existing.length && existing.length > 0}
+                      onChange={e => e.target.checked ? setSelected(new Set(existing.map(l=>l.id))) : setSelected(new Set())}
+                      style={{ width: 15, height: 15, accentColor: 'var(--accent)', cursor: 'pointer' }} />
+                  </th>
                   {['Label Code','Template','Asset Assigned','Printed',''].map(h => (
                     <th key={h} style={{ padding: '9px 12px', textAlign: 'left', fontSize: 10, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', whiteSpace: 'nowrap' }}>{h}</th>
                   ))}
@@ -2141,7 +2206,13 @@ function LabelGenerator({ userRole }) {
               </thead>
               <tbody>
                 {existing.map(l => (
-                  <tr key={l.id} style={{ borderBottom: '1px solid var(--border)' }}>
+                  <tr key={l.id} onClick={() => { const n = new Set(selected); n.has(l.id) ? n.delete(l.id) : n.add(l.id); setSelected(n); }}
+                    style={{ borderBottom: '1px solid var(--border)', cursor: 'pointer', background: selected.has(l.id) ? 'var(--accent-light)' : 'transparent', transition: 'background 0.1s' }}>
+                    <td style={{ padding: '9px 12px' }} onClick={e => e.stopPropagation()}>
+                      <input type="checkbox" checked={selected.has(l.id)}
+                        onChange={() => { const n = new Set(selected); n.has(l.id) ? n.delete(l.id) : n.add(l.id); setSelected(n); }}
+                        style={{ width: 15, height: 15, accentColor: 'var(--accent)', cursor: 'pointer' }} />
+                    </td>
                     <td style={{ padding: '9px 12px', fontFamily: 'var(--font-mono)', fontWeight: 700, color: 'var(--accent)', fontSize: 13 }}>{l.label_code}</td>
                     <td style={{ padding: '9px 12px', color: 'var(--text-secondary)', fontSize: 12 }}>{l.template_name || '—'}</td>
                     <td style={{ padding: '9px 12px' }}>
@@ -2154,7 +2225,7 @@ function LabelGenerator({ userRole }) {
                         {l.printed ? '✓ Printed' : 'Not printed'}
                       </span>
                     </td>
-                    <td style={{ padding: '9px 12px', textAlign: 'right' }}>
+                    <td style={{ padding: '9px 12px', textAlign: 'right' }} onClick={e => e.stopPropagation()}>
                       <button onClick={() => { if (window.confirm('Delete label ' + l.label_code + '?')) deleteLabel(l.id); }}
                         style={{ padding: '3px 10px', background: 'var(--red-bg)', color: 'var(--red)', border: '1px solid var(--red-border)', borderRadius: 5, fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>
                         🗑
@@ -2166,13 +2237,169 @@ function LabelGenerator({ userRole }) {
             </table>
           </div>
         )}
+
+        {/* Print selected bar */}
+        {selected.size > 0 && (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 16, padding: '12px 16px', background: 'linear-gradient(135deg,var(--accent-light),rgba(0,194,224,0.08))', border: '1px solid rgba(0,194,224,0.25)', borderRadius: 9 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--accent)' }}>
+              🖨️ {selected.size} label{selected.size !== 1 ? 's' : ''} selected
+            </div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button onClick={() => setSelected(new Set())}
+                style={{ padding: '7px 14px', background: 'transparent', border: '1px solid rgba(0,194,224,0.3)', borderRadius: 7, fontSize: 12, fontWeight: 600, color: 'var(--accent)', cursor: 'pointer' }}>
+                Clear
+              </button>
+              <button onClick={() => { const labels = existing.filter(l => selected.has(l.id)); onPrint && onPrint(labels); }}
+                style={{ padding: '7px 20px', background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: 7, fontSize: 13, fontWeight: 700, cursor: 'pointer', boxShadow: '0 2px 10px rgba(0,194,224,0.3)' }}>
+                → Go to Print Setup
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
 }
 
 // ─── Label Print ──────────────────────────────────────────────────────────────
-function LabelPrint({ userRole }) {
+
+// ─── LabelCanvas — renders a label template with real QR + asset data ─────────
+// Mirrors LabelDesigner's canvas render exactly, substituting per-label data
+const LABEL_SIZES = [
+  { id:'15x15',   w:60,  h:60  },
+  { id:'25x25',   w:100, h:100 },
+  { id:'50x25',   w:200, h:100 },
+  { id:'100x50',  w:400, h:200 },
+  { id:'150x100', w:600, h:400 },
+  { id:'a4_2up',  w:794, h:560 },
+  { id:'a4_4up',  w:794, h:560 },
+];
+
+function LabelCanvas({ template, label, width, height }) {
+  const canvasRef = React.useRef(null);
+  const imgCache  = React.useRef({});
+
+  const render = React.useCallback(() => {
+    const cv = canvasRef.current; if (!cv) return;
+    const ctx = cv.getContext('2d');
+    if (!template) return;
+
+    const elements = JSON.parse(template.elements || '[]');
+    const bgColor  = template.background || '#ffffff';
+    const size     = LABEL_SIZES.find(s => s.id === template.size) || LABEL_SIZES[2];
+    const sc       = width / size.w;
+
+    cv.width  = width;
+    cv.height = height || size.h * sc;
+
+    ctx.fillStyle = bgColor;
+    ctx.fillRect(0, 0, cv.width, cv.height);
+
+    elements.forEach(el => {
+      const x=el.x*sc, y=el.y*sc, w=el.w*sc, h=el.h*sc;
+
+      if (el.type === 'rect') {
+        ctx.save();
+        ctx.fillStyle = el.fill || '#1e88e5';
+        const r = Math.min((el.radius||0)*sc, w/2, h/2);
+        if (r > 0) {
+          ctx.beginPath();
+          ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r);
+          ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r);
+          ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); ctx.fill();
+        } else { ctx.fillRect(x,y,w,h); }
+        if ((el.strokeW||0)>0) { ctx.strokeStyle=el.stroke||'#000'; ctx.lineWidth=el.strokeW*sc; ctx.strokeRect(x,y,w,h); }
+        ctx.restore();
+      }
+
+      if (el.type === 'circle') {
+        ctx.save(); ctx.fillStyle = el.fill||'#1e88e5';
+        ctx.beginPath(); ctx.ellipse(x+w/2,y+h/2,w/2,h/2,0,0,Math.PI*2); ctx.fill();
+        if ((el.strokeW||0)>0) { ctx.strokeStyle=el.stroke||'#000'; ctx.lineWidth=el.strokeW*sc; ctx.stroke(); }
+        ctx.restore();
+      }
+
+      if (el.type === 'triangle') {
+        ctx.save(); ctx.fillStyle = el.fill||'#1e88e5';
+        ctx.beginPath(); ctx.moveTo(x+w/2,y); ctx.lineTo(x+w,y+h); ctx.lineTo(x,y+h); ctx.closePath(); ctx.fill();
+        ctx.restore();
+      }
+
+      if (el.type === 'line') {
+        ctx.save(); ctx.strokeStyle=el.fill||'#1a2433'; ctx.lineWidth=(el.strokeW||2)*sc; ctx.lineCap='round';
+        ctx.beginPath(); ctx.moveTo(x,y+h/2); ctx.lineTo(x+w,y+h/2); ctx.stroke();
+        ctx.restore();
+      }
+
+      if (el.type === 'text') {
+        ctx.save();
+        const fs = Math.max(6,(el.fontSize||10)*sc);
+        ctx.font = `${el.bold?'700':'400'} ${el.italic?'italic ':''} ${fs}px ${el.fontFamily||'Barlow'},Arial`;
+        ctx.fillStyle = el.color||'#000';
+        ctx.textAlign = el.align||'left';
+        ctx.textBaseline = 'top';
+        // Substitute placeholders: {code} → label_code, {asset} → asset_name
+        const raw = (el.text||'')
+          .replace(/\{code\}/g, label?.label_code||'')
+          .replace(/\{asset\}/g, label?.asset_name||'')
+          .replace(/\{number\}/g, String(label?.label_number||''));
+        raw.split('\n').forEach((line,i) => {
+          const tx = el.align==='center'?x+w/2 : el.align==='right'?x+w : x;
+          ctx.fillText(line, tx, y+i*fs*1.3);
+        });
+        ctx.restore();
+      }
+
+      if (el.type === 'mechiq_logo') {
+        ctx.save();
+        const fs = Math.max(6, h*0.65);
+        ctx.font = `900 ${fs}px 'Barlow Condensed',Arial`;
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = el.colorMain||'#1a2433';
+        ctx.fillText('MECH', x, y+h/2);
+        const mw = ctx.measureText('MECH').width;
+        ctx.fillStyle = el.colorAccent||'#2d8cf0';
+        ctx.fillText('IQ', x+mw+1, y+h/2);
+        ctx.restore();
+      }
+
+      if (el.type === 'qr') {
+        // Use the label's own QR URL if it's a QR element
+        const qrData = label?.qr_url || el.assetUrl || 'https://mechiq.com.au';
+        const px  = Math.max(60, Math.round(w));
+        const key = `${qrData}__${px}`;
+        const src = `https://api.qrserver.com/v1/create-qr-code/?size=${px}x${px}&data=${encodeURIComponent(qrData)}`;
+        if (imgCache.current[key]) {
+          ctx.drawImage(imgCache.current[key], x, y, w, h);
+        } else {
+          const img = new Image(); img.crossOrigin='anonymous';
+          img.src = src;
+          img.onload = () => { imgCache.current[key]=img; render(); };
+        }
+      }
+
+      if (el.type === 'image' && el.src) {
+        const key = el.src.slice(0,40);
+        if (imgCache.current[key]) {
+          ctx.drawImage(imgCache.current[key], x, y, w, h);
+        } else {
+          const img = new Image(); img.src = el.src;
+          img.onload = () => { imgCache.current[key]=img; render(); };
+        }
+      }
+    });
+  }, [template, label, width, height]);
+
+  React.useEffect(() => { render(); }, [render]);
+
+  if (!template) return null;
+  const size = LABEL_SIZES.find(s => s.id === template.size) || LABEL_SIZES[2];
+  const h = height || Math.round(size.h * (width / size.w));
+
+  return <canvas ref={canvasRef} width={width} height={h} style={{ display:'block', width, height:h }} />;
+}
+
+function LabelPrint({ userRole, initialQueue, onClearQueue }) {
   const [labels,     setLabels]     = React.useState([]);
   const [templates,  setTemplates]  = React.useState([]);
   const [loading,    setLoading]    = React.useState(true);
@@ -2193,7 +2420,7 @@ function LabelPrint({ userRole }) {
     setLoading(true);
     const [{ data: lD }, { data: tD }] = await Promise.all([
       supabase.from('generated_labels').select('*').eq('company_id', userRole.company_id).order('label_number'),
-      supabase.from('label_templates').select('id,name').eq('company_id', userRole.company_id),
+      supabase.from('label_templates').select('*').eq('company_id', userRole.company_id),
     ]);
     setLabels(lD || []);
     setTemplates(tD || []);
@@ -2222,49 +2449,103 @@ function LabelPrint({ userRole }) {
   const perPage = cols * rows;
   const pageCount = Math.ceil(selectedLabels.length / perPage);
 
-  const handlePrint = () => {
-    const printWin = window.open('', '_blank');
+  const handlePrint = async () => {
+    // Render each selected label to a canvas, convert to data URL, then print
     const paper = PAPER_SIZES[paperSize];
-    const labelW = Math.floor((paper.w - (cols + 1) * gap) / cols);
-    const labelH = Math.floor((paper.h - (rows + 1) * gap) / rows);
+    const PX_PER_MM = 3.7795; // 96dpi
+    const labelWmm = Math.floor((paper.w - (cols + 1) * gap) / cols);
+    const labelHmm = Math.floor((paper.h - (rows + 1) * gap) / rows);
+    const labelWpx = Math.round(labelWmm * PX_PER_MM);
+    const labelHpx = Math.round(labelHmm * PX_PER_MM);
 
-    const labelHtml = selectedLabels.map((l, i) => `
-      <div class="label" style="width:${labelW}mm;height:${labelH}mm;display:inline-flex;flex-direction:column;align-items:center;justify-content:center;border:1px solid #ccc;border-radius:4px;margin:${gap/2}mm;padding:2mm;box-sizing:border-box;page-break-inside:avoid;vertical-align:top;">
-        <div style="font-family:monospace;font-size:10px;font-weight:700;color:#1a2433;margin-bottom:2px;">${l.label_code}</div>
-        ${l.asset_name ? `<div style="font-size:7px;color:#666;margin-bottom:2px;text-align:center;">${l.asset_name}</div>` : ''}
-        <img src="https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${encodeURIComponent(l.qr_url)}" style="width:${Math.min(labelH*0.55, labelW*0.7)}mm;height:${Math.min(labelH*0.55, labelW*0.7)}mm;" />
-        <div style="font-size:6px;color:#999;margin-top:2px;">mechiq.com.au</div>
-      </div>
-    `).join('');
+    // Render all labels to canvas data URLs
+    const imgCache = {};
+    const renderLabel = (label) => new Promise(resolve => {
+      const tmpl = templates.find(t => t.id === label.template_id);
+      if (!tmpl) { resolve(null); return; }
+      const elements = JSON.parse(tmpl.elements || '[]');
+      const size = LABEL_SIZES.find(s => s.id === tmpl.size) || LABEL_SIZES[2];
+      const sc = labelWpx / size.w;
+      const cv = document.createElement('canvas');
+      cv.width = labelWpx; cv.height = labelHpx;
+      const ctx = cv.getContext('2d');
+      ctx.fillStyle = tmpl.background || '#ffffff';
+      ctx.fillRect(0, 0, labelWpx, labelHpx);
 
-    printWin.document.write(`
-      <!DOCTYPE html><html><head><title>MechIQ Labels</title>
+      let pendingImgs = 0;
+      const done = () => { if (pendingImgs === 0) resolve(cv.toDataURL('image/png')); };
+
+      elements.forEach(el => {
+        const x=el.x*sc, y=el.y*sc, w=el.w*sc, h=el.h*sc;
+        if (el.type==='rect') {
+          ctx.save(); ctx.fillStyle=el.fill||'#1e88e5';
+          const r=Math.min((el.radius||0)*sc,w/2,h/2);
+          if (r>0){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();ctx.fill();}
+          else{ctx.fillRect(x,y,w,h);}
+          if((el.strokeW||0)>0){ctx.strokeStyle=el.stroke||'#000';ctx.lineWidth=el.strokeW*sc;ctx.strokeRect(x,y,w,h);}
+          ctx.restore();
+        }
+        if (el.type==='circle') {
+          ctx.save();ctx.fillStyle=el.fill||'#1e88e5';ctx.beginPath();ctx.ellipse(x+w/2,y+h/2,w/2,h/2,0,0,Math.PI*2);ctx.fill();ctx.restore();
+        }
+        if (el.type==='line') {
+          ctx.save();ctx.strokeStyle=el.fill||'#1a2433';ctx.lineWidth=(el.strokeW||2)*sc;ctx.lineCap='round';
+          ctx.beginPath();ctx.moveTo(x,y+h/2);ctx.lineTo(x+w,y+h/2);ctx.stroke();ctx.restore();
+        }
+        if (el.type==='text') {
+          ctx.save();
+          const fs=Math.max(6,(el.fontSize||10)*sc);
+          ctx.font=`${el.bold?'700':'400'} ${fs}px ${el.fontFamily||'Arial'}`;
+          ctx.fillStyle=el.color||'#000';ctx.textAlign=el.align||'left';ctx.textBaseline='top';
+          const raw=(el.text||'').replace(/\{code\}/g,label.label_code||'').replace(/\{asset\}/g,label.asset_name||'').replace(/\{number\}/g,String(label.label_number||''));
+          raw.split('\n').forEach((line,i)=>{
+            const tx=el.align==='center'?x+w/2:el.align==='right'?x+w:x;
+            ctx.fillText(line,tx,y+i*fs*1.3);
+          });
+          ctx.restore();
+        }
+        if (el.type==='mechiq_logo') {
+          ctx.save();const fs=Math.max(6,h*0.65);ctx.font=`900 ${fs}px Arial`;ctx.textBaseline='middle';
+          ctx.fillStyle=el.colorMain||'#1a2433';ctx.fillText('MECH',x,y+h/2);
+          const mw=ctx.measureText('MECH').width;ctx.fillStyle=el.colorAccent||'#2d8cf0';ctx.fillText('IQ',x+mw+1,y+h/2);ctx.restore();
+        }
+        if (el.type==='qr') {
+          const qrData=label.qr_url||el.assetUrl||'https://mechiq.com.au';
+          const px=Math.max(60,Math.round(w));
+          const key=`${qrData}__${px}`;
+          const src=`https://api.qrserver.com/v1/create-qr-code/?size=${px}x${px}&data=${encodeURIComponent(qrData)}`;
+          pendingImgs++;
+          const img = imgCache[key] ? null : new Image();
+          if (imgCache[key]) { ctx.drawImage(imgCache[key],x,y,w,h); pendingImgs--; done(); }
+          else { img.crossOrigin='anonymous'; img.src=src; img.onload=()=>{ imgCache[key]=img; ctx.drawImage(img,x,y,w,h); pendingImgs--; done(); }; img.onerror=()=>{ pendingImgs--; done(); }; }
+        }
+      });
+      if (pendingImgs === 0) resolve(cv.toDataURL('image/png'));
+    });
+
+    const dataUrls = await Promise.all(selectedLabels.map(renderLabel));
+    const printWin = window.open('', '_blank');
+    const pageLabelImgs = (page) => selectedLabels.slice(page*perPage,(page+1)*perPage)
+      .map((l,i)=>{
+        const src = dataUrls[page*perPage+i];
+        return src
+          ? `<img src="${src}" style="width:${labelWmm}mm;height:${labelHmm}mm;display:inline-block;margin:${gap/2}mm;vertical-align:top;"/>`
+          : `<div style="width:${labelWmm}mm;height:${labelHmm}mm;display:inline-block;margin:${gap/2}mm;border:1px dashed #ccc;"></div>`;
+      }).join('');
+
+    printWin.document.write(`<!DOCTYPE html><html><head><title>MechIQ Labels</title>
       <style>
-        @page { size: ${paperSize === 'Letter' ? '216mm 279mm' : paperSize}; margin: ${gap}mm; }
-        body { margin:0; padding:0; font-family:sans-serif; }
-        .page { width:${paper.w}mm; display:flex; flex-wrap:wrap; align-items:flex-start; page-break-after:always; }
-        @media print { body { -webkit-print-color-adjust:exact; } }
+        @page{size:${paperSize==='Letter'?'216mm 279mm':paperSize};margin:${gap}mm;}
+        body{margin:0;padding:0;}
+        .page{display:block;page-break-after:always;}
+        @media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact;}}
       </style></head><body>
-      ${Array.from({ length: pageCount }, (_, p) => `
-        <div class="page">
-          ${labelHtml.slice ? selectedLabels.slice(p * perPage, (p + 1) * perPage).map((l) => `
-            <div style="width:${labelW}mm;height:${labelH}mm;display:inline-flex;flex-direction:column;align-items:center;justify-content:center;border:1px solid #ccc;border-radius:4px;margin:${gap/2}mm;padding:2mm;box-sizing:border-box;vertical-align:top;">
-              <div style="font-family:monospace;font-size:10px;font-weight:700;color:#1a2433;margin-bottom:2px;">${l.label_code}</div>
-              ${l.asset_name ? `<div style="font-size:7px;color:#666;margin-bottom:2px;text-align:center;">${l.asset_name}</div>` : ''}
-              <img src="https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${encodeURIComponent(l.qr_url)}" style="width:${Math.min(labelH*0.55, labelW*0.7)}mm;height:${Math.min(labelH*0.55, labelW*0.7)}mm;" />
-              <div style="font-size:6px;color:#999;margin-top:2px;">mechiq.com.au</div>
-            </div>
-          `).join('') : ''}
-        </div>
-      `).join('')}
-      </body></html>
-    `);
+      ${Array.from({length:pageCount},(_,p)=>`<div class="page">${pageLabelImgs(p)}</div>`).join('')}
+      </body></html>`);
     printWin.document.close();
     printWin.focus();
-    setTimeout(() => { printWin.print(); }, 800);
-
-    // Mark as printed
-    supabase.from('generated_labels').update({ printed: true }).in('id', [...selected]);
+    setTimeout(()=>{ printWin.print(); }, 1200);
+    supabase.from('generated_labels').update({printed:true}).in('id',[...selected]);
   };
 
   const iStyle = { padding: '8px 10px', border: '1px solid var(--border)', borderRadius: 6, background: 'var(--surface-2)', color: 'var(--text-primary)', fontSize: 13, fontFamily: 'inherit', outline: 'none' };
@@ -2344,15 +2625,14 @@ function LabelPrint({ userRole }) {
               {Array.from({ length: Math.min(perPage, 24) }).map((_, i) => {
                 const l = selectedLabels[i];
                 return (
-                  <div key={i} style={{ aspectRatio: '1', border: '1px solid #dde', borderRadius: 3, background: l ? '#f8fcff' : '#f8f8f8', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 2, minWidth: 0 }}>
-                    {l ? (
-                      <>
-                        <div style={{ fontSize: 7, fontFamily: 'monospace', fontWeight: 700, color: '#1a2433', textAlign: 'center', lineHeight: 1.2 }}>{l.label_code}</div>
-                        <div style={{ width: '60%', aspectRatio: '1', background: '#1a2433', borderRadius: 1, margin: '1px 0' }} />
-                        {l.asset_name && <div style={{ fontSize: 5, color: '#666', textAlign: 'center', lineHeight: 1.2, maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{l.asset_name}</div>}
-                      </>
-                    ) : (
-                      <div style={{ width: '60%', aspectRatio: '1', background: '#eee', borderRadius: 1 }} />
+                  <div key={i} style={{ border: '1px solid #dde', borderRadius: 3, background: l ? '#fff' : '#f8f8f8', overflow: 'hidden', minWidth: 0 }}>
+                    {l ? (() => {
+                      const tmpl = templates.find(t => t.id === l.template_id);
+                      return tmpl
+                        ? <LabelCanvas template={tmpl} label={l} width={80} />
+                        : <div style={{ padding: 4, fontSize: 7, fontFamily: 'monospace', fontWeight: 700, color: '#1a2433', textAlign: 'center' }}>{l.label_code}</div>;
+                    })() : (
+                      <div style={{ width: '100%', aspectRatio: '1', background: '#eee' }} />
                     )}
                   </div>
                 );
