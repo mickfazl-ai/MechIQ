@@ -2299,10 +2299,15 @@ function LabelTile({ template, label, widthPx, heightPx }) {
         // Substitute label-specific values
         let txt = el.text||'';
         if (label) {
+          // Replace explicit placeholders
           txt = txt
             .replace(/\{asset_name\}/gi, label.asset_name||'')
             .replace(/\{label_code\}/gi, label.label_code||'')
             .replace(/\{asset_number\}/gi, label.label_code||'');
+          // Auto-replace static label code patterns (e.g. HK-001 → HK-002) 
+          txt = txt.replace(/\b[A-Z]{1,8}-\d{3,6}\b/g, label.label_code||txt);
+          // Auto-replace "ASSET NAME" / "Asset Name" placeholder text
+          if (/^asset.?name$/i.test(txt.trim())) txt = label.asset_name || txt;
         }
         const tx = el.align==='center' ? x+w/2 : el.align==='right' ? x+w : x;
         txt.split('\n').forEach((line,i) => ctx.fillText(line, tx, y+i*fs*1.3));
@@ -2423,11 +2428,15 @@ function LabelPrint({ userRole, labels, allLabels, onBack, onPrinted }) {
   const labelSizePx = firstTmpl ? (LABEL_SIZES_PX[firstTmpl.size] || {w:200,h:100}) : {w:200,h:100};
   const labelAspect = labelSizePx.w / labelSizePx.h;
 
-  // Page preview: scale page to fit in ~540px wide
+  // Page preview: scale page to fit in 520px wide
   const previewPageW = 520;
   const previewPageH = Math.round(previewPageW * (paper.h / paper.w));
-  const gapPx = Math.round(gap * previewPageW / paper.w);
-  const tilePxW = Math.floor((previewPageW - (cols+1)*gapPx) / cols);
+  const gapPx = Math.max(1, Math.round(gap * previewPageW / paper.w));
+  // Tile size based on how many fit in the page — use the smaller of width/height constrained
+  const tilePxW_byCol = Math.floor((previewPageW - (cols + 1) * gapPx) / cols);
+  const tilePxH_byRow = Math.floor((previewPageH - (rows + 1) * gapPx) / rows);
+  // Use whichever gives a smaller tile to ensure everything fits
+  const tilePxW = Math.min(tilePxW_byCol, Math.round(tilePxH_byRow * labelAspect));
   const tilePxH = Math.round(tilePxW / labelAspect);
 
   const handlePrint = async () => {
@@ -2574,6 +2583,8 @@ function LabelPrint({ userRole, labels, allLabels, onBack, onPrinted }) {
                         ctx.fillStyle=el.color||'#000';ctx.textAlign=el.align||'left';ctx.textBaseline='top';
                         let t=el.text||'';
                         t=t.replace(/\{asset_name\}/gi,l.asset_name||'').replace(/\{label_code\}/gi,l.label_code||'').replace(/\{asset_number\}/gi,l.label_code||'');
+                        t=t.replace(/\b[A-Z]{1,8}-\d{3,6}\b/g,l.label_code||t);
+                        if(/^asset.?name$/i.test(t.trim()))t=l.asset_name||t;
                         const tx2=el.align==='center'?ex+ew/2:el.align==='right'?ex+ew:ex;
                         t.split('\\n').forEach((line,ii)=>ctx.fillText(line,tx2,ey+ii*fs*1.3));
                         ctx.restore();
