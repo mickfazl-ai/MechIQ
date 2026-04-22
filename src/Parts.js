@@ -444,7 +444,7 @@ function TransactionModal({ part, userRole, assets, workOrders, onClose, onDone 
 // ─── Part Form ────────────────────────────────────────────────────────────────
 function PartForm({ part, assets, onSave, onCancel, userRole }) {
   const blank = { name: '', part_number: '', category: '', supplier: '', supplier_contact: '', unit_cost: '', quantity: '', min_quantity: 5, unit: 'ea', location: '', linked_asset_id: '', compatible_asset_ids: [], description: '', notes: '' };
-  const [form, setForm] = useState(part || blank);
+  const [form, setForm] = useState({ ...(part || blank), compatible_asset_ids: part?.compatible_asset_ids || [] });
   const [saving, setSaving] = useState(false);
   const F = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
@@ -452,7 +452,7 @@ function PartForm({ part, assets, onSave, onCancel, userRole }) {
     if (!form.name) return alert('Part name is required');
     setSaving(true);
     try {
-      const payload = { ...form, company_id: userRole.company_id, unit_cost: parseFloat(form.unit_cost) || 0, quantity: parseInt(form.quantity) || 0, min_quantity: parseInt(form.min_quantity) || 5, linked_asset_id: form.linked_asset_id || null, compatible_asset_ids: form.compatible_asset_ids || [], updated_at: new Date().toISOString() };
+      const payload = { ...form, company_id: userRole.company_id, unit_cost: parseFloat(form.unit_cost) || 0, quantity: parseInt(form.quantity) || 0, min_quantity: parseInt(form.min_quantity) || 5, linked_asset_id: form.linked_asset_id || null, compatible_asset_ids: Array.isArray(form.compatible_asset_ids) ? form.compatible_asset_ids : [], updated_at: new Date().toISOString() };
       if (part?.id) { await supabase.from('parts').update(payload).eq('id', part.id); }
       else { await supabase.from('parts').insert(payload); }
       onSave();
@@ -651,7 +651,7 @@ Return a JSON array where each item is:
                 {[
                   ['📦', 'Parts to analyse', `${parts.length} parts`],
                   ['🚛', 'Assets in fleet', `${assets.length} assets`],
-                  ['🎯', 'Already matched', `${parts.filter(p=>(p.compatible_asset_ids||[]).length>0).length} parts`],
+                  ['🎯', 'Already matched', `${(parts||[]).filter(p=>Array.isArray(p.compatible_asset_ids)&&p.compatible_asset_ids.length>0).length} parts`],
                 ].map(([icon,lbl,val])=>(
                   <div key={lbl} style={{ padding:'14px 16px', background:'var(--surface-2)', borderRadius:9, border:'1px solid var(--border)', textAlign:'center' }}>
                     <div style={{ fontSize:22, marginBottom:4 }}>{icon}</div>
@@ -851,11 +851,11 @@ function Parts({ userRole }) {
 
   // Page-filtered parts based on sidebar selection
   const pageFilteredParts = parts.filter(p => {
-    if (activeAssetFilter === 'general') return !p.linked_asset_id && (!p.compatible_asset_ids || p.compatible_asset_ids.length === 0);
+    if (activeAssetFilter === 'general') return !p.linked_asset_id && (!p.compatible_asset_ids || !Array.isArray(p.compatible_asset_ids) || p.compatible_asset_ids.length === 0);
     if (activeAssetFilter === 'all') return true;
     const customPage = customPages.find(cp => cp.id === activeAssetFilter);
-    if (customPage) return customPage.categories.some(cat => p.category === cat) || customPage.assetIds.includes(String(p.linked_asset_id)) || (p.compatible_asset_ids||[]).some(id => customPage.assetIds.includes(String(id)));
-    return String(p.linked_asset_id) === String(activeAssetFilter) || (p.compatible_asset_ids||[]).includes(Number(activeAssetFilter));
+    if (customPage) return customPage.categories.some(cat => p.category === cat) || customPage.assetIds.includes(String(p.linked_asset_id)) || (Array.isArray(p.compatible_asset_ids) ? p.compatible_asset_ids : []).some(id => (customPage.assetIds||[]).includes(String(id)));
+    return String(p.linked_asset_id) === String(activeAssetFilter) || (Array.isArray(p.compatible_asset_ids) ? p.compatible_asset_ids : []).includes(Number(activeAssetFilter));
   });
 
   const filtered = pageFilteredParts.filter(p => {
@@ -1097,7 +1097,7 @@ function Parts({ userRole }) {
                           <td style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>{fmt(p.unit_cost)}</td>
                           <td>
                             {(() => {
-                              const compat = (p.compatible_asset_ids||[]).map(id => assets.find(a => a.id === id)).filter(Boolean);
+                              const compat = (Array.isArray(p.compatible_asset_ids) ? p.compatible_asset_ids : []).map(id => (assets||[]).find(a => a.id === id)).filter(Boolean);
                               if (compat.length === 0) {
                                 const linked = assets.find(a => a.id === p.linked_asset_id);
                                 if (linked) return <span style={{ fontSize:11, fontWeight:600, padding:'2px 8px', borderRadius:20, background:'var(--accent-light)', color:'var(--accent)', border:'1px solid rgba(0,194,224,0.25)' }}>{linked.name}</span>;
