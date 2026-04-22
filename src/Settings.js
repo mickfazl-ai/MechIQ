@@ -2229,185 +2229,164 @@ function LabelGenerator({ userRole, printQueue, setPrintQueue }) {
 }
 
 // ─── Label Print ──────────────────────────────────────────────────────────────
-// LabelCanvas: renders a single label template onto a canvas with per-label data
-function LabelCanvas({ template, label, width, height }) {
-  const canvasRef = React.useRef(null);
-  const imgCache  = React.useRef({});
 
-  const QRURL = (data, px) =>
-    `https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(data)}&size=${px}x${px}&bgcolor=ffffff&color=000000&margin=2`;
+// Standalone tile component — each label renders independently, fixes closure bug
+function LabelTile({ template, label, widthPx, heightPx }) {
+  const cvRef = React.useRef(null);
+  const cache = React.useRef({});
 
-  React.useEffect(() => {
-    if (!canvasRef.current || !template) return;
-    const cv = canvasRef.current;
+  const QRAPI = (d, px) =>
+    `https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(d)}&size=${px}x${px}&bgcolor=ffffff&color=000000&margin=2`;
+
+  const draw = React.useCallback(() => {
+    const cv = cvRef.current;
+    if (!cv || !template) return;
     const ctx = cv.getContext('2d');
     let elements = [];
     try { elements = JSON.parse(template.elements || '[]'); } catch(e) {}
-    const SIZES = [
-      { id:'15x15', w:60, h:60 }, { id:'25x25', w:100, h:100 },
-      { id:'50x25', w:200, h:100 }, { id:'100x50', w:400, h:200 },
-      { id:'150x100', w:600, h:400 }, { id:'a4_2up', w:794, h:560 }, { id:'a4_4up', w:794, h:560 },
-    ];
-    const size = SIZES.find(s => s.id === template.size) || SIZES[2];
-    const sc = width / size.w;
-    const bg = template.background || '#ffffff';
 
-    const draw = () => {
-      ctx.clearRect(0, 0, width, height);
-      ctx.fillStyle = bg;
-      ctx.fillRect(0, 0, width, height);
+    const SIZES = {
+      '15x15':{w:60,h:60},'25x25':{w:100,h:100},'50x25':{w:200,h:100},
+      '100x50':{w:400,h:200},'150x100':{w:600,h:400},
+      'a4_2up':{w:794,h:560},'a4_4up':{w:794,h:560},
+    };
+    const sz = SIZES[template.size] || SIZES['50x25'];
+    const scX = cv.width / sz.w;
+    const scY = cv.height / sz.h;
 
-      elements.forEach(el => {
-        const x = el.x * sc, y = el.y * sc, w = el.w * sc, h = el.h * sc;
+    ctx.clearRect(0, 0, cv.width, cv.height);
+    ctx.fillStyle = template.background || '#ffffff';
+    ctx.fillRect(0, 0, cv.width, cv.height);
 
-        if (el.type === 'rect') {
-          ctx.save();
-          ctx.fillStyle = el.fill || '#1e88e5';
-          const r = Math.min((el.radius || 0) * sc, w / 2, h / 2);
-          ctx.beginPath();
-          if (r > 0) {
-            ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r);
-            ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r);
-            ctx.arcTo(x,y,x+w,y,r); ctx.closePath();
-          } else {
-            ctx.rect(x, y, w, h);
-          }
-          ctx.fill();
-          if ((el.strokeW || 0) > 0) {
-            ctx.strokeStyle = el.stroke || '#000'; ctx.lineWidth = el.strokeW * sc; ctx.stroke();
-          }
-          ctx.restore();
+    const drawEl = (el) => {
+      const x=el.x*scX, y=el.y*scY, w=el.w*scX, h=el.h*scY;
+
+      if (el.type==='rect') {
+        ctx.save();
+        ctx.fillStyle = el.fill || '#1e88e5';
+        const r = Math.min((el.radius||0)*Math.min(scX,scY), w/2, h/2);
+        ctx.beginPath();
+        if (r>0) {
+          ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r);
+          ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r);
+          ctx.arcTo(x,y,x+w,y,r); ctx.closePath();
+        } else { ctx.rect(x,y,w,h); }
+        ctx.fill();
+        if ((el.strokeW||0)>0) { ctx.strokeStyle=el.stroke||'#000'; ctx.lineWidth=el.strokeW*scX; ctx.stroke(); }
+        ctx.restore();
+      }
+
+      if (el.type==='circle') {
+        ctx.save(); ctx.fillStyle=el.fill||'#1e88e5';
+        ctx.beginPath(); ctx.ellipse(x+w/2,y+h/2,w/2,h/2,0,0,Math.PI*2); ctx.fill();
+        ctx.restore();
+      }
+
+      if (el.type==='line') {
+        ctx.save(); ctx.strokeStyle=el.fill||'#1a2433';
+        ctx.lineWidth=(el.strokeW||2)*scX; ctx.lineCap='round';
+        ctx.beginPath(); ctx.moveTo(x,y+h/2); ctx.lineTo(x+w,y+h/2); ctx.stroke();
+        ctx.restore();
+      }
+
+      if (el.type==='text') {
+        ctx.save();
+        const fs = Math.max(4, (el.fontSize||10)*Math.min(scX,scY));
+        ctx.font = `${el.bold?'700':'400'} ${el.italic?'italic ':' '}${fs}px ${el.fontFamily||'Arial'},Arial`;
+        ctx.fillStyle = el.color||'#000000';
+        ctx.textAlign = el.align||'left';
+        ctx.textBaseline = 'top';
+        // Substitute label-specific values
+        let txt = el.text||'';
+        if (label) {
+          txt = txt
+            .replace(/\{asset_name\}/gi, label.asset_name||'')
+            .replace(/\{label_code\}/gi, label.label_code||'')
+            .replace(/\{asset_number\}/gi, label.label_code||'');
         }
+        const tx = el.align==='center' ? x+w/2 : el.align==='right' ? x+w : x;
+        txt.split('\n').forEach((line,i) => ctx.fillText(line, tx, y+i*fs*1.3));
+        ctx.restore();
+      }
 
-        if (el.type === 'text') {
-          ctx.save();
-          const fs = Math.max(6, (el.fontSize || 10) * sc);
-          ctx.font = `${el.bold ? '700' : '400'} ${el.italic ? 'italic ' : ''}${fs}px ${el.fontFamily || 'Arial'},Arial`;
-          ctx.fillStyle = el.color || '#000000';
-          ctx.textAlign = el.align || 'left';
-          ctx.textBaseline = 'top';
-          // Substitute dynamic fields
-          let text = el.text || '';
-          if (label) {
-            text = text.replace(/\{asset_name\}/gi, label.asset_name || '')
-                       .replace(/\{label_code\}/gi, label.label_code || '')
-                       .replace(/\{asset_number\}/gi, label.label_code || '');
-          }
-          const lines = text.split('\n');
-          lines.forEach((line, i) => {
-            const tx = el.align === 'center' ? x + w/2 : el.align === 'right' ? x + w : x;
-            ctx.fillText(line, tx, y + i * fs * 1.3);
-          });
-          ctx.restore();
-        }
+      if (el.type==='mechiq_logo') {
+        ctx.save();
+        const fs = Math.max(4, h*0.65);
+        ctx.font=`900 ${fs}px Arial`; ctx.textBaseline='middle'; ctx.textAlign='left';
+        ctx.fillStyle=el.colorMain||'#1a2433'; ctx.fillText('MECH',x,y+h/2);
+        const mw=ctx.measureText('MECH').width;
+        ctx.fillStyle=el.colorAccent||'#2d8cf0'; ctx.fillText('IQ',x+mw+1,y+h/2);
+        ctx.restore();
+      }
 
-        if (el.type === 'circle') {
-          ctx.save();
-          ctx.fillStyle = el.fill || '#1e88e5';
-          ctx.beginPath();
-          ctx.ellipse(x+w/2, y+h/2, w/2, h/2, 0, 0, Math.PI*2);
-          ctx.fill();
-          ctx.restore();
+      if (el.type==='qr') {
+        const qrData = label ? label.qr_url : (el.assetUrl||'https://mechiq.com.au');
+        const px = Math.max(60, Math.round(Math.max(w,h)));
+        const key = `qr::${qrData}::${px}`;
+        if (cache.current[key]) {
+          ctx.drawImage(cache.current[key], x, y, w, h);
+        } else {
+          const img = new Image();
+          img.crossOrigin = 'anonymous';
+          img.src = QRAPI(qrData, px);
+          img.onload = () => { cache.current[key]=img; draw(); };
         }
+      }
 
-        if (el.type === 'line') {
-          ctx.save();
-          ctx.strokeStyle = el.fill || '#1a2433';
-          ctx.lineWidth = (el.strokeW || 2) * sc;
-          ctx.lineCap = 'round';
-          ctx.beginPath(); ctx.moveTo(x, y+h/2); ctx.lineTo(x+w, y+h/2); ctx.stroke();
-          ctx.restore();
+      if (el.type==='image' && el.src) {
+        const key = `img::${el.id}`;
+        if (cache.current[key]) {
+          ctx.drawImage(cache.current[key], x, y, w, h);
+        } else {
+          const img = new Image();
+          if (!el.src.startsWith('data:')) img.crossOrigin='anonymous';
+          img.src = el.src;
+          img.onload = () => { cache.current[key]=img; draw(); };
         }
-
-        if (el.type === 'mechiq_logo') {
-          ctx.save();
-          const fs = Math.max(6, h * 0.65);
-          ctx.font = `900 ${fs}px Arial`;
-          ctx.textBaseline = 'middle'; ctx.textAlign = 'left';
-          ctx.fillStyle = el.colorMain || '#1a2433';
-          ctx.fillText('MECH', x, y + h/2);
-          const mechW = ctx.measureText('MECH').width;
-          ctx.fillStyle = el.colorAccent || '#2d8cf0';
-          ctx.fillText('IQ', x + mechW + 1, y + h/2);
-          ctx.restore();
-        }
-
-        if (el.type === 'qr') {
-          // Use label's actual QR URL, falling back to element's URL
-          const qrData = label ? label.qr_url : (el.assetUrl || 'https://mechiq.com.au');
-          const px = Math.max(60, Math.round(w));
-          const key = `${qrData}__${px}`;
-          if (imgCache.current[key]) {
-            ctx.drawImage(imgCache.current[key], x, y, w, h);
-          } else {
-            const img = new Image();
-            img.crossOrigin = 'anonymous';
-            img.src = QRURL(qrData, px);
-            img.onload = () => { imgCache.current[key] = img; draw(); };
-          }
-        }
-
-        if (el.type === 'image' && el.src) {
-          const key = el.src.slice(0, 40);
-          if (imgCache.current[key]) {
-            ctx.drawImage(imgCache.current[key], x, y, w, h);
-          } else {
-            const img = new Image();
-            img.src = el.src;
-            img.onload = () => { imgCache.current[key] = img; draw(); };
-          }
-        }
-      });
+      }
     };
 
-    draw();
-  }, [template, label, width, height]);
+    // Draw background shapes/rects first, then images, then text/QR on top
+    const order = ['rect','circle','line','triangle','star','arrow','mechiq_logo','image','text','qr'];
+    const sorted = [...elements].sort((a,b) => order.indexOf(a.type)-order.indexOf(b.type));
+    sorted.forEach(drawEl);
 
-  return <canvas ref={canvasRef} width={width} height={height} style={{ display:'block', width:'100%', height:'100%' }} />;
+  }, [template, label, widthPx, heightPx]);
+
+  React.useEffect(() => { draw(); }, [draw]);
+
+  return (
+    <canvas
+      ref={cvRef}
+      width={widthPx}
+      height={heightPx}
+      style={{ display:'block', width:'100%', height:'100%' }}
+    />
+  );
 }
 
 function LabelPrint({ userRole, labels, allLabels, onBack, onPrinted }) {
   const [paperSize,  setPaperSize]  = React.useState('A4');
   const [cols,       setCols]       = React.useState(3);
-  const [rows,       setRows]       = React.useState(8);
+  const [rows,       setRows]       = React.useState(5);
   const [gap,        setGap]        = React.useState(4);
   const [templates,  setTemplates]  = React.useState({});
   const [printing,   setPrinting]   = React.useState(false);
-
-  // Label size presets (px dimensions match LabelDesigner SIZES)
-  const LABEL_SIZES = {
-    '15x15':   { wmm:15,  hmm:15  },
-    '25x25':   { wmm:25,  hmm:25  },
-    '50x25':   { wmm:50,  hmm:25  },
-    '100x50':  { wmm:100, hmm:50  },
-    '150x100': { wmm:150, hmm:100 },
-    'a4_2up':  { wmm:210, hmm:148 },
-    'a4_4up':  { wmm:210, hmm:148 },
-  };
-
-  // Auto-tile: calculate best cols/rows from label size vs paper size
-  const autoTile = React.useCallback(() => {
-    if (!labels.length) return;
-    // Get template for first label
-    const firstLabel = labels[0];
-    const tmpl = templates[firstLabel?.template_id];
-    if (!tmpl || !tmpl.size) return;
-    const lsz = LABEL_SIZES[tmpl.size];
-    if (!lsz) return;
-    const paper = PAPER[paperSize];
-    const newCols = Math.max(1, Math.floor((paper.w - gap) / (lsz.wmm + gap)));
-    const newRows = Math.max(1, Math.floor((paper.h - gap) / (lsz.hmm + gap)));
-    setCols(newCols);
-    setRows(newRows);
-  }, [templates, labels, paperSize, gap]);
-
-  React.useEffect(() => { autoTile(); }, [templates, paperSize]);
 
   const PAPER = {
     A4:     { w:210, h:297, label:'A4 (210×297mm)' },
     A3:     { w:297, h:420, label:'A3 (297×420mm)' },
     A5:     { w:148, h:210, label:'A5 (148×210mm)' },
-    Letter: { w:216, h:279, label:'US Letter' },
+    Letter: { w:216, h:279, label:'US Letter (216×279mm)' },
+  };
+
+  const LABEL_SIZES_MM = {
+    '15x15':{w:15,h:15},'25x25':{w:25,h:25},'50x25':{w:50,h:25},
+    '100x50':{w:100,h:50},'150x100':{w:150,h:100},'a4_2up':{w:210,h:148},'a4_4up':{w:210,h:148},
+  };
+  const LABEL_SIZES_PX = {
+    '15x15':{w:60,h:60},'25x25':{w:100,h:100},'50x25':{w:200,h:100},
+    '100x50':{w:400,h:200},'150x100':{w:600,h:400},'a4_2up':{w:794,h:560},'a4_4up':{w:794,h:560},
   };
 
   React.useEffect(() => {
@@ -2415,188 +2394,216 @@ function LabelPrint({ userRole, labels, allLabels, onBack, onPrinted }) {
     supabase.from('label_templates').select('*').eq('company_id', userRole.company_id)
       .then(({ data }) => {
         const map = {};
-        (data || []).forEach(t => { map[t.id] = t; });
+        (data||[]).forEach(t => { map[t.id]=t; });
         setTemplates(map);
       });
   }, [userRole]);
 
-  const perPage  = cols * rows;
-  const pageCount = Math.ceil(labels.length / perPage);
-  const paper    = PAPER[paperSize];
+  // Auto-tile whenever templates or paper changes
+  React.useEffect(() => {
+    if (!labels.length || !Object.keys(templates).length) return;
+    const tmpl = templates[labels[0]?.template_id];
+    if (!tmpl?.size) return;
+    const lmm = LABEL_SIZES_MM[tmpl.size];
+    if (!lmm) return;
+    const paper = PAPER[paperSize];
+    const newCols = Math.max(1, Math.floor((paper.w - gap) / (lmm.w + gap)));
+    const newRows = Math.max(1, Math.floor((paper.h - gap) / (lmm.h + gap)));
+    setCols(newCols);
+    setRows(newRows);
+  }, [templates, paperSize, gap]);
 
-  // Get template for a label
-  const getTemplate = (label) => templates[label.template_id] || null;
+  const getTemplate = (label) => templates[label?.template_id] || null;
+  const perPage   = cols * rows;
+  const pageCount = Math.ceil(labels.length / perPage);
+  const paper     = PAPER[paperSize];
+
+  // Get actual label aspect ratio for preview tiles
+  const firstTmpl = getTemplate(labels[0]);
+  const labelSizePx = firstTmpl ? (LABEL_SIZES_PX[firstTmpl.size] || {w:200,h:100}) : {w:200,h:100};
+  const labelAspect = labelSizePx.w / labelSizePx.h;
+
+  // Page preview: scale page to fit in ~540px wide
+  const previewPageW = 520;
+  const previewPageH = Math.round(previewPageW * (paper.h / paper.w));
+  const gapPx = Math.round(gap * previewPageW / paper.w);
+  const tilePxW = Math.floor((previewPageW - (cols+1)*gapPx) / cols);
+  const tilePxH = Math.round(tilePxW / labelAspect);
 
   const handlePrint = async () => {
     setPrinting(true);
-    // Wait a tick for canvases to render
-    await new Promise(r => setTimeout(r, 800));
+    await new Promise(r => setTimeout(r, 1200));
 
-    const labelW = Math.floor((paper.w - (cols + 1) * gap) / cols);
-    const labelH = Math.floor((paper.h - (rows + 1) * gap) / rows);
+    const canvases = document.querySelectorAll('.lbl-tile-canvas');
+    const lmm = firstTmpl ? (LABEL_SIZES_MM[firstTmpl.size] || {w:100,h:50}) : {w:100,h:50};
 
-    // Collect canvas images
-    const canvases = document.querySelectorAll('.label-print-canvas');
     const labelsHtml = labels.map((l, i) => {
       const cv = canvases[i];
       const imgSrc = cv ? cv.toDataURL('image/png') : '';
-      return `<div style="width:${labelW}mm;height:${labelH}mm;display:inline-flex;align-items:center;justify-content:center;border:0.5px solid #ccc;margin:${gap/2}mm;box-sizing:border-box;vertical-align:top;page-break-inside:avoid;overflow:hidden;">
-        ${imgSrc ? `<img src="${imgSrc}" style="width:100%;height:100%;object-fit:contain;" />` : `<div style="text-align:center;font-size:9px;font-family:monospace;">${l.label_code}</div>`}
+      return `<div style="width:${lmm.w}mm;height:${lmm.h}mm;display:inline-flex;align-items:center;justify-content:center;border:0.5px solid #ddd;margin:${gap/2}mm;box-sizing:border-box;vertical-align:top;overflow:hidden;page-break-inside:avoid;">
+        ${imgSrc
+          ? `<img src="${imgSrc}" style="width:100%;height:100%;display:block;" />`
+          : `<div style="font-family:monospace;font-size:9px;text-align:center;padding:2mm;">${l.label_code}</div>`}
       </div>`;
     }).join('');
 
     const win = window.open('', '_blank');
     win.document.write(`<!DOCTYPE html><html><head><title>MechIQ Labels</title>
       <style>
-        @page { size:${paperSize === 'Letter' ? '216mm 279mm' : paperSize}; margin:${gap}mm; }
-        body { margin:0; padding:0; }
-        .page { width:${paper.w}mm; display:flex; flex-wrap:wrap; align-items:flex-start; }
-        @media print { body { -webkit-print-color-adjust:exact; print-color-adjust:exact; } }
+        @page { size:${paperSize==='Letter'?'216mm 279mm':paperSize}; margin:${gap}mm; }
+        body { margin:0; padding:0; font-family:Arial,sans-serif; }
+        .page { display:flex; flex-wrap:wrap; align-content:flex-start; }
+        @media print { body{-webkit-print-color-adjust:exact;print-color-adjust:exact;} }
       </style></head><body>
       <div class="page">${labelsHtml}</div>
       </body></html>`);
     win.document.close();
     win.focus();
-    setTimeout(() => { win.print(); setPrinting(false); }, 500);
-    supabase.from('generated_labels').update({ printed: true }).in('id', labels.map(l => l.id));
+    setTimeout(() => { win.print(); setPrinting(false); }, 600);
+    supabase.from('generated_labels').update({ printed: true }).in('id', labels.map(l=>l.id));
     if (onPrinted) onPrinted();
   };
 
-  const iStyle = { padding: '8px 10px', border: '1px solid var(--border)', borderRadius: 6, background: 'var(--surface-2)', color: 'var(--text-primary)', fontSize: 13, fontFamily: 'inherit', outline: 'none' };
-
-  // Calculate preview label size in pixels (for canvas)
-  const previewLabelPx = Math.floor(480 / cols) - gap;
+  const iStyle = { padding:'8px 10px', border:'1px solid var(--border)', borderRadius:6, background:'var(--surface-2)', color:'var(--text-primary)', fontSize:13, fontFamily:'inherit', outline:'none' };
 
   return (
     <div>
-      {/* Back */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
-        <button onClick={onBack} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 7, fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)', cursor: 'pointer' }}>
+      <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:24 }}>
+        <button onClick={onBack} style={{ display:'flex', alignItems:'center', gap:6, padding:'7px 14px', background:'var(--surface-2)', border:'1px solid var(--border)', borderRadius:7, fontSize:13, fontWeight:600, color:'var(--text-secondary)', cursor:'pointer' }}>
           ← Back to Labels
         </button>
-        <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary)' }}>
-          🖨️ Print Setup — <span style={{ color: 'var(--accent)' }}>{labels.length} label{labels.length !== 1 ? 's' : ''} selected</span>
+        <div style={{ fontSize:14, fontWeight:700, color:'var(--text-primary)' }}>
+          🖨️ Print Setup — <span style={{ color:'var(--accent)' }}>{labels.length} label{labels.length!==1?'s':''}</span>
+          {firstTmpl?.size && <span style={{ marginLeft:8, fontSize:12, color:'var(--text-muted)' }}>· {firstTmpl.size} label size</span>}
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '260px 1fr', gap: 20 }}>
-        {/* Settings panel */}
-        <div>
-          <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: 20 }}>
-            <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--text-primary)', marginBottom: 16 }}>Print Settings</div>
-            {[
-              ['Paper Size', <select style={{...iStyle, width:'100%'}} value={paperSize} onChange={e => setPaperSize(e.target.value)}>
-                {Object.entries(PAPER).map(([k,v]) => <option key={k} value={k}>{v.label}</option>)}
-              </select>],
-              ['Columns', <input style={{...iStyle, width:'100%'}} type="number" min={1} max={10} value={cols} onChange={e => setCols(Math.max(1,Math.min(10,parseInt(e.target.value)||1)))} />],
-              ['Rows per page', <input style={{...iStyle, width:'100%'}} type="number" min={1} max={20} value={rows} onChange={e => setRows(Math.max(1,Math.min(20,parseInt(e.target.value)||1)))} />],
-              ['Gap (mm)', <input style={{...iStyle, width:'100%'}} type="number" min={0} max={20} value={gap} onChange={e => setGap(Math.max(0,Math.min(20,parseInt(e.target.value)||0)))} />],
-            ].map(([lbl, inp]) => (
-              <div key={lbl} style={{ marginBottom: 12 }}>
-                <label style={{ display:'block', fontSize:10, fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.5px', marginBottom:5 }}>{lbl}</label>
-                {inp}
-              </div>
-            ))}
-            <div style={{ padding: '10px 12px', background: 'var(--surface-2)', borderRadius: 8, fontSize: 12, color: 'var(--text-muted)', marginBottom: 16 }}>
-              <strong style={{ color: 'var(--text-secondary)' }}>{cols}×{rows}</strong> = {perPage} per page ·{' '}
-              <strong style={{ color: 'var(--accent)' }}>{pageCount}</strong> page{pageCount !== 1 ? 's' : ''}
+      <div style={{ display:'grid', gridTemplateColumns:'240px 1fr', gap:20 }}>
+        {/* Settings */}
+        <div style={{ background:'var(--surface)', border:'1px solid var(--border)', borderRadius:12, padding:20, height:'fit-content' }}>
+          <div style={{ fontSize:13, fontWeight:800, color:'var(--text-primary)', marginBottom:16 }}>Print Settings</div>
+          {[
+            ['Paper Size', <select style={{...iStyle,width:'100%'}} value={paperSize} onChange={e=>setPaperSize(e.target.value)}>
+              {Object.entries(PAPER).map(([k,v])=><option key={k} value={k}>{v.label}</option>)}
+            </select>],
+            ['Columns', <input style={{...iStyle,width:'100%'}} type="number" min={1} max={15} value={cols} onChange={e=>setCols(Math.max(1,Math.min(15,parseInt(e.target.value)||1)))} />],
+            ['Rows per page', <input style={{...iStyle,width:'100%'}} type="number" min={1} max={30} value={rows} onChange={e=>setRows(Math.max(1,Math.min(30,parseInt(e.target.value)||1)))} />],
+            ['Gap (mm)', <input style={{...iStyle,width:'100%'}} type="number" min={0} max={20} value={gap} onChange={e=>setGap(Math.max(0,Math.min(20,parseInt(e.target.value)||0)))} />],
+          ].map(([lbl,inp])=>(
+            <div key={lbl} style={{ marginBottom:12 }}>
+              <label style={{ display:'block', fontSize:10, fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.5px', marginBottom:5 }}>{lbl}</label>
+              {inp}
             </div>
-            <button onClick={autoTile}
-              style={{ width:'100%', padding:'9px', background:'var(--surface-2)', color:'var(--text-secondary)', border:'1px solid var(--border)', borderRadius:8, fontSize:12, fontWeight:600, cursor:'pointer', marginBottom:10 }}>
-              🔲 Auto-fit to Label Size
-            </button>
-            <button onClick={handlePrint} disabled={printing}
-              style={{ width:'100%', padding:'12px', background: printing ? 'var(--surface-2)' : 'var(--accent)', color: printing ? 'var(--text-muted)' : '#fff', border:'none', borderRadius:8, fontSize:13, fontWeight:700, cursor: printing ? 'not-allowed' : 'pointer', boxShadow: printing ? 'none' : '0 4px 14px rgba(0,194,224,0.3)' }}>
-              {printing ? '⏳ Preparing…' : `🖨️ Print ${labels.length} Label${labels.length!==1?'s':''}`}
-            </button>
+          ))}
+          <div style={{ padding:'10px 12px', background:'var(--surface-2)', borderRadius:8, fontSize:12, color:'var(--text-muted)', marginBottom:12 }}>
+            <strong style={{ color:'var(--text-secondary)' }}>{cols}×{rows}</strong> = {perPage} per page ·{' '}
+            <strong style={{ color:'var(--accent)' }}>{pageCount}</strong> page{pageCount!==1?'s':''}
           </div>
+          <button onClick={handlePrint} disabled={printing}
+            style={{ width:'100%', padding:'12px', background:printing?'var(--surface-2)':'var(--accent)', color:printing?'var(--text-muted)':'#fff', border:'none', borderRadius:8, fontSize:13, fontWeight:700, cursor:printing?'not-allowed':'pointer', boxShadow:printing?'none':'0 4px 14px rgba(0,194,224,0.3)' }}>
+            {printing ? '⏳ Preparing…' : `🖨️ Print ${labels.length} Label${labels.length!==1?'s':''}`}
+          </button>
         </div>
 
-        {/* Preview */}
-        <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: 20 }}>
-          <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--text-primary)', marginBottom: 14 }}>
-            Live Preview — {PAPER[paperSize].label} · {cols}×{rows} layout
+        {/* Page preview */}
+        <div style={{ background:'var(--surface)', border:'1px solid var(--border)', borderRadius:12, padding:20 }}>
+          <div style={{ fontSize:13, fontWeight:800, color:'var(--text-primary)', marginBottom:14 }}>
+            Page Preview — {PAPER[paperSize].label} · {cols}×{rows} layout
+            {firstTmpl && <span style={{ marginLeft:8, fontSize:11, color:'var(--text-muted)', fontWeight:400 }}>Label: {LABEL_SIZES_MM[firstTmpl.size]?.w}×{LABEL_SIZES_MM[firstTmpl.size]?.h}mm</span>}
           </div>
-          <div style={{ border: '2px solid var(--border)', borderRadius: 6, background: '#f0f0f0', padding: gap + 'px', overflowX: 'auto' }}>
-            <div style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: gap + 'px', maxWidth: 520, margin: '0 auto' }}>
-              {Array.from({ length: Math.min(perPage, 24) }).map((_, i) => {
+          {/* Paper sheet */}
+          <div style={{ width:previewPageW, height:previewPageH, background:'#fff', boxShadow:'0 2px 12px rgba(0,0,0,0.15)', borderRadius:2, padding:gapPx, boxSizing:'border-box', overflowHidden:true, margin:'0 auto' }}>
+            <div style={{ display:'flex', flexWrap:'wrap', gap:gapPx, alignContent:'flex-start' }}>
+              {Array.from({ length: Math.min(perPage, labels.length) }).map((_, i) => {
                 const l = labels[i];
                 const tmpl = l ? getTemplate(l) : null;
                 return (
-                  <div key={i} style={{ aspectRatio:'1', border:'1px solid #dde', borderRadius:3, background: l ? '#fff' : '#ebebeb', overflow:'hidden', display:'flex', alignItems:'center', justifyContent:'center' }}>
+                  <div key={`${l?.id}-${i}`}
+                    style={{ width:tilePxW, height:tilePxH, flexShrink:0, border:'0.5px solid #e0e0e0', overflow:'hidden', background:'#fff' }}>
                     {l && tmpl ? (
-                      <canvas
-                        className="label-print-canvas"
-                        ref={cv => {
-                          if (!cv) return;
-                          // Render template onto this canvas
-                          const ctx = cv.getContext('2d');
-                          let elements = [];
-                          try { elements = JSON.parse(tmpl.elements || '[]'); } catch(e) {}
-                          const SIZES = [{id:'15x15',w:60,h:60},{id:'25x25',w:100,h:100},{id:'50x25',w:200,h:100},{id:'100x50',w:400,h:200},{id:'150x100',w:600,h:400},{id:'a4_2up',w:794,h:560},{id:'a4_4up',w:794,h:560}];
-                          const sz = SIZES.find(s=>s.id===tmpl.size)||SIZES[2];
-                          const sc = cv.width / sz.w;
-                          ctx.fillStyle = tmpl.background || '#fff';
-                          ctx.fillRect(0,0,cv.width,cv.height);
-                          elements.forEach(el => {
-                            const ex=el.x*sc,ey=el.y*sc,ew=el.w*sc,eh=el.h*sc;
-                            if (el.type==='rect'){ctx.fillStyle=el.fill||'#1e88e5';ctx.fillRect(ex,ey,ew,eh);}
-                            if (el.type==='text'){
-                              ctx.save();const fs=Math.max(4,(el.fontSize||10)*sc);
-                              ctx.font=`${el.bold?'700':'400'} ${fs}px ${el.fontFamily||'Arial'}`;
-                              ctx.fillStyle=el.color||'#000';ctx.textAlign=el.align||'left';ctx.textBaseline='top';
-                              let t=el.text||'';
-                              if(l){t=t.replace(/\{asset_name\}/gi,l.asset_name||'').replace(/\{label_code\}/gi,l.label_code||'').replace(/\{asset_number\}/gi,l.label_code||'');}
-                              const tx=el.align==='center'?ex+ew/2:el.align==='right'?ex+ew:ex;
-                              ctx.fillText(t,tx,ey);ctx.restore();
-                            }
-                            if (el.type==='qr'){
-                              const qrData=l?l.qr_url:(el.assetUrl||'https://mechiq.com.au');
-                              const px=Math.max(60,Math.round(ew));
-                              const key=`qr__${qrData}__${px}`;
-                              const cache=window.__mechiq_qr_cache||(window.__mechiq_qr_cache={});
-                              if(cache[key]){ctx.drawImage(cache[key],ex,ey,ew,eh);}
-                              else{const img=new Image();img.crossOrigin='anonymous';
-                                img.src=`https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(qrData)}&size=${px}x${px}&bgcolor=ffffff&color=000000&margin=2`;
-                                img.onload=()=>{cache[key]=img;
-                                  const c=cv; if(!c) return;
-                                  const ctx2=c.getContext('2d'); ctx2.drawImage(img,ex,ey,ew,eh);};}
-                            }
-                            if (el.type==='image'&&el.src){
-                              const key=`img__${el.src.slice(0,60)}`;
-                              const cache=window.__mechiq_qr_cache||(window.__mechiq_qr_cache={});
-                              if(cache[key]){ctx.drawImage(cache[key],ex,ey,ew,eh);}
-                              else{const img=new Image();
-                                // base64 images don't need crossOrigin
-                                if(!el.src.startsWith('data:')) img.crossOrigin='anonymous';
-                                img.src=el.src;
-                                img.onload=()=>{cache[key]=img;
-                                  const c=cv; if(!c) return;
-                                  const ctx2=c.getContext('2d'); ctx2.drawImage(img,ex,ey,ew,eh);};}
-                            }
-                          });
-                        }}
-                        width={previewLabelPx}
-                        height={previewLabelPx}
-                        style={{ width:'100%', height:'100%' }}
+                      <LabelTile
+                        template={tmpl}
+                        label={l}
+                        widthPx={labelSizePx.w}
+                        heightPx={labelSizePx.h}
                       />
                     ) : l ? (
-                      <div style={{ fontSize:7, fontFamily:'monospace', fontWeight:700, color:'#1a2433', textAlign:'center', padding:2 }}>{l.label_code}</div>
-                    ) : null}
+                      <div style={{ display:'flex', alignItems:'center', justifyContent:'center', width:'100%', height:'100%', fontSize:8, fontFamily:'monospace', fontWeight:700, color:'#1a2433' }}>{l.label_code}</div>
+                    ) : (
+                      <div style={{ width:'100%', height:'100%', background:'#f8f8f8' }} />
+                    )}
                   </div>
                 );
               })}
+              {/* Empty cells to fill page */}
+              {Array.from({ length: Math.max(0, perPage - labels.length) }).map((_, i) => (
+                <div key={`empty-${i}`} style={{ width:tilePxW, height:tilePxH, flexShrink:0, border:'0.5px dashed #e0e0e0', background:'#fafafa' }} />
+              ))}
             </div>
-            {perPage > 24 && <div style={{ textAlign:'center', fontSize:11, color:'var(--text-muted)', marginTop:8 }}>Showing first 24 of {perPage} cells</div>}
           </div>
-          {/* Label list below preview */}
-          <div style={{ marginTop:16, maxHeight:180, overflowY:'auto' }}>
-            {labels.map(l => (
-              <div key={l.id} style={{ display:'flex', justifyContent:'space-between', padding:'5px 0', borderBottom:'1px solid var(--border)', fontSize:12 }}>
-                <span style={{ fontFamily:'monospace', fontWeight:700, color:'var(--accent)' }}>{l.label_code}</span>
-                <span style={{ color:'var(--text-muted)' }}>{l.asset_name||'Unassigned'} · {l.template_name||'No template'}</span>
-              </div>
-            ))}
+          {/* Hidden canvases for print capture */}
+          <div style={{ position:'absolute', left:'-9999px', top:0 }}>
+            {labels.map((l, i) => {
+              const tmpl = getTemplate(l);
+              return tmpl ? (
+                <canvas
+                  key={`${l.id}-print`}
+                  className="lbl-tile-canvas"
+                  width={labelSizePx.w}
+                  height={labelSizePx.h}
+                  ref={cv => {
+                    if (!cv || !tmpl) return;
+                    // Each canvas gets its own draw via LabelTile logic
+                    const ctx = cv.getContext('2d');
+                    let elements = [];
+                    try { elements = JSON.parse(tmpl.elements||'[]'); } catch(e) {}
+                    const SZPX = {'15x15':{w:60,h:60},'25x25':{w:100,h:100},'50x25':{w:200,h:100},'100x50':{w:400,h:200},'150x100':{w:600,h:400},'a4_2up':{w:794,h:560},'a4_4up':{w:794,h:560}};
+                    const sz = SZPX[tmpl.size]||{w:200,h:100};
+                    const scX=cv.width/sz.w, scY=cv.height/sz.h;
+                    ctx.fillStyle=tmpl.background||'#fff'; ctx.fillRect(0,0,cv.width,cv.height);
+                    const QRAPI2=(d,px)=>`https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(d)}&size=${px}x${px}&bgcolor=ffffff&color=000000&margin=2`;
+                    const globalCache = window.__mechiq_print_cache||(window.__mechiq_print_cache={});
+                    const order2=['rect','circle','line','mechiq_logo','image','text','qr'];
+                    const sorted=[...elements].sort((a,b)=>order2.indexOf(a.type)-order2.indexOf(b.type));
+                    sorted.forEach(el=>{
+                      const ex=el.x*scX,ey=el.y*scY,ew=el.w*scX,eh=el.h*scY;
+                      if(el.type==='rect'){ctx.fillStyle=el.fill||'#1e88e5';ctx.fillRect(ex,ey,ew,eh);}
+                      if(el.type==='text'){
+                        ctx.save();const fs=Math.max(4,(el.fontSize||10)*Math.min(scX,scY));
+                        ctx.font=`${el.bold?'700':'400'} ${fs}px ${el.fontFamily||'Arial'}`;
+                        ctx.fillStyle=el.color||'#000';ctx.textAlign=el.align||'left';ctx.textBaseline='top';
+                        let t=el.text||'';
+                        t=t.replace(/\{asset_name\}/gi,l.asset_name||'').replace(/\{label_code\}/gi,l.label_code||'').replace(/\{asset_number\}/gi,l.label_code||'');
+                        const tx2=el.align==='center'?ex+ew/2:el.align==='right'?ex+ew:ex;
+                        t.split('
+').forEach((line,ii)=>ctx.fillText(line,tx2,ey+ii*fs*1.3));
+                        ctx.restore();
+                      }
+                      if(el.type==='mechiq_logo'){
+                        ctx.save();const fs=Math.max(4,eh*0.65);ctx.font=`900 ${fs}px Arial`;
+                        ctx.textBaseline='middle';ctx.textAlign='left';
+                        ctx.fillStyle=el.colorMain||'#1a2433';ctx.fillText('MECH',ex,ey+eh/2);
+                        const mw=ctx.measureText('MECH').width;
+                        ctx.fillStyle=el.colorAccent||'#2d8cf0';ctx.fillText('IQ',ex+mw+1,ey+eh/2);ctx.restore();
+                      }
+                      if(el.type==='qr'){
+                        const qd=l.qr_url;const px=Math.max(60,Math.round(Math.max(ew,eh)));
+                        const k2=`print::${qd}::${px}`;
+                        if(globalCache[k2]){ctx.drawImage(globalCache[k2],ex,ey,ew,eh);}
+                        else{const img=new Image();img.crossOrigin='anonymous';img.src=QRAPI2(qd,px);
+                          img.onload=()=>{globalCache[k2]=img;ctx.drawImage(img,ex,ey,ew,eh);};}
+                      }
+                      if(el.type==='image'&&el.src){
+                        const k3=`img::${el.id}`;
+                        if(globalCache[k3]){ctx.drawImage(globalCache[k3],ex,ey,ew,eh);}
+                        else{const img=new Image();if(!el.src.startsWith('data:'))img.crossOrigin='anonymous';
+                          img.src=el.src;img.onload=()=>{globalCache[k3]=img;ctx.drawImage(img,ex,ey,ew,eh);};}
+                      }
+                    });
+                  }}
+                />
+              ) : <canvas key={`${l.id}-empty`} className="lbl-tile-canvas" width={400} height={200} />;
+            })}
           </div>
         </div>
       </div>
