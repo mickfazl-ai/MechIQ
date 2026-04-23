@@ -23,6 +23,54 @@ import { supabase } from './supabase';
 import ContractorPortal from './ContractorPortal';
 import DemoTour from './DemoTour';
 
+// ─── Label Scan Router ────────────────────────────────────────────────────────
+// Resolves a label code to its assigned asset then shows the scan landing page
+function LabelScanRouter({ labelCode }) {
+  const [state, setState] = React.useState('loading'); // loading | found | notfound | unassigned
+  const [assetId, setAssetId] = React.useState(null);
+  React.useEffect(() => {
+    const lookup = async () => {
+      const { data } = await supabase
+        .from('generated_labels')
+        .select('id, label_code, asset_id, asset_name')
+        .ilike('label_code', labelCode)
+        .maybeSingle();
+      if (!data) { setState('notfound'); return; }
+      if (!data.asset_id) { setState('unassigned'); return; }
+      setAssetId(data.asset_id);
+      setState('found');
+    };
+    lookup();
+  }, [labelCode]);
+
+  if (state === 'loading') return (
+    <div style={{ minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center', background:'#060d17', flexDirection:'column', gap:16 }}>
+      <div style={{ width:40, height:40, border:'3px solid rgba(0,194,224,0.2)', borderTopColor:'#00c2e0', borderRadius:'50%', animation:'spin 0.8s linear infinite' }} />
+      <div style={{ color:'rgba(200,216,232,0.6)', fontSize:14 }}>Looking up label {labelCode}…</div>
+    </div>
+  );
+
+  if (state === 'notfound') return (
+    <div style={{ minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center', background:'#060d17', flexDirection:'column', gap:12, padding:24 }}>
+      <div style={{ fontSize:40 }}>⚠️</div>
+      <div style={{ color:'#fff', fontSize:18, fontWeight:700 }}>Label not found</div>
+      <div style={{ color:'rgba(200,216,232,0.5)', fontSize:14, textAlign:'center' }}>Label code <strong style={{color:'#00c2e0'}}>{labelCode}</strong> does not exist in the system.</div>
+      <div style={{ color:'rgba(200,216,232,0.4)', fontSize:12 }}>Contact your site administrator.</div>
+    </div>
+  );
+
+  if (state === 'unassigned') return (
+    <div style={{ minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center', background:'#060d17', flexDirection:'column', gap:12, padding:24 }}>
+      <div style={{ fontSize:40 }}>🏷️</div>
+      <div style={{ color:'#fff', fontSize:18, fontWeight:700 }}>Label not assigned</div>
+      <div style={{ color:'rgba(200,216,232,0.5)', fontSize:14, textAlign:'center' }}>Label <strong style={{color:'#00c2e0'}}>{labelCode}</strong> has not been assigned to an asset yet.</div>
+      <div style={{ color:'rgba(200,216,232,0.4)', fontSize:12 }}>Contact your site administrator to assign this label to an asset.</div>
+    </div>
+  );
+
+  return <ScanPage assetId={assetId} />;
+}
+
 function App() {
   const [currentPage, setCurrentPageRaw] = useState('dashboard');
   const [currentSubPage, setCurrentSubPage] = useState(null);
@@ -40,6 +88,7 @@ function App() {
   const pathname = window.location.pathname;
   const scanMatch = pathname.match(/^\/scan\/([a-f0-9-]{1,36}|\d+)$/);
   const partScanMatch = pathname.match(/^\/scan\/part\/([a-f0-9-]{1,36}|\d+)$/);
+  const labelScanMatch = pathname.match(/^\/scan\/label\/([A-Za-z0-9-]+)$/);
 
   const setCurrentPage = (page, subPage = null) => {
     if (page === 'assets') {
@@ -236,6 +285,7 @@ function App() {
     : userRole;
 
   // ── Public scan route — render before auth check ─────────────
+  if (labelScanMatch) return <LabelScanRouter labelCode={labelScanMatch[1]} />;
   if (scanMatch) return <ScanPage assetId={scanMatch[1]} />;
   if (partScanMatch) return <ScanPage partId={partScanMatch[1]} />;
   if (pathname.startsWith('/contractor')) return <ContractorPortal />;
