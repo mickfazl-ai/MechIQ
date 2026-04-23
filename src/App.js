@@ -284,12 +284,6 @@ function App() {
     ? { ...userRole, role: 'admin', company_id: viewingCompany.id, company_features: viewingCompany.features || {} }
     : userRole;
 
-  // ── Public scan route — render before auth check ─────────────
-  if (labelScanMatch) return <LabelScanRouter labelCode={labelScanMatch[1]} />;
-  if (scanMatch) return <ScanPage assetId={scanMatch[1]} />;
-  if (partScanMatch) return <ScanPage partId={partScanMatch[1]} />;
-  if (pathname.startsWith('/contractor')) return <ContractorPortal />;
-
   const renderPage = () => {
     if (userRole?.role === 'master' && currentPage === 'master' && !viewingCompany) return <MasterAdmin initialTab={currentSubPage || 'companies'} key={currentSubPage} />;
 
@@ -357,6 +351,12 @@ function App() {
         return <Dashboard companyId={effectiveCompanyId} userRole={effectiveUserRole} onViewAsset={handleViewAsset} />;
     }
   };
+
+  // Public routes — must be before loading/auth checks
+  if (labelScanMatch) return <LabelScanRouter labelCode={labelScanMatch[1]} />;
+  if (scanMatch) return <ScanPage assetId={scanMatch[1]} />;
+  if (partScanMatch) return <ScanPage partId={partScanMatch[1]} />;
+  if (pathname.startsWith('/contractor')) return <ContractorPortal />;
 
   if (loading) return (
     <div style={{ color: '#1a2b3c', padding: '50px', textAlign: 'center', backgroundColor: '#E9F1FA', height: '100vh' }}>
