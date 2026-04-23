@@ -1693,141 +1693,35 @@ function AssetSettingsTab({ asset, userRole, onDeleted }) {
   );
 }
 
-
-// ─── Tab: Prestart History ────────────────────────────────────────────────────
-function PrestartHistoryTab({ asset }) {
-  const [submissions, setSubmissions] = useState([]);
-  const [loading, setLoading]         = useState(true);
-
-  useEffect(() => {
-    supabase.from('form_submissions')
-      .select('*')
-      .eq('asset', asset.name)
-      .eq('company_id', asset.company_id)
-      .order('date', { ascending: false })
-      .then(({ data }) => { setSubmissions(data || []); setLoading(false); });
-  }, [asset]);
-
-  if (loading) return <Sk h="80px" />;
-
-  if (submissions.length === 0) return (
-    <div className="mp-card" style={{ textAlign:'center', padding:40, color:'var(--text-faint)' }}>
-      No prestart records for this asset yet.
-    </div>
-  );
-
-  return (
-    <div className="mp-card">
-      <div className="mp-section-title">Prestart Records ({submissions.length})</div>
-      <div style={{ overflowX:'auto' }}>
-        <table style={{ width:'100%', borderCollapse:'collapse', fontSize:13 }}>
-          <thead>
-            <tr style={{ borderBottom:'2px solid var(--border)' }}>
-              {['Date','Operator','Site','Hours','Status','Notes'].map(h => (
-                <th key={h} style={{ textAlign:'left', padding:'0 14px 10px 0', fontSize:10, fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.5px' }}>{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {submissions.map(s => {
-              const hasDefects = s.defects_found;
-              return (
-                <tr key={s.id} style={{ borderBottom:'1px solid var(--border)' }}>
-                  <td style={{ padding:'10px 14px 10px 0', fontWeight:600, color:'var(--text-primary)' }}>{s.date}</td>
-                  <td style={{ padding:'10px 14px 10px 0', color:'var(--text-secondary)' }}>{s.operator_name || '—'}</td>
-                  <td style={{ padding:'10px 14px 10px 0', color:'var(--text-muted)' }}>{s.site_area || '—'}</td>
-                  <td style={{ padding:'10px 14px 10px 0', color:'var(--accent)', fontWeight:600 }}>{s.hrs_start ? s.hrs_start + ' hrs' : '—'}</td>
-                  <td style={{ padding:'10px 14px 10px 0' }}>
-                    <span style={{ display:'inline-flex', alignItems:'center', gap:4, padding:'3px 10px', borderRadius:20, fontSize:11, fontWeight:700,
-                      background: hasDefects ? 'var(--red-bg)' : 'var(--green-bg)',
-                      color: hasDefects ? 'var(--red)' : 'var(--green)',
-                      border: `1px solid ${hasDefects ? 'var(--red-border)' : 'var(--green-border)'}` }}>
-                      {hasDefects ? '⚠ Defects' : '✓ Clear'}
-                    </span>
-                  </td>
-                  <td style={{ padding:'10px 14px 10px 0', color:'var(--text-muted)', fontSize:12, maxWidth:200, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{s.notes || '—'}</td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
-}
-
-// ─── Tab: Service History ─────────────────────────────────────────────────────
-function ServiceHistoryTab({ asset }) {
-  const [submissions, setSubmissions] = useState([]);
-  const [loading, setLoading]         = useState(true);
-
-  useEffect(() => {
-    supabase.from('service_sheet_submissions')
-      .select('*')
-      .eq('asset', asset.name)
-      .eq('company_id', asset.company_id)
-      .order('date', { ascending: false })
-      .then(({ data }) => { setSubmissions(data || []); setLoading(false); });
-  }, [asset]);
-
-  if (loading) return <Sk h="80px" />;
-
-  if (submissions.length === 0) return (
-    <div className="mp-card" style={{ textAlign:'center', padding:40, color:'var(--text-faint)' }}>
-      No service history for this asset yet.
-    </div>
-  );
-
-  return (
-    <div className="mp-card">
-      <div className="mp-section-title">Service History ({submissions.length})</div>
-      <div style={{ overflowX:'auto' }}>
-        <table style={{ width:'100%', borderCollapse:'collapse', fontSize:13 }}>
-          <thead>
-            <tr style={{ borderBottom:'2px solid var(--border)' }}>
-              {['Date','Technician','Service Type','Parts Cost','Labour Hrs','Notes'].map(h => (
-                <th key={h} style={{ textAlign:'left', padding:'0 14px 10px 0', fontSize:10, fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.5px' }}>{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {submissions.map(s => (
-              <tr key={s.id} style={{ borderBottom:'1px solid var(--border)' }}>
-                <td style={{ padding:'10px 14px 10px 0', fontWeight:600, color:'var(--text-primary)' }}>{s.date}</td>
-                <td style={{ padding:'10px 14px 10px 0', color:'var(--text-secondary)' }}>{s.technician || '—'}</td>
-                <td style={{ padding:'10px 14px 10px 0', color:'var(--accent)', fontWeight:600 }}>{s.service_type || '—'}</td>
-                <td style={{ padding:'10px 14px 10px 0', color:'#ff6b00', fontWeight:600 }}>{s.total_parts_cost ? '$'+parseFloat(s.total_parts_cost).toFixed(2) : '—'}</td>
-                <td style={{ padding:'10px 14px 10px 0', color:'var(--text-secondary)' }}>{s.total_labour_hours ? parseFloat(s.total_labour_hours).toFixed(1)+'h' : '—'}</td>
-                <td style={{ padding:'10px 14px 10px 0', color:'var(--text-muted)', fontSize:12, maxWidth:200, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{s.notes || '—'}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
-}
-
 function AssetPage({ assetId, userRole, onStartPrestart, onStartServiceSheet, onBack, initialTab }) {
   const [asset, setAsset]             = useState(null);
   const [recentPrestarts, setRecentPrestarts] = useState([]);
   const [recentMaintenance, setRecentMaintenance] = useState([]);
   const [openWorkOrders, setOpenWorkOrders] = useState([]);
-  const [loading, setLoading]                         = useState(true);
-  const [activeTab, setActiveTab]                     = useState(initialTab || 'overview');
-  const [assignedPrestartTemplates, setAssignedPrestartTemplates] = useState([]);
-  const [showNoPrestartPrompt, setShowNoPrestartPrompt]           = useState(false);
+  const [loading, setLoading]         = useState(true);
+  const [activeTab, setActiveTab]     = useState(initialTab || 'overview');
 
   const isAdmin = ['admin','supervisor'].includes(userRole?.role);
   const [labelTemplates, setLabelTemplates] = useState([]);
   const [selectedTemplate, setSelectedTemplate] = useState('');
   const [showLabelPreview, setShowLabelPreview] = useState(false);
   const [showQR, setShowQR] = useState(false);
+  const [assignedLabel, setAssignedLabel] = useState(null); // label from generated_labels
 
   const loadLabelTemplates = async () => {
     const { data } = await supabase.from('label_templates').select('*').order('created_at', { ascending: false });
     setLabelTemplates(data || []);
     if (data?.length > 0) setSelectedTemplate(data[0].id);
+  };
+
+  const loadAssignedLabel = async () => {
+    try {
+      const { data } = await supabase.from('generated_labels')
+        .select('id,label_code,qr_url,printed')
+        .eq('asset_id', assetId)
+        .maybeSingle();
+      setAssignedLabel(data || null);
+    } catch(e) { setAssignedLabel(null); }
   };
 
   useEffect(() => {
@@ -1837,6 +1731,7 @@ function AssetPage({ assetId, userRole, onStartPrestart, onStartServiceSheet, on
     }
     if (assetId) fetchAssetData();
     loadLabelTemplates();
+    loadAssignedLabel();
     // Check if navigated here from calendar with a specific tab
     const navIntent = sessionStorage.getItem('mechiq_open_asset');
     if (navIntent) {
@@ -1863,14 +1758,6 @@ function AssetPage({ assetId, userRole, onStartPrestart, onStartServiceSheet, on
       setRecentPrestarts(prestarts.data||[]);
       setRecentMaintenance(maintenance.data||[]);
       setOpenWorkOrders(workorders.data||[]);
-      // Load prestart templates assigned to this asset
-      const { data: tmplData } = await supabase.from('form_templates')
-        .select('id, name, description, sections')
-        .eq('company_id', assetData.company_id);
-      const assigned = (tmplData || []).filter(t =>
-        Array.isArray(t.asset_ids) && t.asset_ids.includes(assetData.id)
-      );
-      setAssignedPrestartTemplates(assigned);
     }
     setLoading(false);
   };
@@ -1885,17 +1772,15 @@ function AssetPage({ assetId, userRole, onStartPrestart, onStartServiceSheet, on
 
   if (!asset) return <div style={{ textAlign:'center', padding:'60px 20px', color:'var(--text-muted)', fontSize:14 }}>Asset not found</div>;
 
-  const qrUrl = `${window.location.origin}/scan/${assetId}`;
+  const qrUrl = assignedLabel?.qr_url || `${window.location.origin}/scan/${assetId}`;
 
   const TABS = [
-    { id:'overview',         label:'Overview' },
-    { id:'prestarts',        label:`Prestarts${recentPrestarts.length > 0 ? ` (${recentPrestarts.length})` : ''}` },
-    { id:'workorders',       label:`Work Orders${openWorkOrders.length > 0 ? ` (${openWorkOrders.length})` : ''}` },
-    { id:'service',          label:'Service Schedule' },
-    { id:'service_history',  label:'Service History' },
-    { id:'oil',              label:'Oil Sampling' },
-    { id:'downtime',         label:'Downtime' },
-    { id:'documents',        label:'📂 Documents' },
+    { id:'overview',     label:'Overview' },
+    { id:'workorders',   label:`Work Orders${openWorkOrders.length > 0 ? ` (${openWorkOrders.length})` : ''}` },
+    { id:'service',      label:'Service Schedule' },
+    { id:'oil',          label:'Oil Sampling' },
+    { id:'downtime',     label:'Downtime' },
+    { id:'documents', label:'📂 Documents' },
     ...(isAdmin ? [{ id:'depreciation', label:'💰 Depreciation' }] : []),
     ...(isAdmin ? [{ id:'settings', label:'⚙️ Settings' }] : []),
   ];
@@ -1925,24 +1810,35 @@ function AssetPage({ assetId, userRole, onStartPrestart, onStartServiceSheet, on
             </div>
           </div>
           <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:8, minWidth:160 }}>
-            {/* Always-visible QR code */}
-            <div style={{ background:'#fff', padding:8, borderRadius:8, border:'1px solid var(--border)', cursor:'pointer' }}
-              onClick={() => setShowQR(q => !q)} title="Click to enlarge">
-              <QRCodeCanvas id={`qr-${assetId}`} value={qrUrl} size={80} bgColor="#ffffff" fgColor="#1a2433" level="H" />
-            </div>
-            <div style={{ fontSize:9, color:'var(--text-muted)', textAlign:'center' }}>Scan to start prestart</div>
-            <div style={{ display:'flex', gap:6, width:'100%' }}>
-              <button onClick={() => setShowQR(true)}
-                style={{ flex:1, fontSize:10, fontWeight:700, padding:'5px 0', border:'1px solid var(--border)', borderRadius:5, background:'var(--surface)', color:'var(--text-secondary)', cursor:'pointer', fontFamily:'inherit' }}>
-                🔍 Enlarge
-              </button>
-              {labelTemplates.length > 0 && (
-                <button onClick={() => setShowLabelPreview(true)}
-                  style={{ flex:1, fontSize:10, fontWeight:700, padding:'5px 0', border:'1px solid var(--accent)', borderRadius:5, background:'var(--accent-light)', color:'var(--accent)', cursor:'pointer', fontFamily:'inherit' }}>
-                  🏷 ID Tag
-                </button>
-              )}
-            </div>
+            {assignedLabel ? (
+              <>
+                {/* Label QR — only shown when a label is assigned */}
+                <div style={{ background:'#fff', padding:8, borderRadius:8, border:'1px solid var(--border)', cursor:'pointer' }}
+                  onClick={() => setShowQR(q => !q)} title="Click to enlarge">
+                  <QRCodeCanvas id={`qr-${assetId}`} value={assignedLabel.qr_url} size={80} bgColor="#ffffff" fgColor="#1a2433" level="H" />
+                </div>
+                <div style={{ fontSize:10, fontWeight:700, color:'var(--accent)', fontFamily:'monospace', letterSpacing:1 }}>{assignedLabel.label_code}</div>
+                <div style={{ fontSize:9, color:'var(--text-muted)', textAlign:'center' }}>Scan to start prestart</div>
+                <div style={{ display:'flex', gap:6, width:'100%' }}>
+                  <button onClick={() => setShowQR(true)}
+                    style={{ flex:1, fontSize:10, fontWeight:700, padding:'5px 0', border:'1px solid var(--border)', borderRadius:5, background:'var(--surface)', color:'var(--text-secondary)', cursor:'pointer', fontFamily:'inherit' }}>
+                    🔍 Enlarge
+                  </button>
+                  {labelTemplates.length > 0 && (
+                    <button onClick={() => setShowLabelPreview(true)}
+                      style={{ flex:1, fontSize:10, fontWeight:700, padding:'5px 0', border:'1px solid var(--accent)', borderRadius:5, background:'var(--accent-light)', color:'var(--accent)', cursor:'pointer', fontFamily:'inherit' }}>
+                      🏷 ID Tag
+                    </button>
+                  )}
+                </div>
+              </>
+            ) : (
+              <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:6, padding:'12px 16px', border:'1.5px dashed var(--border)', borderRadius:8, minWidth:140, textAlign:'center' }}>
+                <div style={{ fontSize:20 }}>🏷</div>
+                <div style={{ fontSize:11, fontWeight:700, color:'var(--text-muted)' }}>No Label Assigned</div>
+                <div style={{ fontSize:10, color:'var(--text-faint)', lineHeight:1.4 }}>Assign a label in<br/>Admin → Onboarding<br/>→ Asset Settings</div>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -1966,7 +1862,7 @@ function AssetPage({ assetId, userRole, onStartPrestart, onStartServiceSheet, on
             onClick={e => e.stopPropagation()}>
             <div style={{ fontSize:13, fontWeight:700, color:'#1a2433', marginBottom:4 }}>{asset.name}</div>
             <div style={{ fontSize:11, color:'#6b7a8d', marginBottom:16 }}>{asset.asset_number} · Scan to start prestart</div>
-            <QRCodeCanvas value={qrUrl} size={240} bgColor="#ffffff" fgColor="#1a2433" level="H" />
+            <QRCodeCanvas value={assignedLabel?.qr_url || qrUrl} size={240} bgColor="#ffffff" fgColor="#1a2433" level="H" />
             <div style={{ fontSize:10, color:'#8a96a3', marginTop:12, wordBreak:'break-all', maxWidth:260 }}>{qrUrl}</div>
             <button onClick={() => setShowQR(false)}
               style={{ marginTop:16, padding:'8px 24px', border:'none', borderRadius:6, background:'#2d8cf0', color:'#fff', fontSize:13, fontWeight:700, cursor:'pointer' }}>
@@ -1976,47 +1872,11 @@ function AssetPage({ assetId, userRole, onStartPrestart, onStartServiceSheet, on
         </div>
       )}
 
-      {/* ── No Prestart Assigned Prompt ── */}
-      {showNoPrestartPrompt && (
-        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:1000, display:'flex', alignItems:'center', justifyContent:'center', padding:20 }}
-          onClick={() => setShowNoPrestartPrompt(false)}>
-          <div style={{ background:'var(--bg)', borderRadius:16, padding:28, width:'100%', maxWidth:420, boxShadow:'0 24px 80px rgba(0,0,0,0.2)' }}
-            onClick={e => e.stopPropagation()}>
-            <div style={{ fontSize:32, textAlign:'center', marginBottom:12 }}>📋</div>
-            <div style={{ fontSize:17, fontWeight:800, color:'var(--text-primary)', textAlign:'center', marginBottom:8 }}>No Prestart Form Assigned</div>
-            <div style={{ fontSize:13, color:'var(--text-muted)', textAlign:'center', marginBottom:24, lineHeight:1.6 }}>
-              This unit doesn't have a prestart checklist assigned to it yet. Would you like to go to Forms to create one and assign it to this unit?
-            </div>
-            <div style={{ display:'flex', gap:10 }}>
-              <button onClick={() => setShowNoPrestartPrompt(false)}
-                style={{ flex:1, padding:'11px', background:'var(--surface-2)', border:'1px solid var(--border)', borderRadius:9, fontSize:13, fontWeight:600, color:'var(--text-secondary)', cursor:'pointer' }}>
-                Cancel
-              </button>
-              <button onClick={() => {
-                setShowNoPrestartPrompt(false);
-                window.dispatchEvent(new CustomEvent('mechiq-navigate', { detail: { page: 'forms', subPage: 'prestarts' } }));
-              }}
-                style={{ flex:2, padding:'11px', background:'linear-gradient(135deg,var(--accent),#0090a8)', border:'none', borderRadius:9, fontSize:13, fontWeight:700, color:'#fff', cursor:'pointer' }}>
-                Go to Forms → Create &amp; Assign
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* ── Action buttons ── */}
       <div className="mp-action-row">
-        <button className="mp-action-btn prestart" onClick={() => {
-          if (assignedPrestartTemplates.length > 0) {
-            // Has assigned templates — go straight through
-            onStartPrestart && onStartPrestart(asset.name, asset.id, asset.asset_number);
-          } else {
-            // No assigned template — show prompt
-            setShowNoPrestartPrompt(true);
-          }
-        }}>
+        <button className="mp-action-btn prestart" onClick={() => onStartPrestart && onStartPrestart(asset.name, asset.id, asset.asset_number)}>
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
-          Start Prestart{assignedPrestartTemplates.length > 0 ? '' : ' ⚠'}
+          Start Prestart
         </button>
         <button className="mp-action-btn servicesheet" onClick={() => {
           if (onStartServiceSheet) {
@@ -2039,16 +1899,14 @@ function AssetPage({ assetId, userRole, onStartPrestart, onStartServiceSheet, on
       </div>
 
       {/* ── Tab content ── */}
-      {activeTab === 'overview'        && <OverviewTab asset={asset} recentPrestarts={recentPrestarts} recentMaintenance={recentMaintenance} />}
-      {activeTab === 'prestarts'       && <PrestartHistoryTab asset={asset} />}
-      {activeTab === 'workorders'      && <WorkOrdersTab asset={asset} userRole={userRole} />}
-      {activeTab === 'service'         && <ServiceTab asset={asset} />}
-      {activeTab === 'service_history' && <ServiceHistoryTab asset={asset} />}
-      {activeTab === 'oil'             && <OilTab asset={asset} userRole={userRole} />}
-      {activeTab === 'downtime'        && <DowntimeTab asset={asset} />}
-      {activeTab === 'documents'       && <DocumentsTab asset={asset} userRole={userRole} />}
-      {activeTab === 'depreciation'    && isAdmin && <DepreciationTab asset={asset} userRole={userRole} />}
-      {activeTab === 'settings'        && isAdmin && <AssetSettingsTab asset={asset} userRole={userRole} onDeleted={() => onBack && onBack()} />}
+      {activeTab === 'overview'     && <OverviewTab asset={asset} recentPrestarts={recentPrestarts} recentMaintenance={recentMaintenance} />}
+      {activeTab === 'workorders'   && <WorkOrdersTab asset={asset} userRole={userRole} />}
+      {activeTab === 'service'      && <ServiceTab asset={asset} />}
+      {activeTab === 'oil'          && <OilTab asset={asset} userRole={userRole} />}
+      {activeTab === 'downtime'     && <DowntimeTab asset={asset} />}
+      {activeTab === 'documents'    && <DocumentsTab asset={asset} userRole={userRole} />}
+      {activeTab === 'depreciation' && isAdmin && <DepreciationTab asset={asset} userRole={userRole} />}
+      {activeTab === 'settings'     && isAdmin && <AssetSettingsTab asset={asset} userRole={userRole} onDeleted={() => onBack && onBack()} />}
     </div>
   );
 }
