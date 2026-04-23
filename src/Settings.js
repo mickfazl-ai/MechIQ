@@ -1560,28 +1560,79 @@ function AssetSettingsRow({ asset, onSaved }) {
     setAssignedLabel(data || null);
   };
 
+  const scanIntervalRef = React.useRef(null);
+
+  const loadJsQR = () => new Promise((resolve) => {
+    if (window.jsQR) { resolve(window.jsQR); return; }
+    const script = document.createElement('script');
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.js';
+    script.onload = () => resolve(window.jsQR);
+    script.onerror = () => resolve(null);
+    document.head.appendChild(script);
+  });
+
   const startCamera = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+      // Load jsQR first (before opening camera so it's ready)
+      const jsQR = await loadJsQR();
+      if (!jsQR) { setLabelMsg('⚠️ QR scanner failed to load — type the label code manually'); return; }
+
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }
+      });
       streamRef.current = stream;
-      if (videoRef.current) videoRef.current.srcObject = stream;
-      setCameraActive(true);
-      // Simple QR scanning via periodic canvas capture
-      scanFromCamera();
+      setCameraActive(true); // renders the <video> element
+
+      // Wait for React to render the video element + stream to attach
+      await new Promise(r => setTimeout(r, 200));
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        await videoRef.current.play().catch(() => {});
+      }
+
+      setLabelMsg('📷 Scanning… point the QR code at the camera');
+
+      // Poll every 250ms
+      scanIntervalRef.current = setInterval(() => {
+        const video = videoRef.current;
+        if (!video) return;
+        if (video.readyState < 2 || video.videoWidth === 0) return; // not ready yet
+        try {
+          const canvas = document.createElement('canvas');
+          canvas.width = video.videoWidth;
+          canvas.height = video.videoHeight;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(video, 0, 0);
+          const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          const code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: 'dontInvert' });
+          if (code?.data) {
+            let labelCode = code.data;
+            const match = code.data.match(/scan\/label\/([A-Z0-9-]+)/i);
+            if (match) labelCode = match[1].toUpperCase();
+            else if (/^[A-Z0-9]{1,8}-[0-9]{3,6}$/i.test(code.data.trim())) labelCode = code.data.trim().toUpperCase();
+            clearInterval(scanIntervalRef.current);
+            scanIntervalRef.current = null;
+            stopCamera();
+            setLabelInput(labelCode);
+            setLabelMsg('✅ Scanned: ' + labelCode + ' — click Assign to save');
+          }
+        } catch(err) {}
+      }, 250);
+
     } catch(e) {
-      setLabelMsg('Camera not available — please enter the label code manually');
+      setCameraActive(false);
+      if (e.name === 'NotAllowedError') {
+        setLabelMsg('⚠️ Camera permission denied — please allow camera access in your browser settings, or type the label code manually');
+      } else {
+        setLabelMsg('⚠️ Camera unavailable — type the label code manually');
+      }
     }
   };
 
   const stopCamera = () => {
+    if (scanIntervalRef.current) { clearInterval(scanIntervalRef.current); scanIntervalRef.current = null; }
     if (streamRef.current) { streamRef.current.getTracks().forEach(t => t.stop()); streamRef.current = null; }
     setCameraActive(false);
-  };
-
-  const scanFromCamera = () => {
-    // Polling approach — user points camera then we grab a frame
-    // Full QR decode would need jsQR library; for now we just stop camera and user confirms code
-    setLabelMsg('Point camera at label QR code, then enter the label code below');
   };
 
   const assignLabel = async (code) => {
