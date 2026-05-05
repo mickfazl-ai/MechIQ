@@ -433,4 +433,22 @@ function App() {
   );
 }
 
-export default App;
+// ─── Root Router ──────────────────────────────────────────────────────────────
+// Checks public routes BEFORE React state initialises - avoids auth race condition
+function Root() {
+  const pathname = window.location.pathname;
+  if (/^\/scan\/label\/([A-Za-z0-9-]+)$/.test(pathname)) {
+    const code = pathname.match(/^\/scan\/label\/([A-Za-z0-9-]+)$/)[1];
+    return <LabelScanRouter labelCode={code} />;
+  }
+  if (/^\/scan\/([a-f0-9-]{1,36}|\d+)$/.test(pathname)) {
+    return <ScanPage assetId={pathname.match(/^\/scan\/([a-f0-9-]{1,36}|\d+)$/)[1]} />;
+  }
+  if (/^\/scan\/part\/([a-f0-9-]{1,36}|\d+)$/.test(pathname)) {
+    return <ScanPage partId={pathname.match(/^\/scan\/part\/([a-f0-9-]{1,36}|\d+)$/)[1]} />;
+  }
+  if (pathname.startsWith('/contractor')) return <ContractorPortal />;
+  return <App />;
+}
+
+export default Root;
