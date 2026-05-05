@@ -24,52 +24,63 @@ import ContractorPortal from './ContractorPortal';
 import DemoTour from './DemoTour';
 
 // ─── Label Scan Router ────────────────────────────────────────────────────────
-// Resolves a label code to its assigned asset then shows the scan landing page
 function LabelScanRouter({ labelCode }) {
-  const [state, setState] = React.useState('loading'); // loading | found | notfound | unassigned
+  const [state,   setState]   = React.useState('loading');
   const [assetId, setAssetId] = React.useState(null);
+
   React.useEffect(() => {
-    const lookup = async () => {
-      const { data } = await supabase
-        .from('generated_labels')
-        .select('id, label_code, asset_id, asset_name')
-        .ilike('label_code', labelCode)
-        .maybeSingle();
-      if (!data) { setState('notfound'); return; }
-      if (!data.asset_id) { setState('unassigned'); return; }
-      setAssetId(data.asset_id);
-      setState('found');
-    };
-    lookup();
+    (async () => {
+      try {
+        const { data, error } = await supabase
+          .from('generated_labels')
+          .select('asset_id, label_code')
+          .ilike('label_code', labelCode)
+          .maybeSingle();
+        if (error || !data)     { setState('notfound');   return; }
+        if (!data.asset_id)     { setState('unassigned'); return; }
+        setAssetId(data.asset_id);
+        setState('found');
+      } catch(e) { setState('notfound'); }
+    })();
   }, [labelCode]);
 
+  const W = { minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center', background:'#09111f', flexDirection:'column', gap:16, padding:24, fontFamily:'Barlow,sans-serif' };
+  const C = { background:'#0f1b2d', border:'1px solid rgba(255,255,255,0.09)', borderTop:'2px solid #1e88e5', borderRadius:4, padding:'32px 28px', width:'100%', maxWidth:380, textAlign:'center', color:'#dde3ed' };
+
   if (state === 'loading') return (
-    <div style={{ minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center', background:'#060d17', flexDirection:'column', gap:16 }}>
-      <div style={{ width:40, height:40, border:'3px solid rgba(0,194,224,0.2)', borderTopColor:'#00c2e0', borderRadius:'50%', animation:'spin 0.8s linear infinite' }} />
-      <div style={{ color:'rgba(200,216,232,0.6)', fontSize:14 }}>Looking up label {labelCode}…</div>
+    <div style={W}>
+      <style>{`@keyframes sp{to{transform:rotate(360deg)}}`}</style>
+      <div style={{fontSize:22,fontWeight:900,letterSpacing:4,color:'#dde3ed'}}>MECH<span style={{color:'#1e88e5'}}>IQ</span></div>
+      <div style={{width:36,height:36,border:'3px solid rgba(30,136,229,0.2)',borderTopColor:'#1e88e5',borderRadius:'50%',animation:'sp 0.8s linear infinite'}} />
+      <div style={{color:'rgba(221,227,237,0.4)',fontSize:13}}>Looking up {labelCode}…</div>
     </div>
   );
 
   if (state === 'notfound') return (
-    <div style={{ minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center', background:'#060d17', flexDirection:'column', gap:12, padding:24 }}>
-      <div style={{ fontSize:40 }}>⚠️</div>
-      <div style={{ color:'#fff', fontSize:18, fontWeight:700 }}>Label not found</div>
-      <div style={{ color:'rgba(200,216,232,0.5)', fontSize:14, textAlign:'center' }}>Label code <strong style={{color:'#00c2e0'}}>{labelCode}</strong> does not exist in the system.</div>
-      <div style={{ color:'rgba(200,216,232,0.4)', fontSize:12 }}>Contact your site administrator.</div>
+    <div style={W}>
+      <div style={{fontSize:22,fontWeight:900,letterSpacing:4,color:'#dde3ed',marginBottom:8}}>MECH<span style={{color:'#1e88e5'}}>IQ</span></div>
+      <div style={C}>
+        <div style={{fontSize:36,marginBottom:12}}>⚠️</div>
+        <div style={{fontSize:18,fontWeight:700,marginBottom:8}}>Label not found</div>
+        <div style={{fontSize:13,color:'rgba(221,227,237,0.45)'}}>Label <strong style={{color:'#1e88e5'}}>{labelCode}</strong> does not exist or has not been assigned.<br/>Contact your site administrator.</div>
+      </div>
     </div>
   );
 
   if (state === 'unassigned') return (
-    <div style={{ minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center', background:'#060d17', flexDirection:'column', gap:12, padding:24 }}>
-      <div style={{ fontSize:40 }}>🏷️</div>
-      <div style={{ color:'#fff', fontSize:18, fontWeight:700 }}>Label not assigned</div>
-      <div style={{ color:'rgba(200,216,232,0.5)', fontSize:14, textAlign:'center' }}>Label <strong style={{color:'#00c2e0'}}>{labelCode}</strong> has not been assigned to an asset yet.</div>
-      <div style={{ color:'rgba(200,216,232,0.4)', fontSize:12 }}>Contact your site administrator to assign this label to an asset.</div>
+    <div style={W}>
+      <div style={{fontSize:22,fontWeight:900,letterSpacing:4,color:'#dde3ed',marginBottom:8}}>MECH<span style={{color:'#1e88e5'}}>IQ</span></div>
+      <div style={C}>
+        <div style={{fontSize:36,marginBottom:12}}>🏷️</div>
+        <div style={{fontSize:18,fontWeight:700,marginBottom:8}}>Label not assigned</div>
+        <div style={{fontSize:13,color:'rgba(221,227,237,0.45)'}}>Label <strong style={{color:'#1e88e5'}}>{labelCode}</strong> has not been assigned to an asset yet.<br/>Contact your site administrator.</div>
+      </div>
     </div>
   );
 
-  return <ScanPage assetId={assetId} />;
+  return <ScanPage assetId={String(assetId)} />;
 }
+
 
 function App() {
   const [currentPage, setCurrentPageRaw] = useState('dashboard');
