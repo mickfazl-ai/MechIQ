@@ -1506,6 +1506,7 @@ const ADMIN_TABS = [
   { id: 'data',             label: 'Data & Export',   icon: '📤' },
   { id: 'onboarding_admin', label: 'Plant Onboarding',icon: '🏗️' },
   { id: 'labels',           label: 'Labels',           icon: '🏷' },
+  { id: 'daily_reports',    label: 'Daily Reports',    icon: '📧' },
 ];
 
 const PERSONAL_TABS = [
@@ -2675,6 +2676,165 @@ function LabelPrint({ userRole, labels, allLabels, onBack, onPrinted }) {
 
 
 
+// ─── Daily Reports ────────────────────────────────────────────────────────────
+function DailyReports({ userRole }) {
+  const BLANK = { enabled: false, send_time: '07:00', emails: [], include_health: true, include_services: true, include_workorders: true, include_downtime: false };
+  const [cfg,     setCfg]     = React.useState(BLANK);
+  const [emailIn, setEmailIn] = React.useState('');
+  const [saving,  setSaving]  = React.useState(false);
+  const [testing, setTesting] = React.useState(false);
+  const [saved,   setSaved]   = React.useState(false);
+  const [testMsg, setTestMsg] = React.useState('');
+  const [loading, setLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    if (!userRole?.company_id) return;
+    supabase.from('daily_report_config').select('*').eq('company_id', userRole.company_id).maybeSingle()
+      .then(({ data }) => { if (data) setCfg({ ...BLANK, ...data }); setLoading(false); });
+  }, [userRole]);
+
+  const save = async () => {
+    setSaving(true);
+    const { data: existing } = await supabase.from('daily_report_config').select('id').eq('company_id', userRole.company_id).maybeSingle();
+    const payload = { ...cfg, company_id: userRole.company_id, updated_at: new Date().toISOString() };
+    if (existing) await supabase.from('daily_report_config').update(payload).eq('company_id', userRole.company_id);
+    else await supabase.from('daily_report_config').insert([payload]);
+    setSaving(false); setSaved(true); setTimeout(() => setSaved(false), 3000);
+  };
+
+  const sendTest = async () => {
+    if (!cfg.emails.length) { setTestMsg('⚠️ Add at least one email address first'); return; }
+    setTesting(true); setTestMsg('');
+    try {
+      const res = await fetch('https://mechiq-daily-report.mickfazl.workers.dev/test', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ company_id: userRole.company_id, emails: cfg.emails }),
+      });
+      const json = await res.json();
+      setTestMsg(res.ok ? '✅ Test report sent! Check your inbox.' : '❌ Failed: ' + (json.error || res.statusText));
+    } catch(e) { setTestMsg('❌ Could not reach report worker: ' + e.message); }
+    setTesting(false);
+  };
+
+  const addEmail = () => {
+    const e = emailIn.trim().toLowerCase();
+    if (!e || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e)) { return; }
+    if (cfg.emails.includes(e)) return;
+    setCfg(c => ({ ...c, emails: [...c.emails, e] }));
+    setEmailIn('');
+  };
+
+  const removeEmail = (e) => setCfg(c => ({ ...c, emails: c.emails.filter(x => x !== e) }));
+
+  const F = (k, v) => setCfg(c => ({ ...c, [k]: v }));
+
+  const iStyle = { padding:'9px 12px', border:'1px solid var(--border)', borderRadius:7, background:'var(--surface-2)', color:'var(--text-primary)', fontSize:13, fontFamily:'inherit', outline:'none' };
+  const lStyle = { display:'block', fontSize:10, fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.5px', marginBottom:5 };
+  const Toggle = ({ label, k, desc }) => (
+    <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'12px 0', borderBottom:'1px solid var(--border)' }}>
+      <div>
+        <div style={{ fontSize:13, fontWeight:600, color:'var(--text-primary)' }}>{label}</div>
+        {desc && <div style={{ fontSize:11, color:'var(--text-muted)', marginTop:2 }}>{desc}</div>}
+      </div>
+      <div onClick={() => F(k, !cfg[k])}
+        style={{ width:40, height:22, borderRadius:11, background:cfg[k]?'var(--accent)':'var(--border)', cursor:'pointer', position:'relative', transition:'background 0.2s', flexShrink:0 }}>
+        <div style={{ position:'absolute', top:3, left:cfg[k]?20:3, width:16, height:16, borderRadius:'50%', background:'#fff', transition:'left 0.2s', boxShadow:'0 1px 3px rgba(0,0,0,0.3)' }} />
+      </div>
+    </div>
+  );
+
+  if (loading) return <div style={{ color:'var(--text-muted)', padding:20 }}>Loading…</div>;
+
+  return (
+    <div style={{ maxWidth:600 }}>
+      <div style={{ fontSize:15, fontWeight:800, color:'var(--text-primary)', marginBottom:4 }}>Daily Fleet Reports</div>
+      <div style={{ fontSize:13, color:'var(--text-muted)', marginBottom:24 }}>
+        Automatically email a daily fleet health summary each morning — asset status, upcoming services and open work orders.
+      </div>
+
+      {/* Enable toggle */}
+      <div style={{ background:'var(--surface)', border:'1px solid var(--border)', borderRadius:12, padding:20, marginBottom:16 }}>
+        <Toggle label="Enable daily reports" k="enabled" desc="Send an automated report every morning at the time below" />
+
+        {/* Send time */}
+        <div style={{ paddingTop:12, marginBottom:4 }}>
+          <label style={lStyle}>Send time (your local time)</label>
+          <input style={{...iStyle, width:120}} type="time" value={cfg.send_time} onChange={e=>F('send_time',e.target.value)} />
+        </div>
+      </div>
+
+      {/* Recipient emails */}
+      <div style={{ background:'var(--surface)', border:'1px solid var(--border)', borderRadius:12, padding:20, marginBottom:16 }}>
+        <div style={{ fontSize:13, fontWeight:800, color:'var(--text-primary)', marginBottom:12 }}>Recipients</div>
+        <div style={{ display:'flex', gap:8, marginBottom:12 }}>
+          <input style={{...iStyle, flex:1}} type="email" placeholder="name@company.com.au" value={emailIn}
+            onChange={e=>setEmailIn(e.target.value)}
+            onKeyDown={e=>e.key==='Enter'&&addEmail()} />
+          <button onClick={addEmail}
+            style={{ padding:'9px 16px', background:'var(--accent)', color:'#fff', border:'none', borderRadius:7, fontSize:13, fontWeight:700, cursor:'pointer' }}>
+            + Add
+          </button>
+        </div>
+        {cfg.emails.length === 0 ? (
+          <div style={{ fontSize:12, color:'var(--text-muted)', fontStyle:'italic' }}>No recipients yet — add email addresses above</div>
+        ) : (
+          <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
+            {cfg.emails.map(e => (
+              <div key={e} style={{ display:'flex', alignItems:'center', gap:6, padding:'4px 10px 4px 12px', background:'var(--accent-light)', border:'1px solid rgba(0,194,224,0.25)', borderRadius:20, fontSize:12 }}>
+                <span style={{ color:'var(--text-primary)', fontWeight:500 }}>{e}</span>
+                <button onClick={()=>removeEmail(e)} style={{ background:'none', border:'none', color:'var(--text-muted)', cursor:'pointer', fontSize:14, padding:0, lineHeight:1 }}>✕</button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Report contents */}
+      <div style={{ background:'var(--surface)', border:'1px solid var(--border)', borderRadius:12, padding:20, marginBottom:16 }}>
+        <div style={{ fontSize:13, fontWeight:800, color:'var(--text-primary)', marginBottom:4 }}>Report Contents</div>
+        <div style={{ fontSize:12, color:'var(--text-muted)', marginBottom:12 }}>Choose what to include in each daily report</div>
+        <Toggle label="Fleet health summary" k="include_health" desc="Asset status overview — running, down, maintenance" />
+        <Toggle label="Upcoming services" k="include_services" desc="Next 14 days of predicted service due dates" />
+        <Toggle label="Open work orders" k="include_workorders" desc="All unresolved work orders and defects" />
+        <Toggle label="Downtime summary" k="include_downtime" desc="Assets logged as down in the past 24 hours" />
+      </div>
+
+      {/* Preview of what gets sent */}
+      <div style={{ background:'var(--surface)', border:'1px solid var(--border)', borderRadius:12, padding:20, marginBottom:20 }}>
+        <div style={{ fontSize:13, fontWeight:800, color:'var(--text-primary)', marginBottom:12 }}>Email Preview</div>
+        <div style={{ background:'#1a2433', borderRadius:8, padding:16, fontFamily:'Georgia,serif', fontSize:13, lineHeight:1.6, color:'#ccd6f6' }}>
+          <div style={{ fontSize:16, fontWeight:700, color:'#fff', marginBottom:4 }}>MechIQ — Daily Fleet Report</div>
+          <div style={{ fontSize:11, color:'#8892b0', marginBottom:14 }}>{new Date().toLocaleDateString('en-AU', { weekday:'long', year:'numeric', month:'long', day:'numeric' })}</div>
+          {cfg.include_health && <div style={{ marginBottom:8 }}>📊 <strong>Fleet Health</strong> — Asset status snapshot across your fleet</div>}
+          {cfg.include_services && <div style={{ marginBottom:8 }}>🔧 <strong>Upcoming Services</strong> — Predicted service due dates for the next 14 days</div>}
+          {cfg.include_workorders && <div style={{ marginBottom:8 }}>⚠️ <strong>Open Work Orders</strong> — All unresolved maintenance tasks</div>}
+          {cfg.include_downtime && <div style={{ marginBottom:8 }}>🔴 <strong>Downtime</strong> — Assets currently offline</div>}
+          <div style={{ marginTop:12, fontSize:11, color:'#8892b0' }}>Sent by MechIQ · mechiq.com.au · {cfg.emails.length} recipient{cfg.emails.length!==1?'s':''}</div>
+        </div>
+      </div>
+
+      {/* Actions */}
+      <div style={{ display:'flex', gap:10, flexWrap:'wrap' }}>
+        <button onClick={save} disabled={saving}
+          style={{ padding:'11px 28px', background:saving?'var(--surface-2)':'var(--accent)', color:saving?'var(--text-muted)':'#fff', border:'none', borderRadius:8, fontSize:13, fontWeight:700, cursor:saving?'not-allowed':'pointer' }}>
+          {saving ? 'Saving…' : saved ? '✓ Saved' : 'Save Settings'}
+        </button>
+        <button onClick={sendTest} disabled={testing}
+          style={{ padding:'11px 22px', background:'var(--surface-2)', color:'var(--text-secondary)', border:'1px solid var(--border)', borderRadius:8, fontSize:13, fontWeight:600, cursor:testing?'not-allowed':'pointer' }}>
+          {testing ? 'Sending…' : '📧 Send Test Report'}
+        </button>
+      </div>
+      {testMsg && (
+        <div style={{ marginTop:12, padding:'10px 14px', background: testMsg.startsWith('✅') ? 'var(--green-bg)' : 'rgba(239,83,80,0.1)', border:'1px solid ' + (testMsg.startsWith('✅') ? 'var(--green)' : 'rgba(239,83,80,0.3)'), borderRadius:7, fontSize:13, color: testMsg.startsWith('✅') ? 'var(--green)' : '#ef5350' }}>
+          {testMsg}
+        </div>
+      )}
+    </div>
+  );
+}
+
+
 // ─── Asset Onboarding Wrapper ─────────────────────────────────────────────────
 // Renders the existing OnboardingTab from Assets.js inside the Onboarding page
 // We import Assets dynamically to avoid circular deps — instead we inline a
@@ -3347,6 +3507,7 @@ function Settings({ userRole, initialTab, adminMode, personalMode }) {
       case 'assets_settings':  return <AssetsSettings userRole={userRole} />;
       case 'onboarding_admin': return <PlantOnboardingAdmin userRole={userRole} />;
       case 'labels':           return <LabelsSection userRole={userRole} />;
+      case 'daily_reports':    return <DailyReports userRole={userRole} />;
       default:                 return null;
     }
   };
