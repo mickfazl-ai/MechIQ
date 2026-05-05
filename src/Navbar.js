@@ -315,6 +315,7 @@ const NAV_STRUCTURE = [
       { id: 'admin', subPage: 'notifs',   label: 'Notifications',   roles: ['admin'] },
       { id: 'admin', subPage: 'billing',  label: 'Billing & Plan',  roles: ['admin'] },
       { id: 'admin', subPage: 'data',             label: 'Data & Export',   roles: ['admin'] },
+      { id: 'admin', subPage: 'daily_reports',     label: 'Daily Reports',   roles: ['admin'] },
       { id: 'admin', subPage: 'assets_settings',  label: 'Assets',          roles: ['admin'] },
       { id: 'admin', subPage: 'labels',           label: 'Labels',          roles: ['admin'] },
     ],
