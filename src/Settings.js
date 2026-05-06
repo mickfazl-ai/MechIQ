@@ -2695,10 +2695,9 @@ function DailyReports({ userRole }) {
 
   const save = async () => {
     setSaving(true);
-    const { data: existing } = await supabase.from('daily_report_config').select('id').eq('company_id', userRole.company_id).maybeSingle();
     const payload = { ...cfg, company_id: userRole.company_id, updated_at: new Date().toISOString() };
-    if (existing) await supabase.from('daily_report_config').update(payload).eq('company_id', userRole.company_id);
-    else await supabase.from('daily_report_config').insert([payload]);
+    const { error } = await supabase.from('daily_report_config').upsert([payload], { onConflict: 'company_id' });
+    if (error) { alert('Save failed: ' + error.message); setSaving(false); return; }
     setSaving(false); setSaved(true); setTimeout(() => setSaved(false), 3000);
   };
 
