@@ -23,6 +23,87 @@ import { supabase } from './supabase';
 import ContractorPortal from './ContractorPortal';
 import DemoTour from './DemoTour';
 
+
+// ─── Error Collector ──────────────────────────────────────────────────────────
+const MechIQErrors = {
+  _queue: [],
+  _flushing: false,
+
+  async log(error, context = {}) {
+    const entry = {
+      message:    error?.message || String(error),
+      stack:      error?.stack || null,
+      context:    JSON.stringify(context),
+      url:        window.location.href,
+      user_agent: navigator.userAgent.slice(0, 200),
+      occurred_at: new Date().toISOString(),
+    };
+    this._queue.push(entry);
+    if (!this._flushing) this._flush();
+  },
+
+  async _flush() {
+    this._flushing = true;
+    while (this._queue.length) {
+      const batch = this._queue.splice(0, 10);
+      try {
+        // Get company_id from supabase session if available
+        const { data: { session } } = await supabase.auth.getSession();
+        const userId = session?.user?.id || null;
+        const rows = batch.map(e => ({ ...e, user_id: userId }));
+        await supabase.from('error_logs').insert(rows);
+      } catch(e) { /* silently fail — don't cause recursive errors */ }
+    }
+    this._flushing = false;
+  }
+};
+
+// Global error listeners
+window.addEventListener('error', (e) => {
+  MechIQErrors.log(e.error || new Error(e.message), { type: 'uncaught', source: e.filename, line: e.lineno });
+});
+window.addEventListener('unhandledrejection', (e) => {
+  MechIQErrors.log(e.reason instanceof Error ? e.reason : new Error(String(e.reason)), { type: 'unhandled_promise' });
+});
+
+// ─── Error Boundary ───────────────────────────────────────────────────────────
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+  componentDidCatch(error, info) {
+    MechIQErrors.log(error, { type: 'react_boundary', component: info.componentStack?.split('\n')[1]?.trim() || 'unknown' });
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{ minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center', background:'#09111f', flexDirection:'column', gap:16, padding:24, fontFamily:'sans-serif' }}>
+          <div style={{ fontSize:22, fontWeight:900, letterSpacing:4, color:'#dde3ed' }}>MECH<span style={{color:'#1e88e5'}}>IQ</span></div>
+          <div style={{ background:'#0f1b2d', border:'1px solid rgba(239,83,80,0.3)', borderTop:'3px solid #ef5350', borderRadius:6, padding:'28px 24px', maxWidth:420, width:'100%', textAlign:'center' }}>
+            <div style={{fontSize:32, marginBottom:12}}>⚠️</div>
+            <div style={{fontSize:16, fontWeight:700, color:'#dde3ed', marginBottom:8}}>Something went wrong</div>
+            <div style={{fontSize:13, color:'rgba(221,227,237,0.5)', marginBottom:20, lineHeight:1.5}}>
+              This error has been logged automatically. Click below to reload.
+            </div>
+            <div style={{fontSize:11, fontFamily:'monospace', color:'rgba(239,83,80,0.7)', background:'rgba(239,83,80,0.05)', padding:'8px 12px', borderRadius:4, marginBottom:20, textAlign:'left', wordBreak:'break-all'}}>
+              {this.state.error?.message}
+            </div>
+            <button onClick={() => window.location.reload()}
+              style={{padding:'10px 24px', background:'#1e88e5', color:'#fff', border:'none', borderRadius:4, fontSize:13, fontWeight:700, cursor:'pointer'}}>
+              Reload MechIQ
+            </button>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 // ─── Label Scan Router ────────────────────────────────────────────────────────
 function LabelScanRouter({ labelCode }) {
   const [state,   setState]   = React.useState('loading');
@@ -439,16 +520,16 @@ function Root() {
   const pathname = window.location.pathname;
   if (/^\/scan\/label\/([A-Za-z0-9-]+)$/.test(pathname)) {
     const code = pathname.match(/^\/scan\/label\/([A-Za-z0-9-]+)$/)[1];
-    return <LabelScanRouter labelCode={code} />;
+    return <ErrorBoundary><LabelScanRouter labelCode={code} /></ErrorBoundary>;
   }
   if (/^\/scan\/([a-f0-9-]{1,36}|\d+)$/.test(pathname)) {
-    return <ScanPage assetId={pathname.match(/^\/scan\/([a-f0-9-]{1,36}|\d+)$/)[1]} />;
+    return <ErrorBoundary><ScanPage assetId={pathname.match(/^\/scan\/([a-f0-9-]{1,36}|\d+)$/)[1]} /></ErrorBoundary>;
   }
   if (/^\/scan\/part\/([a-f0-9-]{1,36}|\d+)$/.test(pathname)) {
-    return <ScanPage partId={pathname.match(/^\/scan\/part\/([a-f0-9-]{1,36}|\d+)$/)[1]} />;
+    return <ErrorBoundary><ScanPage partId={pathname.match(/^\/scan\/part\/([a-f0-9-]{1,36}|\d+)$/)[1]} /></ErrorBoundary>;
   }
-  if (pathname.startsWith('/contractor')) return <ContractorPortal />;
-  return <App />;
+  if (pathname.startsWith('/contractor')) return <ErrorBoundary><ContractorPortal /></ErrorBoundary>;
+  return <ErrorBoundary><App /></ErrorBoundary>;
 }
 
 export default Root;

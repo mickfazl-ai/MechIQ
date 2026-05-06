@@ -1507,6 +1507,7 @@ const ADMIN_TABS = [
   { id: 'onboarding_admin', label: 'Plant Onboarding',icon: '🏗️' },
   { id: 'labels',           label: 'Labels',           icon: '🏷' },
   { id: 'daily_reports',    label: 'Daily Reports',    icon: '📧' },
+  { id: 'error_log',        label: 'Error Log',        icon: '🔍' },
 ];
 
 const PERSONAL_TABS = [
@@ -2834,6 +2835,192 @@ function DailyReports({ userRole }) {
 }
 
 
+// ─── Error Log Admin ──────────────────────────────────────────────────────────
+function ErrorLog({ userRole }) {
+  const [errors,   setErrors]   = React.useState([]);
+  const [loading,  setLoading]  = React.useState(true);
+  const [filter,   setFilter]   = React.useState('all');
+  const [analysing,setAnalysing]= React.useState({});
+  const [analyses, setAnalyses] = React.useState({});
+  const [clearing, setClearing] = React.useState(false);
+
+  React.useEffect(() => { load(); }, []);
+
+  const load = async () => {
+    setLoading(true);
+    const { data } = await supabase.from('error_logs')
+      .select('*').order('occurred_at', { ascending: false }).limit(100);
+    setErrors(data || []);
+    setLoading(false);
+  };
+
+  const clearAll = async () => {
+    if (!window.confirm('Clear all error logs?')) return;
+    setClearing(true);
+    await supabase.from('error_logs').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+    setErrors([]); setClearing(false);
+  };
+
+  const analyseError = async (err) => {
+    setAnalysing(a => ({ ...a, [err.id]: true }));
+    try {
+      const prompt = `You are a senior React/Supabase developer reviewing an error from MechIQ, a fleet maintenance web app built with React, Supabase, Vercel and Cloudflare Workers.
+
+Error details:
+- Message: ${err.message}
+- Stack: ${err.stack ? err.stack.slice(0, 800) : 'not available'}
+- Context: ${err.context || '{}'}
+- URL: ${err.url || ''}
+- Occurred: ${err.occurred_at}
+
+Provide:
+1. DIAGNOSIS: What caused this error (2-3 sentences)
+2. FIX: Exact code fix or steps to resolve it
+3. FILE: Which file likely needs changing (e.g. Settings.js, App.js)
+4. PRIORITY: Critical / High / Medium / Low
+
+Be specific and concise. Format with those 4 headings.`;
+
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 1000,
+          messages: [{ role: 'user', content: prompt }]
+        })
+      });
+      const data = await res.json();
+      const text = data.content?.[0]?.text || 'Analysis failed';
+      setAnalyses(a => ({ ...a, [err.id]: text }));
+      // Save analysis back to DB
+      await supabase.from('error_logs').update({ ai_analysis: text }).eq('id', err.id);
+    } catch(e) {
+      setAnalyses(a => ({ ...a, [err.id]: 'Analysis failed: ' + e.message }));
+    }
+    setAnalysing(a => ({ ...a, [err.id]: false }));
+  };
+
+  const analyseAll = async () => {
+    const unanalysed = errors.filter(e => !e.ai_analysis && !analyses[e.id]);
+    for (const err of unanalysed.slice(0, 5)) {
+      await analyseError(err);
+    }
+  };
+
+  const typeColor = (ctx) => {
+    try {
+      const c = JSON.parse(ctx || '{}');
+      if (c.type === 'react_boundary') return '#ef5350';
+      if (c.type === 'uncaught') return '#ff9800';
+      if (c.type === 'unhandled_promise') return '#ff9800';
+    } catch(e) {}
+    return '#94a3b8';
+  };
+
+  const getType = (ctx) => {
+    try { return JSON.parse(ctx || '{}').type || 'unknown'; } catch(e) { return 'unknown'; }
+  };
+
+  const filtered = filter === 'all' ? errors : errors.filter(e => getType(e.context) === filter);
+  const counts = errors.reduce((acc, e) => { const t = getType(e.context); acc[t] = (acc[t]||0)+1; return acc; }, {});
+
+  return (
+    <div>
+      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:20, flexWrap:'wrap', gap:12 }}>
+        <div>
+          <div style={{ fontSize:15, fontWeight:800, color:'var(--text-primary)', marginBottom:4 }}>Error Log & AI Diagnostics</div>
+          <div style={{ fontSize:13, color:'var(--text-muted)' }}>All app errors are captured automatically. Click Analyse to get an AI fix suggestion.</div>
+        </div>
+        <div style={{ display:'flex', gap:8 }}>
+          <button onClick={analyseAll} style={{ padding:'8px 16px', background:'var(--accent-light)', color:'var(--accent)', border:'1px solid rgba(0,194,224,0.3)', borderRadius:7, fontSize:12, fontWeight:700, cursor:'pointer' }}>
+            ✦ Analyse All
+          </button>
+          <button onClick={load} style={{ padding:'8px 14px', background:'var(--surface-2)', color:'var(--text-secondary)', border:'1px solid var(--border)', borderRadius:7, fontSize:12, cursor:'pointer' }}>
+            ↻ Refresh
+          </button>
+          <button onClick={clearAll} disabled={clearing} style={{ padding:'8px 14px', background:'var(--red-bg)', color:'var(--red)', border:'1px solid var(--red-border)', borderRadius:7, fontSize:12, fontWeight:700, cursor:'pointer' }}>
+            🗑 Clear All
+          </button>
+        </div>
+      </div>
+
+      {/* Summary cards */}
+      <div style={{ display:'flex', gap:10, marginBottom:20, flexWrap:'wrap' }}>
+        {[['all', 'All Errors', errors.length, 'var(--accent)'],
+          ['react_boundary', 'App Crashes', counts.react_boundary||0, '#ef5350'],
+          ['uncaught', 'JS Errors', counts.uncaught||0, '#ff9800'],
+          ['unhandled_promise', 'Promise Errors', counts.unhandled_promise||0, '#f59e0b'],
+        ].map(([f, label, count, color]) => (
+          <div key={f} onClick={() => setFilter(f)}
+            style={{ flex:1, minWidth:120, padding:'12px 16px', background: filter===f ? color+'18' : 'var(--surface)', border:`1px solid ${filter===f ? color+'44' : 'var(--border)'}`, borderRadius:10, cursor:'pointer', transition:'all 0.15s' }}>
+            <div style={{ fontSize:22, fontWeight:800, color }}>{count}</div>
+            <div style={{ fontSize:11, color:'var(--text-muted)', fontWeight:600 }}>{label}</div>
+          </div>
+        ))}
+      </div>
+
+      {loading ? (
+        <div style={{ color:'var(--text-muted)', fontSize:13, padding:20 }}>Loading error logs…</div>
+      ) : filtered.length === 0 ? (
+        <div style={{ textAlign:'center', padding:'40px 20px', color:'var(--text-muted)', fontSize:14 }}>
+          <div style={{ fontSize:32, marginBottom:8 }}>✅</div>
+          No errors recorded{filter !== 'all' ? ' of this type' : ''} — fleet is running clean.
+        </div>
+      ) : (
+        <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+          {filtered.map(err => {
+            const analysis = analyses[err.id] || err.ai_analysis;
+            const isAnalysing = analysing[err.id];
+            const errColor = typeColor(err.context);
+            const errType = getType(err.context);
+            return (
+              <div key={err.id} style={{ background:'var(--surface)', border:`1px solid var(--border)`, borderLeft:`3px solid ${errColor}`, borderRadius:10, overflow:'hidden' }}>
+                {/* Error header */}
+                <div style={{ padding:'14px 16px', display:'flex', justifyContent:'space-between', alignItems:'flex-start', gap:12 }}>
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:6, flexWrap:'wrap' }}>
+                      <span style={{ padding:'2px 8px', borderRadius:20, fontSize:10, fontWeight:700, background:errColor+'18', color:errColor, border:`1px solid ${errColor}33` }}>{errType}</span>
+                      <span style={{ fontSize:11, color:'var(--text-muted)' }}>{new Date(err.occurred_at).toLocaleString('en-AU')}</span>
+                    </div>
+                    <div style={{ fontSize:13, fontWeight:600, color:'var(--text-primary)', wordBreak:'break-word', marginBottom:4 }}>{err.message}</div>
+                    {err.url && <div style={{ fontSize:11, color:'var(--text-muted)', fontFamily:'monospace' }}>{err.url}</div>}
+                  </div>
+                  {!analysis && (
+                    <button onClick={() => analyseError(err)} disabled={isAnalysing}
+                      style={{ flexShrink:0, padding:'7px 14px', background: isAnalysing ? 'var(--surface-2)' : 'linear-gradient(135deg,#7c3aed,#4f46e5)', color: isAnalysing ? 'var(--text-muted)' : '#fff', border:'none', borderRadius:7, fontSize:12, fontWeight:700, cursor: isAnalysing ? 'not-allowed' : 'pointer', whiteSpace:'nowrap' }}>
+                      {isAnalysing ? '✦ Analysing…' : '✦ AI Fix'}
+                    </button>
+                  )}
+                </div>
+
+                {/* Stack trace (collapsed) */}
+                {err.stack && (
+                  <details style={{ padding:'0 16px 10px' }}>
+                    <summary style={{ fontSize:11, color:'var(--text-muted)', cursor:'pointer', userSelect:'none' }}>Stack trace</summary>
+                    <pre style={{ fontSize:10, color:'rgba(221,227,237,0.5)', background:'var(--surface-2)', padding:'8px 10px', borderRadius:6, overflow:'auto', marginTop:6, whiteSpace:'pre-wrap', wordBreak:'break-all' }}>{err.stack.slice(0,600)}</pre>
+                  </details>
+                )}
+
+                {/* AI Analysis */}
+                {analysis && (
+                  <div style={{ padding:'14px 16px', borderTop:'1px solid var(--border)', background:'rgba(124,58,237,0.04)' }}>
+                    <div style={{ fontSize:11, fontWeight:700, color:'#7c3aed', marginBottom:8, display:'flex', alignItems:'center', gap:6 }}>
+                      <span>✦</span> AI DIAGNOSIS & FIX
+                    </div>
+                    <div style={{ fontSize:13, color:'var(--text-secondary)', lineHeight:1.6, whiteSpace:'pre-wrap' }}>{analysis}</div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+
 // ─── Asset Onboarding Wrapper ─────────────────────────────────────────────────
 // Renders the existing OnboardingTab from Assets.js inside the Onboarding page
 // We import Assets dynamically to avoid circular deps — instead we inline a
@@ -3507,6 +3694,7 @@ function Settings({ userRole, initialTab, adminMode, personalMode }) {
       case 'onboarding_admin': return <PlantOnboardingAdmin userRole={userRole} />;
       case 'labels':           return <LabelsSection userRole={userRole} />;
       case 'daily_reports':    return <DailyReports userRole={userRole} />;
+      case 'error_log':        return <ErrorLog userRole={userRole} />;
       default:                 return null;
     }
   };
