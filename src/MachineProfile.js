@@ -295,9 +295,7 @@ function ServiceViewModal({ service, asset, onClose }) {
 }
 
 
-function OverviewTab({ asset, recentPrestarts, recentMaintenance }) {
-  const [selectedPrestart, setSelectedPrestart] = React.useState(null);
-  const [selectedService,  setSelectedService]  = React.useState(null);
+function OverviewTab({ asset, recentPrestarts, recentMaintenance, onViewPrestart, onViewService }) {
 
   const fields = [
     ['Make / Model', [asset.make, asset.model].filter(Boolean).join(' ') || '—'],
@@ -321,7 +319,6 @@ function OverviewTab({ asset, recentPrestarts, recentMaintenance }) {
   ];
 
   return (
-    <React.Fragment>
     <div>
       <div className="mp-card" style={{ marginBottom:14 }}>
         <div className="mp-section-title">Asset Details</div>
@@ -347,7 +344,7 @@ function OverviewTab({ asset, recentPrestarts, recentMaintenance }) {
           {recentPrestarts.length === 0 ? <div style={{ fontSize:13, color:'var(--text-muted)' }}>No prestarts yet</div>
           : recentPrestarts.map(p => (
             <div key={p.id} className="mp-row" style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'9px 0', borderBottom:'1px solid var(--border)', cursor:'pointer' }}
-              onClick={() => setSelectedPrestart(p)}>
+              onClick={() => onViewPrestart && onViewPrestart(p)}>
               <div>
                 <div style={{ fontSize:13, fontWeight:600, color:'var(--text-primary)' }}>{p.date}</div>
                 <div style={{ fontSize:11, color:'var(--text-muted)', marginTop:1 }}>{p.operator_name} · {p.hrs_start ? p.hrs_start + ' hrs' : ''}</div>
@@ -369,7 +366,7 @@ function OverviewTab({ asset, recentPrestarts, recentMaintenance }) {
             const [c, bg] = sc[m.status] || ['var(--text-muted)','var(--surface-2)'];
             return (
               <div key={m.id} className="mp-row" style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'9px 0', borderBottom:'1px solid var(--border)', cursor: m.id ? 'pointer' : 'default' }}
-                onClick={() => m.technician && setSelectedService(m)}>
+                onClick={() => m.technician && onViewService && onViewService(m)}>
                 <div>
                   <div style={{ fontSize:13, fontWeight:600, color:'var(--text-primary)' }}>{m.task || m.service_type}</div>
                   <div style={{ fontSize:11, color:'var(--text-muted)', marginTop:1 }}>{m.next_due || m.date} {m.technician ? '· ' + m.technician : ''}</div>
@@ -385,15 +382,6 @@ function OverviewTab({ asset, recentPrestarts, recentMaintenance }) {
       </div>
     </div>
 
-    {/* Prestart View Modal */}
-    {selectedPrestart && (
-      <PrestartViewModal prestart={selectedPrestart} asset={asset} onClose={() => setSelectedPrestart(null)} />
-    )}
-    {/* Service Sheet View Modal */}
-    {selectedService && (
-      <ServiceViewModal service={selectedService} asset={asset} onClose={() => setSelectedService(null)} />
-    )}
-    </React.Fragment>
   );
 }
 
@@ -2136,7 +2124,7 @@ function AssetPage({ assetId, userRole, onStartPrestart, onStartServiceSheet, on
       </div>
 
       {/* ── Tab content ── */}
-      {activeTab === 'overview'     && <OverviewTab asset={asset} recentPrestarts={recentPrestarts} recentMaintenance={recentMaintenance} />}
+      {activeTab === 'overview'     && <OverviewTab asset={asset} recentPrestarts={recentPrestarts} recentMaintenance={recentMaintenance} onViewPrestart={setSelectedPrestart} onViewService={setSelectedService} />}
       {activeTab === 'workorders'   && <WorkOrdersTab asset={asset} userRole={userRole} />}
       {activeTab === 'service'      && <ServiceTab asset={asset} />}
       {activeTab === 'oil'          && <OilTab asset={asset} userRole={userRole} />}

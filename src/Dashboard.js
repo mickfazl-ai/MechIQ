@@ -423,16 +423,18 @@ function AccordionCards({ loading, assets, maint, wos, PCOLOR, StatusBadge }) {
 
 /* ── Widget Definitions ── */
 const WIDGET_DEFS = [
-  { id:'fleet_health',    label:'Fleet Health',        icon:'🚛', defaultSize:'lg', desc:'Overall fleet status bar' },
-  { id:'breakdowns',      label:'Breakdowns',          icon:'🔴', defaultSize:'md', desc:'Current down machines' },
-  { id:'overdue',         label:'Overdue Services',    icon:'⚠️', defaultSize:'md', desc:'Services past due date' },
-  { id:'due_today',       label:'Service Due Today',   icon:'📅', defaultSize:'md', desc:'Services due today' },
-  { id:'priority_wos',    label:'Priority Work Orders',icon:'🔥', defaultSize:'md', desc:'Critical and high priority jobs' },
-  { id:'oil_sampling',    label:'Oil Sampling',        icon:'🧪', defaultSize:'md', desc:'Overdue samples and high alerts' },
-  { id:'parts_stock',     label:'Parts Low Stock',     icon:'🔩', defaultSize:'sm', desc:'Parts below minimum stock level' },
-  { id:'downtime_summary',label:'Downtime Summary',    icon:'📉', defaultSize:'sm', desc:'Hours lost this month' },
-  { id:'calendar_preview',label:'Calendar Preview',    icon:'📆', defaultSize:'lg', desc:'Next 7 days of scheduled services' },
-  { id:'messages',        label:'Messages',            icon:'💬', defaultSize:'sm', desc:'Unread messages and recent activity' },
+  { id:'prestart_kpi',   label:'Prestart KPIs',        icon:'📋', defaultSize:'wide', desc:'Daily prestart completion per machine with missing prestart alerts' },
+  { id:'service_kpi',    label:'Service KPIs',         icon:'🔧', defaultSize:'wide', desc:'Service schedule status — overdue, due soon, completed' },
+  { id:'fleet_health',   label:'Fleet Health',         icon:'🚛', defaultSize:'lg',  desc:'Overall fleet status bar' },
+  { id:'breakdowns',     label:'Breakdowns',           icon:'🔴', defaultSize:'md',  desc:'Current down machines' },
+  { id:'overdue',        label:'Overdue Services',     icon:'⚠️', defaultSize:'md',  desc:'Services past due date' },
+  { id:'due_today',      label:'Service Due Today',    icon:'📅', defaultSize:'md',  desc:'Services due today' },
+  { id:'priority_wos',  label:'Priority Work Orders', icon:'🔥', defaultSize:'md',  desc:'Critical and high priority jobs' },
+  { id:'oil_sampling',  label:'Oil Sampling',         icon:'🧪', defaultSize:'md',  desc:'Overdue samples and high alerts' },
+  { id:'parts_stock',   label:'Parts Low Stock',      icon:'🔩', defaultSize:'sm',  desc:'Parts below minimum stock level' },
+  { id:'downtime_summary',label:'Downtime Summary',   icon:'📉', defaultSize:'sm',  desc:'Hours lost this month' },
+  { id:'calendar_preview',label:'Calendar Preview',   icon:'📆', defaultSize:'lg',  desc:'Next 7 days of scheduled services' },
+  { id:'messages',      label:'Messages',             icon:'💬', defaultSize:'sm',  desc:'Unread messages and recent activity' },
 ];
 
 const DEFAULT_LAYOUT = WIDGET_DEFS.map(w => ({ id:w.id, enabled:true, size:w.defaultSize }));
@@ -556,7 +558,7 @@ function ExpandableWidget({ sizeClass, title, icon, count, countColor, countSize
   );
 }
 
-function WidgetFleetHealth({ assets, loading, onViewAsset }) {
+function WidgetFleetHealth({ assets, loading }) {
   if (loading) return <div className="widget-card widget-lg"><Sk h="60px" /></div>;
   const total = assets.length, running = assets.filter(a=>a.status==='Running').length, down = assets.filter(a=>a.status==='Down').length, maint = assets.filter(a=>a.status==='Maintenance').length;
   return (
@@ -566,13 +568,7 @@ function WidgetFleetHealth({ assets, loading, onViewAsset }) {
         {assets.map(a => {
           const c = a.status==='Down'?'var(--red)':a.status==='Maintenance'?'var(--amber)':' var(--green)';
           return (
-            <div
-              key={a.id}
-              onClick={() => onViewAsset && onViewAsset(a.id)}
-              style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'7px 10px', borderRadius:8, background:'var(--surface-2)', border:'1px solid var(--border)', cursor: onViewAsset ? 'pointer' : 'default', transition:'background 0.15s' }}
-              onMouseEnter={e => { if (onViewAsset) e.currentTarget.style.background='var(--surface-3, #e8f0f8)'; }}
-              onMouseLeave={e => { if (onViewAsset) e.currentTarget.style.background='var(--surface-2)'; }}
-            >
+            <div key={a.id} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'7px 10px', borderRadius:8, background:'var(--surface-2)', border:'1px solid var(--border)' }}>
               <div style={{ display:'flex', alignItems:'center', gap:8 }}>
                 <span style={{ width:8, height:8, borderRadius:'50%', background:c, display:'inline-block', flexShrink:0 }} />
                 <span style={{ fontSize:13, fontWeight:600, color:'var(--text-primary)' }}>{a.name}</span>
@@ -581,7 +577,6 @@ function WidgetFleetHealth({ assets, loading, onViewAsset }) {
               <div style={{ display:'flex', gap:10, alignItems:'center' }}>
                 {a.hours && <span style={{ fontSize:11, color:'var(--text-muted)' }}>{Number(a.hours).toLocaleString()} hrs</span>}
                 <span style={{ fontSize:11, fontWeight:700, color:c, padding:'2px 8px', background:c+'18', borderRadius:20 }}>{a.status}</span>
-                {onViewAsset && <span style={{ fontSize:11, color:'var(--text-muted)', opacity:0.5 }}>›</span>}
               </div>
             </div>
           );
@@ -799,7 +794,216 @@ function WidgetMessages({ companyId, size }) {
 }
 
 /* ── Main Dashboard ── */
-function Dashboard({ companyId, userRole, onViewAsset }) {
+
+// ─── KPI: Prestart Summary Widget ────────────────────────────────────────────
+function WidgetPrestartKPI({ companyId, loading }) {
+  const [data,        setData]        = React.useState(null);
+  const [viewPrestart,setViewPrestart]= React.useState(null);
+  const today = new Date().toISOString().split('T')[0];
+
+  React.useEffect(() => {
+    if (!companyId) return;
+    (async () => {
+      const [{ data: assets }, { data: subs }, { data: allSubs }] = await Promise.all([
+        supabase.from('assets').select('id,name,asset_number,hours,status').eq('company_id', companyId),
+        supabase.from('form_submissions').select('*').eq('company_id', companyId).eq('date', today),
+        supabase.from('form_submissions').select('asset,date,hrs_start').eq('company_id', companyId).order('date',{ascending:false}).limit(200),
+      ]);
+      const activeAssets = (assets||[]).filter(a => !/inactive|retired/i.test(a.status||''));
+      const todaySubs    = subs || [];
+
+      // Per-machine: did each asset get a prestart today?
+      const perMachine = activeAssets.map(a => {
+        const todayPs = todaySubs.filter(s => s.asset === a.name);
+        // Last prestart for this asset
+        const lastPs  = (allSubs||[]).filter(s => s.asset === a.name)[0];
+        const lastHrs = lastPs?.hrs_start || 0;
+        const hrsDiff = (a.hours||0) - lastHrs;
+        // Missing = no prestart today AND hours diff > 6 (machine worked but no prestart)
+        const workedToday = hrsDiff >= 6;
+        const missingToday = todayPs.length === 0 && workedToday;
+        return { ...a, todayCount: todayPs.length, lastPs, hrsDiff, missingToday, todayPs };
+      });
+
+      setData({
+        total:     activeAssets.length,
+        completed: [...new Set(todaySubs.map(s=>s.asset))].length,
+        missing:   perMachine.filter(m=>m.missingToday).length,
+        defects:   todaySubs.filter(s=>s.defects_found).length,
+        perMachine,
+        todaySubs,
+      });
+    })();
+  }, [companyId, today]);
+
+  if (loading || !data) return (
+    <div className="dash-widget" style={{ gridColumn:'span 2' }}>
+      <div className="dw-header"><div className="dw-title">📋 Prestart KPIs</div></div>
+      <div style={{color:'var(--text-muted)',fontSize:13,padding:'20px 0'}}>Loading…</div>
+    </div>
+  );
+
+  const rate = data.total > 0 ? Math.round((data.completed/data.total)*100) : 0;
+  const rateColor = rate >= 90 ? 'var(--green)' : rate >= 70 ? 'var(--amber)' : 'var(--red)';
+
+  return (
+    <>
+    <div className="dash-widget" style={{ gridColumn:'span 2' }}>
+      <div className="dw-header">
+        <div className="dw-title">📋 Prestart KPIs — Today</div>
+        <div style={{ fontSize:11, color:'var(--text-muted)' }}>{today}</div>
+      </div>
+
+      {/* KPI row */}
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:10, marginBottom:18 }}>
+        {[
+          ['Completed', data.completed, 'var(--green)',   '✓'],
+          ['Total Units', data.total,   'var(--accent)',  '🚛'],
+          ['Missing',    data.missing,  data.missing>0?'var(--red)':'var(--green)',  '⚠'],
+          ['Defects',    data.defects,  data.defects>0?'var(--amber)':'var(--green)','🔴'],
+        ].map(([label, val, color, icon]) => (
+          <div key={label} style={{ background:'var(--surface-2)', borderRadius:8, padding:'12px 10px', textAlign:'center', border:`1px solid ${color}22` }}>
+            <div style={{ fontSize:22, fontWeight:900, color }}>{val}</div>
+            <div style={{ fontSize:10, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.5px', marginTop:2 }}>{label}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Completion rate bar */}
+      <div style={{ marginBottom:16 }}>
+        <div style={{ display:'flex', justifyContent:'space-between', marginBottom:5 }}>
+          <span style={{ fontSize:11, fontWeight:700, color:'var(--text-muted)' }}>COMPLETION RATE</span>
+          <span style={{ fontSize:13, fontWeight:800, color:rateColor }}>{rate}%</span>
+        </div>
+        <div style={{ height:8, background:'var(--surface-2)', borderRadius:4, overflow:'hidden' }}>
+          <div style={{ height:'100%', width:`${rate}%`, background:rateColor, borderRadius:4, transition:'width 0.5s' }} />
+        </div>
+      </div>
+
+      {/* Per-machine breakdown */}
+      <div style={{ fontSize:11, fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.5px', marginBottom:8 }}>PER MACHINE</div>
+      <div style={{ display:'flex', flexDirection:'column', gap:5 }}>
+        {data.perMachine.map(m => (
+          <div key={m.id} style={{ display:'flex', alignItems:'center', gap:10, padding:'8px 10px', borderRadius:7, background: m.missingToday ? 'rgba(239,83,80,0.06)' : m.todayCount > 0 ? 'rgba(34,197,94,0.06)' : 'var(--surface-2)', border: `1px solid ${m.missingToday ? 'rgba(239,83,80,0.2)' : m.todayCount > 0 ? 'rgba(34,197,94,0.2)' : 'var(--border)'}`, cursor: m.todayPs?.length > 0 ? 'pointer' : 'default' }}
+            onClick={() => m.todayPs?.length > 0 && setViewPrestart({ subs: m.todayPs, asset: m })}>
+            <div style={{ width:8, height:8, borderRadius:'50%', background: m.missingToday ? 'var(--red)' : m.todayCount > 0 ? 'var(--green)' : 'var(--text-faint)', flexShrink:0 }} />
+            <div style={{ flex:1, minWidth:0 }}>
+              <div style={{ fontSize:12, fontWeight:600, color:'var(--text-primary)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+                {m.asset_number && <span style={{ color:'var(--accent)', marginRight:6, fontSize:11 }}>{m.asset_number}</span>}
+                {m.name}
+              </div>
+              <div style={{ fontSize:10, color:'var(--text-muted)' }}>
+                {m.missingToday ? `⚠ Missing — ${Math.round(m.hrsDiff)} hrs worked since last prestart` :
+                 m.todayCount > 0 ? `✓ ${m.todayCount} prestart${m.todayCount>1?'s':''} today` :
+                 m.hours < 6 ? 'Not yet operational today' : 'No prestart today'}
+              </div>
+            </div>
+            <div style={{ flexShrink:0, display:'flex', alignItems:'center', gap:6 }}>
+              <span style={{ fontSize:11, color:'var(--text-muted)' }}>{m.hours?.toLocaleString()} hrs</span>
+              {m.todayPs?.length > 0 && <span style={{ fontSize:11, color:'var(--accent)', fontWeight:700 }}>View →</span>}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+
+    {/* Prestart detail modal */}
+    {viewPrestart && (
+      <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.65)', zIndex:2000, display:'flex', alignItems:'center', justifyContent:'center', padding:16, backdropFilter:'blur(4px)' }}
+        onClick={() => setViewPrestart(null)}>
+        <div style={{ background:'var(--surface)', border:'1px solid var(--border)', borderRadius:14, width:'100%', maxWidth:600, maxHeight:'88vh', display:'flex', flexDirection:'column', boxShadow:'0 24px 60px rgba(0,0,0,0.4)' }}
+          onClick={e => e.stopPropagation()}>
+          <div style={{ padding:'18px 22px 14px', borderBottom:'1px solid var(--border)', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+            <div>
+              <div style={{ fontSize:15, fontWeight:800, color:'var(--text-primary)' }}>Prestarts — {viewPrestart.asset.name}</div>
+              <div style={{ fontSize:12, color:'var(--text-muted)', marginTop:2 }}>{viewPrestart.subs.length} submission{viewPrestart.subs.length!==1?'s':''} today</div>
+            </div>
+            <button onClick={() => setViewPrestart(null)} style={{ background:'none', border:'none', fontSize:22, cursor:'pointer', color:'var(--text-muted)' }}>✕</button>
+          </div>
+          <div style={{ flex:1, overflowY:'auto', padding:'14px 22px' }}>
+            {viewPrestart.subs.map((sub, si) => (
+              <div key={si} style={{ marginBottom:20 }}>
+                <div style={{ display:'flex', gap:16, marginBottom:12, padding:'10px 12px', background:'var(--surface-2)', borderRadius:7, flexWrap:'wrap' }}>
+                  <div><div style={{ fontSize:10, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.5px' }}>Operator</div><div style={{ fontWeight:700, fontSize:13 }}>{sub.operator_name||'—'}</div></div>
+                  <div><div style={{ fontSize:10, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.5px' }}>Hours</div><div style={{ fontWeight:700, fontSize:13 }}>{sub.hrs_start||'—'}</div></div>
+                  <div><div style={{ fontSize:10, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.5px' }}>Result</div><div style={{ fontWeight:700, fontSize:13, color: sub.defects_found ? 'var(--red)' : 'var(--green)' }}>{sub.defects_found ? '⚠ Defects' : '✓ All Clear'}</div></div>
+                  {sub.site_area && <div><div style={{ fontSize:10, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.5px' }}>Site</div><div style={{ fontWeight:700, fontSize:13 }}>{sub.site_area}</div></div>}
+                </div>
+                {sub.responses && Object.entries(sub.responses).slice(0,20).map(([key, val], i) => {
+                  const label = key.replace(/^\d+_/, '');
+                  let value = val?.status === 'OK' ? '✓ OK' : val?.status || val?.num || val?.text || val?.qty || val?.temp || val?.comment || JSON.stringify(val);
+                  const isDefect = val?.status && val.status !== 'OK';
+                  return (
+                    <div key={i} style={{ display:'flex', justifyContent:'space-between', padding:'6px 10px', borderBottom:'1px solid var(--border)', borderRadius: isDefect ? 4 : 0, background: isDefect ? 'rgba(239,83,80,0.06)' : 'transparent' }}>
+                      <span style={{ fontSize:12, color:'var(--text-secondary)' }}>{label}</span>
+                      <span style={{ fontSize:12, fontWeight:600, color: isDefect ? 'var(--red)' : value.includes('✓') ? 'var(--green)' : 'var(--text-primary)' }}>{String(value)}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    )}
+    </>
+  );
+}
+
+// ─── KPI: Service Schedule Widget ────────────────────────────────────────────
+function WidgetServiceKPI({ companyId, loading }) {
+  const [schedules, setSchedules] = React.useState([]);
+
+  React.useEffect(() => {
+    if (!companyId) return;
+    supabase.from('service_schedules').select('*').eq('company_id', companyId)
+      .then(({ data }) => setSchedules(data||[]));
+  }, [companyId]);
+
+  const overdue   = schedules.filter(s => s.status === 'overdue' || s.status === 'Overdue');
+  const dueSoon   = schedules.filter(s => s.status === 'Due Soon' || s.status === 'due_soon');
+  const upcoming  = schedules.filter(s => s.status === 'Upcoming' || s.status === 'upcoming');
+  const completed = schedules.filter(s => s.status === 'Completed' || s.status === 'completed');
+
+  return (
+    <div className="dash-widget" style={{ gridColumn:'span 2' }}>
+      <div className="dw-header"><div className="dw-title">🔧 Service Schedule KPIs</div></div>
+
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:10, marginBottom:18 }}>
+        {[
+          ['Overdue',   overdue.length,   'var(--red)',   '#ef535018'],
+          ['Due Soon',  dueSoon.length,   'var(--amber)', '#f59e0b18'],
+          ['Upcoming',  upcoming.length,  'var(--accent)','rgba(0,194,224,0.08)'],
+          ['Completed', completed.length, 'var(--green)', 'rgba(34,197,94,0.08)'],
+        ].map(([label, val, color, bg]) => (
+          <div key={label} style={{ background:bg, borderRadius:8, padding:'12px 10px', textAlign:'center', border:`1px solid ${color}33` }}>
+            <div style={{ fontSize:22, fontWeight:900, color }}>{val}</div>
+            <div style={{ fontSize:10, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.5px', marginTop:2 }}>{label}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Overdue + Due Soon list */}
+      {[...overdue, ...dueSoon].slice(0,8).map((s,i) => {
+        const isOD = s.status === 'overdue' || s.status === 'Overdue';
+        return (
+          <div key={i} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'8px 10px', borderRadius:6, marginBottom:5, background: isOD ? 'rgba(239,83,80,0.06)' : 'rgba(245,158,11,0.06)', border:`1px solid ${isOD?'rgba(239,83,80,0.2)':'rgba(245,158,11,0.2)'}` }}>
+            <div>
+              <div style={{ fontSize:12, fontWeight:600, color:'var(--text-primary)' }}>{s.asset_name||'—'}</div>
+              <div style={{ fontSize:11, color:'var(--text-muted)' }}>{s.service_name||s.task} · Every {s.interval_value} {s.interval_type}</div>
+            </div>
+            <span style={{ padding:'3px 10px', borderRadius:20, fontSize:11, fontWeight:700, background: isOD?'var(--red-bg)':'var(--amber-bg)', color: isOD?'var(--red)':'var(--amber)' }}>
+              {isOD ? '⚠ Overdue' : '↑ Due Soon'}
+            </span>
+          </div>
+        );
+      })}
+      {[...overdue,...dueSoon].length === 0 && <div style={{ fontSize:13, color:'var(--text-muted)', fontStyle:'italic' }}>✓ All services up to date</div>}
+    </div>
+  );
+}
+
+function Dashboard({ companyId, userRole }) {
   const [stats, setStats]   = useState(null);
   const [dt, setDT]         = useState([]);
   const [maint, setMaint]   = useState([]);
@@ -856,7 +1060,7 @@ function Dashboard({ companyId, userRole, onViewAsset }) {
   const A = { cyan:'var(--accent)', red:'var(--red)', amber:'var(--amber)', green:'var(--green)' };
 
   const WIDGET_COMPONENTS = {
-    fleet_health:     (w) => <WidgetFleetHealth key={w.id} assets={assets} loading={loading} onViewAsset={onViewAsset} />,
+    fleet_health:     (w) => <WidgetFleetHealth key={w.id} assets={assets} loading={loading} />,
     breakdowns:       (w) => <WidgetBreakdowns key={w.id} assets={assets} loading={loading} size={w.size} />,
     overdue:          (w) => <WidgetOverdue key={w.id} maint={maint} loading={loading} size={w.size} />,
     due_today:        (w) => <WidgetDueToday key={w.id} maint={maint} loading={loading} size={w.size} />,
@@ -864,7 +1068,9 @@ function Dashboard({ companyId, userRole, onViewAsset }) {
     oil_sampling:     (w) => <WidgetOilSampling key={w.id} companyId={companyId} size={w.size} />,
     parts_stock:      (w) => <WidgetPartsStock key={w.id} companyId={companyId} size={w.size} />,
     downtime_summary: (w) => <WidgetDowntimeSummary key={w.id} companyId={companyId} size={w.size} />,
-    calendar_preview: (w) => <WidgetCalendarPreview key={w.id} companyId={companyId} size={w.size} />,
+    calendar_preview:  (w) => <WidgetCalendarPreview key={w.id} companyId={companyId} size={w.size} />,
+    prestart_kpi:      (w) => <WidgetPrestartKPI key={w.id} companyId={companyId} loading={loading} />,
+    service_kpi:       (w) => <WidgetServiceKPI  key={w.id} companyId={companyId} loading={loading} />,
     messages:         (w) => <WidgetMessages key={w.id} companyId={companyId} size={w.size} />,
   };
 
