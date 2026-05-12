@@ -1975,16 +1975,14 @@ function AssetPage({ assetId, userRole, onStartPrestart, onStartServiceSheet, on
     const { data: assetData } = await supabase.from('assets').select('*').eq('id', assetId).single();
     setAsset(assetData);
     if (assetData) {
-      const [prestarts, svcSheets, maintenance, workorders] = await Promise.all([
+      const [prestarts, svcSheets, workorders] = await Promise.all([
         supabase.from('form_submissions').select('*').eq('asset', assetData.name).eq('company_id', assetData.company_id).order('date',{ascending:false}).limit(5),
         supabase.from('service_sheet_submissions').select('*').eq('asset', assetData.name).eq('company_id', assetData.company_id).order('date',{ascending:false}).limit(5),
-        supabase.from('maintenance').select('*').eq('asset', assetData.name).eq('company_id', assetData.company_id).order('created_at',{ascending:false}).limit(5),
         supabase.from('work_orders').select('*').eq('asset', assetData.name).eq('company_id', assetData.company_id).neq('status','Complete').order('created_at',{ascending:false}),
       ]);
       setRecentPrestarts(prestarts.data||[]);
-      // Merge service sheet submissions + maintenance schedules
       const svcSubmissions = (svcSheets.data||[]).map(s => ({ ...s, task: s.service_type||'Service', next_due: s.date, status:'Submitted' }));
-      setRecentMaintenance([...svcSubmissions, ...(maintenance.data||[])].slice(0,5));
+      setRecentMaintenance(svcSubmissions);
       setOpenWorkOrders(workorders.data||[]);
     }
     setLoading(false);
