@@ -94,30 +94,40 @@ function PrestartForm({ asset, company, template, onClose, accentColor }) {
     setBusy(true);
     const failedItems = Object.entries(issues).filter(([,v])=>v).map(([k])=>k);
     const payload = {
-      company_id:    asset.company_id,
-      template_id:   template?.id || null,
-      asset:         asset.name || asset.asset_name,
-      asset_id:      asset.id,
-      operator_name: operator,
-      hrs_start:     parseFloat(hours) || null,
-      date:          new Date().toISOString().split('T')[0],
+      company_id:         asset.company_id,
+      template_id:        template?.id || null,
+      asset:              asset.name,
+      asset_id:           asset.id,
+      operator_name:      operator,
+      hrs_start:          parseFloat(hours) || null,
+      date:               new Date().toISOString().split('T')[0],
       notes,
       responses,
-      defects_found: failedItems.length > 0,
-      status:        failedItems.length > 0 ? 'fail' : 'pass',
-      submitted_at:  new Date().toISOString(),
+      defects_found:      failedItems.length > 0,
+      operator_signature: null,
+      site_area:          asset.location || '',
     };
-    await supabase.from('form_submissions').insert([payload]);
+    const { error: psErr } = await supabase.from('form_submissions').insert([payload]);
+    if (psErr) { alert('Submit failed: ' + psErr.message); setBusy(false); return; }
+    // Update asset hours
+    if (hours && parseFloat(hours) > 0) {
+      await supabase.from('assets').update({ hours: parseFloat(hours) }).eq('id', asset.id);
+      await supabase.from('asset_hours_log').insert({
+        company_id: asset.company_id, asset_id: asset.id, asset_name: asset.name,
+        hours: parseFloat(hours), source: 'prestart', recorded_by: operator,
+        notes: 'Prestart via QR scan ' + new Date().toLocaleDateString('en-AU'),
+      }).catch(()=>{});
+    }
     if (failedItems.length > 0) {
       await supabase.from('work_orders').insert([{
-        company_id:    asset.company_id,
-        asset_id:      asset.id,
-        asset_name:    asset.name || asset.asset_name,
-        title:         `Prestart defects — ${asset.name}`,
-        description:   'Items flagged: ' + failedItems.join(', '),
-        priority:      'High',
-        status:        'open',
-        created_at:    new Date().toISOString(),
+        company_id:  asset.company_id,
+        asset_id:    asset.id,
+        asset_name:  asset.name,
+        title:       `Prestart defects — ${asset.name}`,
+        description: 'Items flagged: ' + failedItems.join(', '),
+        priority:    'High',
+        status:      'open',
+        created_at:  new Date().toISOString(),
       }]);
     }
     setBusy(false); setDone(true);
@@ -234,21 +244,27 @@ function ServiceForm({ asset, company, template, onClose, accentColor }) {
 
   const submit = async () => {
     setBusy(true);
-    await supabase.from('service_sheet_submissions').insert([{
-      company_id:   asset.company_id,
-      template_id:  template?.id || null,
-      asset_id:     asset.id,
-      asset_name:   asset.name,
-      technician:   tech,
-      hours_at_service: parseFloat(hours)||null,
-      service_type: template?.service_type || '',
-      sections:     sections,
+    const { error: ssErr } = await supabase.from('service_sheet_submissions').insert([{
+      company_id:         asset.company_id,
+      template_id:        template?.id || null,
+      asset:              asset.name,
+      asset_id:           asset.id,
+      technician:         tech,
+      date:               new Date().toISOString().split('T')[0],
+      service_type:       template?.service_type || '',
       responses,
-      parts_used:   parts.filter(p=>p.used),
       notes,
-      date:         new Date().toISOString().split('T')[0],
-      submitted_at: new Date().toISOString(),
+      parts:              parts.filter(p=>p.used).map(p=>({ name:p.description, qty:p.qty, cost:0, part_id:null })),
+      labour:             template?.labour_items?.map(l=>({ description:l.description, hours:l.estimated_hours })) || [],
+      total_parts_cost:   0,
+      total_labour_hours: (template?.labour_items||[]).reduce((s,l)=>s+(parseFloat(l.estimated_hours)||0),0),
+      operator_signature: null,
     }]);
+    if (ssErr) { alert('Submit failed: ' + ssErr.message); setBusy(false); return; }
+    // Update asset hours
+    if (hours && parseFloat(hours) > 0) {
+      await supabase.from('assets').update({ hours: parseFloat(hours) }).eq('id', asset.id);
+    }
     setBusy(false); setDone(true);
   };
 
@@ -461,13 +477,17 @@ export default function ScanPage({ assetId, partId }) {
 
       // Load assigned templates
       const [{ data: pt }, { data: st }, { data: co }, { data: br }] = await Promise.all([
-        supabase.from('form_templates').select('*').eq('company_id', a.company_id).contains('asset_ids', [numId]),
-        supabase.from('service_sheet_templates').select('*').eq('company_id', a.company_id).contains('asset_ids', [numId]),
+        // First try asset-specific templates, fall back to all company templates
+        supabase.from('form_templates').select('*').eq('company_id', a.company_id).order('created_at', { ascending: false }),
+        supabase.from('service_sheet_templates').select('*').eq('company_id', a.company_id).order('created_at', { ascending: false }),
         supabase.from('companies').select('*').eq('id', a.company_id).single(),
         supabase.from('company_branding').select('*').eq('company_id', a.company_id).maybeSingle(),
       ]);
-      setPrestarts(pt || []);
-      setServices(st || []);
+      // Filter to asset-assigned templates, fall back to all if none assigned to this asset
+      const assignedPt = (pt||[]).filter(t => Array.isArray(t.asset_ids) && t.asset_ids.includes(numId));
+      const assignedSt = (st||[]).filter(t => Array.isArray(t.asset_ids) && t.asset_ids.includes(numId));
+      setPrestarts(assignedPt.length > 0 ? assignedPt : (pt||[]));
+      setServices(assignedSt.length > 0 ? assignedSt : (st||[]));
       setCompany(co || null);
       setBranding(br || null);
 
