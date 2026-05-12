@@ -97,7 +97,6 @@ function PrestartForm({ asset, company, template, onClose, accentColor }) {
       company_id:         asset.company_id,
       template_id:        template?.id || null,
       asset:              asset.name,
-      asset_id:           asset.id,
       operator_name:      operator,
       hrs_start:          parseFloat(hours) || null,
       date:               new Date().toISOString().split('T')[0],
