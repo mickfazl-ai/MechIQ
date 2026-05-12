@@ -72,12 +72,13 @@ const CSS = `
 
   .sk { background: linear-gradient(90deg, var(--surface-2) 25%, var(--surface-3) 50%, var(--surface-2) 75%); background-size: 200% 100%; animation: shimmer 1.4s infinite linear; border-radius: 6px; }
   /* ── Widget system ── */
-  .dash-grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 14px; }
-  .widget-sm  { grid-column: span 4; }
-  .widget-md  { grid-column: span 6; }
-  .widget-lg  { grid-column: span 12; }
-  @media(max-width:900px) { .widget-sm,.widget-md,.widget-lg { grid-column: span 12; } }
-  @media(min-width:901px) and (max-width:1200px) { .widget-sm { grid-column: span 6; } }
+  .dash-grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 16px; }
+  .widget-sm   { grid-column: span 4; }
+  .widget-md   { grid-column: span 6; }
+  .widget-lg   { grid-column: span 12; }
+  .widget-wide { grid-column: span 6; }
+  @media(max-width:900px) { .widget-sm,.widget-md,.widget-lg,.widget-wide { grid-column: span 12; } }
+  @media(min-width:901px) and (max-width:1200px) { .widget-sm { grid-column: span 6; } .widget-wide { grid-column: span 12; } }
   .widget-card { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:18px; transition:box-shadow 0.2s; }
   .widget-card.dragging { opacity:0.4; }
   .widget-card.drag-over { border-color:var(--accent); box-shadow:0 0 0 2px rgba(14,165,233,0.3); }
@@ -1074,18 +1075,30 @@ function Dashboard({ companyId, userRole }) {
     messages:         (w) => <WidgetMessages key={w.id} companyId={companyId} size={w.size} />,
   };
 
+  // ── Fleet health bar stats ──
+  const activeCount = assets.filter(a=>/active|running/i.test(a.status||'')).length;
+  const downCount   = assets.filter(a=>/down|offline|breakdown/i.test(a.status||'')).length;
+  const maintCount  = assets.filter(a=>/maintenance/i.test(a.status||'')).length;
+  const openWOCount = wos.length;
+  const overdueCount= maint.filter(m=>/overdue/i.test(m.status||'')).length;
+
   return (
     <>
       <ToastContainer toasts={toasts} />
       <div style={{ animation:'fadeUp 0.35s ease both' }}>
 
-        {/* ── Header ── */}
-        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:24, opacity:hVis?1:0, transform:hVis?'none':'translateY(-6px)', transition:'opacity 0.4s, transform 0.4s', flexWrap:'wrap', gap:10 }}>
-          <p style={{ fontSize:13, color:'var(--text-muted)', margin:0, fontWeight:400 }}>
-            {now.toLocaleDateString('en-AU',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}
-          </p>
+        {/* ── Top bar: date + actions ── */}
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:20, flexWrap:'wrap', gap:10 }}>
+          <div>
+            <div style={{ fontSize:20, fontWeight:800, color:'var(--text-primary)', letterSpacing:-0.3 }}>
+              {now.toLocaleDateString('en-AU',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}
+            </div>
+            <div style={{ fontSize:12, color:'var(--text-muted)', marginTop:2 }}>
+              {assets.length} assets · {activeCount} active · {downCount > 0 ? `${downCount} down` : 'none down'}
+            </div>
+          </div>
           <div style={{ display:'flex', gap:8 }}>
-            <button onClick={() => setShowCustomise(true)} style={{ padding:'7px 14px', background:'var(--surface)', border:'1px solid var(--border)', borderRadius:8, cursor:'pointer', fontSize:12, fontWeight:700, color:'var(--text-secondary)', display:'flex', alignItems:'center', gap:6 }}>
+            <button onClick={() => setShowCustomise(true)} style={{ padding:'7px 14px', background:'var(--surface)', border:'1px solid var(--border)', borderRadius:8, cursor:'pointer', fontSize:12, fontWeight:600, color:'var(--text-secondary)', display:'flex', alignItems:'center', gap:6 }}>
               ⚙️ Customise
             </button>
             <button className="refresh-btn" onClick={() => load(true)} disabled={refreshing}>
@@ -1095,35 +1108,88 @@ function Dashboard({ companyId, userRole }) {
           </div>
         </div>
 
-        {/* ── Widget Grid ── */}
-        <div className="dash-grid">
-          {layout.filter(w => w.enabled).map(w => {
-            const renderer = WIDGET_COMPONENTS[w.id];
-            if (!renderer) return null;
-            // Override class based on size
-            const sizeClass = w.size === 'lg' ? 'widget-lg' : w.size === 'sm' ? 'widget-sm' : 'widget-md';
-            return React.cloneElement(renderer(w), { className: undefined, style: undefined, 'data-size': w.size });
-          })}
-        </div>
-
-        {/* ── Service Intervals (always shown below widgets) ── */}
-        <div className="panel" style={{ marginTop:16 }}>
-          <div className="panel-title">Service Intervals <span style={{ marginLeft:'auto', fontSize:11, color:'var(--text-faint)', fontWeight:400, letterSpacing:0, textTransform:'none', fontFamily:'var(--font-body)' }}>Hours to next service</span></div>
-          {loading ? [0,1,2,3].map(i => (
-            <div key={i} style={{ marginBottom:16 }}>
-              <div style={{ display:'flex', justifyContent:'space-between', marginBottom:5 }}><Sk w="50%" h="12px" /><Sk w="22%" h="11px" /></div>
-              <Sk w="100%" h="6px" r="99px" />
+        {/* ── Hero KPI Strip ── */}
+        <div style={{ display:'grid', gridTemplateColumns:'repeat(5,1fr)', gap:12, marginBottom:20 }}>
+          {[
+            { label:'Total Fleet',   value: assets.length,  color:'var(--accent)',  icon:'🚛', sub:'registered assets' },
+            { label:'Active',        value: activeCount,    color:'var(--green)',   icon:'✓',  sub:'operational now' },
+            { label:'Down',          value: downCount,      color: downCount>0?'var(--red)':'var(--text-muted)', icon:'⬇', sub:'offline / breakdown', urgent: downCount>0 },
+            { label:'Overdue Svc',   value: overdueCount,   color: overdueCount>0?'var(--red)':'var(--text-muted)', icon:'⚠', sub:'services past due', urgent: overdueCount>0 },
+            { label:'Open WOs',      value: openWOCount,    color: openWOCount>0?'var(--amber)':'var(--text-muted)', icon:'🔧', sub:'work orders open', warn: openWOCount>0 },
+          ].map(k => (
+            <div key={k.label} className={`kpi-card${k.urgent?' urgent':k.warn?' warn':''}`}
+              style={{ borderTop:`3px solid ${k.color}` }}>
+              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:10 }}>
+                <div style={{ fontSize:10, fontWeight:800, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.8px' }}>{k.label}</div>
+                <div style={{ fontSize:18, opacity:0.6 }}>{k.icon}</div>
+              </div>
+              <div style={{ fontSize:32, fontWeight:900, color:k.color, lineHeight:1, marginBottom:4, animation:'countUp 0.4s ease' }}>{loading ? '—' : k.value}</div>
+              <div style={{ fontSize:11, color:'var(--text-faint)' }}>{k.sub}</div>
             </div>
-          )) : progressAssets.length === 0 ? (
-            <EmptyState icon="⚙" title="No interval data" desc="Assets with hours tracked will appear here." />
-          ) : progressAssets.map(a => (
-            <ProgressBar key={a.id} label={a.asset_number ? `${a.asset_number} — ${a.name}` : (a.name||'Asset')} current={a.current_hours} max={a.next_service_hours} />
           ))}
         </div>
 
+        {/* ── Fleet health bar ── */}
+        {!loading && assets.length > 0 && (
+          <div className="panel" style={{ marginBottom:20, padding:'16px 20px' }}>
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:10 }}>
+              <div style={{ fontSize:11, fontWeight:800, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.8px' }}>Fleet Health</div>
+              <div style={{ display:'flex', gap:16, fontSize:11, color:'var(--text-muted)' }}>
+                {[['var(--green)','Active'],['var(--amber)','Maintenance'],['var(--red)','Down'],['var(--text-faint)','Other']].map(([c,l])=>(
+                  <span key={l} style={{ display:'flex', alignItems:'center', gap:5 }}>
+                    <span style={{ width:8, height:8, borderRadius:'50%', background:c, display:'inline-block' }}/>
+                    {l}
+                  </span>
+                ))}
+              </div>
+            </div>
+            <div style={{ display:'flex', height:10, borderRadius:5, overflow:'hidden', gap:2 }}>
+              {[
+                [activeCount,'var(--green)'],
+                [maintCount,'var(--amber)'],
+                [downCount,'var(--red)'],
+                [Math.max(0, assets.length-activeCount-maintCount-downCount),'var(--text-faint)'],
+              ].map(([v,c],i) => v > 0 && (
+                <div key={i} className="health-seg" style={{ flex:v, background:c, borderRadius:2 }} />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ── Main KPI widgets: Prestarts + Services side by side ── */}
+        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16, marginBottom:20 }}>
+          <WidgetPrestartKPI companyId={companyId} loading={loading} />
+          <WidgetServiceKPI  companyId={companyId} loading={loading} />
+        </div>
+
+        {/* ── Widget Grid (customisable widgets below) ── */}
+        <div className="dash-grid">
+          {layout.filter(w => w.enabled && !['prestart_kpi','service_kpi'].includes(w.id)).map(w => {
+            const renderer = WIDGET_COMPONENTS[w.id];
+            if (!renderer) return null;
+            const sizeClass = w.size==='lg'?'widget-lg':w.size==='sm'?'widget-sm':w.size==='wide'?'widget-wide':'widget-md';
+            return (
+              <div key={w.id} className={sizeClass}>
+                {renderer(w)}
+              </div>
+            );
+          })}
+        </div>
+
+        {/* ── Service Intervals ── */}
+        {progressAssets.length > 0 && (
+          <div className="panel" style={{ marginTop:16 }}>
+            <div className="panel-title">Service Intervals
+              <span style={{ marginLeft:'auto', fontSize:11, color:'var(--text-faint)', fontWeight:400, letterSpacing:0, textTransform:'none', fontFamily:'var(--font-body)' }}>Hours to next service</span>
+            </div>
+            {progressAssets.map(a => (
+              <ProgressBar key={a.id} label={a.asset_number ? `${a.asset_number} — ${a.name}` : (a.name||'Asset')} current={a.current_hours} max={a.next_service_hours} />
+            ))}
+          </div>
+        )}
+
       </div>
 
-      {/* ── Customise Panel ── */}
       {showCustomise && (
         <CustomisePanel
           layout={layout}
