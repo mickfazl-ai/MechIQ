@@ -321,6 +321,7 @@ function OverviewTab({ asset, recentPrestarts, recentMaintenance }) {
   ];
 
   return (
+    <React.Fragment>
     <div>
       <div className="mp-card" style={{ marginBottom:14 }}>
         <div className="mp-section-title">Asset Details</div>
@@ -383,6 +384,16 @@ function OverviewTab({ asset, recentPrestarts, recentMaintenance }) {
         </div>
       </div>
     </div>
+
+    {/* Prestart View Modal */}
+    {selectedPrestart && (
+      <PrestartViewModal prestart={selectedPrestart} asset={asset} onClose={() => setSelectedPrestart(null)} />
+    )}
+    {/* Service Sheet View Modal */}
+    {selectedService && (
+      <ServiceViewModal service={selectedService} asset={asset} onClose={() => setSelectedService(null)} />
+    )}
+    </React.Fragment>
   );
 }
 
