@@ -93,6 +93,8 @@ const CSS = `
   .widget-body.closed { max-height:0; opacity:0; }
   .widget-body.opened { max-height:2000px; opacity:1; }
   .widget-card:hover { box-shadow:0 4px 16px rgba(0,0,0,0.08); }
+  .widget-card:hover .widget-remove-btn { opacity:1 !important; }
+  .dash-widget:hover .widget-remove-btn { opacity:1 !important; }
   .custom-panel { position:fixed; top:0; right:0; bottom:0; width:360px; max-width:90vw; background:var(--bg); border-left:1px solid var(--border); box-shadow:-8px 0 40px rgba(0,0,0,0.2); z-index:300; display:flex; flex-direction:column; animation:slideIn 0.25s cubic-bezier(0.16,1,0.3,1); }
   @keyframes slideIn { from{transform:translateX(100%)} to{transform:translateX(0)} }
   @keyframes slideUp { from{transform:translateY(100%)} to{transform:translateY(0)} }
@@ -543,11 +545,16 @@ function CustomisePanel({ layout, onLayoutChange, onClose, onSaveDefault, isAdmi
 /* ── Individual Widgets ── */
 
 /* ── Expandable Widget Wrapper ── */
-function ExpandableWidget({ sizeClass, title, icon, count, countColor, countSize, summary, children, defaultOpen=false }) {
+function ExpandableWidget({ sizeClass, title, icon, count, countColor, countSize, summary, children, defaultOpen=false, onRemove }) {
   const [open, setOpen] = React.useState(defaultOpen);
   return (
-    <div className={`widget-card ${sizeClass}`} style={{ cursor:'default' }}>
-      <div className="widget-header" style={{ cursor:'pointer', userSelect:'none' }} onClick={() => setOpen(o => !o)}>
+    <div className={`widget-card ${sizeClass}`} style={{ cursor:'default', position:'relative' }}>
+      {onRemove && (
+        <button onClick={e=>{e.stopPropagation();onRemove();}} title="Remove widget"
+          style={{ position:'absolute', top:10, right:10, zIndex:10, background:'none', border:'none', cursor:'pointer', color:'var(--text-faint)', fontSize:16, lineHeight:1, padding:'2px 5px', borderRadius:4, opacity:0, transition:'opacity 0.15s' }}
+          className="widget-remove-btn">×</button>
+      )}
+      <div className="widget-header" style={{ cursor:'pointer', userSelect:'none', paddingRight: onRemove ? 24 : 0 }} onClick={() => setOpen(o => !o)}>
         <span className="widget-title">{icon} {title}</span>
         <div style={{ display:'flex', alignItems:'center', gap:10 }}>
           {count !== undefined && <span style={{ fontSize: countSize||20, fontWeight:900, color:countColor||'var(--text-primary)', fontFamily:'var(--font-display)' }}>{count}</span>}
@@ -562,11 +569,11 @@ function ExpandableWidget({ sizeClass, title, icon, count, countColor, countSize
   );
 }
 
-function WidgetFleetHealth({ assets, loading }) {
+function WidgetFleetHealth({ assets, loading, onRemove }) {
   if (loading) return <div className="widget-card widget-lg"><Sk h="60px" /></div>;
   const total = assets.length, running = assets.filter(a=>a.status==='Running').length, down = assets.filter(a=>a.status==='Down').length, maint = assets.filter(a=>a.status==='Maintenance').length;
   return (
-    <ExpandableWidget sizeClass="widget-lg" title="Fleet Health" icon="🚛" count={total} countColor="var(--accent)" countSize={16} summary={`${running} running · ${down} down`} defaultOpen={true}>
+    <ExpandableWidget sizeClass="widget-lg" title="Fleet Health" onRemove={onRemove} icon="🚛" count={total} countColor="var(--accent)" countSize={16} summary={`${running} running · ${down} down`} defaultOpen={true}>
       <FleetHealthBar running={running} down={down} maintenance={maint} total={total} />
       <div style={{ marginTop:12, display:'flex', flexDirection:'column', gap:6 }}>
         {assets.map(a => {
@@ -590,10 +597,10 @@ function WidgetFleetHealth({ assets, loading }) {
   );
 }
 
-function WidgetBreakdowns({ assets, loading, size }) {
+function WidgetBreakdowns({ assets, loading, size, onRemove }) {
   const breakdowns = assets.filter(a => a.status === 'Down');
   return (
-    <ExpandableWidget sizeClass={`widget-${size}`} title="Breakdowns" icon="🔴" count={loading?'—':breakdowns.length} countColor="var(--red)" summary={breakdowns[0]?.name}>
+    <ExpandableWidget sizeClass={`widget-${size}`} title="Breakdowns" onRemove={onRemove} icon="🔴" count={loading?'—':breakdowns.length} countColor="var(--red)" summary={breakdowns[0]?.name}>
       {!loading && breakdowns.length === 0 && <div style={{ fontSize:12, color:'var(--green)', fontWeight:600 }}>✓ All machines running</div>}
       {!loading && breakdowns.map(a => (
         <div key={a.id} style={{ padding:'8px 10px', borderRadius:8, background:'var(--red-bg)', border:'1px solid var(--red-border)', marginBottom:6 }}>
@@ -610,10 +617,10 @@ function WidgetBreakdowns({ assets, loading, size }) {
   );
 }
 
-function WidgetOverdue({ maint, loading, size }) {
+function WidgetOverdue({ maint, loading, size, onRemove, onDrillDown }) {
   const overdue = maint.filter(m => m.status === 'Overdue');
   return (
-    <ExpandableWidget sizeClass={`widget-${size}`} title="Overdue Services" icon="⚠️" count={loading?'—':overdue.length} countColor="var(--amber)" summary={overdue[0]?.asset}>
+    <ExpandableWidget sizeClass={`widget-${size}`} title="Overdue Services" onRemove={onRemove} icon="⚠️" count={loading?'—':overdue.length} countColor="var(--amber)" summary={overdue[0]?.asset}>
       {!loading && overdue.length === 0 && <div style={{ fontSize:12, color:'var(--green)', fontWeight:600 }}>✓ No overdue services</div>}
       {!loading && overdue.map(m => (
         <div key={m.id} style={{ padding:'8px 10px', borderRadius:8, background:'var(--amber-bg)', border:'1px solid var(--amber-border)', marginBottom:6 }}>
@@ -626,11 +633,11 @@ function WidgetOverdue({ maint, loading, size }) {
   );
 }
 
-function WidgetDueToday({ maint, loading, size }) {
+function WidgetDueToday({ maint, loading, size, onRemove, onDrillDown }) {
   const today = new Date().toISOString().split('T')[0];
   const dueToday = maint.filter(m => m.next_due === today || m.status === 'Due Soon');
   return (
-    <ExpandableWidget sizeClass={`widget-${size}`} title="Due Today" icon="📅" count={loading?'—':dueToday.length} countColor="var(--accent)" summary={dueToday[0]?.asset}>
+    <ExpandableWidget sizeClass={`widget-${size}`} title="Due Today" onRemove={onRemove} icon="📅" count={loading?'—':dueToday.length} countColor="var(--accent)" summary={dueToday[0]?.asset}>
       {!loading && dueToday.length === 0 && <div style={{ fontSize:12, color:'var(--text-muted)' }}>Nothing due today</div>}
       {!loading && dueToday.map(m => (
         <div key={m.id} style={{ padding:'8px 10px', borderRadius:8, background:'var(--accent-light)', border:'1px solid rgba(14,165,233,0.2)', marginBottom:6 }}>
@@ -643,10 +650,10 @@ function WidgetDueToday({ maint, loading, size }) {
   );
 }
 
-function WidgetPriorityWOs({ wos, loading, size }) {
+function WidgetPriorityWOs({ wos, loading, size, onRemove, onDrillDown }) {
   const priority = wos.filter(w => w.priority === 'Critical' || w.priority === 'High');
   return (
-    <ExpandableWidget sizeClass={`widget-${size}`} title="Priority Jobs" icon="🔥" count={loading?'—':priority.length} countColor="var(--red)" summary={priority[0]?.asset}>
+    <ExpandableWidget sizeClass={`widget-${size}`} title="Priority Jobs" onRemove={onRemove} icon="🔥" count={loading?'—':priority.length} countColor="var(--red)" summary={priority[0]?.asset}>
       {!loading && priority.length === 0 && <div style={{ fontSize:12, color:'var(--green)', fontWeight:600 }}>✓ No critical jobs</div>}
       {!loading && priority.map(w => {
         const c = w.priority==='Critical'?'var(--red)':'var(--amber)';
@@ -665,7 +672,7 @@ function WidgetPriorityWOs({ wos, loading, size }) {
   );
 }
 
-function WidgetOilSampling({ companyId, size }) {
+function WidgetOilSampling({ companyId, size, onRemove }) {
   const [samples, setSamples] = useState([]);
   const [loading, setLoading] = useState(true);
   useEffect(() => {
@@ -675,7 +682,7 @@ function WidgetOilSampling({ companyId, size }) {
   }, [companyId]);
   const alerts = samples.filter(s => s.ai_condition === 'CRITICAL' || s.ai_condition === 'WARNING');
   return (
-    <ExpandableWidget sizeClass={`widget-${size}`} title="Oil Sampling" icon="🧪" count={loading?'—':alerts.length} countColor={alerts.length>0?'var(--red)':'var(--green)'} summary={alerts[0]?.asset_name}>
+    <ExpandableWidget sizeClass={`widget-${size}`} title="Oil Sampling" onRemove={onRemove} icon="🧪" count={loading?'—':alerts.length} countColor={alerts.length>0?'var(--red)':'var(--green)'} summary={alerts[0]?.asset_name}>
       {!loading && alerts.length === 0 && <div style={{ fontSize:12, color:'var(--green)', fontWeight:600 }}>✓ All oil samples normal</div>}
       {!loading && alerts.map(s => {
         const c = s.ai_condition==='CRITICAL'?'var(--red)':'var(--amber)';
@@ -696,7 +703,7 @@ function WidgetOilSampling({ companyId, size }) {
   );
 }
 
-function WidgetPartsStock({ companyId, size }) {
+function WidgetPartsStock({ companyId, size, onRemove }) {
   const [parts, setParts] = useState([]);
   const [loading, setLoading] = useState(true);
   useEffect(() => {
@@ -705,7 +712,7 @@ function WidgetPartsStock({ companyId, size }) {
       .then(({ data }) => { setParts((data||[]).filter(p => p.quantity <= p.min_quantity)); setLoading(false); });
   }, [companyId]);
   return (
-    <ExpandableWidget sizeClass={`widget-${size}`} title="Low Stock Parts" icon="🔩" count={loading?'—':parts.length} countColor={parts.length>0?'var(--amber)':'var(--green)'} summary={parts[0]?.name}>
+    <ExpandableWidget sizeClass={`widget-${size}`} title="Low Stock Parts" onRemove={onRemove} icon="🔩" count={loading?'—':parts.length} countColor={parts.length>0?'var(--amber)':'var(--green)'} summary={parts[0]?.name}>
       {!loading && parts.length === 0 && <div style={{ fontSize:12, color:'var(--green)', fontWeight:600 }}>✓ All parts adequately stocked</div>}
       {!loading && parts.map(p => {
         const c = p.quantity===0?'var(--red)':'var(--amber)';
@@ -723,7 +730,7 @@ function WidgetPartsStock({ companyId, size }) {
   );
 }
 
-function WidgetDowntimeSummary({ companyId, size }) {
+function WidgetDowntimeSummary({ companyId, size, onRemove }) {
   const [hours, setHours] = useState(null);
   const [loading, setLoading] = useState(true);
   useEffect(() => {
@@ -733,14 +740,14 @@ function WidgetDowntimeSummary({ companyId, size }) {
       .then(({ data }) => { setHours((data||[]).reduce((s,d) => s + (parseFloat(d.hours)||0), 0)); setLoading(false); });
   }, [companyId]);
   return (
-    <ExpandableWidget sizeClass={`widget-${size}`} title="Downtime This Month" icon="📉" summary={loading?'':`${hours?.toFixed(1)} hrs lost`}>
+    <ExpandableWidget sizeClass={`widget-${size}`} title="Downtime This Month" onRemove={onRemove} icon="📉" summary={loading?'':`${hours?.toFixed(1)} hrs lost`}>
       <div style={{ fontSize:36, fontWeight:900, color:'var(--red)', fontFamily:'var(--font-display)' }}>{loading ? '—' : hours?.toFixed(1)}<span style={{ fontSize:14, fontWeight:600, color:'var(--text-muted)', marginLeft:4 }}>hrs</span></div>
       {!loading && <div style={{ fontSize:12, color:'var(--text-muted)', marginTop:4 }}>Lost to unplanned downtime in {new Date().toLocaleString('default',{month:'long'})}</div>}
     </ExpandableWidget>
   );
 }
 
-function WidgetCalendarPreview({ companyId, size }) {
+function WidgetCalendarPreview({ companyId, size, onRemove }) {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   useEffect(() => {
@@ -774,7 +781,7 @@ function WidgetCalendarPreview({ companyId, size }) {
   );
 }
 
-function WidgetMessages({ companyId, size }) {
+function WidgetMessages({ companyId, size, onRemove }) {
   const [msgs, setMsgs] = useState([]);
   const [loading, setLoading] = useState(true);
   useEffect(() => {
@@ -852,23 +859,33 @@ function WidgetPrestartKPI({ companyId, loading }) {
 
   return (
     <>
-    <div className="dash-widget" style={{ gridColumn:'span 2' }}>
+    <div className="dash-widget" style={{ gridColumn:'span 2', position:'relative' }}>
+      {onRemove && (
+        <button onClick={onRemove} title="Remove widget"
+          style={{ position:'absolute', top:10, right:10, zIndex:10, background:'none', border:'none', cursor:'pointer', color:'var(--text-faint)', fontSize:18, lineHeight:1, padding:'2px 6px', borderRadius:4, opacity:0, transition:'opacity 0.15s' }}
+          className="widget-remove-btn">×</button>
+      )}
       <div className="dw-header">
         <div className="dw-title">📋 Prestart KPIs — Today</div>
         <div style={{ fontSize:11, color:'var(--text-muted)' }}>{today}</div>
       </div>
 
-      {/* KPI row */}
+      {/* KPI row — clickable */}
       <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:10, marginBottom:18 }}>
         {[
-          ['Completed', data.completed, 'var(--green)',   '✓'],
-          ['Total Units', data.total,   'var(--accent)',  '🚛'],
-          ['Missing',    data.missing,  data.missing>0?'var(--red)':'var(--green)',  '⚠'],
-          ['Defects',    data.defects,  data.defects>0?'var(--amber)':'var(--green)','🔴'],
-        ].map(([label, val, color, icon]) => (
-          <div key={label} style={{ background:'var(--surface-2)', borderRadius:8, padding:'12px 10px', textAlign:'center', border:`1px solid ${color}22` }}>
+          { label:'Completed',   val:data.completed, color:'var(--green)',  rows: data.perMachine.filter(m=>m.todayCount>0).map(m=>[m.asset_number?`${m.asset_number} — ${m.name}`:m.name, `${m.todayCount} prestart${m.todayCount>1?'s':''}`, m.hours?.toLocaleString()+' hrs']), cols:['Asset','Prestarts','Hours'], title:'Completed Today', icon:'✓', dd:'var(--green)' },
+          { label:'Total Units', val:data.total,     color:'var(--accent)', rows: data.perMachine.map(m=>[m.asset_number?`${m.asset_number} — ${m.name}`:m.name, m.todayCount>0?`✓ ${m.todayCount} done`:m.missingToday?'⚠ Missing':'—', m.hours?.toLocaleString()+' hrs']), cols:['Asset','Today','Hours'], title:'All Units', icon:'🚛', dd:'var(--accent)' },
+          { label:'Missing',     val:data.missing,   color:data.missing>0?'var(--red)':'var(--green)', rows: data.perMachine.filter(m=>m.missingToday).map(m=>[m.asset_number?`${m.asset_number} — ${m.name}`:m.name, `${Math.round(m.hrsDiff)} hrs since last`, m.hours?.toLocaleString()+' hrs']), cols:['Asset','Time Since Last','Hours'], title:'Missing Prestarts', icon:'⚠', dd:'var(--red)', emptyMsg:'No missing prestarts today ✓' },
+          { label:'Defects',     val:data.defects,   color:data.defects>0?'var(--amber)':'var(--green)', rows: data.perMachine.filter(m=>m.todayPs?.some(p=>p.defects_found)).map(m=>[m.asset_number?`${m.asset_number} — ${m.name}`:m.name, `${m.todayPs.filter(p=>p.defects_found).length} defect${m.todayPs.filter(p=>p.defects_found).length>1?'s':''}`, m.hours?.toLocaleString()+' hrs']), cols:['Asset','Defects','Hours'], title:'Defects Found Today', icon:'🔴', dd:'var(--amber)', emptyMsg:'No defects found today ✓' },
+        ].map(({ label, val, color, rows, cols, title, icon, dd, emptyMsg }) => (
+          <div key={label}
+            onClick={() => onDrillDown && onDrillDown({ title, icon, color:dd, columns:cols, rows, emptyMsg })}
+            style={{ background:'var(--surface-2)', borderRadius:8, padding:'12px 10px', textAlign:'center', border:`1px solid ${color}22`, cursor: onDrillDown ? 'pointer' : 'default', transition:'all 0.15s' }}
+            onMouseEnter={e=>{ if(onDrillDown){ e.currentTarget.style.background='var(--surface)'; e.currentTarget.style.borderColor=color; }}}
+            onMouseLeave={e=>{ e.currentTarget.style.background='var(--surface-2)'; e.currentTarget.style.borderColor=`${color}22`; }}>
             <div style={{ fontSize:22, fontWeight:900, color }}>{val}</div>
             <div style={{ fontSize:10, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.5px', marginTop:2 }}>{label}</div>
+            {onDrillDown && <div style={{ fontSize:8, color:'var(--text-faint)', marginTop:3, letterSpacing:'0.5px' }}>TAP</div>}
           </div>
         ))}
       </div>
@@ -955,7 +972,7 @@ function WidgetPrestartKPI({ companyId, loading }) {
 }
 
 // ─── KPI: Service Schedule Widget ────────────────────────────────────────────
-function WidgetServiceKPI({ companyId, loading }) {
+function WidgetServiceKPI({ companyId, loading, onRemove, onDrillDown }) {
   const [schedules, setSchedules] = React.useState([]);
 
   React.useEffect(() => {
@@ -1033,6 +1050,13 @@ function Dashboard({ companyId, userRole }) {
     if (companyId) { load(); loadCustomWidgets(); }
   }, [companyId]);
 
+  const hideWidget = (id) => {
+    const next = layout.map(w => w.id === id ? { ...w, enabled: false } : w);
+    setLayout(next);
+    saveLayout(next, companyId, userRole?.email || '');
+    toast('Widget hidden — restore it from Customise', 'info');
+  };
+
   const loadCustomWidgets = async () => {
     const { data } = await supabase.from('custom_widgets').select('*').eq('company_id', companyId).order('created_at');
     // Unwrap jsonb config column → flat widget object
@@ -1091,18 +1115,18 @@ function Dashboard({ companyId, userRole }) {
   const A = { cyan:'var(--accent)', red:'var(--red)', amber:'var(--amber)', green:'var(--green)' };
 
   const WIDGET_COMPONENTS = {
-    fleet_health:     (w) => <WidgetFleetHealth key={w.id} assets={assets} loading={loading} />,
-    breakdowns:       (w) => <WidgetBreakdowns key={w.id} assets={assets} loading={loading} size={w.size} />,
-    overdue:          (w) => <WidgetOverdue key={w.id} maint={maint} loading={loading} size={w.size} />,
-    due_today:        (w) => <WidgetDueToday key={w.id} maint={maint} loading={loading} size={w.size} />,
-    priority_wos:     (w) => <WidgetPriorityWOs key={w.id} wos={wos} loading={loading} size={w.size} />,
-    oil_sampling:     (w) => <WidgetOilSampling key={w.id} companyId={companyId} size={w.size} />,
-    parts_stock:      (w) => <WidgetPartsStock key={w.id} companyId={companyId} size={w.size} />,
-    downtime_summary: (w) => <WidgetDowntimeSummary key={w.id} companyId={companyId} size={w.size} />,
-    calendar_preview:  (w) => <WidgetCalendarPreview key={w.id} companyId={companyId} size={w.size} />,
-    prestart_kpi:      (w) => <WidgetPrestartKPI key={w.id} companyId={companyId} loading={loading} />,
-    service_kpi:       (w) => <WidgetServiceKPI  key={w.id} companyId={companyId} loading={loading} />,
-    messages:         (w) => <WidgetMessages key={w.id} companyId={companyId} size={w.size} />,
+    fleet_health:     (w) => <WidgetFleetHealth key={w.id} assets={assets} loading={loading} onRemove={w.onRemove} />,
+    breakdowns:       (w) => <WidgetBreakdowns key={w.id} assets={assets} loading={loading} size={w.size} onRemove={w.onRemove} />,
+    overdue:          (w) => <WidgetOverdue key={w.id} maint={maint} loading={loading} size={w.size} onRemove={w.onRemove} onDrillDown={setDrillDown} />,
+    due_today:        (w) => <WidgetDueToday key={w.id} maint={maint} loading={loading} size={w.size} onRemove={w.onRemove} onDrillDown={setDrillDown} />,
+    priority_wos:     (w) => <WidgetPriorityWOs key={w.id} wos={wos} loading={loading} size={w.size} onRemove={w.onRemove} onDrillDown={setDrillDown} />,
+    oil_sampling:     (w) => <WidgetOilSampling key={w.id} companyId={companyId} size={w.size} onRemove={w.onRemove} />,
+    parts_stock:      (w) => <WidgetPartsStock key={w.id} companyId={companyId} size={w.size} onRemove={w.onRemove} />,
+    downtime_summary: (w) => <WidgetDowntimeSummary key={w.id} companyId={companyId} size={w.size} onRemove={w.onRemove} />,
+    calendar_preview:  (w) => <WidgetCalendarPreview key={w.id} companyId={companyId} size={w.size} onRemove={w.onRemove} />,
+    prestart_kpi:      (w) => <WidgetPrestartKPI key={w.id} companyId={companyId} loading={loading} onRemove={w.onRemove} onDrillDown={setDrillDown} />,
+    service_kpi:       (w) => <WidgetServiceKPI  key={w.id} companyId={companyId} loading={loading} onRemove={w.onRemove} onDrillDown={setDrillDown} />,
+    messages:         (w) => <WidgetMessages key={w.id} companyId={companyId} size={w.size} onRemove={w.onRemove} />,
   };
 
   // ── Fleet health bar stats ──
@@ -1236,8 +1260,14 @@ function Dashboard({ companyId, userRole }) {
 
         {/* ── Main KPI widgets: Prestarts + Services side by side ── */}
         <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16, marginBottom:20 }}>
-          <WidgetPrestartKPI companyId={companyId} loading={loading} />
-          <WidgetServiceKPI  companyId={companyId} loading={loading} />
+          {layout.find(w=>w.id==='prestart_kpi')?.enabled !== false &&
+            <WidgetPrestartKPI companyId={companyId} loading={loading}
+              onRemove={isAdmin ? () => hideWidget('prestart_kpi') : undefined}
+              onDrillDown={setDrillDown} />}
+          {layout.find(w=>w.id==='service_kpi')?.enabled !== false &&
+            <WidgetServiceKPI companyId={companyId} loading={loading}
+              onRemove={isAdmin ? () => hideWidget('service_kpi') : undefined}
+              onDrillDown={setDrillDown} />}
         </div>
 
         {/* ── Widget Grid (customisable widgets below) ── */}
@@ -1248,7 +1278,7 @@ function Dashboard({ companyId, userRole }) {
             const sizeClass = w.size==='lg'?'widget-lg':w.size==='sm'?'widget-sm':w.size==='wide'?'widget-wide':'widget-md';
             return (
               <div key={w.id} className={sizeClass}>
-                {renderer(w)}
+                {renderer({ ...w, onRemove: isAdmin ? () => hideWidget(w.id) : undefined })}
               </div>
             );
           })}
