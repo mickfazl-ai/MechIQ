@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from './supabase';
+import { WidgetCustom, WidgetBuilderModal } from './CustomWidget';
+import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
 const CSS = `
   @keyframes shimmer { 0%{background-position:-200% 0} 100%{background-position:200% 0} }
@@ -426,7 +428,6 @@ function AccordionCards({ loading, assets, maint, wos, PCOLOR, StatusBadge }) {
 const WIDGET_DEFS = [
   { id:'prestart_kpi',   label:'Prestart KPIs',        icon:'📋', defaultSize:'wide', desc:'Daily prestart completion per machine with missing prestart alerts' },
   { id:'service_kpi',    label:'Service KPIs',         icon:'🔧', defaultSize:'wide', desc:'Service schedule status — overdue, due soon, completed' },
-  { id:'units_service',  label:'Fleet Service Status', icon:'🚛', defaultSize:'wide', desc:'All units with predicted next service date and health' },
   { id:'fleet_health',   label:'Fleet Health',         icon:'🚛', defaultSize:'lg',  desc:'Overall fleet status bar' },
   { id:'breakdowns',     label:'Breakdowns',           icon:'🔴', defaultSize:'md',  desc:'Current down machines' },
   { id:'overdue',        label:'Overdue Services',     icon:'⚠️', defaultSize:'md',  desc:'Services past due date' },
@@ -585,147 +586,6 @@ function WidgetFleetHealth({ assets, loading }) {
         })}
       </div>
     </ExpandableWidget>
-  );
-}
-
-function WidgetUnitsService({ companyId, assets, loading }) {
-  const [schedules, setSchedules] = React.useState([]);
-  const today = new Date();
-  const todayStr = today.toISOString().split('T')[0];
-
-  React.useEffect(() => {
-    if (!companyId) return;
-    supabase.from('service_schedules').select('asset_name,service_name,predicted_date,predicted_daily_rate,interval_value,interval_type,next_due_value,last_service_value')
-      .eq('company_id', companyId)
-      .then(({ data }) => setSchedules(data || []));
-  }, [companyId]);
-
-  if (loading) return <div className="dash-widget" style={{ gridColumn:'span 2' }}><Sk h="120px" /></div>;
-
-  // For each asset, find its most urgent upcoming predicted schedule
-  const assetNext = assets.map(a => {
-    const aSchedules = schedules.filter(s => s.asset_name === a.name && s.predicted_date);
-    const upcoming = aSchedules
-      .filter(s => s.predicted_date >= todayStr)
-      .sort((x, y) => x.predicted_date.localeCompare(y.predicted_date));
-    const overdue = aSchedules
-      .filter(s => s.predicted_date < todayStr)
-      .sort((x, y) => x.predicted_date.localeCompare(y.predicted_date));
-    const next = overdue[0] || upcoming[0] || null;
-    const daysUntil = next ? Math.round((new Date(next.predicted_date) - today) / 86400000) : null;
-    return { ...a, nextSchedule: next, daysUntil, overdueCount: overdue.length };
-  });
-
-  // Sort: overdue first, then by days remaining
-  const sorted = [...assetNext].sort((a, b) => {
-    if (a.overdueCount > 0 && b.overdueCount === 0) return -1;
-    if (b.overdueCount > 0 && a.overdueCount === 0) return 1;
-    if (a.daysUntil !== null && b.daysUntil !== null) return a.daysUntil - b.daysUntil;
-    if (a.daysUntil !== null) return -1;
-    return 1;
-  });
-
-  const getServiceColor = (daysUntil, overdueCount) => {
-    if (overdueCount > 0 || daysUntil < 0) return { dot: 'var(--red)', bg: 'var(--red-bg)', border: 'var(--red-border)', label: 'Overdue', labelColor: 'var(--red)' };
-    if (daysUntil <= 7)  return { dot: 'var(--red)', bg: 'rgba(239,68,68,0.06)', border: 'rgba(239,68,68,0.2)', label: `${daysUntil}d`, labelColor: 'var(--red)' };
-    if (daysUntil <= 30) return { dot: 'var(--amber)', bg: 'rgba(245,158,11,0.06)', border: 'rgba(245,158,11,0.2)', label: `${daysUntil}d`, labelColor: 'var(--amber)' };
-    return { dot: 'var(--green)', bg: 'transparent', border: 'var(--border)', label: `${daysUntil}d`, labelColor: 'var(--green)' };
-  };
-
-  const getStatusColor = (status) => {
-    if (status === 'Down') return 'var(--red)';
-    if (status === 'Maintenance') return 'var(--amber)';
-    return 'var(--green)';
-  };
-
-  const navigate = (assetId) => {
-    sessionStorage.setItem('mechiq_open_asset', JSON.stringify({ assetId, tab: 'service' }));
-    window.dispatchEvent(new CustomEvent('mechiq-navigate', { detail: { page: 'assets', assetId } }));
-  };
-
-  return (
-    <div className="dash-widget" style={{ gridColumn:'span 2' }}>
-      <div className="dw-header">
-        <div className="dw-title">🚛 Fleet Service Status</div>
-        <div style={{ fontSize:11, color:'var(--text-muted)' }}>
-          {assetNext.filter(a => a.overdueCount > 0).length > 0 && (
-            <span style={{ color:'var(--red)', fontWeight:700 }}>
-              {assetNext.filter(a => a.overdueCount > 0).length} overdue · 
-            </span>
-          )}
-          {assets.length} units
-        </div>
-      </div>
-
-      {assets.length === 0 && (
-        <div style={{ fontSize:13, color:'var(--text-muted)', fontStyle:'italic', padding:'12px 0' }}>No assets found.</div>
-      )}
-
-      <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
-        {sorted.map(a => {
-          const sc = a.nextSchedule ? getServiceColor(a.daysUntil, a.overdueCount) : null;
-          const statusColor = getStatusColor(a.status);
-          return (
-            <div key={a.id}
-              onClick={() => navigate(a.id)}
-              style={{ display:'flex', alignItems:'center', gap:10, padding:'10px 12px', borderRadius:9, background: sc?.bg || 'var(--surface-2)', border:`1px solid ${sc?.border || 'var(--border)'}`, cursor:'pointer', transition:'all 0.12s' }}>
-
-              {/* Status dot */}
-              <span style={{ width:9, height:9, borderRadius:'50%', background:statusColor, flexShrink:0, boxShadow:`0 0 6px ${statusColor}80` }} />
-
-              {/* Asset name + number */}
-              <div style={{ flex:1, minWidth:0 }}>
-                <div style={{ fontSize:13, fontWeight:700, color:'var(--text-primary)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
-                  {a.name}
-                  {a.asset_number && <span style={{ fontSize:11, color:'var(--accent)', fontWeight:700, marginLeft:6 }}>#{a.asset_number}</span>}
-                </div>
-                <div style={{ fontSize:11, color:'var(--text-muted)', marginTop:1 }}>
-                  {[a.type, a.location].filter(Boolean).join(' · ')}
-                  {a.hours ? ` · ${Number(a.hours).toLocaleString()} hrs` : ''}
-                </div>
-              </div>
-
-              {/* Next service info */}
-              <div style={{ flexShrink:0, textAlign:'right' }}>
-                {a.nextSchedule ? (
-                  <>
-                    <div style={{ fontSize:12, fontWeight:700, color:sc.labelColor }}>
-                      {a.overdueCount > 0 ? `⚠ ${a.overdueCount} overdue` : `📈 ${new Date(a.nextSchedule.predicted_date).toLocaleDateString('en-AU', { day:'numeric', month:'short' })}`}
-                    </div>
-                    <div style={{ fontSize:10, color:'var(--text-muted)', marginTop:1 }}>
-                      {a.nextSchedule.service_name}
-                      {a.nextSchedule.predicted_daily_rate ? ` · ${Number(a.nextSchedule.predicted_daily_rate).toFixed(1)} hr/d` : ''}
-                    </div>
-                  </>
-                ) : (
-                  <div style={{ fontSize:11, color:'var(--text-faint)' }}>
-                    {schedules.filter(s => s.asset_name === a.name).length === 0 ? 'No schedules' : 'No prediction yet'}
-                  </div>
-                )}
-              </div>
-
-              {/* Days badge */}
-              {a.nextSchedule && (
-                <div style={{ flexShrink:0, width:44, textAlign:'center', padding:'4px 6px', borderRadius:7, background: sc.labelColor + '18', border:`1px solid ${sc.labelColor}33` }}>
-                  <div style={{ fontSize:16, fontWeight:900, color:sc.labelColor, lineHeight:1, fontFamily:'var(--font-display)' }}>
-                    {a.overdueCount > 0 ? '!' : Math.abs(a.daysUntil)}
-                  </div>
-                  <div style={{ fontSize:9, color:sc.labelColor, fontWeight:700, textTransform:'uppercase', marginTop:1 }}>
-                    {a.overdueCount > 0 ? 'OVR' : 'd'}
-                  </div>
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
-
-      {schedules.length === 0 && assets.length > 0 && (
-        <div style={{ marginTop:12, padding:'10px 12px', background:'rgba(14,165,233,0.06)', border:'1px solid rgba(14,165,233,0.2)', borderRadius:8, fontSize:12, color:'var(--accent)' }}>
-          💡 Open each unit to run AI service predictions — they'll appear here automatically.
-        </div>
-      )}
-    </div>
   );
 }
 
@@ -1157,6 +1017,9 @@ function Dashboard({ companyId, userRole }) {
   const [hVis, setHVis]     = useState(false);
   const [showCustomise, setShowCustomise] = useState(false);
   const [layout, setLayout] = useState(() => getLayout(companyId, userRole?.email || ''));
+  const [customWidgets, setCustomWidgets] = useState([]);
+  const [showBuilder, setShowBuilder] = useState(false);
+  const [editingWidget, setEditingWidget] = useState(null);
   const { toasts, add: toast } = useToast();
   const isAdmin = ['admin','supervisor'].includes(userRole?.role);
 
@@ -1165,8 +1028,29 @@ function Dashboard({ companyId, userRole }) {
       const s = document.createElement('style'); s.id='dash-css'; s.textContent=CSS; document.head.appendChild(s);
     }
     setTimeout(() => setHVis(true), 60);
-    if (companyId) load();
+    if (companyId) { load(); loadCustomWidgets(); }
   }, [companyId]);
+
+  const loadCustomWidgets = async () => {
+    const { data } = await supabase.from('custom_widgets').select('*').eq('company_id', companyId).order('created_at');
+    setCustomWidgets(data || []);
+  };
+
+  const handleWidgetSaved = (cfg) => {
+    setCustomWidgets(prev => {
+      const exists = prev.find(w => w.id === cfg.id);
+      return exists ? prev.map(w => w.id === cfg.id ? cfg : w) : [...prev, cfg];
+    });
+    setShowBuilder(false); setEditingWidget(null);
+    toast('Widget saved', 'success');
+  };
+
+  const deleteCustomWidget = async (id) => {
+    if (!window.confirm('Remove this widget from the dashboard?')) return;
+    await supabase.from('custom_widgets').delete().eq('id', id);
+    setCustomWidgets(prev => prev.filter(w => w.id !== id));
+    toast('Widget removed', 'success');
+  };
 
   const load = async (isRefresh=false) => {
     if (isRefresh) setRef(true); else setLoad(true);
@@ -1203,7 +1087,6 @@ function Dashboard({ companyId, userRole }) {
   const A = { cyan:'var(--accent)', red:'var(--red)', amber:'var(--amber)', green:'var(--green)' };
 
   const WIDGET_COMPONENTS = {
-    units_service:    (w) => <WidgetUnitsService key={w.id} companyId={companyId} assets={assets} loading={loading} />,
     fleet_health:     (w) => <WidgetFleetHealth key={w.id} assets={assets} loading={loading} />,
     breakdowns:       (w) => <WidgetBreakdowns key={w.id} assets={assets} loading={loading} size={w.size} />,
     overdue:          (w) => <WidgetOverdue key={w.id} maint={maint} loading={loading} size={w.size} />,
@@ -1241,6 +1124,12 @@ function Dashboard({ companyId, userRole }) {
             </div>
           </div>
           <div style={{ display:'flex', gap:8 }}>
+            {isAdmin && (
+              <button onClick={() => { setEditingWidget(null); setShowBuilder(true); }}
+                style={{ padding:'7px 14px', background:'linear-gradient(135deg,var(--accent),#0090a8)', color:'#fff', border:'none', borderRadius:8, cursor:'pointer', fontSize:12, fontWeight:700, display:'flex', alignItems:'center', gap:6 }}>
+                + Widget
+              </button>
+            )}
             <button onClick={() => setShowCustomise(true)} style={{ padding:'7px 14px', background:'var(--surface)', border:'1px solid var(--border)', borderRadius:8, cursor:'pointer', fontSize:12, fontWeight:600, color:'var(--text-secondary)', display:'flex', alignItems:'center', gap:6 }}>
               ⚙️ Customise
             </button>
@@ -1302,7 +1191,6 @@ function Dashboard({ companyId, userRole }) {
         {/* ── Main KPI widgets: Prestarts + Services side by side ── */}
         <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16, marginBottom:20 }}>
           <WidgetPrestartKPI companyId={companyId} loading={loading} />
-          <WidgetUnitsService companyId={companyId} assets={assets} loading={loading} />
           <WidgetServiceKPI  companyId={companyId} loading={loading} />
         </div>
 
@@ -1320,6 +1208,50 @@ function Dashboard({ companyId, userRole }) {
           })}
         </div>
 
+        {/* ── Custom Widgets ── */}
+        {customWidgets.length > 0 && (
+          <div style={{ marginBottom: 16 }}>
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:12 }}>
+              <div style={{ fontSize:11, fontWeight:800, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.8px' }}>
+                Custom Widgets
+              </div>
+              {isAdmin && (
+                <button onClick={() => { setEditingWidget(null); setShowBuilder(true); }}
+                  style={{ padding:'5px 12px', background:'var(--surface-2)', border:'1px dashed var(--border)', borderRadius:7, fontSize:11, fontWeight:700, color:'var(--accent)', cursor:'pointer' }}>
+                  + Add Widget
+                </button>
+              )}
+            </div>
+            <div className="dash-grid">
+              {customWidgets.map(w => {
+                const sizeClass = w.size==='lg' ? 'widget-lg' : w.size==='sm' ? 'widget-sm' : 'widget-md';
+                return (
+                  <div key={w.id} className={sizeClass}>
+                    <WidgetCustom
+                      config={w}
+                      companyId={companyId}
+                      isAdmin={isAdmin}
+                      onEdit={() => { setEditingWidget(w); setShowBuilder(true); }}
+                      onDelete={() => deleteCustomWidget(w.id)}
+                    />
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* ── Empty custom widgets state (admin only) ── */}
+        {customWidgets.length === 0 && isAdmin && (
+          <div style={{ border:'1.5px dashed var(--border)', borderRadius:12, padding:'24px', textAlign:'center', marginBottom:16, cursor:'pointer' }}
+            onClick={() => { setEditingWidget(null); setShowBuilder(true); }}>
+            <div style={{ fontSize:28, marginBottom:8 }}>📊</div>
+            <div style={{ fontSize:13, fontWeight:700, color:'var(--text-secondary)', marginBottom:4 }}>No custom widgets yet</div>
+            <div style={{ fontSize:12, color:'var(--text-faint)', marginBottom:12 }}>Build widgets from your fleet data — KPIs, charts, lists — anything you want to track.</div>
+            <div style={{ display:'inline-block', padding:'8px 18px', background:'var(--accent)', color:'#fff', borderRadius:8, fontSize:12, fontWeight:700 }}>+ Create First Widget</div>
+          </div>
+        )}
+
         {/* ── Service Intervals ── */}
         {progressAssets.length > 0 && (
           <div className="panel" style={{ marginTop:16 }}>
@@ -1333,6 +1265,15 @@ function Dashboard({ companyId, userRole }) {
         )}
 
       </div>
+
+      {showBuilder && isAdmin && (
+        <WidgetBuilderModal
+          companyId={companyId}
+          editConfig={editingWidget}
+          onSave={handleWidgetSaved}
+          onClose={() => { setShowBuilder(false); setEditingWidget(null); }}
+        />
+      )}
 
       {showCustomise && (
         <CustomisePanel
