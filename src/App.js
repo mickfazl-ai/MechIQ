@@ -224,10 +224,12 @@ function App() {
       else setLoading(false);
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      if (session) fetchUserRole(session.user.email);
-      else { setUserRole(null); setLoading(false); }
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      // Only handle sign-out here — Login.js handles sign-in via the onAuth callback
+      // This prevents onAuthStateChange from bypassing the "Stay signed in?" prompt
+      if (event === 'SIGNED_OUT' || !session) {
+        setSession(null); setUserRole(null); setLoading(false);
+      }
     });
 
     // Global navigation event (fired from deep components like MachineProfile service tabs)
@@ -457,7 +459,7 @@ function App() {
   );
 
   if (!session) {
-    return <Login onAuth={(session) => { /* handled by onAuthStateChange */ }} />;
+    return <Login onAuth={(s) => { setSession(s); fetchUserRole(s.user.email); }} />;
   }
 
   // First login — force password change for new company admins
