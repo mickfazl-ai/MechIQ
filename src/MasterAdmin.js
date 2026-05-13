@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from './supabase';
+import { pythonAIFetch } from './pythonApi';
 
 const MASTER_PIN = '4900';
 const FEATURES = [
@@ -287,7 +288,7 @@ function AppRequestsKanban({ requests, loading, onStatusChange, onAddNote, compa
   const generateAIResponse = async (req) => {
     setAiLoading(true);
     try {
-      const res = await fetch('/api/ai-insight', {
+      const res = await pythonAIFetch({
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ model: 'claude-sonnet-4-5', max_tokens: 400,
           messages: [{ role: 'user', content: `You are a senior React developer reviewing a feature request for a fleet maintenance app called MechIQ. Write a brief admin response (2-3 sentences) acknowledging the request and explaining the implementation approach or timeline. Be helpful and specific.\n\nRequest: "${req.title}"\nDescription: ${req.description || 'None'}\nAI Draft: ${req.ai_draft || 'None'}` }]

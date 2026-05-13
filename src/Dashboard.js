@@ -961,16 +961,44 @@ function WidgetServiceKPI({ companyId, loading }) {
       .then(({ data }) => setSchedules(data||[]));
   }, [companyId]);
 
+  const today = new Date();
+  const todayStr = today.toISOString().split('T')[0];
+
+  // Status-based counts (existing)
   const overdue   = schedules.filter(s => s.status === 'overdue' || s.status === 'Overdue');
   const dueSoon   = schedules.filter(s => s.status === 'Due Soon' || s.status === 'due_soon');
   const upcoming  = schedules.filter(s => s.status === 'Upcoming' || s.status === 'upcoming');
   const completed = schedules.filter(s => s.status === 'Completed' || s.status === 'completed');
 
+  // Prediction-based counts (from /predict/service saved on each asset page load)
+  const withPrediction  = schedules.filter(s => s.predicted_date);
+  const predictOverdue  = withPrediction.filter(s => s.predicted_date < todayStr);
+  const predictThisWeek = withPrediction.filter(s => {
+    const d = new Date(s.predicted_date);
+    const diff = (d - today) / 86400000;
+    return diff >= 0 && diff <= 7;
+  });
+  const predictThisMonth = withPrediction.filter(s => {
+    const d = new Date(s.predicted_date);
+    const diff = (d - today) / 86400000;
+    return diff >= 0 && diff <= 30;
+  });
+
+  // Next single predicted service across all assets
+  const nextPredicted = withPrediction
+    .filter(s => s.predicted_date >= todayStr)
+    .sort((a, b) => a.predicted_date.localeCompare(b.predicted_date))[0] || null;
+
+  const nextPredDays = nextPredicted
+    ? Math.round((new Date(nextPredicted.predicted_date) - today) / 86400000)
+    : null;
+
   return (
     <div className="dash-widget" style={{ gridColumn:'span 2' }}>
       <div className="dw-header"><div className="dw-title">🔧 Service Schedule KPIs</div></div>
 
-      <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:10, marginBottom:18 }}>
+      {/* ── Status KPIs ── */}
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:10, marginBottom:14 }}>
         {[
           ['Overdue',   overdue.length,   'var(--red)',   '#ef535018'],
           ['Due Soon',  dueSoon.length,   'var(--amber)', '#f59e0b18'],
@@ -984,7 +1012,75 @@ function WidgetServiceKPI({ companyId, loading }) {
         ))}
       </div>
 
-      {/* Overdue + Due Soon list */}
+      {/* ── Prediction KPIs (only shown when predictions exist) ── */}
+      {withPrediction.length > 0 && (
+        <div style={{ marginBottom:16 }}>
+          <div style={{ fontSize:10, fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.5px', marginBottom:8 }}>📈 AI Usage Predictions</div>
+          <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:8, marginBottom:12 }}>
+            {[
+              ['Predicted Overdue', predictOverdue.length,  'var(--red)',   predictOverdue.length > 0],
+              ['Due This Week',     predictThisWeek.length,  'var(--amber)', predictThisWeek.length > 0],
+              ['Due This Month',    predictThisMonth.length, 'var(--accent)', false],
+            ].map(([label, val, color, pulse]) => (
+              <div key={label} style={{ background: val > 0 ? `${color}10` : 'var(--surface-2)', borderRadius:8, padding:'10px 10px', textAlign:'center', border:`1px solid ${val>0?color+'33':'var(--border)'}` }}>
+                <div style={{ fontSize:20, fontWeight:900, color: val > 0 ? color : 'var(--text-muted)' }}>{val}</div>
+                <div style={{ fontSize:10, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.5px', marginTop:2, lineHeight:1.3 }}>{label}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* Next predicted service banner */}
+          {nextPredicted && (
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'12px 14px', borderRadius:10, background:'rgba(14,165,233,0.05)', border:'1px solid rgba(14,165,233,0.2)', marginBottom:10 }}>
+              <div>
+                <div style={{ fontSize:10, fontWeight:700, color:'var(--accent)', textTransform:'uppercase', letterSpacing:'0.4px', marginBottom:3 }}>Next Service Due</div>
+                <div style={{ fontSize:13, fontWeight:700, color:'var(--text-primary)' }}>{nextPredicted.asset_name}</div>
+                <div style={{ fontSize:12, color:'var(--text-muted)', marginTop:1 }}>{nextPredicted.service_name} · Every {nextPredicted.interval_value} {nextPredicted.interval_type}</div>
+                {nextPredicted.predicted_daily_rate && (
+                  <div style={{ fontSize:11, color:'var(--text-faint)', marginTop:2 }}>
+                    {Number(nextPredicted.predicted_daily_rate).toFixed(1)} hr/day usage rate
+                  </div>
+                )}
+              </div>
+              <div style={{ textAlign:'right', flexShrink:0 }}>
+                <div style={{ fontSize:26, fontWeight:900, fontFamily:'var(--font-display)', color: nextPredDays <= 0 ? 'var(--red)' : nextPredDays <= 7 ? 'var(--amber)' : 'var(--accent)', lineHeight:1 }}>
+                  {nextPredDays <= 0 ? `${Math.abs(nextPredDays)}d` : `${nextPredDays}d`}
+                </div>
+                <div style={{ fontSize:10, color:'var(--text-muted)', fontWeight:600, textTransform:'uppercase' }}>
+                  {nextPredDays <= 0 ? 'overdue' : new Date(nextPredicted.predicted_date).toLocaleDateString('en-AU',{day:'numeric',month:'short'})}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Predicted overdue list */}
+          {predictOverdue.slice(0,5).map((s,i) => (
+            <div key={i} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'7px 10px', borderRadius:6, marginBottom:4, background:'rgba(239,83,80,0.05)', border:'1px solid rgba(239,83,80,0.18)' }}>
+              <div>
+                <div style={{ fontSize:12, fontWeight:600, color:'var(--text-primary)' }}>{s.asset_name}</div>
+                <div style={{ fontSize:11, color:'var(--text-muted)' }}>{s.service_name} · Predicted {new Date(s.predicted_date).toLocaleDateString('en-AU',{day:'numeric',month:'short'})}</div>
+              </div>
+              <span style={{ padding:'2px 9px', borderRadius:20, fontSize:10, fontWeight:700, background:'var(--red-bg)', color:'var(--red)', whiteSpace:'nowrap' }}>⚠ Overdue</span>
+            </div>
+          ))}
+
+          {/* Predicted this week list */}
+          {predictThisWeek.filter(s => !predictOverdue.includes(s)).slice(0,4).map((s,i) => {
+            const days = Math.round((new Date(s.predicted_date) - today) / 86400000);
+            return (
+              <div key={i} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'7px 10px', borderRadius:6, marginBottom:4, background:'rgba(245,158,11,0.05)', border:'1px solid rgba(245,158,11,0.18)' }}>
+                <div>
+                  <div style={{ fontSize:12, fontWeight:600, color:'var(--text-primary)' }}>{s.asset_name}</div>
+                  <div style={{ fontSize:11, color:'var(--text-muted)' }}>{s.service_name} · {new Date(s.predicted_date).toLocaleDateString('en-AU',{weekday:'short',day:'numeric',month:'short'})}</div>
+                </div>
+                <span style={{ padding:'2px 9px', borderRadius:20, fontSize:10, fontWeight:700, background:'var(--amber-bg)', color:'var(--amber)', whiteSpace:'nowrap' }}>{days}d away</span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* ── Existing overdue/due-soon list ── */}
       {[...overdue, ...dueSoon].slice(0,8).map((s,i) => {
         const isOD = s.status === 'overdue' || s.status === 'Overdue';
         return (
@@ -999,7 +1095,7 @@ function WidgetServiceKPI({ companyId, loading }) {
           </div>
         );
       })}
-      {[...overdue,...dueSoon].length === 0 && <div style={{ fontSize:13, color:'var(--text-muted)', fontStyle:'italic' }}>✓ All services up to date</div>}
+      {[...overdue,...dueSoon].length === 0 && !withPrediction.length && <div style={{ fontSize:13, color:'var(--text-muted)', fontStyle:'italic' }}>✓ All services up to date</div>}
     </div>
   );
 }

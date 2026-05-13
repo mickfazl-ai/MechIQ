@@ -1,6 +1,7 @@
 // MechIQ Maintenance v2 - Calendar + Service Schedules
 import React, { useState, useEffect } from 'react';
 import { supabase } from './supabase';
+import { pythonAIFetch } from './pythonApi';
 import Calendar from './Calendar';
 
 // ─── Timezone & date format helpers ───────────────────────────────────────────
@@ -250,7 +251,7 @@ function Maintenance({ userRole, initialTab, setCurrentPage }) {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       const token = session?.access_token;
-      const resp = await fetch('/api/ai-insight', {
+      const resp = await pythonAIFetch({
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({

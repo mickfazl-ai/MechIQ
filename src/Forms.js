@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { pythonAIFetch } from './pythonApi';
 import { supabase } from './supabase';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -6,15 +7,16 @@ import * as XLSX from 'xlsx';
 import PaperScan from './PaperScan';
 
 // ─── SHARED AI HELPER ─────────────────────────────────────────────────────────
-// All AI calls route through /api/ai-insight (Vercel serverless proxy).
+// All AI calls route through Python service (Railway) via pythonAIFetch.
 // The Anthropic API key lives server-side only — never exposed to the browser.
 // Used by: AIGeneratorModal (prestart + service sheets) and Depreciation.js
 async function callAI(messages, maxTokens = 2000) {
+  // ── Routes to Python service via pythonAIFetch ─────────────────────────
   const { data: { session } } = await supabase.auth.getSession();
   const token = session?.access_token;
   if (!token) throw new Error('Not authenticated');
 
-  const response = await fetch('/api/ai-insight', {
+  const response = await pythonAIFetch({
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -1510,7 +1512,7 @@ function ServiceSheetsTab({ userRole }) {
                       reader.onload = async (ev) => {
                         const b64 = ev.target.result.split(',')[1];
                         try {
-                          const res = await fetch('/api/ai-insight', { method:'POST', headers:{'Content-Type':'application/json'},
+                          const res = await pythonAIFetch({ method:'POST', headers:{'Content-Type':'application/json'},
                             body: JSON.stringify({ model:'claude-sonnet-4-5', max_tokens:300,
                               messages:[{ role:'user', content:[
                                 { type:'image', source:{ type:'base64', media_type:file.type, data:b64 }},
@@ -1585,7 +1587,7 @@ function ServiceSheetsTab({ userRole }) {
                       reader.onload = async (ev) => {
                         const b64 = ev.target.result.split(',')[1];
                         try {
-                          const res = await fetch('/api/ai-insight', { method:'POST', headers:{'Content-Type':'application/json'},
+                          const res = await pythonAIFetch({ method:'POST', headers:{'Content-Type':'application/json'},
                             body: JSON.stringify({ model:'claude-sonnet-4-5', max_tokens:400,
                               messages:[{ role:'user', content:[
                                 { type:'image', source:{ type:'base64', media_type:file.type, data:b64 }},

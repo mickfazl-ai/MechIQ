@@ -332,6 +332,8 @@ function Calendar({ userRole, setCurrentPage }) {
   };
 
   const estimateDate = (s) => {
+    // Prefer ML-predicted date if available (saved by autoPredict on asset page load)
+    if (s.predicted_date) return s.predicted_date;
     if (s.next_due_date) return s.next_due_date;
     if ((s.interval_type==='hours'||s.interval_type==='km') && s.next_due_value) {
       const a = assets.find(x=>x.name===s.asset_name);
@@ -349,7 +351,7 @@ function Calendar({ userRole, setCurrentPage }) {
     const events={};
     const push=(day,ev)=>{ if(!events[day])events[day]=[]; events[day].push(ev); };
     tasks.forEach(t=>{ if(!t.next_due?.startsWith(prefix))return; const day=parseInt(t.next_due.split('-')[2]); push(day,{label:t.asset+' — '+t.task,color:t.status==='Overdue'?'var(--red)':t.status==='Due Soon'?'var(--amber)':'var(--accent)',type:'service',assetName:t.asset,assetId:assets.find(a=>a.name===t.asset)?.id,serviceName:t.task,detail:`Status: ${t.status} · Assigned: ${t.assigned_to||'—'}`}); });
-    schedules.forEach(s=>{ const ds=estimateDate(s); if(!ds?.startsWith(prefix))return; const day=parseInt(ds.split('-')[2]); const cv=assets.find(a=>a.name===s.asset_name)?.hours||0; const rem=s.next_due_value?s.next_due_value-cv:null; const over=rem!==null&&rem<=0; push(day,{label:s.asset_name+' — '+s.service_name,color:over?'var(--red)':'var(--purple)',type:'schedule',assetName:s.asset_name,assetId:assets.find(a=>a.name===s.asset_name)?.id,serviceName:s.service_name,detail:`Every ${s.interval_value} ${s.interval_type} · ${rem!==null?(rem>0?rem+' '+s.interval_type+' to go':Math.abs(rem)+' '+s.interval_type+' overdue'):s.next_due_date||'—'}`}); });
+    schedules.forEach(s=>{ const ds=estimateDate(s); if(!ds?.startsWith(prefix))return; const day=parseInt(ds.split('-')[2]); const cv=assets.find(a=>a.name===s.asset_name)?.hours||0; const rem=s.next_due_value?s.next_due_value-cv:null; const over=rem!==null&&rem<=0; const isPredicted=!!s.predicted_date; const rateNote=s.predicted_daily_rate?` · ${Number(s.predicted_daily_rate).toFixed(1)} hr/day`:''; push(day,{label:(isPredicted?'📈 ':'')+s.asset_name+' — '+s.service_name,color:over?'var(--red)':isPredicted?'var(--accent)':'var(--purple)',type:isPredicted?'predicted_schedule':'schedule',assetName:s.asset_name,assetId:assets.find(a=>a.name===s.asset_name)?.id,serviceName:s.service_name,detail:isPredicted?`AI Predicted · ${ds}${rateNote}`:`Every ${s.interval_value} ${s.interval_type} · ${rem!==null?(rem>0?rem+' '+s.interval_type+' to go':Math.abs(rem)+' '+s.interval_type+' overdue'):s.next_due_date||'—'}`}); });
     workOrders.forEach(w=>{ if(!w.due_date?.startsWith(prefix))return; const day=parseInt(w.due_date.split('-')[2]); push(day,{label:(w.asset||'')+' — '+(w.defect_description||'').slice(0,40),color:w.priority==='Critical'?'var(--red)':'var(--amber)',type:'wo',assetName:w.asset,assetId:assets.find(a=>a.name===w.asset)?.id,serviceName:w.defect_description,detail:`Priority: ${w.priority} · Assigned: ${w.assigned_to||'—'}`}); });
     return events;
   };

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { pythonAIFetch } from './pythonApi';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 
 function formatCurrency(val) {
@@ -253,7 +254,7 @@ Respond ONLY with a valid JSON object, no markdown, no explanation:
     try {
       const { data: { session } } = await (await import("./supabase")).supabase.auth.getSession();
       const token = session?.access_token;
-      const response = await fetch("/api/ai-insight", {
+      const response = await pythonAIFetch({
         method: "POST",
         headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
         body: JSON.stringify({
@@ -328,7 +329,7 @@ Be specific with dollar amounts where possible. Max 200 words.`;
     try {
       const { data: { session } } = await (await import("./supabase")).supabase.auth.getSession();
       const token = session?.access_token;
-      const response = await fetch("/api/ai-insight", {
+      const response = await pythonAIFetch({
         method: "POST",
         headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
         body: JSON.stringify({ model: "claude-sonnet-4-5", max_tokens: 500, messages: [{ role: "user", content: prompt }] }),

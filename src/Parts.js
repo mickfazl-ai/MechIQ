@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from './supabase';
+import { pythonAIFetch } from './pythonApi';
 import * as XLSX from 'xlsx';
 import QRCode from 'qrcode';
 
@@ -169,7 +170,7 @@ function AIImportModal({ userRole, assets, onClose, onImported }) {
           r.readAsDataURL(f);
         });
 
-        const resp = await fetch('/api/ai-insight', {
+        const resp = await pythonAIFetch({
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
           body: JSON.stringify({
@@ -200,7 +201,7 @@ function AIImportModal({ userRole, assets, onClose, onImported }) {
         setProgress(50);
         setStatus('Mapping columns with AI…');
 
-        const resp = await fetch('/api/ai-insight', {
+        const resp = await pythonAIFetch({
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
           body: JSON.stringify({
@@ -231,7 +232,7 @@ function AIImportModal({ userRole, assets, onClose, onImported }) {
         setProgress(50);
         setStatus('Analysing PDF with AI…');
 
-        const resp = await fetch('/api/ai-insight', {
+        const resp = await pythonAIFetch({
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
           body: JSON.stringify({
@@ -582,7 +583,7 @@ Return a JSON array where each item is:
   "reasoning": "<one sentence explaining why>"
 }`;
 
-      const resp = await fetch('/api/ai-insight', {
+      const resp = await pythonAIFetch({
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ model: 'claude-sonnet-4-5', max_tokens: 4000, messages: [{ role: 'user', content: prompt }] })
@@ -1348,7 +1349,7 @@ function AIScanModal({ parts, userRole, onClose, onDone, onSetTx }) {
       const b64 = e.target.result.split(',')[1];
       setImage(e.target.result);
       try {
-        const res = await fetch('/api/ai-insight', {
+        const res = await pythonAIFetch({
           method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ model: 'claude-sonnet-4-5', max_tokens: 500,
             messages: [{ role: 'user', content: [

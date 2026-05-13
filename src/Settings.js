@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from './supabase';
+import { pythonAIFetch } from './pythonApi';
 import LabelDesigner from './LabelDesigner';
 
 // ─── Shared styles ────────────────────────────────────────────────────────────
@@ -1361,7 +1362,7 @@ function AppModifier({ userRole }) {
     if (!form.title) return;
     setAiLoading(true);
     try {
-      const res = await fetch('/api/ai-insight', {
+      const res = await pythonAIFetch({
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ model: 'claude-sonnet-4-5', max_tokens: 600,
           messages: [{ role: 'user', content: `You are a React developer. A user wants to modify a fleet maintenance app called MechIQ. Based on this request, write a brief technical implementation note for the developer (2-3 sentences max, practical). Request: "${form.title}". Context: ${form.description || 'No additional context.'}` }]
@@ -2881,7 +2882,7 @@ Provide:
 
 Be specific and concise. Format with those 4 headings.`;
 
-      const res = await fetch('https://api.anthropic.com/v1/messages', {
+      const res = await pythonAIFetch({   // was: direct Anthropic call → now via Python service
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

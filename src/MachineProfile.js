@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from './supabase';
+import { predictService, pythonAIFetch } from './pythonApi';
 import { QRCodeCanvas } from 'qrcode.react';
 
 // ─── CSS ──────────────────────────────────────────────────────────────────────
@@ -295,7 +296,7 @@ function ServiceViewModal({ service, asset, onClose }) {
 }
 
 
-function OverviewTab({ asset, recentPrestarts, recentMaintenance, onViewPrestart, onViewService }) {
+function OverviewTab({ asset, recentPrestarts, recentMaintenance, onViewPrestart, onViewService, nextPredictedService }) {
 
   const fields = [
     ['Make / Model', [asset.make, asset.model].filter(Boolean).join(' ') || '—'],
@@ -318,8 +319,52 @@ function OverviewTab({ asset, recentPrestarts, recentMaintenance, onViewPrestart
     ['Tare Weight', asset.tare_weight ? `${asset.tare_weight} kg` : '—'],
   ];
 
+  const today = new Date();
+  const isPredictedOverdue = nextPredictedService?.predicted_date &&
+    new Date(nextPredictedService.predicted_date) < today;
+
   return (
     <div>
+      {/* ── Predicted Service Banner ─────────────────────────────────────── */}
+      {nextPredictedService && (
+        <div style={{
+          display:'flex', alignItems:'center', justifyContent:'space-between', flexWrap:'wrap', gap:10,
+          padding:'14px 18px', borderRadius:12, marginBottom:14,
+          background: isPredictedOverdue ? 'var(--red-bg)' : 'rgba(14,165,233,0.06)',
+          border: `1px solid ${isPredictedOverdue ? 'var(--red-border)' : 'rgba(14,165,233,0.25)'}`,
+        }}>
+          <div style={{ display:'flex', alignItems:'center', gap:12 }}>
+            <span style={{ fontSize:22 }}>{isPredictedOverdue ? '⚠️' : '📈'}</span>
+            <div>
+              <div style={{ fontSize:11, fontWeight:700, color: isPredictedOverdue ? 'var(--red)' : 'var(--accent)', textTransform:'uppercase', letterSpacing:'0.5px', marginBottom:2 }}>
+                {isPredictedOverdue ? 'Service Overdue (Predicted)' : 'Next Service Due (Predicted)'}
+              </div>
+              <div style={{ fontSize:15, fontWeight:800, color:'var(--text-primary)' }}>
+                {nextPredictedService.service_name}
+              </div>
+              <div style={{ fontSize:12, color:'var(--text-muted)', marginTop:2 }}>
+                {new Date(nextPredictedService.predicted_date).toLocaleDateString('en-AU', { weekday:'short', day:'numeric', month:'long', year:'numeric' })}
+                {nextPredictedService.predicted_daily_rate != null &&
+                  ` · ${Number(nextPredictedService.predicted_daily_rate).toFixed(1)} hr/day usage`}
+              </div>
+            </div>
+          </div>
+          <div style={{ textAlign:'right', flexShrink:0 }}>
+            {(() => {
+              const days = Math.round((new Date(nextPredictedService.predicted_date) - today) / 86400000);
+              return (
+                <div style={{ fontSize:28, fontWeight:900, fontFamily:'var(--font-display)', color: isPredictedOverdue ? 'var(--red)' : days <= 14 ? 'var(--amber)' : 'var(--accent)', lineHeight:1 }}>
+                  {isPredictedOverdue ? `${Math.abs(days)}d` : `${days}d`}
+                </div>
+              );
+            })()}
+            <div style={{ fontSize:10, color:'var(--text-muted)', fontWeight:600, textTransform:'uppercase', marginTop:2 }}>
+              {isPredictedOverdue ? 'overdue' : 'away'}
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="mp-card" style={{ marginBottom:14 }}>
         <div className="mp-section-title">Asset Details</div>
         <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(200px,1fr))', gap:'8px 20px' }}>
@@ -735,8 +780,38 @@ function ServiceTab({ asset }) {
   const [serviceTemplates, setServiceTemplates] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [editSchedule, setEditSchedule] = useState(null);
+  const [predictions, setPredictions] = useState({});
+  const [predicting, setPredicting] = useState(false);
 
   useEffect(() => { load(); loadTemplates(); }, [asset]);
+
+  // Manual predict button — auto-predict already runs in AssetPage on load
+  // This lets the user force a refresh mid-session
+  const predictDueDates = async (schedulesOverride) => {
+    const src = schedulesOverride || schedules;
+    const hourSchedules = src.filter(s => s.interval_type === 'hours' || s.interval_type === 'km');
+    if (!hourSchedules.length || predicting) return;
+    setPredicting(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      const { data: historyData } = await supabase
+        .from('asset_hours_log').select('hours, created_at')
+        .eq('asset_id', asset.id).order('created_at', { ascending: false }).limit(60);
+      const result = await predictService({
+        asset_id: asset.id, asset_name: asset.name, current_hours: currentHours,
+        hours_history: (historyData||[]).map(h => ({ hours: h.hours, recorded_at: h.created_at })),
+        schedules: hourSchedules.map(s => ({ id: s.id, service_name: s.service_name, interval_value: s.interval_value, interval_type: s.interval_type, last_service_value: s.last_service_value, next_due_value: s.next_due_value })),
+      }, token);
+      const pmap = {};
+      (Array.isArray(result) ? result : (result.predictions||[])).forEach(p => {
+        const key = p.schedule_id || p.id;
+        if (key) pmap[key] = p;
+      });
+      setPredictions(pmap);
+    } catch(e) { alert('Prediction failed: ' + e.message); }
+    finally { setPredicting(false); }
+  };
 
   const loadTemplates = async () => {
     const { data } = await supabase.from('form_templates')
@@ -907,17 +982,22 @@ function ServiceTab({ asset }) {
               <span style={{ fontFamily:'var(--font-display)', fontSize:15, fontWeight:800, textTransform:'uppercase', letterSpacing:'0.8px', color:'var(--text-primary)' }}>Service Schedules</span>
               <span style={{ background:'var(--accent-light)', color:'var(--accent)', fontSize:11, fontWeight:700, padding:'2px 8px', borderRadius:20 }}>{schedules.length}</span>
             </div>
-            <button
-              onClick={() => { setEditSchedule(null); setShowModal(true); }}
-              style={{ padding:'7px 16px', background:'linear-gradient(135deg,var(--accent),#0090a8)', color:'#fff', border:'none', borderRadius:8, fontSize:12, fontWeight:700, cursor:'pointer', display:'flex', alignItems:'center', gap:5 }}
-            >
-              + Add Service
-            </button>
+            <div style={{ display:'flex', gap:8 }}>
+              <button onClick={() => predictDueDates()} disabled={predicting}
+                title="Refresh predicted due dates"
+                style={{ padding:'7px 14px', background: Object.keys(predictions).length ? 'var(--accent-light)' : 'var(--surface-2)', color:'var(--accent)', border:'1px solid rgba(14,165,233,0.3)', borderRadius:8, fontSize:12, fontWeight:700, cursor:'pointer', opacity:predicting?0.6:1, display:'flex', alignItems:'center', gap:5 }}>
+                {predicting ? '⏳…' : '📈 Predict'}
+              </button>
+              <button onClick={() => { setEditSchedule(null); setShowModal(true); }}
+                style={{ padding:'7px 16px', background:'linear-gradient(135deg,var(--accent),#0090a8)', color:'#fff', border:'none', borderRadius:8, fontSize:12, fontWeight:700, cursor:'pointer', display:'flex', alignItems:'center', gap:5 }}>
+                + Add Service
+              </button>
+            </div>
           </div>
           <div style={{ overflowX:'auto' }}>
             <table style={{ width:'100%', borderCollapse:'collapse', minWidth:500 }}>
               <thead><tr>
-                {['Service','Interval','Last Done','Next Due','Status',''].map(h=><th key={h} style={{ textAlign:'left', padding:'0 14px 10px 0', fontSize:10, fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.5px', borderBottom:'1px solid var(--border)' }}>{h}</th>)}
+                {['Service','Interval','Last Done','Next Due','Predicted','Status',''].map(h=><th key={h} style={{ textAlign:'left', padding:'0 14px 10px 0', fontSize:10, fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.5px', borderBottom:'1px solid var(--border)' }}>{h}</th>)}
               </tr></thead>
               <tbody>
                 {schedules.map(s => {
@@ -930,6 +1010,28 @@ function ServiceTab({ asset }) {
                       <td style={{ padding:'11px 14px 11px 0', fontSize:13, fontWeight:600, color:'var(--text-secondary)' }}>
                         {s.interval_type==='hours'||s.interval_type==='km' ? `${s.next_due_value} ${s.interval_type}` : s.next_due_date || '—'}
                         <div style={{ fontSize:11, color:st.cls==='tl-alert'?'var(--red)':st.cls==='tl-warn'?'var(--amber)':'var(--green)', fontWeight:600, marginTop:2 }}>{st.remaining}</div>
+                      </td>
+                      <td style={{ padding:'11px 14px 11px 0', fontSize:12, color:'var(--text-muted)', minWidth:90 }}>
+                        {predictions[s.id] ? (
+                          <div>
+                            <div style={{ fontWeight:700, color:'var(--accent)', fontSize:12 }}>
+                              {new Date(predictions[s.id].predicted_date).toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'2-digit'})}
+                            </div>
+                            {predictions[s.id].days_remaining != null && (
+                              <div style={{ fontSize:10, color:'var(--text-muted)', marginTop:1 }}>
+                                {predictions[s.id].days_remaining}d
+                                {predictions[s.id].daily_rate != null && ` · ${Number(predictions[s.id].daily_rate).toFixed(1)}hr/d`}
+                              </div>
+                            )}
+                          </div>
+                        ) : s.predicted_date ? (
+                          <div style={{ fontWeight:600, color:'var(--text-secondary)', fontSize:12 }}>
+                            {new Date(s.predicted_date).toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'2-digit'})}
+                            {s.predicted_daily_rate && <div style={{ fontSize:10, color:'var(--text-muted)' }}>{Number(s.predicted_daily_rate).toFixed(1)} hr/d</div>}
+                          </div>
+                        ) : (
+                          <span style={{ color:'var(--text-faint)', fontSize:11 }}>—</span>
+                        )}
                       </td>
                       <td style={{ padding:'11px 14px 11px 0' }}><span className={`traffic-light ${st.cls}`}><span style={{ width:6, height:6, borderRadius:'50%', background:'currentColor' }} />{st.label}</span></td>
                       <td style={{ padding:'11px 0' }}>
@@ -1016,7 +1118,7 @@ function OilTab({ asset, userRole }) {
       const { data: { session } } = await supabase.auth.getSession();
       const token = session?.access_token;
       const wm = sample.wear_metals || {};
-      const resp = await fetch('/api/ai-insight', {
+      const resp = await pythonAIFetch({
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({
@@ -1443,7 +1545,7 @@ function DepreciationTab({ asset, userRole }) {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       const token = session?.access_token;
-      const resp = await fetch('/api/ai-insight', {
+      const resp = await pythonAIFetch({
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({
@@ -1924,6 +2026,7 @@ function AssetPage({ assetId, userRole, onStartPrestart, onStartServiceSheet, on
   const [openWorkOrders, setOpenWorkOrders] = useState([]);
   const [loading, setLoading]         = useState(true);
   const [activeTab, setActiveTab]     = useState(initialTab || 'overview');
+  const [nextPredictedService, setNextPredictedService] = useState(null);
 
   const isAdmin = ['admin','supervisor'].includes(userRole?.role);
   const [labelTemplates, setLabelTemplates] = useState([]);
@@ -1983,8 +2086,81 @@ function AssetPage({ assetId, userRole, onStartPrestart, onStartServiceSheet, on
       const svcSubmissions = (svcSheets.data||[]).map(s => ({ ...s, task: s.service_type||'Service', next_due: s.date, status:'Submitted' }));
       setRecentMaintenance(svcSubmissions);
       setOpenWorkOrders(workorders.data||[]);
+
+      // Load most recent predicted service (non-blocking)
+      const { data: nextP } = await supabase
+        .from('service_schedules').select('*')
+        .eq('asset_name', assetData.name).eq('company_id', assetData.company_id)
+        .not('predicted_date', 'is', null)
+        .order('predicted_date', { ascending: true })
+        .limit(1).maybeSingle();
+      setNextPredictedService(nextP || null);
     }
     setLoading(false);
+
+    // Auto-predict in background on every page load ──────────────────────────
+    if (assetData) autoPredict(assetData);
+  };
+
+  // Runs on every load: fetches hours history → calls /predict/service
+  // → saves predicted_date back to service_schedules → updates banner
+  const autoPredict = async (assetData) => {
+    try {
+      const { data: schedData } = await supabase.from('service_schedules')
+        .select('*').eq('asset_name', assetData.name).eq('company_id', assetData.company_id);
+      const hourSchedules = (schedData || []).filter(
+        s => s.interval_type === 'hours' || s.interval_type === 'km'
+      );
+      if (!hourSchedules.length) return;
+
+      const { data: historyData } = await supabase.from('asset_hours_log')
+        .select('hours, created_at').eq('asset_id', assetData.id)
+        .order('created_at', { ascending: false }).limit(60);
+
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+
+      const results = await predictService({
+        asset_id: assetData.id,
+        asset_name: assetData.name,
+        current_hours: assetData.hours,
+        hours_history: (historyData || []).map(h => ({
+          hours: h.hours,
+          recorded_at: h.created_at,
+        })),
+        schedules: hourSchedules.map(s => ({
+          id: s.id,
+          service_name: s.service_name,
+          interval_value: s.interval_value,
+          interval_type: s.interval_type,
+          last_service_value: s.last_service_value,
+          next_due_value: s.next_due_value,
+        })),
+      }, token);
+
+      if (!results || !results.length) return;
+
+      // Save predictions back to Supabase
+      const now = new Date().toISOString();
+      await Promise.all(results.map(p =>
+        supabase.from('service_schedules').update({
+          predicted_date: p.predicted_date,
+          predicted_daily_rate: p.daily_rate ?? p.daily_rate_hrs ?? null,
+          predicted_at: now,
+        }).eq('id', p.schedule_id || p.id)
+      ));
+
+      // Reload the next predicted service banner
+      const { data: nextP } = await supabase
+        .from('service_schedules').select('*')
+        .eq('asset_name', assetData.name).eq('company_id', assetData.company_id)
+        .not('predicted_date', 'is', null)
+        .order('predicted_date', { ascending: true })
+        .limit(1).maybeSingle();
+      setNextPredictedService(nextP || null);
+    } catch (e) {
+      console.warn('Auto-predict failed:', e.message);
+    }
   };
 
   if (loading) return (
@@ -2124,7 +2300,7 @@ function AssetPage({ assetId, userRole, onStartPrestart, onStartServiceSheet, on
       </div>
 
       {/* ── Tab content ── */}
-      {activeTab === 'overview'     && <OverviewTab asset={asset} recentPrestarts={recentPrestarts} recentMaintenance={recentMaintenance} onViewPrestart={setSelectedPrestart} onViewService={setSelectedService} />}
+      {activeTab === 'overview'     && <OverviewTab asset={asset} recentPrestarts={recentPrestarts} recentMaintenance={recentMaintenance} onViewPrestart={setSelectedPrestart} onViewService={setSelectedService} nextPredictedService={nextPredictedService} />}
       {activeTab === 'workorders'   && <WorkOrdersTab asset={asset} userRole={userRole} />}
       {activeTab === 'service'      && <ServiceTab asset={asset} />}
       {activeTab === 'oil'          && <OilTab asset={asset} userRole={userRole} />}

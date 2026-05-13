@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { supabase } from './supabase';
+import { pythonAIFetch } from './pythonApi';
 
 const S = `
   .ps { font-family:'Barlow',sans-serif; color:#1a2433; max-width:860px; }
@@ -267,7 +268,7 @@ Return ONLY the JSON. No explanation. If a field is not visible or legible, use 
         }]
       };
 
-      const res = await fetch('/api/ai-insight', {
+      const res = await pythonAIFetch({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
