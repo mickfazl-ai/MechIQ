@@ -258,7 +258,7 @@ Respond ONLY with a valid JSON object, no markdown, no explanation:
         method: "POST",
         headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
         body: JSON.stringify({
-          model: "claude-sonnet-4-5",
+          model: "claude-sonnet-4-6",
           max_tokens: 1000,
           messages: [{ role: "user", content: prompt }],
         }),
@@ -332,7 +332,7 @@ Be specific with dollar amounts where possible. Max 200 words.`;
       const response = await pythonAIFetch({
         method: "POST",
         headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
-        body: JSON.stringify({ model: "claude-sonnet-4-5", max_tokens: 500, messages: [{ role: "user", content: prompt }] }),
+        body: JSON.stringify({ model: "claude-sonnet-4-6", max_tokens: 500, messages: [{ role: "user", content: prompt }] }),
       });
       const data = await response.json();
       const text = data.content?.filter(b => b.type === "text").map(b => b.text).join("") || "";
