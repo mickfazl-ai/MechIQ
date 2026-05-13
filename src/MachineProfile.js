@@ -2027,6 +2027,8 @@ function AssetPage({ assetId, userRole, onStartPrestart, onStartServiceSheet, on
   const [loading, setLoading]         = useState(true);
   const [activeTab, setActiveTab]     = useState(initialTab || 'overview');
   const [nextPredictedService, setNextPredictedService] = useState(null);
+  const [selectedPrestart, setSelectedPrestart] = useState(null);
+  const [selectedService, setSelectedService] = useState(null);
 
   const isAdmin = ['admin','supervisor'].includes(userRole?.role);
   const [labelTemplates, setLabelTemplates] = useState([]);
@@ -2308,6 +2310,26 @@ function AssetPage({ assetId, userRole, onStartPrestart, onStartServiceSheet, on
       {activeTab === 'documents'    && <DocumentsTab asset={asset} userRole={userRole} />}
       {activeTab === 'depreciation' && isAdmin && <DepreciationTab asset={asset} userRole={userRole} />}
       {activeTab === 'settings'     && isAdmin && <AssetSettingsTab asset={asset} userRole={userRole} onDeleted={() => onBack && onBack()} />}
+
+      {/* ── Prestart view modal ── */}
+      {selectedPrestart && (
+        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.6)', zIndex:1000, display:'flex', alignItems:'center', justifyContent:'center', padding:16 }}
+          onClick={() => setSelectedPrestart(null)}>
+          <div onClick={e => e.stopPropagation()} style={{ width:'100%', maxWidth:700, maxHeight:'90vh', overflowY:'auto', borderRadius:12, background:'var(--surface)', boxShadow:'0 20px 60px rgba(0,0,0,0.4)' }}>
+            <PrestartViewModal prestart={selectedPrestart} asset={asset} onClose={() => setSelectedPrestart(null)} />
+          </div>
+        </div>
+      )}
+
+      {/* ── Service sheet view modal ── */}
+      {selectedService && (
+        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.6)', zIndex:1000, display:'flex', alignItems:'center', justifyContent:'center', padding:16 }}
+          onClick={() => setSelectedService(null)}>
+          <div onClick={e => e.stopPropagation()} style={{ width:'100%', maxWidth:700, maxHeight:'90vh', overflowY:'auto', borderRadius:12, background:'var(--surface)', boxShadow:'0 20px 60px rgba(0,0,0,0.4)' }}>
+            <ServiceViewModal service={selectedService} asset={asset} onClose={() => setSelectedService(null)} />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
