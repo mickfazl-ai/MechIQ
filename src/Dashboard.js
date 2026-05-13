@@ -95,6 +95,7 @@ const CSS = `
   .widget-card:hover { box-shadow:0 4px 16px rgba(0,0,0,0.08); }
   .custom-panel { position:fixed; top:0; right:0; bottom:0; width:360px; max-width:90vw; background:var(--bg); border-left:1px solid var(--border); box-shadow:-8px 0 40px rgba(0,0,0,0.2); z-index:300; display:flex; flex-direction:column; animation:slideIn 0.25s cubic-bezier(0.16,1,0.3,1); }
   @keyframes slideIn { from{transform:translateX(100%)} to{transform:translateX(0)} }
+  @keyframes slideUp { from{transform:translateY(100%)} to{transform:translateY(0)} }
   .custom-item { display:flex; align-items:center; gap:10px; padding:12px 16px; border-bottom:1px solid var(--border); cursor:grab; user-select:none; transition:background 0.1s; }
   .custom-item:hover { background:var(--surface); }
   .size-btn { padding:3px 8px; border-radius:5px; border:1px solid var(--border); background:var(--surface-2); color:var(--text-muted); font-size:10px; font-weight:700; cursor:pointer; font-family:inherit; }
@@ -1018,6 +1019,7 @@ function Dashboard({ companyId, userRole }) {
   const [showCustomise, setShowCustomise] = useState(false);
   const [layout, setLayout] = useState(() => getLayout(companyId, userRole?.email || ''));
   const [customWidgets, setCustomWidgets] = useState([]);
+  const [drillDown, setDrillDown] = useState(null); // { title, icon, color, rows, columns }
   const [showBuilder, setShowBuilder] = useState(false);
   const [editingWidget, setEditingWidget] = useState(null);
   const { toasts, add: toast } = useToast();
@@ -1145,20 +1147,62 @@ function Dashboard({ companyId, userRole }) {
         {/* ── Hero KPI Strip ── */}
         <div style={{ display:'grid', gridTemplateColumns:'repeat(5,1fr)', gap:12, marginBottom:20 }}>
           {[
-            { label:'Total Fleet',   value: assets.length,  color:'var(--accent)',  icon:'🚛', sub:'registered assets' },
-            { label:'Active',        value: activeCount,    color:'var(--green)',   icon:'✓',  sub:'operational now' },
-            { label:'Down',          value: downCount,      color: downCount>0?'var(--red)':'var(--text-muted)', icon:'⬇', sub:'offline / breakdown', urgent: downCount>0 },
-            { label:'Overdue Svc',   value: overdueCount,   color: overdueCount>0?'var(--red)':'var(--text-muted)', icon:'⚠', sub:'services past due', urgent: overdueCount>0 },
-            { label:'Open WOs',      value: openWOCount,    color: openWOCount>0?'var(--amber)':'var(--text-muted)', icon:'🔧', sub:'work orders open', warn: openWOCount>0 },
+            {
+              label:'Total Fleet', value: assets.length, color:'var(--accent)', icon:'🚛', sub:'registered assets',
+              onClick: () => setDrillDown({
+                title:'All Fleet Assets', icon:'🚛', color:'var(--accent)',
+                columns:['Asset','Type','Status','Location','Hours'],
+                rows: assets.map(a => [a.asset_number ? `${a.asset_number} — ${a.name}` : a.name, a.type||'—', a.status||'—', a.location||'—', a.hours ? a.hours.toLocaleString()+' hrs' : '—']),
+              }),
+            },
+            {
+              label:'Active', value: activeCount, color:'var(--green)', icon:'✓', sub:'operational now',
+              onClick: () => setDrillDown({
+                title:'Active Assets', icon:'✓', color:'var(--green)',
+                columns:['Asset','Type','Location','Hours'],
+                rows: assets.filter(a=>/running|active/i.test(a.status||'')).map(a => [a.asset_number ? `${a.asset_number} — ${a.name}` : a.name, a.type||'—', a.location||'—', a.hours ? a.hours.toLocaleString()+' hrs' : '—']),
+              }),
+            },
+            {
+              label:'Down', value: downCount, color: downCount>0?'var(--red)':'var(--text-muted)', icon:'⬇', sub:'offline / breakdown', urgent: downCount>0,
+              onClick: () => setDrillDown({
+                title:'Assets Down', icon:'⬇', color:'var(--red)',
+                columns:['Asset','Type','Status','Location','Hours'],
+                rows: assets.filter(a=>/down|offline|breakdown/i.test(a.status||'')).map(a => [a.asset_number ? `${a.asset_number} — ${a.name}` : a.name, a.type||'—', a.status||'—', a.location||'—', a.hours ? a.hours.toLocaleString()+' hrs' : '—']),
+                emptyMsg: 'No assets currently down 👍',
+              }),
+            },
+            {
+              label:'Overdue Svc', value: overdueCount, color: overdueCount>0?'var(--red)':'var(--text-muted)', icon:'⚠', sub:'services past due', urgent: overdueCount>0,
+              onClick: () => setDrillDown({
+                title:'Overdue Services', icon:'⚠', color:'var(--red)',
+                columns:['Asset','Service','Due','Interval','Status'],
+                rows: maint.filter(m=>/overdue/i.test(m.status||'')).map(m => [m.asset||m.asset_name||'—', m.task||m.service_name||'—', m.next_due||m.due_date||'—', m.interval_value ? `Every ${m.interval_value} ${m.interval_type||'hrs'}` : '—', m.status||'—']),
+                emptyMsg: 'No overdue services ✓',
+              }),
+            },
+            {
+              label:'Open WOs', value: openWOCount, color: openWOCount>0?'var(--amber)':'var(--text-muted)', icon:'🔧', sub:'work orders open', warn: openWOCount>0,
+              onClick: () => setDrillDown({
+                title:'Open Work Orders', icon:'🔧', color:'var(--amber)',
+                columns:['Title','Asset','Priority','Status','Created'],
+                rows: wos.map(w => [w.title||w.defect_description||'—', w.asset||'—', w.priority||'—', w.status||'—', w.created_at ? new Date(w.created_at).toLocaleDateString('en-AU') : '—']),
+                emptyMsg: 'No open work orders ✓',
+              }),
+            },
           ].map(k => (
             <div key={k.label} className={`kpi-card${k.urgent?' urgent':k.warn?' warn':''}`}
-              style={{ borderTop:`3px solid ${k.color}` }}>
+              onClick={k.onClick}
+              style={{ borderTop:`3px solid ${k.color}`, cursor:'pointer', userSelect:'none' }}>
               <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:10 }}>
                 <div style={{ fontSize:10, fontWeight:800, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.8px' }}>{k.label}</div>
                 <div style={{ fontSize:18, opacity:0.6 }}>{k.icon}</div>
               </div>
               <div style={{ fontSize:32, fontWeight:900, color:k.color, lineHeight:1, marginBottom:4, animation:'countUp 0.4s ease' }}>{loading ? '—' : k.value}</div>
-              <div style={{ fontSize:11, color:'var(--text-faint)' }}>{k.sub}</div>
+              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+                <div style={{ fontSize:11, color:'var(--text-faint)' }}>{k.sub}</div>
+                <div style={{ fontSize:9, color:'var(--text-faint)', fontWeight:600, letterSpacing:'0.5px', opacity:0.6 }}>TAP TO VIEW</div>
+              </div>
             </div>
           ))}
         </div>
@@ -1267,6 +1311,77 @@ function Dashboard({ companyId, userRole }) {
         )}
 
       </div>
+
+      {/* ── KPI Drill-Down Panel ── */}
+      {drillDown && (
+        <>
+          <div onClick={() => setDrillDown(null)} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.35)', zIndex:399, backdropFilter:'blur(2px)' }} />
+          <div style={{
+            position:'fixed', bottom:0, left:0, right:0,
+            maxHeight:'70vh', background:'var(--bg)',
+            borderTop:'1px solid var(--border)',
+            borderRadius:'16px 16px 0 0',
+            boxShadow:'0 -8px 40px rgba(0,0,0,0.25)',
+            zIndex:400, display:'flex', flexDirection:'column',
+            animation:'slideUp 0.25s cubic-bezier(0.16,1,0.3,1)',
+          }}>
+            {/* Handle */}
+            <div style={{ display:'flex', justifyContent:'center', padding:'10px 0 0' }}>
+              <div style={{ width:36, height:4, borderRadius:2, background:'var(--border)' }} />
+            </div>
+            {/* Header */}
+            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'14px 20px', borderBottom:'1px solid var(--border)', flexShrink:0 }}>
+              <div style={{ display:'flex', alignItems:'center', gap:12 }}>
+                <div style={{ width:36, height:36, borderRadius:10, background:`${drillDown.color}15`, border:`1.5px solid ${drillDown.color}40`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:18 }}>
+                  {drillDown.icon}
+                </div>
+                <div>
+                  <div style={{ fontSize:16, fontWeight:800, color:'var(--text-primary)' }}>{drillDown.title}</div>
+                  <div style={{ fontSize:11, color:'var(--text-muted)', marginTop:1 }}>{drillDown.rows.length} record{drillDown.rows.length !== 1 ? 's' : ''}</div>
+                </div>
+              </div>
+              <button onClick={() => setDrillDown(null)} style={{ background:'none', border:'none', cursor:'pointer', fontSize:20, color:'var(--text-muted)', padding:'4px 8px' }}>✕</button>
+            </div>
+            {/* Table */}
+            <div style={{ overflowY:'auto', flex:1, padding:'0 20px 20px' }}>
+              {drillDown.rows.length === 0 ? (
+                <div style={{ padding:'40px 0', textAlign:'center', color:'var(--text-muted)', fontSize:14 }}>
+                  {drillDown.emptyMsg || 'No records found'}
+                </div>
+              ) : (
+                <table style={{ width:'100%', borderCollapse:'collapse', marginTop:4 }}>
+                  <thead>
+                    <tr>
+                      {drillDown.columns.map(col => (
+                        <th key={col} style={{ padding:'10px 12px', textAlign:'left', fontSize:10, fontWeight:800, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.8px', borderBottom:'2px solid var(--border)', whiteSpace:'nowrap' }}>{col}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {drillDown.rows.map((row, i) => (
+                      <tr key={i} style={{ borderBottom:'1px solid var(--border)', transition:'background 0.1s' }}
+                        onMouseEnter={e => e.currentTarget.style.background='var(--surface-2)'}
+                        onMouseLeave={e => e.currentTarget.style.background='transparent'}>
+                        {row.map((cell, j) => (
+                          <td key={j} style={{ padding:'11px 12px', fontSize:13, color: j===0 ? 'var(--text-primary)' : 'var(--text-secondary)', fontWeight: j===0 ? 600 : 400, whiteSpace: j===0 ? 'nowrap' : 'normal' }}>
+                            {j === 2 && drillDown.title.includes('Down') ? (
+                              <span style={{ padding:'2px 8px', borderRadius:20, fontSize:11, fontWeight:700, background:'rgba(239,68,68,0.1)', color:'var(--red)' }}>{cell}</span>
+                            ) : j === 2 && drillDown.title.includes('Overdue') ? (
+                              <span style={{ padding:'2px 8px', borderRadius:20, fontSize:11, fontWeight:700, background:'rgba(239,68,68,0.1)', color:'var(--red)' }}>{cell}</span>
+                            ) : j === 2 && drillDown.title.includes('Work') ? (
+                              <span style={{ padding:'2px 8px', borderRadius:20, fontSize:11, fontWeight:700, background: /critical/i.test(cell) ? 'rgba(239,68,68,0.1)' : /high/i.test(cell) ? 'rgba(245,158,11,0.1)' : 'var(--surface-2)', color: /critical/i.test(cell) ? 'var(--red)' : /high/i.test(cell) ? 'var(--amber)' : 'var(--text-muted)' }}>{cell}</span>
+                            ) : cell}
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          </div>
+        </>
+      )}
 
       {showBuilder && isAdmin && (
         <WidgetBuilderModal
