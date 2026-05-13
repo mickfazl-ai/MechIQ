@@ -110,7 +110,46 @@ export const DATA_SOURCES = {
 
 // ─── Data fetcher ─────────────────────────────────────────────────────────────
 async function fetchWidgetData(config, companyId) {
-  const { dataSource, metric, timeRange = '30d' } = config;
+  // Support both legacy metric (string) and new metrics (array)
+  const metricsArr = Array.isArray(config.metrics)
+    ? config.metrics
+    : [config.metrics || config.metric || 'total'].filter(Boolean);
+  const { dataSource, timeRange = '30d' } = config;
+
+  // Fetch all selected metrics and combine
+  if (metricsArr.length > 1 && config.displayType === 'kpi') {
+    const results = await Promise.all(metricsArr.map(m => fetchWidgetData({ ...config, metrics: [m], metric: m }, companyId)));
+    const combined = results.filter(Boolean);
+    // For multi-metric KPI: show as grouped list of values
+    const srcDef = DATA_SOURCES[dataSource] || {};
+    return {
+      multiKpi: combined.map((r, i) => ({
+        label: srcDef.metrics?.[metricsArr[i]]?.label || metricsArr[i],
+        kpi: r?.kpi,
+        suffix: r?.suffix || '',
+        prefix: r?.prefix || '',
+        urgent: srcDef.metrics?.[metricsArr[i]]?.urgent,
+        warn: srcDef.metrics?.[metricsArr[i]]?.warn,
+      }))
+    };
+  }
+  if (metricsArr.length > 1 && (config.displayType === 'bar' || config.displayType === 'line')) {
+    const results = await Promise.all(metricsArr.map(m => fetchWidgetData({ ...config, metrics: [m], metric: m }, companyId)));
+    // Merge chart data arrays
+    const allNames = new Set();
+    results.forEach(r => (r?.chart || []).forEach(d => allNames.add(d.name)));
+    const merged = Array.from(allNames).map(name => {
+      const pt = { name };
+      results.forEach((r, i) => {
+        const found = (r?.chart || []).find(d => d.name === name);
+        pt[metricsArr[i]] = found?.value || 0;
+      });
+      return pt;
+    });
+    return { chart: merged, multiKey: metricsArr };
+  }
+
+  const metric = metricsArr[0];
   const cid = companyId;
   const now = new Date();
   const cutoff = new Date(now);
@@ -334,7 +373,23 @@ export function WidgetCustom({ config, companyId, onEdit, onDelete, isAdmin }) {
     if (error) return <div style={{ color: 'var(--red)', fontSize: 12 }}>Error: {error}</div>;
     if (!data) return <div style={{ color: 'var(--text-faint)', fontSize: 12 }}>No data</div>;
 
-    // ── KPI ───────────────────────────────────────────────────────────────
+    // ── Multi-KPI (multiple metrics combined) ────────────────────────────
+    if (data.multiKpi) {
+      return (
+        <div style={{ display: 'grid', gridTemplateColumns: `repeat(${Math.min(data.multiKpi.length, 3)}, 1fr)`, gap: 12 }}>
+          {data.multiKpi.map((item, i) => (
+            <div key={i} style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: item.kpi > 999 ? 28 : 38, fontWeight: 900, color: item.urgent && item.kpi > 0 ? 'var(--red)' : item.warn && item.kpi > 0 ? 'var(--amber)' : color, lineHeight: 1, fontFamily: 'var(--font-display)', marginBottom: 4 }}>
+                {item.prefix}{typeof item.kpi === 'number' ? item.kpi.toLocaleString() : (item.kpi ?? '—')}{item.suffix}
+              </div>
+              <div style={{ fontSize: 10, color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>{item.label}</div>
+            </div>
+          ))}
+        </div>
+      );
+    }
+
+    // ── Single KPI ────────────────────────────────────────────────────────
     if (config.displayType === 'kpi' && data.kpi !== undefined) {
       return (
         <div>
@@ -367,9 +422,16 @@ export function WidgetCustom({ config, companyId, onEdit, onDelete, isAdmin }) {
             <XAxis dataKey="name" tick={{ fontSize: 10, fill: 'var(--text-muted)' }} tickLine={false} axisLine={false} />
             <YAxis tick={{ fontSize: 10, fill: 'var(--text-muted)' }} tickLine={false} axisLine={false} allowDecimals={false} />
             <Tooltip contentStyle={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 12 }} cursor={{ fill: 'rgba(14,165,233,0.05)' }} />
-            <Bar dataKey="value" radius={[4, 4, 0, 0]}>
-              {data.chart.map((_, i) => <Cell key={i} fill={i === 0 ? color : PALETTE[i % PALETTE.length]} />)}
-            </Bar>
+            {data.multiKey ? (
+              data.multiKey.map((key, ki) => (
+                <Bar key={key} dataKey={key} name={DATA_SOURCES[config.dataSource]?.metrics?.[key]?.label || key} radius={[4,4,0,0]} fill={PALETTE[ki % PALETTE.length]} />
+              ))
+            ) : (
+              <Bar dataKey="value" radius={[4, 4, 0, 0]}>
+                {data.chart.map((_, i) => <Cell key={i} fill={i === 0 ? color : PALETTE[i % PALETTE.length]} />)}
+              </Bar>
+            )}
+            {data.multiKey && <Legend wrapperStyle={{ fontSize: 10 }} />}
           </BarChart>
         </ResponsiveContainer>
       );
@@ -435,7 +497,7 @@ export function WidgetCustom({ config, companyId, onEdit, onDelete, isAdmin }) {
 
 // ─── Widget Builder Modal ─────────────────────────────────────────────────────
 export function WidgetBuilderModal({ onSave, onClose, editConfig, companyId }) {
-  const blankConfig = { label: '', icon: '📊', displayType: 'kpi', dataSource: 'assets', metric: 'total', color: '#0ea5e9', size: 'md', timeRange: '30d' };
+  const blankConfig = { label: '', icon: '📊', displayType: 'kpi', dataSource: 'assets', metrics: ['total'], color: '#0ea5e9', size: 'md', timeRange: '30d' };
   const [step, setStep] = useState(1); // 1=type, 2=source+metric, 3=style
   const [config, setConfig] = useState(editConfig ? { ...blankConfig, ...editConfig } : blankConfig);
   const [saving, setSaving] = useState(false);
@@ -447,7 +509,8 @@ export function WidgetBuilderModal({ onSave, onClose, editConfig, companyId }) {
   // Auto-suggest label when metric changes
   useEffect(() => {
     const src = DATA_SOURCES[config.dataSource];
-    const metricLabel = src?.metrics?.[config.metric]?.label || '';
+    const firstMetric = Array.isArray(config.metrics) ? config.metrics[0] : config.metrics;
+    const metricLabel = src?.metrics?.[firstMetric]?.label || '';
     if (metricLabel && !editConfig) upd('label', metricLabel);
   }, [config.dataSource, config.metric]);
 
@@ -461,7 +524,8 @@ export function WidgetBuilderModal({ onSave, onClose, editConfig, companyId }) {
   }, [step, config.dataSource, config.metric, companyId]);
 
   const srcDef = DATA_SOURCES[config.dataSource] || {};
-  const metricDef = srcDef.metrics?.[config.metric] || {};
+  const firstMetric = Array.isArray(config.metrics) ? config.metrics[0] : (config.metrics || 'total');
+  const metricDef = srcDef.metrics?.[firstMetric] || {};
 
   // Filter display types to what makes sense for the selected metric
   const availableDisplayTypes = DISPLAY_TYPES.filter(t => {
@@ -474,22 +538,25 @@ export function WidgetBuilderModal({ onSave, onClose, editConfig, companyId }) {
 
   // Auto-fix displayType if not available for selected metric
   useEffect(() => {
+    const fm = Array.isArray(config.metrics) ? config.metrics[0] : config.metrics;
+    const md = srcDef?.metrics?.[fm] || {};
     const available = DISPLAY_TYPES.filter(t => {
-      if (t.id === 'kpi') return metricDef.kpi !== false;
-      if (t.id === 'list') return metricDef.list === true;
-      if (t.id === 'line') return metricDef.line === true;
-      if (t.id === 'bar' || t.id === 'pie') return metricDef.chart === true;
+      if (t.id === 'kpi') return md.kpi !== false;
+      if (t.id === 'list') return md.list === true;
+      if (t.id === 'line') return md.line === true;
+      if (t.id === 'bar' || t.id === 'pie') return md.chart === true;
       return false;
     }).map(t => t.id);
     if (!available.includes(config.displayType) && available.length > 0) {
       upd('displayType', available[0]);
     }
-  }, [config.metric]);
+  }, [config.metrics]);
 
   const save = async () => {
     if (!config.label.trim()) { alert('Please give the widget a name.'); return; }
     setSaving(true);
-    const payload = { ...config, company_id: companyId };
+    // Store entire config as jsonb — avoids camelCase/snake_case column mapping
+    const payload = { company_id: companyId, config };
     let id = editConfig?.id;
     let error;
     if (id) {
@@ -574,19 +641,27 @@ export function WidgetBuilderModal({ onSave, onClose, editConfig, companyId }) {
               {/* Metric picker */}
               <div style={{ marginBottom: 16 }}>
                 <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 8 }}>Metric</div>
+                <div style={{ fontSize: 11, color: 'var(--text-faint)', marginBottom: 8, fontStyle: 'italic' }}>Select one or more — they'll be combined into a single widget</div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                   {Object.entries(srcDef.metrics || {}).map(([id, m]) => {
-                    // Show only metrics compatible with chosen display type
                     const compatible = config.displayType === 'kpi' ? m.kpi !== false
                       : config.displayType === 'list' ? m.list === true
                       : config.displayType === 'line' ? m.line === true || m.chart === true
                       : m.chart === true || m.list === true;
                     if (!compatible) return null;
+                    const selected = Array.isArray(config.metrics) ? config.metrics.includes(id) : config.metrics === id;
+                    const toggleMetric = () => {
+                      const curr = Array.isArray(config.metrics) ? config.metrics : [config.metrics].filter(Boolean);
+                      const next = selected ? curr.filter(x => x !== id) : [...curr, id];
+                      upd('metrics', next.length > 0 ? next : [id]);
+                    };
                     return (
-                      <button key={id} onClick={() => upd('metric', id)}
-                        style={{ padding: '10px 14px', background: config.metric === id ? 'rgba(14,165,233,0.08)' : 'var(--surface)', border: `1px solid ${config.metric === id ? 'var(--accent)' : 'var(--border)'}`, borderRadius: 8, cursor: 'pointer', textAlign: 'left', display: 'flex', alignItems: 'center', gap: 10, transition: 'all 0.12s' }}>
-                        <div style={{ width: 8, height: 8, borderRadius: '50%', background: config.metric === id ? 'var(--accent)' : 'var(--border)', flexShrink: 0 }} />
-                        <span style={{ fontSize: 13, color: config.metric === id ? 'var(--text-primary)' : 'var(--text-secondary)', fontWeight: config.metric === id ? 700 : 400 }}>{m.label}</span>
+                      <button key={id} onClick={toggleMetric}
+                        style={{ padding: '10px 14px', background: selected ? 'rgba(14,165,233,0.08)' : 'var(--surface)', border: `1px solid ${selected ? 'var(--accent)' : 'var(--border)'}`, borderRadius: 8, cursor: 'pointer', textAlign: 'left', display: 'flex', alignItems: 'center', gap: 10, transition: 'all 0.12s' }}>
+                        <div style={{ width: 16, height: 16, borderRadius: 4, border: `2px solid ${selected ? 'var(--accent)' : 'var(--border)'}`, background: selected ? 'var(--accent)' : 'transparent', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          {selected && <span style={{ color: '#fff', fontSize: 10, fontWeight: 900, lineHeight: 1 }}>✓</span>}
+                        </div>
+                        <span style={{ fontSize: 13, color: selected ? 'var(--text-primary)' : 'var(--text-secondary)', fontWeight: selected ? 700 : 400 }}>{m.label}</span>
                         {(m.urgent || m.warn) && <span style={{ marginLeft: 'auto', fontSize: 10, fontWeight: 700, color: m.urgent ? 'var(--red)' : 'var(--amber)', background: m.urgent ? 'var(--red-bg)' : 'var(--amber-bg)', padding: '2px 7px', borderRadius: 10 }}>{m.urgent ? 'Critical' : 'Warning'}</span>}
                       </button>
                     );

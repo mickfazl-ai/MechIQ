@@ -1033,7 +1033,9 @@ function Dashboard({ companyId, userRole }) {
 
   const loadCustomWidgets = async () => {
     const { data } = await supabase.from('custom_widgets').select('*').eq('company_id', companyId).order('created_at');
-    setCustomWidgets(data || []);
+    // Unwrap jsonb config column → flat widget object
+    const widgets = (data || []).map(row => ({ ...row.config, id: row.id }));
+    setCustomWidgets(widgets);
   };
 
   const handleWidgetSaved = (cfg) => {
