@@ -767,7 +767,7 @@ function WidgetCalendarPreview({ companyId, size, onRemove }) {
     });
   }, [companyId]);
   return (
-    <ExpandableWidget sizeClass={`widget-${size}`} title="Next 7 Days" icon="📆" count={loading?'—':events.length} countColor="var(--accent)" countSize={16} summary={events[0]?.label?.slice(0,30)}>
+    <ExpandableWidget sizeClass={`widget-${size}`} title="Next 7 Days" icon="📆" onRemove={onRemove} count={loading?'—':events.length} countColor="var(--accent)" countSize={16} summary={events[0]?.label?.slice(0,30)}>
       {loading ? <Sk h="80px" /> : events.length === 0 ? <div style={{ fontSize:12, color:'var(--text-muted)' }}>Nothing scheduled in the next 7 days</div> : (
         events.map((ev, i) => (
           <div key={i} style={{ display:'flex', gap:10, padding:'8px 10px', borderRadius:8, background:'var(--surface-2)', border:'1px solid var(--border)', marginBottom:6, alignItems:'center' }}>
@@ -791,7 +791,7 @@ function WidgetMessages({ companyId, size, onRemove }) {
   }, [companyId]);
   const ago = ts => { if(!ts)return''; const m=Math.floor((Date.now()-new Date(ts))/60000); if(m<60)return`${m}m ago`; if(m<1440)return`${Math.floor(m/60)}h ago`; return`${Math.floor(m/1440)}d ago`; };
   return (
-    <ExpandableWidget sizeClass={`widget-${size}`} title="Messages" icon="💬" count={loading?'—':msgs.length} countColor="var(--accent)" countSize={16}>
+    <ExpandableWidget sizeClass={`widget-${size}`} title="Messages" onRemove={onRemove} icon="💬" count={loading?'—':msgs.length} countColor="var(--accent)" countSize={16}>
       {loading ? <Sk h="60px" /> : msgs.length === 0 ? <div style={{ fontSize:12, color:'var(--text-muted)' }}>No recent messages</div> : (
         msgs.map(m => (
           <div key={m.id} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'8px 10px', borderRadius:8, background:'var(--surface-2)', border:'1px solid var(--border)', marginBottom:6 }}>
@@ -807,7 +807,7 @@ function WidgetMessages({ companyId, size, onRemove }) {
 /* ── Main Dashboard ── */
 
 // ─── KPI: Prestart Summary Widget ────────────────────────────────────────────
-function WidgetPrestartKPI({ companyId, loading }) {
+function WidgetPrestartKPI({ companyId, loading, onRemove, onDrillDown }) {
   const [data,        setData]        = React.useState(null);
   const [viewPrestart,setViewPrestart]= React.useState(null);
   const today = new Date().toISOString().split('T')[0];
