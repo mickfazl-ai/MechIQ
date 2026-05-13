@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from './supabase';
-import { predictService, pythonAIFetch } from './pythonApi';
 import { QRCodeCanvas } from 'qrcode.react';
 
 // ─── CSS ──────────────────────────────────────────────────────────────────────
@@ -24,10 +23,10 @@ const CSS = `
   .mp-action-btn.servicesheet:hover { border-color:var(--accent); color:var(--accent); box-shadow:0 4px 14px rgba(0,171,228,0.15); }
 
   .mp-tabs { display:flex; gap:3px; background:var(--surface-2); border-radius:12px; padding:4px; margin-bottom:20px; border:1px solid var(--border); flex-wrap:wrap; }
-  .mp-tab { padding:9px 18px; border:none; border-radius:9px; cursor:pointer; font-size:12px; font-weight:600; transition:all 0.15s; font-family:inherit; white-space:nowrap; }
-  .mp-tab.active { background:var(--accent); color:#fff; box-shadow:0 2px 10px rgba(14,165,233,0.35); font-weight:700; }
+  .mp-tab { padding:8px 16px; border:none; border-radius:9px; cursor:pointer; font-size:12px; font-weight:600; transition:all 0.15s; font-family:inherit; white-space:nowrap; }
+  .mp-tab.active { background:var(--surface); color:var(--accent); box-shadow:0 1px 6px rgba(0,0,0,0.1); }
   .mp-tab:not(.active) { background:transparent; color:var(--text-muted); }
-  .mp-tab:not(.active):hover { background:var(--surface); color:var(--text-secondary); }
+  .mp-tab:not(.active):hover { color:var(--text-secondary); }
 
   .mp-input { width:100%; padding:9px 12px; border:1px solid var(--border); border-radius:8px; background:var(--surface-2); color:var(--text-primary); font-size:13px; font-family:inherit; outline:none; box-sizing:border-box; transition:border-color 0.15s; }
   .mp-input:focus { border-color:var(--accent); }
@@ -91,14 +90,14 @@ function PrestartViewModal({ prestart, asset, onClose }) {
     const rows = sections.map(([key, val]) => {
       const label = key.replace(/^\d+_/, '');
       let value = '';
-      if (val?.status) value = val.status === 'OK' ? '✓ OK' : val.status;
+      if (val?.status) value = val.status === 'OK' ? ' OK' : val.status;
       else if (val?.num)  value = val.num;
       else if (val?.text) value = val.text;
       else if (val?.qty)  value = val.qty;
       else if (val?.temp) value = val.temp + '°C';
       else if (val?.comment) value = val.comment;
       else value = JSON.stringify(val);
-      return `<tr><td style="padding:7px 12px;border-bottom:1px solid #eee;">${label}</td><td style="padding:7px 12px;border-bottom:1px solid #eee;font-weight:600;color:${value.includes('Defect')||value.includes('⚠')?'#dc2626':'#1a2433'}">${value}</td></tr>`;
+      return `<tr><td style="padding:7px 12px;border-bottom:1px solid #eee;">${label}</td><td style="padding:7px 12px;border-bottom:1px solid #eee;font-weight:600;color:${value.includes('Defect')||value.includes('')?'#dc2626':'#1a2433'}">${value}</td></tr>`;
     }).join('');
 
     win.document.write(`<!DOCTYPE html><html><head><title>Prestart — ${asset.name}</title>
@@ -125,7 +124,7 @@ function PrestartViewModal({ prestart, asset, onClose }) {
         <div style="background:#f8fafc;padding:10px 16px;border-radius:4px;"><div style="font-size:10px;color:#94a3b8;text-transform:uppercase;letter-spacing:0.5px;">Date</div><div style="font-weight:700;margin-top:2px;">${prestart.date}</div></div>
         <div style="background:#f8fafc;padding:10px 16px;border-radius:4px;"><div style="font-size:10px;color:#94a3b8;text-transform:uppercase;letter-spacing:0.5px;">Operator</div><div style="font-weight:700;margin-top:2px;">${prestart.operator_name||'—'}</div></div>
         <div style="background:#f8fafc;padding:10px 16px;border-radius:4px;"><div style="font-size:10px;color:#94a3b8;text-transform:uppercase;letter-spacing:0.5px;">Hours</div><div style="font-weight:700;margin-top:2px;">${prestart.hrs_start ? prestart.hrs_start + ' hrs' : '—'}</div></div>
-        <div style="background:#f8fafc;padding:10px 16px;border-radius:4px;"><div style="font-size:10px;color:#94a3b8;text-transform:uppercase;letter-spacing:0.5px;">Result</div><div style="font-weight:700;margin-top:2px;color:${prestart.defects_found?'#dc2626':'#16a34a'}">${prestart.defects_found ? '⚠ Defects Found' : '✓ All Clear'}</div></div>
+        <div style="background:#f8fafc;padding:10px 16px;border-radius:4px;"><div style="font-size:10px;color:#94a3b8;text-transform:uppercase;letter-spacing:0.5px;">Result</div><div style="font-weight:700;margin-top:2px;color:${prestart.defects_found?'#dc2626':'#16a34a'}">${prestart.defects_found ? ' Defects Found' : ' All Clear'}</div></div>
       </div>
       ${prestart.notes ? `<div style="background:#fef9c3;padding:10px 14px;border-radius:4px;margin-bottom:16px;font-size:13px;"><strong>Notes:</strong> ${prestart.notes}</div>` : ''}
       <table><thead><tr><th>Check Item</th><th>Response</th></tr></thead><tbody>${rows}</tbody></table>
@@ -150,9 +149,9 @@ function PrestartViewModal({ prestart, asset, onClose }) {
           <div style={{ display:'flex', gap:8 }}>
             <button onClick={printPDF}
               style={{ padding:'7px 16px', background:'var(--accent)', color:'#fff', border:'none', borderRadius:7, fontSize:12, fontWeight:700, cursor:'pointer' }}>
-              🖨️ Print / PDF
+               Print / PDF
             </button>
-            <button onClick={onClose} style={{ background:'none', border:'none', fontSize:20, cursor:'pointer', color:'var(--text-muted)', padding:'0 4px' }}>✕</button>
+            <button onClick={onClose} style={{ background:'none', border:'none', fontSize:20, cursor:'pointer', color:'var(--text-muted)', padding:'0 4px' }}></button>
           </div>
         </div>
         {/* Summary bar */}
@@ -160,7 +159,7 @@ function PrestartViewModal({ prestart, asset, onClose }) {
           {[
             ['Hours', prestart.hrs_start ? prestart.hrs_start + ' hrs' : '—'],
             ['Site', prestart.site_area || '—'],
-            ['Result', prestart.defects_found ? '⚠ Defects' : '✓ All Clear'],
+            ['Result', prestart.defects_found ? ' Defects' : ' All Clear'],
           ].map(([l,v]) => (
             <div key={l}>
               <div style={{ fontSize:10, fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.5px' }}>{l}</div>
@@ -172,7 +171,7 @@ function PrestartViewModal({ prestart, asset, onClose }) {
         <div style={{ flex:1, overflowY:'auto', padding:'14px 22px' }}>
           {prestart.notes && (
             <div style={{ padding:'9px 12px', background:'var(--amber-bg)', border:'1px solid var(--amber)', borderRadius:7, fontSize:13, color:'var(--amber)', marginBottom:14 }}>
-              📝 {prestart.notes}
+               {prestart.notes}
             </div>
           )}
           {sections.length === 0 ? (
@@ -190,7 +189,7 @@ function PrestartViewModal({ prestart, asset, onClose }) {
                   const label = key.replace(/^\d+_/, '');
                   let value = '';
                   let isDefect = false;
-                  if (val?.status) { value = val.status === 'OK' ? '✓ OK' : val.status; isDefect = val.status !== 'OK'; }
+                  if (val?.status) { value = val.status === 'OK' ? ' OK' : val.status; isDefect = val.status !== 'OK'; }
                   else if (val?.num)  value = val.num + (val.unit ? ' ' + val.unit : '');
                   else if (val?.text) value = val.text;
                   else if (val?.qty)  value = val.qty;
@@ -198,11 +197,11 @@ function PrestartViewModal({ prestart, asset, onClose }) {
                   else if (val?.pressure) value = val.pressure + ' bar';
                   else if (val?.comment) value = val.comment;
                   else value = JSON.stringify(val);
-                  if (val?.comment && val.status) value = val.status === 'OK' ? '✓ OK' : val.status + (val.comment ? ' — ' + val.comment : '');
+                  if (val?.comment && val.status) value = val.status === 'OK' ? ' OK' : val.status + (val.comment ? ' — ' + val.comment : '');
                   return (
                     <tr key={i} style={{ borderBottom:'1px solid var(--border)', background: isDefect ? 'var(--red-bg)' : 'transparent' }}>
                       <td style={{ padding:'8px 12px', color:'var(--text-secondary)' }}>{label}</td>
-                      <td style={{ padding:'8px 12px', fontWeight:600, color: isDefect ? 'var(--red)' : value.includes('✓') ? 'var(--green)' : 'var(--text-primary)' }}>{value}</td>
+                      <td style={{ padding:'8px 12px', fontWeight:600, color: isDefect ? 'var(--red)' : value.includes('') ? 'var(--green)' : 'var(--text-primary)' }}>{value}</td>
                     </tr>
                   );
                 })}
@@ -261,9 +260,9 @@ function ServiceViewModal({ service, asset, onClose }) {
           </div>
           <div style={{ display:'flex', gap:8 }}>
             <button onClick={printPDF} style={{ padding:'7px 16px', background:'var(--accent)', color:'#fff', border:'none', borderRadius:7, fontSize:12, fontWeight:700, cursor:'pointer' }}>
-              🖨️ Print / PDF
+               Print / PDF
             </button>
-            <button onClick={onClose} style={{ background:'none', border:'none', fontSize:20, cursor:'pointer', color:'var(--text-muted)', padding:'0 4px' }}>✕</button>
+            <button onClick={onClose} style={{ background:'none', border:'none', fontSize:20, cursor:'pointer', color:'var(--text-muted)', padding:'0 4px' }}></button>
           </div>
         </div>
         <div style={{ flex:1, overflowY:'auto', padding:'14px 22px' }}>
@@ -288,7 +287,7 @@ function ServiceViewModal({ service, asset, onClose }) {
               {parts.map((p,i) => <div key={i} style={{ display:'flex', justifyContent:'space-between', padding:'6px 0', borderBottom:'1px solid var(--border)', fontSize:13 }}><span>{p.name||p.description}</span><span style={{ color:'var(--text-muted)' }}>Qty: {p.qty||1}</span></div>)}
             </div>
           )}
-          {service.notes && <div style={{ padding:'9px 12px', background:'var(--surface-2)', borderRadius:7, fontSize:13, color:'var(--text-secondary)' }}>📝 {service.notes}</div>}
+          {service.notes && <div style={{ padding:'9px 12px', background:'var(--surface-2)', borderRadius:7, fontSize:13, color:'var(--text-secondary)' }}> {service.notes}</div>}
         </div>
       </div>
     </div>
@@ -296,7 +295,7 @@ function ServiceViewModal({ service, asset, onClose }) {
 }
 
 
-function OverviewTab({ asset, recentPrestarts, recentMaintenance, onViewPrestart, onViewService, nextPredictedService }) {
+function OverviewTab({ asset, recentPrestarts, recentMaintenance, onViewPrestart, onViewService }) {
 
   const fields = [
     ['Make / Model', [asset.make, asset.model].filter(Boolean).join(' ') || '—'],
@@ -319,52 +318,8 @@ function OverviewTab({ asset, recentPrestarts, recentMaintenance, onViewPrestart
     ['Tare Weight', asset.tare_weight ? `${asset.tare_weight} kg` : '—'],
   ];
 
-  const today = new Date();
-  const isPredictedOverdue = nextPredictedService?.predicted_date &&
-    new Date(nextPredictedService.predicted_date) < today;
-
   return (
     <div>
-      {/* ── Predicted Service Banner ─────────────────────────────────────── */}
-      {nextPredictedService && (
-        <div style={{
-          display:'flex', alignItems:'center', justifyContent:'space-between', flexWrap:'wrap', gap:10,
-          padding:'14px 18px', borderRadius:12, marginBottom:14,
-          background: isPredictedOverdue ? 'var(--red-bg)' : 'rgba(14,165,233,0.06)',
-          border: `1px solid ${isPredictedOverdue ? 'var(--red-border)' : 'rgba(14,165,233,0.25)'}`,
-        }}>
-          <div style={{ display:'flex', alignItems:'center', gap:12 }}>
-            <span style={{ fontSize:22 }}>{isPredictedOverdue ? '⚠️' : '📈'}</span>
-            <div>
-              <div style={{ fontSize:11, fontWeight:700, color: isPredictedOverdue ? 'var(--red)' : 'var(--accent)', textTransform:'uppercase', letterSpacing:'0.5px', marginBottom:2 }}>
-                {isPredictedOverdue ? 'Service Overdue (Predicted)' : 'Next Service Due (Predicted)'}
-              </div>
-              <div style={{ fontSize:15, fontWeight:800, color:'var(--text-primary)' }}>
-                {nextPredictedService.service_name}
-              </div>
-              <div style={{ fontSize:12, color:'var(--text-muted)', marginTop:2 }}>
-                {new Date(nextPredictedService.predicted_date).toLocaleDateString('en-AU', { weekday:'short', day:'numeric', month:'long', year:'numeric' })}
-                {nextPredictedService.predicted_daily_rate != null &&
-                  ` · ${Number(nextPredictedService.predicted_daily_rate).toFixed(1)} hr/day usage`}
-              </div>
-            </div>
-          </div>
-          <div style={{ textAlign:'right', flexShrink:0 }}>
-            {(() => {
-              const days = Math.round((new Date(nextPredictedService.predicted_date) - today) / 86400000);
-              return (
-                <div style={{ fontSize:28, fontWeight:900, fontFamily:'var(--font-display)', color: isPredictedOverdue ? 'var(--red)' : days <= 14 ? 'var(--amber)' : 'var(--accent)', lineHeight:1 }}>
-                  {isPredictedOverdue ? `${Math.abs(days)}d` : `${days}d`}
-                </div>
-              );
-            })()}
-            <div style={{ fontSize:10, color:'var(--text-muted)', fontWeight:600, textTransform:'uppercase', marginTop:2 }}>
-              {isPredictedOverdue ? 'overdue' : 'away'}
-            </div>
-          </div>
-        </div>
-      )}
-
       <div className="mp-card" style={{ marginBottom:14 }}>
         <div className="mp-section-title">Asset Details</div>
         <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(200px,1fr))', gap:'8px 20px' }}>
@@ -396,7 +351,7 @@ function OverviewTab({ asset, recentPrestarts, recentMaintenance, onViewPrestart
               </div>
               <div style={{ display:'flex', alignItems:'center', gap:8 }}>
                 <span style={{ fontSize:11, fontWeight:700, padding:'3px 9px', borderRadius:20, background:p.defects_found?'var(--red-bg)':'var(--green-bg)', color:p.defects_found?'var(--red)':'var(--green)' }}>
-                  {p.defects_found ? '⚠ Defects' : '✓ Clear'}
+                  {p.defects_found ? ' Defects' : ' Clear'}
                 </span>
                 <span style={{ fontSize:11, color:'var(--accent)', fontWeight:600 }}>View →</span>
               </div>
@@ -503,7 +458,7 @@ function WorkOrdersTab({ asset, userRole }) {
           ))}
         </div>
         <button onClick={() => setShowForm(s=>!s)} style={{ padding:'9px 18px', background:showForm?'var(--surface-2)':'var(--accent)', color:showForm?'var(--text-secondary)':'#fff', border:'1px solid '+(showForm?'var(--border)':'var(--accent)'), borderRadius:10, fontSize:13, fontWeight:700, cursor:'pointer' }}>
-          {showForm ? '✕ Close' : '+ New Work Order'}
+          {showForm ? ' Close' : '+ New Work Order'}
         </button>
       </div>
 
@@ -555,7 +510,7 @@ function WorkOrdersTab({ asset, userRole }) {
                       </button>
                     )}
                     <button onClick={() => openServiceSheet(w)} style={{ padding:'6px 12px', background:'var(--accent-light)', color:'var(--accent)', border:'1px solid rgba(14,165,233,0.3)', borderRadius:7, fontSize:11, fontWeight:700, cursor:'pointer', whiteSpace:'nowrap' }}>
-                      📋 Service Sheet
+                       Service Sheet
                     </button>
                   </div>
                 </div>
@@ -662,7 +617,7 @@ function ServiceScheduleModal({ asset, schedule, onClose, onSaved }) {
       <div style={{ background: '#fff', borderRadius: 16, padding: 28, width: '100%', maxWidth: 480, boxShadow: '0 24px 80px rgba(0,0,0,0.18)', animation: 'fadeUp 0.2s ease' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
           <h3 style={{ margin: 0, fontSize: 16, fontWeight: 800, color: '#1a2b3c' }}>{isEdit ? 'Edit Service' : 'Add Service Schedule'}</h3>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', color: '#a0b0b0', lineHeight: 1 }}>✕</button>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', color: '#a0b0b0', lineHeight: 1 }}></button>
         </div>
 
         {/* Service Name */}
@@ -780,39 +735,8 @@ function ServiceTab({ asset }) {
   const [serviceTemplates, setServiceTemplates] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [editSchedule, setEditSchedule] = useState(null);
-  const [predictions, setPredictions] = useState({});
-  const [predicting, setPredicting] = useState(false);
-  const [expandedSchedule, setExpandedSchedule] = useState(null);
 
   useEffect(() => { load(); loadTemplates(); }, [asset]);
-
-  // Manual predict button — auto-predict already runs in AssetPage on load
-  // This lets the user force a refresh mid-session
-  const predictDueDates = async (schedulesOverride) => {
-    const src = schedulesOverride || schedules;
-    const hourSchedules = src.filter(s => s.interval_type === 'hours' || s.interval_type === 'km');
-    if (!hourSchedules.length || predicting) return;
-    setPredicting(true);
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const token = session?.access_token;
-      const { data: historyData } = await supabase
-        .from('asset_hours_log').select('hours, created_at')
-        .eq('asset_id', asset.id).order('created_at', { ascending: false }).limit(60);
-      const result = await predictService({
-        asset_id: asset.id, asset_name: asset.name, current_hours: currentHours,
-        hours_history: (historyData||[]).map(h => ({ hours: h.hours, recorded_at: h.created_at })),
-        schedules: hourSchedules.map(s => ({ id: s.id, service_name: s.service_name, interval_value: s.interval_value, interval_type: s.interval_type, last_service_value: s.last_service_value, next_due_value: s.next_due_value })),
-      }, token);
-      const pmap = {};
-      (Array.isArray(result) ? result : (result.predictions||[])).forEach(p => {
-        const key = p.schedule_id || p.id;
-        if (key) pmap[key] = p;
-      });
-      setPredictions(pmap);
-    } catch(e) { alert('Prediction failed: ' + e.message); }
-    finally { setPredicting(false); }
-  };
 
   const loadTemplates = async () => {
     const { data } = await supabase.from('form_templates')
@@ -866,7 +790,7 @@ function ServiceTab({ asset }) {
     });
     setSaving(false);
     setManualNote('');
-    alert('Hours updated ✓');
+    alert('Hours updated ');
     load();
   };
 
@@ -933,13 +857,13 @@ function ServiceTab({ asset }) {
         </div>
         <div style={{ fontSize:11, color:'var(--text-muted)', marginTop:6 }}>Hours update automatically from prestart submissions.</div>
         <button onClick={loadHistory} style={{ marginTop:8, padding:'6px 14px', background:'var(--surface-2)', color:'var(--text-secondary)', border:'1px solid var(--border)', borderRadius:7, fontSize:12, fontWeight:600, cursor:'pointer' }}>
-          📋 View Hours History
+           View Hours History
         </button>
         {showHistory && hoursHistory.length > 0 && (
           <div style={{ marginTop:12, border:'1px solid var(--border)', borderRadius:10, overflow:'hidden' }}>
             <div style={{ padding:'8px 14px', background:'var(--surface-2)', fontSize:11, fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.5px', display:'flex', justifyContent:'space-between' }}>
               <span>Hours Log</span>
-              <button onClick={() => setShowHistory(false)} style={{ background:'none', border:'none', cursor:'pointer', color:'var(--text-faint)', fontSize:14 }}>✕</button>
+              <button onClick={() => setShowHistory(false)} style={{ background:'none', border:'none', cursor:'pointer', color:'var(--text-faint)', fontSize:14 }}></button>
             </div>
             {hoursHistory.map((h,i) => (
               <div key={h.id} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'9px 14px', borderBottom: i < hoursHistory.length-1 ? '1px solid var(--border)' : 'none', background: i%2===0 ? 'transparent' : 'var(--surface-2)' }}>
@@ -961,170 +885,93 @@ function ServiceTab({ asset }) {
       {/* Status summary */}
       {(overdue.length > 0 || dueSoon.length > 0) && (
         <div style={{ display:'flex', gap:10, marginBottom:14, flexWrap:'wrap' }}>
-          {overdue.length > 0 && <div style={{ flex:1, padding:'12px 16px', background:'var(--red-bg)', border:'1px solid var(--red-border)', borderRadius:10, fontSize:13, fontWeight:700, color:'var(--red)' }}>⚠️ {overdue.length} service{overdue.length>1?'s':''} overdue</div>}
-          {dueSoon.length > 0 && <div style={{ flex:1, padding:'12px 16px', background:'var(--amber-bg)', border:'1px solid var(--amber-border)', borderRadius:10, fontSize:13, fontWeight:700, color:'var(--amber)' }}>🔔 {dueSoon.length} service{dueSoon.length>1?'s':''} due soon</div>}
+          {overdue.length > 0 && <div style={{ flex:1, padding:'12px 16px', background:'var(--red-bg)', border:'1px solid var(--red-border)', borderRadius:10, fontSize:13, fontWeight:700, color:'var(--red)' }}> {overdue.length} service{overdue.length>1?'s':''} overdue</div>}
+          {dueSoon.length > 0 && <div style={{ flex:1, padding:'12px 16px', background:'var(--amber-bg)', border:'1px solid var(--amber-border)', borderRadius:10, fontSize:13, fontWeight:700, color:'var(--amber)' }}> {dueSoon.length} service{dueSoon.length>1?'s':''} due soon</div>}
         </div>
       )}
 
       {loading ? <Sk h="80px" /> : schedules.length === 0 ? (
-        <div className="mp-card" style={{ textAlign:'center', padding:48, color:'var(--text-faint)' }}>
-          <div style={{ fontSize:32, marginBottom:12 }}>🔧</div>
-          <div style={{ fontSize:15, fontWeight:700, color:'var(--text-secondary)', marginBottom:6 }}>No service schedules yet</div>
-          <div style={{ fontSize:12, color:'var(--text-faint)', marginBottom:20 }}>Add schedules to track 250hr, 500hr, weekly, monthly services and more</div>
-          <button onClick={() => { setEditSchedule(null); setShowModal(true); }}
-            style={{ padding:'10px 24px', background:'linear-gradient(135deg,var(--accent),#0090a8)', color:'#fff', border:'none', borderRadius:8, fontSize:13, fontWeight:700, cursor:'pointer' }}>
+        <div className="mp-card" style={{ textAlign:'center', padding:40, color:'var(--text-faint)' }}>
+          <div style={{ fontSize:14, marginBottom:12 }}>No service schedules set up for this asset.</div>
+          <button
+            onClick={() => { setEditSchedule(null); setShowModal(true); }}
+            style={{ padding:'10px 24px', background:'linear-gradient(135deg,var(--accent),#0090a8)', color:'#fff', border:'none', borderRadius:8, fontSize:13, fontWeight:700, cursor:'pointer' }}
+          >
             + Add First Service
           </button>
         </div>
-      ) : (() => {
-        const groups = [
-          { key:'hours', label:'Hour-Based Services',  icon:'⏱', filter: s => s.interval_type === 'hours', sort: (a,b) => a.interval_value - b.interval_value },
-          { key:'km',    label:'KM-Based Services',    icon:'🛣', filter: s => s.interval_type === 'km',    sort: (a,b) => a.interval_value - b.interval_value },
-          { key:'date',  label:'Date-Based Services',  icon:'📅', filter: s => ['months','years','weeks'].includes(s.interval_type), sort: (a,b) => a.service_name.localeCompare(b.service_name) },
-        ].filter(g => schedules.some(g.filter));
-
-        return (
-          <div>
-            {/* Toolbar */}
-            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:16 }}>
-              <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-                <span style={{ fontFamily:'var(--font-display)', fontSize:15, fontWeight:800, textTransform:'uppercase', letterSpacing:'0.8px', color:'var(--text-primary)' }}>Service Schedules</span>
-                <span style={{ background:'var(--accent-light)', color:'var(--accent)', fontSize:11, fontWeight:700, padding:'2px 8px', borderRadius:20 }}>{schedules.length}</span>
-              </div>
-              <div style={{ display:'flex', gap:8 }}>
-                <button onClick={() => predictDueDates()} disabled={predicting}
-                  style={{ padding:'7px 14px', background:'var(--surface-2)', border:'1px solid rgba(14,165,233,0.3)', borderRadius:8, fontSize:12, color:'var(--accent)', fontWeight:700, cursor:'pointer', opacity:predicting?0.6:1 }}>
-                  {predicting ? '⏳…' : '📈 Predict'}
-                </button>
-                <button onClick={() => { setEditSchedule(null); setShowModal(true); }}
-                  style={{ padding:'7px 16px', background:'linear-gradient(135deg,var(--accent),#0090a8)', color:'#fff', border:'none', borderRadius:8, fontSize:12, fontWeight:700, cursor:'pointer' }}>
-                  + Add Service
-                </button>
-              </div>
+      ) : (
+        <div className="mp-card">
+          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:14, paddingBottom:12, borderBottom:'1.5px solid var(--border)' }}>
+            <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+              <span style={{ fontFamily:'var(--font-display)', fontSize:15, fontWeight:800, textTransform:'uppercase', letterSpacing:'0.8px', color:'var(--text-primary)' }}>Service Schedules</span>
+              <span style={{ background:'var(--accent-light)', color:'var(--accent)', fontSize:11, fontWeight:700, padding:'2px 8px', borderRadius:20 }}>{schedules.length}</span>
             </div>
-
-            {groups.map(group => (
-              <div key={group.key} style={{ marginBottom:24 }}>
-                <div style={{ fontSize:10, fontWeight:800, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'1px', marginBottom:10, display:'flex', alignItems:'center', gap:6 }}>
-                  <span>{group.icon}</span>{group.label}
-                  <span style={{ background:'var(--surface-2)', border:'1px solid var(--border)', borderRadius:10, padding:'1px 7px', fontSize:10, fontWeight:700, color:'var(--text-faint)', marginLeft:4 }}>
-                    {schedules.filter(group.filter).length}
-                  </span>
-                </div>
-                <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(300px, 1fr))', gap:12 }}>
-                  {schedules.filter(group.filter).sort(group.sort).map(s => {
-                    const st = getStatus(s);
-                    const statusColor = st.cls==='tl-alert' ? 'var(--red)' : st.cls==='tl-warn' ? 'var(--amber)' : 'var(--green)';
-                    const nextDue = (s.interval_type==='hours'||s.interval_type==='km') ? (s.next_due_value ? `${s.next_due_value.toLocaleString()} ${s.interval_type}` : '—') : (s.next_due_date||'—');
-                    const lastDone = s.last_service_date || (s.last_service_value ? `${s.last_service_value.toLocaleString()} ${s.interval_type}` : null);
-                    const showProgress = (s.interval_type==='hours'||s.interval_type==='km') && s.last_service_value && s.next_due_value;
-                    const progressPct = showProgress ? Math.min(100, Math.max(0, ((currentHours - s.last_service_value) / (s.next_due_value - s.last_service_value)) * 100)) : null;
-                    const isExpanded = expandedSchedule?.id === s.id;
-
-                    return (
-                      <div key={s.id}
-                        onClick={() => setExpandedSchedule(isExpanded ? null : s)}
-                        style={{ background:'var(--surface)', border:`1.5px solid ${st.cls==='tl-alert'?'rgba(239,68,68,0.35)':st.cls==='tl-warn'?'rgba(245,158,11,0.35)':'var(--border)'}`, borderLeft:`4px solid ${statusColor}`, borderRadius:12, padding:'14px 16px', cursor:'pointer', transition:'box-shadow 0.15s' }}
-                        onMouseEnter={e=>e.currentTarget.style.boxShadow='0 4px 16px rgba(0,0,0,0.1)'}
-                        onMouseLeave={e=>e.currentTarget.style.boxShadow='none'}>
-
-                        {/* Name + status */}
-                        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:8 }}>
-                          <div style={{ flex:1, minWidth:0 }}>
-                            <div style={{ fontSize:14, fontWeight:700, color:'var(--text-primary)', marginBottom:5 }}>{s.service_name}</div>
-                            <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
-                              <span style={{ fontSize:11, fontWeight:700, padding:'2px 9px', borderRadius:20, background:'var(--accent-light)', color:'var(--accent)' }}>
-                                Every {s.interval_value} {s.interval_type}
-                              </span>
-                              <span style={{ fontSize:11, fontWeight:700, padding:'2px 9px', borderRadius:20, background: st.cls==='tl-alert'?'rgba(239,68,68,0.1)':st.cls==='tl-warn'?'rgba(245,158,11,0.1)':'rgba(34,197,94,0.1)', color:statusColor }}>
-                                {st.label}
-                              </span>
-                            </div>
-                          </div>
-                          <span style={{ fontSize:20, marginLeft:8, flexShrink:0 }}>
-                            {st.cls==='tl-alert'?'🔴':st.cls==='tl-warn'?'🟡':'🟢'}
-                          </span>
-                        </div>
-
-                        {/* Progress bar */}
-                        {showProgress && (
-                          <div style={{ marginBottom:10 }}>
-                            <div style={{ height:6, background:'var(--surface-2)', borderRadius:3, overflow:'hidden' }}>
-                              <div style={{ height:'100%', width:`${progressPct}%`, background:progressPct>=90?'var(--red)':progressPct>=70?'var(--amber)':'var(--green)', borderRadius:3, transition:'width 0.4s' }} />
-                            </div>
-                            <div style={{ display:'flex', justifyContent:'space-between', marginTop:3, fontSize:10, color:'var(--text-faint)' }}>
-                              <span>{s.last_service_value?.toLocaleString()} {s.interval_type}</span>
-                              <span style={{ fontWeight:700, color:progressPct>=90?'var(--red)':'var(--text-muted)' }}>{Math.round(progressPct)}%</span>
-                              <span>{s.next_due_value?.toLocaleString()} {s.interval_type}</span>
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Last done / Next due */}
-                        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8, marginBottom:8 }}>
-                          <div style={{ background:'var(--surface-2)', borderRadius:7, padding:'7px 10px' }}>
-                            <div style={{ fontSize:9, color:'var(--text-faint)', textTransform:'uppercase', letterSpacing:'0.5px', marginBottom:2 }}>Last Done</div>
-                            <div style={{ fontSize:12, fontWeight:600, color:'var(--text-secondary)' }}>{lastDone||'—'}</div>
-                          </div>
-                          <div style={{ background:st.cls==='tl-alert'?'rgba(239,68,68,0.06)':'var(--surface-2)', borderRadius:7, padding:'7px 10px' }}>
-                            <div style={{ fontSize:9, color:'var(--text-faint)', textTransform:'uppercase', letterSpacing:'0.5px', marginBottom:2 }}>Next Due</div>
-                            <div style={{ fontSize:12, fontWeight:700, color:st.cls==='tl-alert'?'var(--red)':st.cls==='tl-warn'?'var(--amber)':'var(--text-secondary)' }}>{nextDue}</div>
-                          </div>
-                        </div>
-
-                        {/* Predicted date */}
-                        {(predictions[s.id]?.predicted_date || s.predicted_date) && (
-                          <div style={{ fontSize:11, color:'var(--accent)', fontWeight:600, marginBottom:6, display:'flex', alignItems:'center', gap:5 }}>
-                            <span>📈</span>
-                            <span>Predicted: {new Date(predictions[s.id]?.predicted_date || s.predicted_date).toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'})}</span>
-                            {(predictions[s.id]?.daily_rate || s.predicted_daily_rate) && (
-                              <span style={{ color:'var(--text-muted)', fontWeight:400 }}>· {Number(predictions[s.id]?.daily_rate||s.predicted_daily_rate).toFixed(1)} hr/d</span>
-                            )}
-                          </div>
-                        )}
-
-                        {/* Expand hint */}
-                        <div style={{ fontSize:10, color:'var(--text-faint)', textAlign:'right' }}>
-                          {isExpanded ? '▲ collapse' : '▼ actions'}
-                        </div>
-
-                        {/* Expanded actions panel */}
-                        {isExpanded && (
-                          <div onClick={e=>e.stopPropagation()} style={{ borderTop:'1px solid var(--border)', marginTop:10, paddingTop:12 }}>
-                            {s.notes && (
-                              <div style={{ fontSize:12, color:'var(--text-muted)', marginBottom:10, padding:'7px 10px', background:'var(--surface-2)', borderRadius:7, fontStyle:'italic' }}>
-                                📝 {s.notes}
-                              </div>
-                            )}
-                            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:7 }}>
-                              <button onClick={()=>markDone(s)}
-                                style={{ padding:'9px', background:'var(--green-bg)', color:'var(--green)', border:'1px solid var(--green-border)', borderRadius:8, fontSize:12, fontWeight:700, cursor:'pointer' }}>
-                                ✓ Mark Done
-                              </button>
-                              <button onClick={()=>{ const tmpl=findTemplate(s.service_name); sessionStorage.setItem('mechiq_open_form',JSON.stringify({templateId:tmpl?.id||null,assetName:asset.name,serviceType:s.service_name,showPicker:!tmpl})); window.dispatchEvent(new CustomEvent('mechiq-navigate',{detail:{page:'forms',subPage:'service_sheets'}})); }}
-                                style={{ padding:'9px', background:'var(--accent-light)', color:'var(--accent)', border:'1px solid rgba(14,165,233,0.3)', borderRadius:8, fontSize:12, fontWeight:700, cursor:'pointer' }}>
-                                📋 Service Sheet
-                              </button>
-                              <button onClick={()=>{ setEditSchedule(s); setShowModal(true); }}
-                                style={{ padding:'9px', background:'var(--surface-2)', color:'var(--text-secondary)', border:'1px solid var(--border)', borderRadius:8, fontSize:12, fontWeight:700, cursor:'pointer' }}>
-                                ✏️ Edit Schedule
-                              </button>
-                              <button onClick={()=>deleteSchedule(s)}
-                                style={{ padding:'9px', background:'var(--red-bg)', color:'var(--red)', border:'1px solid var(--red-border)', borderRadius:8, fontSize:12, fontWeight:700, cursor:'pointer' }}>
-                                🗑 Delete
-                              </button>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            ))}
+            <button
+              onClick={() => { setEditSchedule(null); setShowModal(true); }}
+              style={{ padding:'7px 16px', background:'linear-gradient(135deg,var(--accent),#0090a8)', color:'#fff', border:'none', borderRadius:8, fontSize:12, fontWeight:700, cursor:'pointer', display:'flex', alignItems:'center', gap:5 }}
+            >
+              + Add Service
+            </button>
           </div>
-        );
-      })()}    </div>
+          <div style={{ overflowX:'auto' }}>
+            <table style={{ width:'100%', borderCollapse:'collapse', minWidth:500 }}>
+              <thead><tr>
+                {['Service','Interval','Last Done','Next Due','Status',''].map(h=><th key={h} style={{ textAlign:'left', padding:'0 14px 10px 0', fontSize:10, fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.5px', borderBottom:'1px solid var(--border)' }}>{h}</th>)}
+              </tr></thead>
+              <tbody>
+                {schedules.map(s => {
+                  const st = getStatus(s);
+                  return (
+                    <tr key={s.id} style={{ borderBottom:'1px solid var(--border)' }}>
+                      <td style={{ padding:'11px 14px 11px 0', fontSize:13, fontWeight:600, color:'var(--text-primary)' }}>{s.service_name}</td>
+                      <td style={{ padding:'11px 14px 11px 0', fontSize:13, color:'var(--text-secondary)' }}>Every {s.interval_value} {s.interval_type}</td>
+                      <td style={{ padding:'11px 14px 11px 0', fontSize:13, color:'var(--text-muted)' }}>{s.last_service_date || (s.last_service_value ? `${s.last_service_value} ${s.interval_type}` : '—')}</td>
+                      <td style={{ padding:'11px 14px 11px 0', fontSize:13, fontWeight:600, color:'var(--text-secondary)' }}>
+                        {s.interval_type==='hours'||s.interval_type==='km' ? `${s.next_due_value} ${s.interval_type}` : s.next_due_date || '—'}
+                        <div style={{ fontSize:11, color:st.cls==='tl-alert'?'var(--red)':st.cls==='tl-warn'?'var(--amber)':'var(--green)', fontWeight:600, marginTop:2 }}>{st.remaining}</div>
+                      </td>
+                      <td style={{ padding:'11px 14px 11px 0' }}><span className={`traffic-light ${st.cls}`}><span style={{ width:6, height:6, borderRadius:'50%', background:'currentColor' }} />{st.label}</span></td>
+                      <td style={{ padding:'11px 0' }}>
+                        <div style={{ display:'flex', gap:6, alignItems:'center', flexWrap:'wrap' }}>
+                          <button onClick={() => markDone(s)} style={{ padding:'4px 10px', background:'var(--green-bg)', color:'var(--green)', border:'1px solid var(--green-border)', borderRadius:6, fontSize:11, fontWeight:700, cursor:'pointer' }}> Done</button>
+                          {(() => {
+                            const tmpl = findTemplate(s.service_name);
+                            return (
+                              <button onClick={() => {
+                                sessionStorage.setItem('mechiq_open_form', JSON.stringify({
+                                  templateId: tmpl?.id || null,
+                                  assetName: asset.name,
+                                  serviceType: s.service_name,
+                                  showPicker: !tmpl,
+                                }));
+                                window.dispatchEvent(new CustomEvent('mechiq-navigate', { detail: { page: 'forms', subPage: 'service_sheets' } }));
+                              }} style={{ padding:'4px 10px', background:'var(--accent-light)', color:'var(--accent)', border:'1px solid rgba(14,165,233,0.3)', borderRadius:6, fontSize:11, fontWeight:700, cursor:'pointer' }}>
+                                 {tmpl ? 'Service Sheet' : 'Start Sheet'}
+                              </button>
+                            );
+                          })()}
+                          <button
+                            onClick={() => { setEditSchedule(s); setShowModal(true); }}
+                            style={{ padding:'4px 9px', background:'#f8fafc', color:'#6b7a8d', border:'1px solid #dde2ea', borderRadius:6, fontSize:11, fontWeight:700, cursor:'pointer' }}
+                            title="Edit schedule"
+                          ></button>
+                          <button
+                            onClick={() => deleteSchedule(s)}
+                            style={{ padding:'4px 9px', background:'#fff1f2', color:'#e94560', border:'1px solid #fecdd3', borderRadius:6, fontSize:11, fontWeight:700, cursor:'pointer' }}
+                            title="Delete schedule"
+                          ></button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -1169,7 +1016,7 @@ function OilTab({ asset, userRole }) {
       const { data: { session } } = await supabase.auth.getSession();
       const token = session?.access_token;
       const wm = sample.wear_metals || {};
-      const resp = await pythonAIFetch({
+      const resp = await fetch('/api/ai-insight', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({
@@ -1217,7 +1064,7 @@ Rate overall: NORMAL / CAUTION / CRITICAL. Explain which readings are concerning
       <div style={{ display:'flex', justifyContent:'space-between', marginBottom:16, alignItems:'center' }}>
         <div style={{ fontSize:13, color:'var(--text-muted)' }}>{samples.length} sample{samples.length!==1?'s':''} recorded</div>
         <button onClick={() => setShowForm(s=>!s)} style={{ padding:'9px 18px', background:showForm?'var(--surface-2)':'var(--accent)', color:showForm?'var(--text-secondary)':'#fff', border:'1px solid '+(showForm?'var(--border)':'var(--accent)'), borderRadius:10, fontSize:13, fontWeight:700, cursor:'pointer' }}>
-          {showForm ? '✕ Close' : '+ Log Sample'}
+          {showForm ? ' Close' : '+ Log Sample'}
         </button>
       </div>
 
@@ -1265,7 +1112,7 @@ Rate overall: NORMAL / CAUTION / CRITICAL. Explain which readings are concerning
                     <div style={{ fontSize:12, color:'var(--text-muted)' }}>{s.sample_date} · {s.oil_hours ? `${s.oil_hours} hrs on oil` : ''}{s.unit_hours ? ` · ${s.unit_hours} unit hrs` : ''}</div>
                   </div>
                   <button onClick={() => analyseWithAI(s)} style={{ padding:'6px 14px', background:'var(--accent-light)', color:'var(--accent)', border:'1px solid rgba(14,165,233,0.25)', borderRadius:8, fontSize:12, fontWeight:700, cursor:'pointer' }}>
-                    🤖 AI Analysis
+                     AI Analysis
                   </button>
                 </div>
 
@@ -1293,7 +1140,7 @@ Rate overall: NORMAL / CAUTION / CRITICAL. Explain which readings are concerning
                       </div>
                     ) : (
                       <>
-                        {s.ai_recommendations && <div style={{ fontSize:12, fontWeight:700, color:'var(--accent)', marginBottom:8, padding:'6px 10px', background:'var(--accent-light)', borderRadius:6 }}>📋 {s.ai_recommendations}</div>}
+                        {s.ai_recommendations && <div style={{ fontSize:12, fontWeight:700, color:'var(--accent)', marginBottom:8, padding:'6px 10px', background:'var(--accent-light)', borderRadius:6 }}> {s.ai_recommendations}</div>}
                         <div style={{ fontSize:13, color:'var(--text-secondary)', lineHeight:1.7, whiteSpace:'pre-wrap' }}>{aiAnalysis}</div>
                       </>
                     )}
@@ -1389,7 +1236,7 @@ function DocumentsTab({ asset, userRole }) {
   const isAdmin = ['admin','supervisor'].includes(userRole?.role);
 
   const CATEGORIES = ['Manual', 'Schematic', 'Wiring Diagram', 'Parts Catalogue', 'Safety Data Sheet', 'Photo', 'Other'];
-  const CAT_ICONS  = { Manual:'📖', Schematic:'📐', 'Wiring Diagram':'⚡', 'Parts Catalogue':'🔩', 'Safety Data Sheet':'⚠️', Photo:'📷', Other:'📎' };
+  const CAT_ICONS  = { Manual:'', Schematic:'', 'Wiring Diagram':'', 'Parts Catalogue':'', 'Safety Data Sheet':'', Photo:'', Other:'' };
 
   useEffect(() => { load(); }, [asset]);
 
@@ -1465,7 +1312,7 @@ function DocumentsTab({ asset, userRole }) {
               </div>
               <button onClick={() => fileRef.current?.click()} disabled={uploading}
                 style={{ padding:'9px 18px', background:'var(--accent)', color:'#fff', border:'none', borderRadius:8, fontSize:13, fontWeight:700, cursor:'pointer', whiteSpace:'nowrap', opacity:uploading?0.6:1 }}>
-                {uploading ? '⟳ Uploading…' : '📁 Choose File'}
+                {uploading ? '⟳ Uploading…' : ' Choose File'}
               </button>
               <button onClick={() => setShowForm(false)} style={{ padding:'9px 14px', background:'var(--surface)', color:'var(--text-secondary)', border:'1px solid var(--border)', borderRadius:8, fontSize:13, cursor:'pointer' }}>Cancel</button>
               <input ref={fileRef} type="file" accept=".pdf,.jpg,.jpeg,.png,.gif,.webp,.svg,.dwg,.dxf" style={{ display:'none' }}
@@ -1477,7 +1324,7 @@ function DocumentsTab({ asset, userRole }) {
 
       {loading ? <Sk h="80px" /> : docs.length === 0 ? (
         <div className="mp-card" style={{ textAlign:'center', padding:'48px 20px', color:'var(--text-faint)' }}>
-          <div style={{ fontSize:36, marginBottom:12 }}>📂</div>
+          <div style={{ fontSize:36, marginBottom:12 }}></div>
           <div style={{ fontSize:14, fontWeight:700, color:'var(--text-muted)', marginBottom:6 }}>No documents uploaded yet</div>
           {isAdmin && <div style={{ fontSize:13, color:'var(--text-faint)' }}>Upload manuals, schematics and diagrams for this asset.</div>}
         </div>
@@ -1486,7 +1333,7 @@ function DocumentsTab({ asset, userRole }) {
           {Object.entries(grouped).map(([category, items]) => (
             <div key={category} className="mp-card">
               <div className="mp-section-title">
-                {CAT_ICONS[category] || '📎'} {category} <span style={{ fontSize:11, fontWeight:600, color:'var(--accent)', background:'var(--accent-light)', padding:'2px 8px', borderRadius:20, marginLeft:4 }}>{items.length}</span>
+                {CAT_ICONS[category] || ''} {category} <span style={{ fontSize:11, fontWeight:600, color:'var(--accent)', background:'var(--accent-light)', padding:'2px 8px', borderRadius:20, marginLeft:4 }}>{items.length}</span>
               </div>
               <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(200px,1fr))', gap:10 }}>
                 {items.map(doc => (
@@ -1501,7 +1348,7 @@ function DocumentsTab({ asset, userRole }) {
                       </div>
                     ) : (
                       <div style={{ height:80, display:'flex', alignItems:'center', justifyContent:'center', background: isPDF(doc.file_type) ? '#fee2e2' : 'var(--surface-3)', fontSize:36 }}>
-                        {isPDF(doc.file_type) ? '📄' : CAT_ICONS[doc.category] || '📎'}
+                        {isPDF(doc.file_type) ? '' : CAT_ICONS[doc.category] || ''}
                       </div>
                     )}
 
@@ -1514,7 +1361,7 @@ function DocumentsTab({ asset, userRole }) {
                       <div style={{ display:'flex', gap:6 }}>
                         <a href={doc.file_url} target="_blank" rel="noopener noreferrer"
                           style={{ flex:1, padding:'6px 0', background:'var(--accent)', color:'#fff', border:'none', borderRadius:6, fontSize:11, fontWeight:700, cursor:'pointer', textAlign:'center', textDecoration:'none', display:'block' }}>
-                          👁 View
+                           View
                         </a>
                         <a href={doc.file_url} download={doc.file_name}
                           style={{ flex:1, padding:'6px 0', background:'var(--surface)', color:'var(--text-secondary)', border:'1px solid var(--border)', borderRadius:6, fontSize:11, fontWeight:700, cursor:'pointer', textAlign:'center', textDecoration:'none', display:'block' }}>
@@ -1523,7 +1370,7 @@ function DocumentsTab({ asset, userRole }) {
                         {isAdmin && (
                           <button onClick={() => deleteDoc(doc)}
                             style={{ padding:'6px 8px', background:'var(--red-bg)', color:'var(--red)', border:'1px solid var(--red-border)', borderRadius:6, fontSize:11, fontWeight:700, cursor:'pointer' }}>
-                            🗑
+                            
                           </button>
                         )}
                       </div>
@@ -1596,7 +1443,7 @@ function DepreciationTab({ asset, userRole }) {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       const token = session?.access_token;
-      const resp = await pythonAIFetch({
+      const resp = await fetch('/api/ai-insight', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({
@@ -1618,9 +1465,9 @@ Respond ONLY with JSON, no markdown:
       if (parsed.expectedLifeUsage) setInputs(p => ({ ...p, expectedLifeUsage: String(parsed.expectedLifeUsage), salvageValue: String(parsed.salvageValue || ''), depreciationMethod: parsed.recommendedMethod || p.depreciationMethod }));
       if (parsed.marketNote) {
         let insight = '';
-        if (parsed.purchasePriceNote) insight += '💰 ' + parsed.purchasePriceNote + '\n\n';
-        if (parsed.currentMarketValue) insight += `📈 Est. current market value: ${fmt(parsed.currentMarketValue)}\n\n`;
-        insight += '📊 ' + parsed.marketNote;
+        if (parsed.purchasePriceNote) insight += ' ' + parsed.purchasePriceNote + '\n\n';
+        if (parsed.currentMarketValue) insight += ` Est. current market value: ${fmt(parsed.currentMarketValue)}\n\n`;
+        insight += ' ' + parsed.marketNote;
         setAiInsight(insight);
       }
     } catch (e) { alert('AI error: ' + e.message); }
@@ -1635,7 +1482,7 @@ Respond ONLY with JSON, no markdown:
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:16 }}>
           <div className="mp-section-title" style={{ marginBottom:0 }}>Asset Details</div>
           <button onClick={aiPredict} disabled={aiPredicting} style={{ padding:'8px 16px', background:'var(--surface-2)', color:'var(--accent)', border:'1px solid rgba(14,165,233,0.3)', borderRadius:8, fontSize:12, fontWeight:700, cursor:'pointer', display:'flex', alignItems:'center', gap:6, opacity:aiPredicting?0.6:1 }}>
-            {aiPredicting ? '⟳ Loading…' : '🤖 AI Predict Values'}
+            {aiPredicting ? '⟳ Loading…' : ' AI Predict Values'}
           </button>
         </div>
         <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(180px,1fr))', gap:12, marginBottom:14 }}>
@@ -1980,7 +1827,7 @@ function AssetSettingsTab({ asset, userRole, onDeleted }) {
           <span style={{ fontFamily:'var(--font-display)', fontSize:15, fontWeight:800, textTransform:'uppercase', letterSpacing:'0.8px', color:'var(--text-primary)' }}>Asset Details</span>
           <button onClick={handleSave} disabled={saving}
             style={{ padding:'8px 20px', background:saved?'var(--green)':'var(--accent)', color:'#fff', border:'none', borderRadius:8, fontSize:13, fontWeight:700, cursor:'pointer', transition:'all 0.2s' }}>
-            {saving?'Saving…':saved?'✓ Saved':'Save Changes'}
+            {saving?'Saving…':saved?' Saved':'Save Changes'}
           </button>
         </div>
         <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(200px,1fr))', gap:14 }}>
@@ -2013,7 +1860,7 @@ function AssetSettingsTab({ asset, userRole, onDeleted }) {
       {/* ── Danger Zone ───────────────────────────────────────────────── */}
       <div className="mp-card" style={{ border:'1px solid var(--red-border)', background:'var(--red-bg)' }}>
         <div style={{ fontFamily:'var(--font-display)', fontSize:15, fontWeight:800, textTransform:'uppercase', letterSpacing:'0.8px', color:'var(--red)', marginBottom:12, paddingBottom:12, borderBottom:'1px solid var(--red-border)' }}>
-          ⚠ Danger Zone
+           Danger Zone
         </div>
 
         {delStep === 0 && (
@@ -2060,7 +1907,7 @@ function AssetSettingsTab({ asset, userRole, onDeleted }) {
                 onClick={handleDelete}
                 disabled={deleting || delInput.trim().toLowerCase()!==asset.name.toLowerCase()}
                 style={{ flex:1, padding:'10px', background:delInput.trim().toLowerCase()===asset.name.toLowerCase()?'var(--red)':'#fca5a5', color:'#fff', border:'none', borderRadius:8, fontSize:13, fontWeight:700, cursor:delInput.trim().toLowerCase()===asset.name.toLowerCase()?'pointer':'not-allowed', transition:'all 0.2s' }}>
-                {deleting ? 'Deleting…' : '🗑 Permanently Delete'}
+                {deleting ? 'Deleting…' : ' Permanently Delete'}
               </button>
             </div>
           </div>
@@ -2077,9 +1924,6 @@ function AssetPage({ assetId, userRole, onStartPrestart, onStartServiceSheet, on
   const [openWorkOrders, setOpenWorkOrders] = useState([]);
   const [loading, setLoading]         = useState(true);
   const [activeTab, setActiveTab]     = useState(initialTab || 'overview');
-  const [nextPredictedService, setNextPredictedService] = useState(null);
-  const [selectedPrestart, setSelectedPrestart] = useState(null);
-  const [selectedService, setSelectedService] = useState(null);
 
   const isAdmin = ['admin','supervisor'].includes(userRole?.role);
   const [labelTemplates, setLabelTemplates] = useState([]);
@@ -2139,81 +1983,8 @@ function AssetPage({ assetId, userRole, onStartPrestart, onStartServiceSheet, on
       const svcSubmissions = (svcSheets.data||[]).map(s => ({ ...s, task: s.service_type||'Service', next_due: s.date, status:'Submitted' }));
       setRecentMaintenance(svcSubmissions);
       setOpenWorkOrders(workorders.data||[]);
-
-      // Load most recent predicted service (non-blocking)
-      const { data: nextP } = await supabase
-        .from('service_schedules').select('*')
-        .eq('asset_name', assetData.name).eq('company_id', assetData.company_id)
-        .not('predicted_date', 'is', null)
-        .order('predicted_date', { ascending: true })
-        .limit(1).maybeSingle();
-      setNextPredictedService(nextP || null);
     }
     setLoading(false);
-
-    // Auto-predict in background on every page load ──────────────────────────
-    if (assetData) autoPredict(assetData);
-  };
-
-  // Runs on every load: fetches hours history → calls /predict/service
-  // → saves predicted_date back to service_schedules → updates banner
-  const autoPredict = async (assetData) => {
-    try {
-      const { data: schedData } = await supabase.from('service_schedules')
-        .select('*').eq('asset_name', assetData.name).eq('company_id', assetData.company_id);
-      const hourSchedules = (schedData || []).filter(
-        s => s.interval_type === 'hours' || s.interval_type === 'km'
-      );
-      if (!hourSchedules.length) return;
-
-      const { data: historyData } = await supabase.from('asset_hours_log')
-        .select('hours, created_at').eq('asset_id', assetData.id)
-        .order('created_at', { ascending: false }).limit(60);
-
-      const { data: { session } } = await supabase.auth.getSession();
-      const token = session?.access_token;
-
-      const results = await predictService({
-        asset_id: assetData.id,
-        asset_name: assetData.name,
-        current_hours: assetData.hours,
-        hours_history: (historyData || []).map(h => ({
-          hours: h.hours,
-          recorded_at: h.created_at,
-        })),
-        schedules: hourSchedules.map(s => ({
-          id: s.id,
-          service_name: s.service_name,
-          interval_value: s.interval_value,
-          interval_type: s.interval_type,
-          last_service_value: s.last_service_value,
-          next_due_value: s.next_due_value,
-        })),
-      }, token);
-
-      if (!results || !results.length) return;
-
-      // Save predictions back to Supabase
-      const now = new Date().toISOString();
-      await Promise.all(results.map(p =>
-        supabase.from('service_schedules').update({
-          predicted_date: p.predicted_date,
-          predicted_daily_rate: p.daily_rate ?? p.daily_rate_hrs ?? null,
-          predicted_at: now,
-        }).eq('id', p.schedule_id || p.id)
-      ));
-
-      // Reload the next predicted service banner
-      const { data: nextP } = await supabase
-        .from('service_schedules').select('*')
-        .eq('asset_name', assetData.name).eq('company_id', assetData.company_id)
-        .not('predicted_date', 'is', null)
-        .order('predicted_date', { ascending: true })
-        .limit(1).maybeSingle();
-      setNextPredictedService(nextP || null);
-    } catch (e) {
-      console.warn('Auto-predict failed:', e.message);
-    }
   };
 
   if (loading) return (
@@ -2234,9 +2005,9 @@ function AssetPage({ assetId, userRole, onStartPrestart, onStartServiceSheet, on
     { id:'service',      label:'Service Schedule' },
     { id:'oil',          label:'Oil Sampling' },
     { id:'downtime',     label:'Downtime' },
-    { id:'documents', label:'📂 Documents' },
-    ...(isAdmin ? [{ id:'depreciation', label:'💰 Depreciation' }] : []),
-    ...(isAdmin ? [{ id:'settings', label:'⚙️ Settings' }] : []),
+    { id:'documents', label:' Documents' },
+    ...(isAdmin ? [{ id:'depreciation', label:' Depreciation' }] : []),
+    ...(isAdmin ? [{ id:'settings', label:' Settings' }] : []),
   ];
 
   return (
@@ -2276,19 +2047,19 @@ function AssetPage({ assetId, userRole, onStartPrestart, onStartServiceSheet, on
                 <div style={{ display:'flex', gap:6, width:'100%' }}>
                   <button onClick={() => setShowQR(true)}
                     style={{ flex:1, fontSize:10, fontWeight:700, padding:'5px 0', border:'1px solid var(--border)', borderRadius:5, background:'var(--surface)', color:'var(--text-secondary)', cursor:'pointer', fontFamily:'inherit' }}>
-                    🔍 Enlarge
+                     Enlarge
                   </button>
                   {labelTemplates.length > 0 && (
                     <button onClick={() => setShowLabelPreview(true)}
                       style={{ flex:1, fontSize:10, fontWeight:700, padding:'5px 0', border:'1px solid var(--accent)', borderRadius:5, background:'var(--accent-light)', color:'var(--accent)', cursor:'pointer', fontFamily:'inherit' }}>
-                      🏷 ID Tag
+                       ID Tag
                     </button>
                   )}
                 </div>
               </>
             ) : (
               <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:6, padding:'12px 16px', border:'1.5px dashed var(--border)', borderRadius:8, minWidth:140, textAlign:'center' }}>
-                <div style={{ fontSize:20 }}>🏷</div>
+                <div style={{ fontSize:20 }}></div>
                 <div style={{ fontSize:11, fontWeight:700, color:'var(--text-muted)' }}>No Label Assigned</div>
                 <div style={{ fontSize:10, color:'var(--text-faint)', lineHeight:1.4 }}>Assign a label in<br/>Admin → Onboarding<br/>→ Asset Settings</div>
               </div>
@@ -2353,7 +2124,7 @@ function AssetPage({ assetId, userRole, onStartPrestart, onStartServiceSheet, on
       </div>
 
       {/* ── Tab content ── */}
-      {activeTab === 'overview'     && <OverviewTab asset={asset} recentPrestarts={recentPrestarts} recentMaintenance={recentMaintenance} onViewPrestart={setSelectedPrestart} onViewService={setSelectedService} nextPredictedService={nextPredictedService} />}
+      {activeTab === 'overview'     && <OverviewTab asset={asset} recentPrestarts={recentPrestarts} recentMaintenance={recentMaintenance} onViewPrestart={setSelectedPrestart} onViewService={setSelectedService} />}
       {activeTab === 'workorders'   && <WorkOrdersTab asset={asset} userRole={userRole} />}
       {activeTab === 'service'      && <ServiceTab asset={asset} />}
       {activeTab === 'oil'          && <OilTab asset={asset} userRole={userRole} />}
@@ -2361,26 +2132,6 @@ function AssetPage({ assetId, userRole, onStartPrestart, onStartServiceSheet, on
       {activeTab === 'documents'    && <DocumentsTab asset={asset} userRole={userRole} />}
       {activeTab === 'depreciation' && isAdmin && <DepreciationTab asset={asset} userRole={userRole} />}
       {activeTab === 'settings'     && isAdmin && <AssetSettingsTab asset={asset} userRole={userRole} onDeleted={() => onBack && onBack()} />}
-
-      {/* ── Prestart view modal ── */}
-      {selectedPrestart && (
-        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.6)', zIndex:1000, display:'flex', alignItems:'center', justifyContent:'center', padding:16 }}
-          onClick={() => setSelectedPrestart(null)}>
-          <div onClick={e => e.stopPropagation()} style={{ width:'100%', maxWidth:700, maxHeight:'90vh', overflowY:'auto', borderRadius:12, background:'var(--surface)', boxShadow:'0 20px 60px rgba(0,0,0,0.4)' }}>
-            <PrestartViewModal prestart={selectedPrestart} asset={asset} onClose={() => setSelectedPrestart(null)} />
-          </div>
-        </div>
-      )}
-
-      {/* ── Service sheet view modal ── */}
-      {selectedService && (
-        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.6)', zIndex:1000, display:'flex', alignItems:'center', justifyContent:'center', padding:16 }}
-          onClick={() => setSelectedService(null)}>
-          <div onClick={e => e.stopPropagation()} style={{ width:'100%', maxWidth:700, maxHeight:'90vh', overflowY:'auto', borderRadius:12, background:'var(--surface)', boxShadow:'0 20px 60px rgba(0,0,0,0.4)' }}>
-            <ServiceViewModal service={selectedService} asset={asset} onClose={() => setSelectedService(null)} />
-          </div>
-        </div>
-      )}
     </div>
   );
 }

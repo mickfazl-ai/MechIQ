@@ -128,7 +128,7 @@ function TrendModal({ assetNumber, samples, onClose }) {
             <div style={{ fontSize: '18px', fontWeight: 800, color: 'var(--text-primary)' }}>{assetNumber} — Wear Metal Trends</div>
             <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>{assetSamples.length} samples on record</div>
           </div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: '22px', cursor: 'pointer', color: 'var(--text-muted)' }}>✕</button>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: '22px', cursor: 'pointer', color: 'var(--text-muted)' }}></button>
         </div>
         {chartData.length >= 2 ? (
           <ResponsiveContainer width="100%" height={300}>
@@ -272,7 +272,7 @@ function OilSampling({ userRole }) {
         <div style={{ textAlign: 'center', padding: '60px', color: 'var(--text-muted)' }}>Loading samples...</div>
       ) : filtered.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '60px', color: 'var(--text-muted)', backgroundColor: 'var(--surface)', borderRadius: '10px', border: '1px solid var(--border)' }}>
-          <div style={{ fontSize: '40px', marginBottom: '12px' }}>🔬</div>
+          <div style={{ fontSize: '40px', marginBottom: '12px' }}></div>
           <div style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '6px' }}>No oil samples yet</div>
           <div style={{ fontSize: '13px', maxWidth: '400px', margin: '0 auto', lineHeight: 1.6 }}>
             Ask your oil analysis lab to email reports to your company address above. Results will appear here automatically within 6 hours.

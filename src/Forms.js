@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import FormEditorTab from './FormEditor';
 import { supabase } from './supabase';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -351,7 +350,7 @@ function AIGeneratorModal({ mode, onClose, onGenerated }) {
       }}>
         {file ? (
           <div style={{ textAlign: 'center' }}>
-            <div style={{ color: 'var(--green)', fontSize: '14px', fontWeight: 700, marginBottom: '4px' }}>✓ {file.name}</div>
+            <div style={{ color: 'var(--green)', fontSize: '14px', fontWeight: 700, marginBottom: '4px' }}> {file.name}</div>
             <div style={{ color: '#4a7a6a', fontSize: '11px' }}>{(file.size / 1024 / 1024).toFixed(2)} MB — click to change</div>
           </div>
         ) : (
@@ -433,7 +432,7 @@ function BuilderItem({ item, si, ii, onUpdate, onRemove }) {
       >
         {INPUT_TYPES.map(t => <option key={t.id} value={t.id}>{t.label}</option>)}
       </select>
-      <button onClick={() => onRemove(si, ii)} style={{ flexShrink: 0, backgroundColor: 'transparent', border: '1px solid #f0c0c0', color: '#e94560', padding: '5px 9px', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: 700 }}>✕</button>
+      <button onClick={() => onRemove(si, ii)} style={{ flexShrink: 0, backgroundColor: 'transparent', border: '1px solid #f0c0c0', color: '#e94560', padding: '5px 9px', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: 700 }}></button>
     </div>
   );
 }
@@ -506,7 +505,7 @@ function AssetPicker({ assets, value = [], onChange }) {
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   color: '#fff', fontSize: '10px', fontWeight: 700,
                 }}>
-                  {checked ? '✓' : ''}
+                  {checked ? '' : ''}
                 </span>
                 <span style={{ color: '#1a2b3c', fontWeight: checked ? 600 : 400 }}>{a.name}</span>
                 {a.location && <span style={{ color: '#a0b0b0', fontSize: '11px', marginLeft: 'auto' }}>{a.location}</span>}
@@ -715,88 +714,27 @@ function PrestartTab({ userRole, prestartAsset, prestartAssetId, prestartAssetNu
 
   const exportPDF = (submission) => {
     const doc = new jsPDF();
-    const W = 210, blue = [14, 165, 233], navy = [15, 30, 55], grey = [100, 116, 139], lightgrey = [241, 245, 249], midgrey = [226, 232, 240], white = [255, 255, 255], green = [34, 197, 94], red = [239, 68, 68];
-
-    // ── Header accent bar ──
-    doc.setFillColor(...blue); doc.rect(0, 0, W, 10, 'F');
-
-    // ── Logo / title block ──
-    doc.setFillColor(...navy); doc.rect(0, 10, W, 32, 'F');
-    doc.setTextColor(255, 255, 255); doc.setFontSize(18); doc.setFont('helvetica', 'bold');
-    doc.text('MechIQ', 14, 26);
-    doc.setFontSize(9); doc.setFont('helvetica', 'normal');
-    doc.setTextColor(160, 200, 220);
-    doc.text('PRESTART CHECKLIST', 14, 34);
-    // Status badge
-    const hasDefects = submission.defects_found;
-    doc.setFillColor(...(hasDefects ? red : green));
-    doc.roundedRect(W - 52, 16, 38, 14, 3, 3, 'F');
-    doc.setTextColor(255, 255, 255); doc.setFontSize(8); doc.setFont('helvetica', 'bold');
-    doc.text(hasDefects ? '⚠ DEFECTS' : '✓ CLEAR', W - 33, 24.5, { align: 'center' });
-
-    // ── Metadata block ──
-    let y = 52;
-    doc.setFillColor(...lightgrey); doc.rect(0, 42, W, 28, 'F');
-    doc.setFontSize(8); doc.setFont('helvetica', 'bold'); doc.setTextColor(...grey);
-    const meta = [
-      ['ASSET', submission.asset || '—'], ['DATE', submission.date || '—'],
-      ['OPERATOR', submission.operator_name || '—'], ['SITE', submission.site_area || '—'],
-      ['HOURS', String(submission.hrs_start || '—')], ['TEMPLATE', (templates.find(t => t.id === submission.template_id)?.name) || '—'],
-    ];
-    meta.forEach(([k, v], i) => {
-      const x = 14 + (i % 3) * 62, my = 50 + Math.floor(i / 3) * 12;
-      doc.setFont('helvetica', 'bold'); doc.setTextColor(...grey); doc.text(k, x, my);
-      doc.setFont('helvetica', 'normal'); doc.setTextColor(...navy); doc.text(v, x, my + 5);
-    });
-
-    y = 76;
+    doc.setFillColor(13, 21, 21); doc.rect(0, 0, 210, 297, 'F');
+    doc.setTextColor(0, 194, 224); doc.setFontSize(20); doc.setFont('helvetica', 'bold');
+    doc.text('MECH IQ - PRESTART CHECKLIST', 14, 20);
+    doc.setTextColor(160, 176, 176); doc.setFontSize(9); doc.setFont('helvetica', 'normal');
+    doc.text('Asset: ' + submission.asset + '   Operator: ' + submission.operator_name + '   Date: ' + submission.date, 14, 30);
+    doc.text('Site: ' + (submission.site_area || '-') + '   Hrs: ' + (submission.hrs_start || '-'), 14, 36);
     const template = templates.find(t => t.id === submission.template_id);
+    let y = 45;
     if (template) {
       template.sections.forEach((section, si) => {
-        if (y > 260) { doc.addPage(); doc.setFillColor(...blue); doc.rect(0, 0, W, 3, 'F'); y = 14; }
-        // Section header
-        doc.setFillColor(...midgrey); doc.rect(0, y - 4, W, 12, 'F');
-        doc.setFillColor(...blue); doc.rect(0, y - 4, 3, 12, 'F');
-        doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor(...navy);
-        doc.text(section.title.toUpperCase(), 8, y + 3.5); y += 12;
+        doc.setTextColor(0, 194, 224); doc.setFontSize(11); doc.setFont('helvetica', 'bold');
+        doc.text(section.title.toUpperCase(), 14, y); y += 6;
         const rows = section.items.map(item => {
-          const label = typeof item === 'string' ? item : (item.label || '');
+          const label = item.label || item;
           const key = si + '_' + label;
-          const v = submission.responses?.[key];
-          const val = formatValue((item.type || 'check'), v);
-          const comment = (v && v.comment) || '';
-          return [label, val, comment];
+          const v = submission.responses && submission.responses[key];
+          return [label, formatValue(item.type || 'check', v), (v && v.comment) || ''];
         });
-        autoTable(doc, {
-          startY: y,
-          head: [['Item', 'Result', 'Comment']],
-          body: rows,
-          theme: 'grid',
-          headStyles: { fillColor: navy, textColor: white, fontSize: 8, fontStyle: 'bold', cellPadding: 4 },
-          bodyStyles: { fillColor: white, textColor: navy, fontSize: 8, cellPadding: 3.5 },
-          alternateRowStyles: { fillColor: lightgrey },
-          columnStyles: { 0: { cellWidth: 90 }, 1: { cellWidth: 30, halign: 'center' }, 2: { cellWidth: 'auto' } },
-          styles: { lineColor: midgrey, lineWidth: 0.3, overflow: 'linebreak' },
-          didDrawCell: (data) => {
-            if (data.section === 'body' && data.column.index === 1) {
-              const val = (data.cell.text[0] || '').toLowerCase();
-              if (val === '✓' || val === 'pass' || val === 'ok') { doc.setTextColor(...green); }
-              else if (val === '✗' || val === 'fail') { doc.setTextColor(...red); }
-              else { doc.setTextColor(...navy); }
-            }
-          },
-        });
+        autoTable(doc, { startY: y, head: [['Item', 'Value', 'Comment']], body: rows, theme: 'plain', headStyles: { fillColor: [26, 47, 47], textColor: [160, 176, 176], fontSize: 8 }, bodyStyles: { fillColor: [13, 21, 21], textColor: [255, 255, 255], fontSize: 8 }, styles: { lineColor: [26, 47, 47], lineWidth: 0.1 } });
         y = doc.lastAutoTable.finalY + 8;
       });
-    }
-    // ── Footer ──
-    const pages = doc.internal.getNumberOfPages();
-    for (let p = 1; p <= pages; p++) {
-      doc.setPage(p);
-      doc.setFillColor(...lightgrey); doc.rect(0, 285, W, 12, 'F');
-      doc.setFont('helvetica', 'normal'); doc.setFontSize(7); doc.setTextColor(...grey);
-      doc.text('Generated by MechIQ · mechiq.com.au · ' + new Date().toLocaleDateString('en-AU'), 14, 292);
-      doc.text('Page ' + p + ' of ' + pages, W - 14, 292, { align: 'right' });
     }
     doc.save('MechIQ-Prestart-' + submission.asset + '-' + submission.date + '.pdf');
   };
@@ -990,7 +928,7 @@ function PrestartTab({ userRole, prestartAsset, prestartAssetId, prestartAssetNu
             <option value="defects">Defects</option>
           </select>
           {(filters.search || filters.asset || filters.dateFrom || filters.dateTo || filters.status !== 'all') && (
-            <button onClick={() => setFilters({ search: '', asset: '', dateFrom: '', dateTo: '', status: 'all' })} style={{ padding: '8px 12px', background: 'transparent', border: '1px solid #dde2ea', borderRadius: 6, fontSize: 12, color: '#6b7a8d', cursor: 'pointer' }}>✕ Clear</button>
+            <button onClick={() => setFilters({ search: '', asset: '', dateFrom: '', dateTo: '', status: 'all' })} style={{ padding: '8px 12px', background: 'transparent', border: '1px solid #dde2ea', borderRadius: 6, fontSize: 12, color: '#6b7a8d', cursor: 'pointer' }}> Clear</button>
           )}
         </div>
 
@@ -1051,7 +989,7 @@ function PrestartTab({ userRole, prestartAsset, prestartAssetId, prestartAssetNu
                         color: s.defects_found ? '#e94560' : '#00c264',
                         border: '1px solid ' + (s.defects_found ? '#fecdd3' : '#bbf7d0'),
                       }}>
-                        {s.defects_found ? '⚠ Defects' : '✓ Clear'}
+                        {s.defects_found ? ' Defects' : ' Clear'}
                       </span>
                     </td>
                     <td>
@@ -1076,7 +1014,7 @@ function PrestartTab({ userRole, prestartAsset, prestartAssetId, prestartAssetNu
       <div className="page-header">
         <h2>Prestart Checklists</h2>
         <div style={{ display: 'flex', gap: '10px' }}>
-          <button className="btn-primary" onClick={() => { setView('history'); setSelectedIds(new Set()); setFilters({ search: '', asset: '', dateFrom: '', dateTo: '', status: 'all' }); }}>📋 Records</button>
+          <button className="btn-primary" onClick={() => { setView('history'); setSelectedIds(new Set()); setFilters({ search: '', asset: '', dateFrom: '', dateTo: '', status: 'all' }); }}> Records</button>
           {userRole && userRole.role !== 'technician' && (
             <>
               <button className="btn-primary" style={{ background: 'linear-gradient(135deg, #00c2e0, #0090a8)', color: '#000' }} onClick={() => setShowAI(true)}>Generate with AI</button>
@@ -1087,7 +1025,7 @@ function PrestartTab({ userRole, prestartAsset, prestartAssetId, prestartAssetNu
       </div>
       {assetLocked && (
         <div style={{ background: 'var(--accent-light)', border: '1px solid rgba(0,194,224,0.3)', borderRadius: 10, padding: '12px 16px', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 10 }}>
-          <span style={{ fontSize: 16 }}>📋</span>
+          <span style={{ fontSize: 16 }}></span>
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--accent)' }}>Starting prestart for: {prestartAsset}</div>
             <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
@@ -1220,19 +1158,19 @@ function PrestartTab({ userRole, prestartAsset, prestartAssetId, prestartAssetNu
                             {isAdmin && (
                               <button onClick={() => setAssignModal({ ...t })}
                                 style={{ padding:'5px 12px', background:'var(--accent-light)', color:'var(--accent)', border:'1px solid rgba(0,194,224,0.3)', borderRadius:6, fontSize:11, fontWeight:700, cursor:'pointer', whiteSpace:'nowrap' }}>
-                                📌 Assign
+                                 Assign
                               </button>
                             )}
                             {isAdmin && (
                               <button onClick={() => { setBuilder({ name: t.name, description: t.description||'', sections: t.sections||[], asset_ids: t.asset_ids||[] }); setEditingTemplateId(t.id); setAiPreview(null); setView('builder'); }}
                                 style={{ padding:'5px 12px', background:'var(--surface-2)', color:'var(--text-secondary)', border:'1px solid var(--border)', borderRadius:6, fontSize:11, fontWeight:700, cursor:'pointer', whiteSpace:'nowrap' }}>
-                                ✏️ Edit
+                                 Edit
                               </button>
                             )}
                             {isAdmin && (
                               <button onClick={e => deleteTemplate(t.id, e)}
                                 style={{ padding:'5px 10px', background:'var(--red-bg)', color:'var(--red)', border:'1px solid var(--red-border)', borderRadius:6, fontSize:11, fontWeight:700, cursor:'pointer' }}>
-                                🗑
+                                
                               </button>
                             )}
                           </div>
@@ -1402,119 +1340,41 @@ function ServiceSheetsTab({ userRole }) {
 
   const exportServicePDF = (submission) => {
     const doc = new jsPDF();
-    const W = 210, blue = [14, 165, 233], navy = [15, 30, 55], grey = [100, 116, 139], lightgrey = [241, 245, 249], midgrey = [226, 232, 240], white = [255, 255, 255], green = [34, 197, 94], amber = [245, 158, 11];
-
-    // ── Header accent bar ──
-    doc.setFillColor(...blue); doc.rect(0, 0, W, 10, 'F');
-
-    // ── Logo / title block ──
-    doc.setFillColor(...navy); doc.rect(0, 10, W, 32, 'F');
-    doc.setTextColor(255, 255, 255); doc.setFontSize(18); doc.setFont('helvetica', 'bold');
-    doc.text('MechIQ', 14, 26);
-    doc.setFontSize(9); doc.setFont('helvetica', 'normal'); doc.setTextColor(160, 200, 220);
-    doc.text('SERVICE SHEET', 14, 34);
-    // Service type badge
-    if (submission.service_type) {
-      doc.setFillColor(...amber);
-      doc.roundedRect(W - 66, 16, 52, 14, 3, 3, 'F');
-      doc.setTextColor(255, 255, 255); doc.setFontSize(8); doc.setFont('helvetica', 'bold');
-      doc.text(submission.service_type.toUpperCase(), W - 40, 24.5, { align: 'center' });
-    }
-
-    // ── Metadata block ──
-    doc.setFillColor(...lightgrey); doc.rect(0, 42, W, 28, 'F');
-    const meta = [
-      ['ASSET', submission.asset || '—'], ['DATE', submission.date || '—'],
-      ['TECHNICIAN', submission.technician || '—'], ['SERVICE TYPE', submission.service_type || '—'],
-      ['HOURS / ODO', String(submission.odometer || '—')], ['TEMPLATE', (templates.find(t => t.id === submission.template_id)?.name) || '—'],
-    ];
-    meta.forEach(([k, v], i) => {
-      const x = 14 + (i % 3) * 62, my = 50 + Math.floor(i / 3) * 12;
-      doc.setFont('helvetica', 'bold'); doc.setFontSize(8); doc.setTextColor(...grey); doc.text(k, x, my);
-      doc.setFont('helvetica', 'normal'); doc.setTextColor(...navy); doc.text(String(v), x, my + 5);
-    });
-
-    let y = 76;
+    doc.setFillColor(13, 21, 21); doc.rect(0, 0, 210, 297, 'F');
+    doc.setTextColor(0, 194, 224); doc.setFontSize(20); doc.setFont('helvetica', 'bold');
+    doc.text('MECH IQ - SERVICE SHEET', 14, 20);
+    doc.setTextColor(160, 176, 176); doc.setFontSize(9); doc.setFont('helvetica', 'normal');
+    doc.text('Asset: ' + submission.asset + '   Technician: ' + submission.technician + '   Date: ' + submission.date, 14, 30);
+    doc.text('Service: ' + (submission.service_type || '-') + '   Odometer/Hrs: ' + (submission.odometer || '-'), 14, 36);
     const template = templates.find(t => t.id === submission.template_id);
-    if (template?.sections) {
+    let y = 45;
+    if (template && template.sections) {
       template.sections.forEach((section, si) => {
-        if (y > 255) { doc.addPage(); doc.setFillColor(...blue); doc.rect(0, 0, W, 3, 'F'); y = 14; }
-        doc.setFillColor(...midgrey); doc.rect(0, y - 4, W, 12, 'F');
-        doc.setFillColor(...blue); doc.rect(0, y - 4, 3, 12, 'F');
-        doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor(...navy);
-        doc.text(section.title.toUpperCase(), 8, y + 3.5); y += 12;
+        doc.setTextColor(0, 194, 224); doc.setFontSize(11); doc.setFont('helvetica', 'bold');
+        doc.text(section.title.toUpperCase(), 14, y); y += 6;
         const rows = section.items.map(item => {
-          const label = typeof item === 'string' ? item : (item.label || '');
+          const label = item.label || item;
           const key = si + '_' + label;
-          const v = submission.responses?.[key];
-          return [label, formatValue((item.type || 'check'), v), (v && v.comment) || ''];
+          const v = submission.responses && submission.responses[key];
+          return [label, formatValue(item.type || 'check', v), (v && v.comment) || ''];
         });
-        autoTable(doc, {
-          startY: y, head: [['Item', 'Result', 'Comment']], body: rows, theme: 'grid',
-          headStyles: { fillColor: navy, textColor: white, fontSize: 8, fontStyle: 'bold', cellPadding: 4 },
-          bodyStyles: { fillColor: white, textColor: navy, fontSize: 8, cellPadding: 3.5 },
-          alternateRowStyles: { fillColor: lightgrey },
-          columnStyles: { 0: { cellWidth: 90 }, 1: { cellWidth: 30, halign: 'center' }, 2: { cellWidth: 'auto' } },
-          styles: { lineColor: midgrey, lineWidth: 0.3, overflow: 'linebreak' },
-        });
+        autoTable(doc, { startY: y, head: [['Item', 'Value', 'Comment']], body: rows, theme: 'plain', headStyles: { fillColor: [26, 47, 47], textColor: [160, 176, 176], fontSize: 8 }, bodyStyles: { fillColor: [13, 21, 21], textColor: [255, 255, 255], fontSize: 8 }, styles: { lineColor: [26, 47, 47], lineWidth: 0.1 } });
         y = doc.lastAutoTable.finalY + 8;
       });
     }
-
-    // ── Parts used ──
-    const usedParts = (submission.parts || []).filter(p => p.name);
-    if (usedParts.length > 0) {
-      if (y > 250) { doc.addPage(); doc.setFillColor(...blue); doc.rect(0, 0, W, 3, 'F'); y = 14; }
-      doc.setFillColor(...midgrey); doc.rect(0, y - 4, W, 12, 'F');
-      doc.setFillColor(245, 158, 11); doc.rect(0, y - 4, 3, 12, 'F');
-      doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor(...navy);
-      doc.text('PARTS USED', 8, y + 3.5); y += 12;
-      const partTotal = usedParts.reduce((s, p) => s + (parseFloat(p.qty||0) * parseFloat(p.cost||0)), 0);
-      autoTable(doc, {
-        startY: y, head: [['Part / Description', 'Qty', 'Unit Cost', 'Total']],
-        body: [...usedParts.map(p => [p.name, String(p.qty||'—'), p.cost ? '$' + p.cost : '—', p.cost ? '$' + (parseFloat(p.qty||0)*parseFloat(p.cost||0)).toFixed(2) : '—']),
-               ['', '', 'TOTAL', '$' + partTotal.toFixed(2)]],
-        theme: 'grid',
-        headStyles: { fillColor: navy, textColor: white, fontSize: 8, fontStyle: 'bold', cellPadding: 4 },
-        bodyStyles: { fillColor: white, textColor: navy, fontSize: 8, cellPadding: 3.5 },
-        alternateRowStyles: { fillColor: lightgrey },
-        columnStyles: { 0: { cellWidth: 'auto' }, 1: { cellWidth: 22, halign: 'center' }, 2: { cellWidth: 30, halign: 'right' }, 3: { cellWidth: 30, halign: 'right' } },
-        styles: { lineColor: midgrey, lineWidth: 0.3 },
-      });
+    if (submission.parts && submission.parts.filter(p => p.name).length > 0) {
+      doc.setTextColor(0, 194, 224); doc.setFontSize(11); doc.setFont('helvetica', 'bold');
+      doc.text('PARTS USED', 14, y); y += 6;
+      autoTable(doc, { startY: y, head: [['Part', 'Qty', 'Unit Cost', 'Total']], body: submission.parts.filter(p => p.name).map(p => [p.name, p.qty, '$' + p.cost, '$' + (parseFloat(p.qty || 0) * parseFloat(p.cost || 0)).toFixed(2)]), theme: 'plain', headStyles: { fillColor: [26, 47, 47], textColor: [160, 176, 176], fontSize: 8 }, bodyStyles: { fillColor: [13, 21, 21], textColor: [255, 255, 255], fontSize: 8 }, styles: { lineColor: [26, 47, 47], lineWidth: 0.1 } });
       y = doc.lastAutoTable.finalY + 8;
     }
-
-    // ── Labour ──
-    const usedLabour = (submission.labour || []).filter(l => l.description);
-    if (usedLabour.length > 0) {
-      if (y > 250) { doc.addPage(); doc.setFillColor(...blue); doc.rect(0, 0, W, 3, 'F'); y = 14; }
-      doc.setFillColor(...midgrey); doc.rect(0, y - 4, W, 12, 'F');
-      doc.setFillColor(...green); doc.rect(0, y - 4, 3, 12, 'F');
-      doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor(...navy);
-      doc.text('LABOUR', 8, y + 3.5); y += 12;
-      const labourTotal = usedLabour.reduce((s, l) => s + parseFloat(l.hours||0), 0);
-      autoTable(doc, {
-        startY: y, head: [['Task / Description', 'Hours']],
-        body: [...usedLabour.map(l => [l.description, l.hours + 'h']),
-               ['TOTAL', labourTotal.toFixed(1) + 'h']],
-        theme: 'grid',
-        headStyles: { fillColor: navy, textColor: white, fontSize: 8, fontStyle: 'bold', cellPadding: 4 },
-        bodyStyles: { fillColor: white, textColor: navy, fontSize: 8, cellPadding: 3.5 },
-        alternateRowStyles: { fillColor: lightgrey },
-        columnStyles: { 0: { cellWidth: 'auto' }, 1: { cellWidth: 30, halign: 'center' } },
-        styles: { lineColor: midgrey, lineWidth: 0.3 },
-      });
+    if (submission.labour && submission.labour.filter(l => l.description).length > 0) {
+      doc.setTextColor(0, 194, 224); doc.setFontSize(11); doc.setFont('helvetica', 'bold');
+      doc.text('LABOUR', 14, y); y += 6;
+      autoTable(doc, { startY: y, head: [['Task', 'Hours']], body: submission.labour.filter(l => l.description).map(l => [l.description, l.hours + 'h']), theme: 'plain', headStyles: { fillColor: [26, 47, 47], textColor: [160, 176, 176], fontSize: 8 }, bodyStyles: { fillColor: [13, 21, 21], textColor: [255, 255, 255], fontSize: 8 }, styles: { lineColor: [26, 47, 47], lineWidth: 0.1 } });
     }
-
-    // ── Footer ──
-    const pages = doc.internal.getNumberOfPages();
-    for (let p = 1; p <= pages; p++) {
-      doc.setPage(p);
-      doc.setFillColor(...lightgrey); doc.rect(0, 285, W, 12, 'F');
-      doc.setFont('helvetica', 'normal'); doc.setFontSize(7); doc.setTextColor(...grey);
-      doc.text('Generated by MechIQ · mechiq.com.au · ' + new Date().toLocaleDateString('en-AU'), 14, 292);
-      doc.text('Page ' + p + ' of ' + pages, W - 14, 292, { align: 'right' });
-    }
+    doc.setTextColor(160, 176, 176); doc.setFontSize(8);
+    doc.text('Generated by Mech IQ - mechiq.coastlinemm.com.au', 14, 285);
     doc.save('MechIQ-ServiceSheet-' + submission.asset + '-' + submission.date + '.pdf');
   };
 
@@ -1591,10 +1451,10 @@ function ServiceSheetsTab({ userRole }) {
           {/* Scan / Photo buttons */}
           <div style={{ display:'flex', gap:8, marginBottom:12, flexWrap:'wrap' }}>
             <button onClick={() => setShowPartQR(true)} style={{ padding:'7px 14px', background:'var(--surface-2)', border:'1px solid var(--border)', borderRadius:8, cursor:'pointer', fontSize:12, fontWeight:600, color:'var(--text-secondary)', display:'flex', alignItems:'center', gap:6 }}>
-              📷 Scan QR Code
+               Scan QR Code
             </button>
             <button onClick={() => setShowPartScan(true)} style={{ padding:'7px 14px', background:'var(--surface-2)', border:'1px solid var(--border)', borderRadius:8, cursor:'pointer', fontSize:12, fontWeight:600, color:'var(--text-secondary)', display:'flex', alignItems:'center', gap:6 }}>
-              🤖 AI Photo Scan
+               AI Photo Scan
             </button>
             <select onChange={e => {
               if (!e.target.value) return;
@@ -1620,7 +1480,7 @@ function ServiceSheetsTab({ userRole }) {
                   <td>
                     <div style={{ display:'flex', alignItems:'center', gap:6 }}>
                       <input value={part.name} onChange={e => { const p = [...form.parts]; p[i] = { ...p[i], name: e.target.value, part_id: null }; setForm({ ...form, parts: p }); }} placeholder="Part name" style={{ background: 'var(--surface-2)', color: 'var(--text-primary)', border: '1px solid var(--border)', padding: '5px 8px', borderRadius: '4px', width: '100%' }} />
-                      {part.part_id && <span title="Linked to inventory" style={{ fontSize:14, flexShrink:0 }}>🔗</span>}
+                      {part.part_id && <span title="Linked to inventory" style={{ fontSize:14, flexShrink:0 }}></span>}
                     </div>
                   </td>
                   <td><input type="number" value={part.qty} onChange={e => { const p = [...form.parts]; p[i] = { ...p[i], qty: e.target.value }; setForm({ ...form, parts: p }); }} placeholder="1" style={{ background: 'var(--surface-2)', color: 'var(--text-primary)', border: '1px solid var(--border)', padding: '5px 8px', borderRadius: '4px', width: '60px' }} /></td>
@@ -1638,8 +1498,8 @@ function ServiceSheetsTab({ userRole }) {
             <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.6)', zIndex:400, display:'flex', alignItems:'center', justifyContent:'center', padding:16 }}>
               <div style={{ background:'var(--bg)', borderRadius:16, width:'100%', maxWidth:420, padding:24, boxShadow:'0 20px 60px rgba(0,0,0,0.4)' }}>
                 <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:16 }}>
-                  <div style={{ fontSize:16, fontWeight:800, color:'var(--text-primary)' }}>📷 Scan Part QR Code</div>
-                  <button onClick={() => { setShowPartQR(false); setScanResult(null); }} style={{ background:'none', border:'none', cursor:'pointer', fontSize:20, color:'var(--text-muted)' }}>✕</button>
+                  <div style={{ fontSize:16, fontWeight:800, color:'var(--text-primary)' }}> Scan Part QR Code</div>
+                  <button onClick={() => { setShowPartQR(false); setScanResult(null); }} style={{ background:'none', border:'none', cursor:'pointer', fontSize:20, color:'var(--text-muted)' }}></button>
                 </div>
                 {!scanResult ? (
                   <>
@@ -1673,7 +1533,7 @@ function ServiceSheetsTab({ userRole }) {
                     {scanResult.match ? (
                       <div>
                         <div style={{ background:'rgba(34,197,94,0.1)', border:'1px solid rgba(34,197,94,0.3)', borderRadius:10, padding:14, marginBottom:14 }}>
-                          <div style={{ fontSize:11, fontWeight:700, color:'var(--green)', textTransform:'uppercase', marginBottom:4 }}>✓ Part Found</div>
+                          <div style={{ fontSize:11, fontWeight:700, color:'var(--green)', textTransform:'uppercase', marginBottom:4 }}> Part Found</div>
                           <div style={{ fontSize:15, fontWeight:800 }}>{scanResult.match.name}</div>
                           <div style={{ fontSize:12, color:'var(--text-muted)' }}>Stock: {scanResult.match.quantity} {scanResult.match.unit} · ${scanResult.match.unit_cost}</div>
                         </div>
@@ -1713,8 +1573,8 @@ function ServiceSheetsTab({ userRole }) {
             <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.6)', zIndex:400, display:'flex', alignItems:'center', justifyContent:'center', padding:16 }}>
               <div style={{ background:'var(--bg)', borderRadius:16, width:'100%', maxWidth:420, padding:24, boxShadow:'0 20px 60px rgba(0,0,0,0.4)' }}>
                 <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:16 }}>
-                  <div style={{ fontSize:16, fontWeight:800, color:'var(--text-primary)' }}>🤖 AI Part Photo</div>
-                  <button onClick={() => { setShowPartScan(false); setScanResult(null); }} style={{ background:'none', border:'none', cursor:'pointer', fontSize:20, color:'var(--text-muted)' }}>✕</button>
+                  <div style={{ fontSize:16, fontWeight:800, color:'var(--text-primary)' }}> AI Part Photo</div>
+                  <button onClick={() => { setShowPartScan(false); setScanResult(null); }} style={{ background:'none', border:'none', cursor:'pointer', fontSize:20, color:'var(--text-muted)' }}></button>
                 </div>
                 {!scanResult ? (
                   <>
@@ -1757,7 +1617,7 @@ function ServiceSheetsTab({ userRole }) {
                     {scanResult.match ? (
                       <div>
                         <div style={{ background:'rgba(34,197,94,0.1)', border:'1px solid rgba(34,197,94,0.3)', borderRadius:10, padding:12, marginBottom:12 }}>
-                          <div style={{ fontSize:11, fontWeight:700, color:'var(--green)', textTransform:'uppercase', marginBottom:4 }}>✓ Matched in Inventory</div>
+                          <div style={{ fontSize:11, fontWeight:700, color:'var(--green)', textTransform:'uppercase', marginBottom:4 }}> Matched in Inventory</div>
                           <div style={{ fontSize:14, fontWeight:700 }}>{scanResult.match.name}</div>
                           <div style={{ fontSize:12, color:'var(--text-muted)' }}>Stock: {scanResult.match.quantity} · ${scanResult.match.unit_cost}</div>
                         </div>
@@ -1782,7 +1642,7 @@ function ServiceSheetsTab({ userRole }) {
                     ) : (
                       <div>
                         <div style={{ background:'rgba(245,158,11,0.1)', border:'1px solid rgba(245,158,11,0.3)', borderRadius:10, padding:12, marginBottom:12 }}>
-                          <div style={{ fontSize:11, fontWeight:700, color:'var(--amber)', textTransform:'uppercase', marginBottom:4 }}>⚠ Not in inventory</div>
+                          <div style={{ fontSize:11, fontWeight:700, color:'var(--amber)', textTransform:'uppercase', marginBottom:4 }}> Not in inventory</div>
                           <div style={{ fontSize:13, color:'var(--text-secondary)' }}>Add manually instead?</div>
                         </div>
                         <div style={{ display:'flex', gap:8 }}>
@@ -1954,7 +1814,7 @@ function ServiceSheetsTab({ userRole }) {
           <input type="date" value={filters.dateFrom} onChange={e => setFilters(f => ({ ...f, dateFrom: e.target.value }))} style={{ padding: '8px 10px', border: '1px solid #dde2ea', borderRadius: 6, fontSize: 13, color: '#1a2b3c', background: '#f8fafc' }} />
           <input type="date" value={filters.dateTo} onChange={e => setFilters(f => ({ ...f, dateTo: e.target.value }))} style={{ padding: '8px 10px', border: '1px solid #dde2ea', borderRadius: 6, fontSize: 13, color: '#1a2b3c', background: '#f8fafc' }} />
           {(filters.search || filters.asset || filters.dateFrom || filters.dateTo || filters.tech) && (
-            <button onClick={() => setFilters({ search: '', asset: '', dateFrom: '', dateTo: '', tech: '' })} style={{ padding: '8px 12px', background: 'transparent', border: '1px solid #dde2ea', borderRadius: 6, fontSize: 12, color: '#6b7a8d', cursor: 'pointer' }}>✕ Clear</button>
+            <button onClick={() => setFilters({ search: '', asset: '', dateFrom: '', dateTo: '', tech: '' })} style={{ padding: '8px 12px', background: 'transparent', border: '1px solid #dde2ea', borderRadius: 6, fontSize: 12, color: '#6b7a8d', cursor: 'pointer' }}> Clear</button>
           )}
         </div>
 
@@ -2030,7 +1890,7 @@ function ServiceSheetsTab({ userRole }) {
       <div className="page-header">
         <h2>Service Sheets</h2>
         <div style={{ display: 'flex', gap: '10px' }}>
-          <button className="btn-primary" onClick={() => { setView('history'); setSelectedIds(new Set()); setFilters({ search: '', asset: '', dateFrom: '', dateTo: '', tech: '' }); }}>📋 Records</button>
+          <button className="btn-primary" onClick={() => { setView('history'); setSelectedIds(new Set()); setFilters({ search: '', asset: '', dateFrom: '', dateTo: '', tech: '' }); }}> Records</button>
           {userRole && userRole.role !== 'technician' && (
             <>
               <button className="btn-primary" style={{ background: 'linear-gradient(135deg, #00c2e0, #0090a8)', color: '#000' }} onClick={() => setShowAI(true)}>Generate with AI</button>
@@ -2054,7 +1914,7 @@ function ServiceSheetsTab({ userRole }) {
             {/* Context banner */}
             {contextAssetName && (
               <div style={{ background:'var(--accent-light)', border:'1px solid rgba(0,194,224,0.3)', borderRadius:10, padding:'12px 16px', marginBottom:16, display:'flex', alignItems:'center', gap:10 }}>
-                <span style={{ fontSize:16 }}>🔧</span>
+                <span style={{ fontSize:16 }}></span>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize:13, fontWeight:700, color:'var(--accent)' }}>
                     Service sheet for: {contextAssetName}
@@ -2197,19 +2057,19 @@ function ServiceSheetsTab({ userRole }) {
                                   {isAdmin && (
                                     <button onClick={() => setSsAssignModal({ ...t })}
                                       style={{ padding:'5px 12px', background:'var(--accent-light)', color:'var(--accent)', border:'1px solid rgba(0,194,224,0.3)', borderRadius:6, fontSize:11, fontWeight:700, cursor:'pointer', whiteSpace:'nowrap' }}>
-                                      📌 Assign
+                                       Assign
                                     </button>
                                   )}
                                   {isAdmin && (
                                     <button onClick={() => { setBuilder({ name:t.name, description:t.description||'', service_type:t.service_type||'', sections:t.sections||[], parts_template:t.parts_template||[], labour_items:t.labour_items||[], asset_ids:t.asset_ids||[] }); setSsEditingTemplateId(t.id); setAiPreview(null); setView('builder'); }}
                                       style={{ padding:'5px 12px', background:'var(--surface-2)', color:'var(--text-secondary)', border:'1px solid var(--border)', borderRadius:6, fontSize:11, fontWeight:700, cursor:'pointer', whiteSpace:'nowrap' }}>
-                                      ✏️ Edit
+                                       Edit
                                     </button>
                                   )}
                                   {isAdmin && (
                                     <button onClick={e => deleteTemplate(t.id, e)}
                                       style={{ padding:'5px 10px', background:'var(--red-bg)', color:'var(--red)', border:'1px solid var(--red-border)', borderRadius:6, fontSize:11, fontWeight:700, cursor:'pointer' }}>
-                                      🗑
+                                      
                                     </button>
                                   )}
                                 </div>
@@ -2298,7 +2158,7 @@ Use types: check, photo, number, text. Include 4-8 sections with 4-8 items each.
         catch { showToast('AI returned invalid JSON — try again', 'error'); setGenerating(g => ({ ...g, [asset.id]: null })); return; }
         const { error } = await supabase.from('form_templates').insert([{ ...parsed, company_id: userRole.company_id, asset_ids: [asset.id] }]);
         if (error) showToast('Failed to save: ' + error.message, 'error');
-        else { showToast(`✓ Prestart generated and assigned to ${asset.name}`); await load(); setExpanded(e => ({ ...e, [asset.id]: true })); }
+        else { showToast(` Prestart generated and assigned to ${asset.name}`); await load(); setExpanded(e => ({ ...e, [asset.id]: true })); }
       } catch (err) { showToast('Generation failed: ' + err.message, 'error'); }
       setGenerating(g => ({ ...g, [asset.id]: null }));
       return;
@@ -2347,7 +2207,7 @@ Return ONLY valid JSON — no markdown, no explanation:
         catch { showToast(`${sched.service_type}: invalid JSON — skipping`, 'error'); continue; }
         const { error } = await supabase.from('service_sheet_templates').insert([{ ...parsed, company_id: userRole.company_id, asset_ids: [asset.id] }]);
         if (error) { showToast(`Failed to save ${sched.service_type}: ` + error.message, 'error'); }
-        else { generated++; showToast(`✓ ${generated}/${schedules.length} — ${sched.service_type} created`); }
+        else { generated++; showToast(` ${generated}/${schedules.length} — ${sched.service_type} created`); }
       } catch (err) { showToast(`${sched.service_type} failed: ` + err.message, 'error'); }
     }
 
@@ -2431,10 +2291,10 @@ Return ONLY valid JSON — no markdown, no explanation:
                   {/* Prestarts */}
                   <div style={{ border:'1px solid var(--border)', borderRadius:10, padding:14 }}>
                     <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:12 }}>
-                      <div style={{ fontSize:13, fontWeight:800, color:'var(--text-primary)' }}>✅ Prestart Checklists</div>
+                      <div style={{ fontSize:13, fontWeight:800, color:'var(--text-primary)' }}> Prestart Checklists</div>
                       <button onClick={() => autoGenerate(asset, 'prestart')} disabled={!!genState}
                         style={{ padding:'6px 14px', background: genState==='prestart'?'#a0b0b0':'linear-gradient(135deg,var(--accent),#0090a8)', color:'#fff', border:'none', borderRadius:7, fontSize:11, fontWeight:700, cursor: genState?'not-allowed':'pointer', whiteSpace:'nowrap' }}>
-                        {genState==='prestart' ? '⏳ Generating…' : '✨ Auto-Generate'}
+                        {genState==='prestart' ? '⏳ Generating…' : ' Auto-Generate'}
                       </button>
                     </div>
                     {assignedPS.length === 0 ? (
@@ -2456,10 +2316,10 @@ Return ONLY valid JSON — no markdown, no explanation:
                   {/* Service Sheets */}
                   <div style={{ border:'1px solid var(--border)', borderRadius:10, padding:14 }}>
                     <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:12 }}>
-                      <div style={{ fontSize:13, fontWeight:800, color:'var(--text-primary)' }}>📄 Service Sheet Templates</div>
+                      <div style={{ fontSize:13, fontWeight:800, color:'var(--text-primary)' }}> Service Sheet Templates</div>
                       <button onClick={() => autoGenerate(asset, 'ss')} disabled={!!genState}
                         style={{ padding:'6px 14px', background: genState==='ss'?'#a0b0b0':'linear-gradient(135deg,#6366f1,#4f46e5)', color:'#fff', border:'none', borderRadius:7, fontSize:11, fontWeight:700, cursor: genState?'not-allowed':'pointer', whiteSpace:'nowrap' }}>
-                        {genState==='ss' ? '⏳ Generating…' : '✨ Auto-Generate'}
+                        {genState==='ss' ? '⏳ Generating…' : ' Auto-Generate'}
                       </button>
                     </div>
                     {assignedSS.length === 0 ? (
@@ -2492,13 +2352,11 @@ function Forms({ userRole, initialTab, prestartAsset, prestartAssetId, prestartA
   const [activeTab, setActiveTab] = useState(initialTab || 'prestarts');
   useEffect(() => { if (initialTab) setActiveTab(initialTab); }, [initialTab]);
 
-  const isAdmin = ['admin', 'master', 'supervisor'].includes(userRole?.role);
   const TABS = [
     { id: 'prestarts',     label: 'Prestarts'        },
     { id: 'service-sheets',label: 'Service Sheets'   },
-    { id: 'assets',        label: '🚛 Assets'         },
+    { id: 'assets',        label: ' Assets'         },
     { id: 'paper_scan',    label: 'Scan Paper Form'  },
-    ...(isAdmin ? [{ id: 'form_editor', label: '✏️ Form Editor' }] : []),
   ];
 
   const tabStyle = (id) => ({
@@ -2527,7 +2385,6 @@ function Forms({ userRole, initialTab, prestartAsset, prestartAssetId, prestartA
       {activeTab === 'service-sheets'&& <ServiceSheetsTab userRole={userRole} />}
       {activeTab === 'assets'        && <AssetFormsTab userRole={userRole} />}
       {activeTab === 'paper_scan'    && <PaperScan userRole={userRole} />}
-      {activeTab === 'form_editor'    && <FormEditorTab userRole={userRole} />}
     </div>
   );
 }

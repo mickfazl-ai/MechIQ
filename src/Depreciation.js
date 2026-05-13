@@ -280,12 +280,12 @@ Respond ONLY with a valid JSON object, no markdown, no explanation:
 
       }));
       if (parsed.marketNote) {
-        let insight = "📊 " + parsed.marketNote;
-        if (parsed.purchasePriceNote) insight = "💰 " + parsed.purchasePriceNote + "\n\n" + insight;
+        let insight = " " + parsed.marketNote;
+        if (parsed.purchasePriceNote) insight = " " + parsed.purchasePriceNote + "\n\n" + insight;
         if (parsed.currentMarketValue) {
           const diff = parsed.currentMarketValue - Number(inputs.purchasePrice);
           const diffStr = diff >= 0 ? `+$${Math.abs(diff).toLocaleString()}` : `-$${Math.abs(diff).toLocaleString()}`;
-          insight = `📈 Current market value: $${parsed.currentMarketValue.toLocaleString()} AUD (${diffStr} vs purchase price)\n\n` + insight;
+          insight = ` Current market value: $${parsed.currentMarketValue.toLocaleString()} AUD (${diffStr} vs purchase price)\n\n` + insight;
         }
         setAiInsight(insight);
       }
@@ -518,7 +518,7 @@ Be specific with dollar amounts where possible. Max 200 words.`;
             >
               {aiPredicting
                 ? <><span style={{ display: "inline-block", width: 10, height: 10, border: "2px solid #4a6a6a", borderTopColor: CYAN, borderRadius: "50%", animation: "spin 0.8s linear infinite" }} /> Predicting...</>
-                : "✦ AI Predict"}
+                : " AI Predict"}
             </button>
           </div>
         </div>
@@ -641,7 +641,7 @@ Be specific with dollar amounts where possible. Max 200 words.`;
           onClick={() => setShowHistory(h => !h)}
           style={{ padding: "13px 20px", fontSize: 13, fontWeight: 700, fontFamily: "Barlow, sans-serif", background: "transparent", color: history.length > 0 ? CYAN : "#4a6a6a", border: `1px solid ${history.length > 0 ? CYAN : BORDER}`, borderRadius: 8, cursor: "pointer", letterSpacing: "0.05em" }}
         >
-          {showHistory ? "Hide History" : `📋 History (${history.length})`}
+          {showHistory ? "Hide History" : ` History (${history.length})`}
         </button>
         {calculated && results && (
           <button
@@ -666,7 +666,7 @@ Be specific with dollar amounts where possible. Max 200 words.`;
             }}
             style={{ padding: "13px 20px", fontSize: 13, fontWeight: 700, fontFamily: "Barlow, sans-serif", background: GREEN, color: "#fff", border: `1px solid ${GREEN}`, borderRadius: 8, cursor: "pointer", letterSpacing: "0.05em" }}
           >
-            💾 Save PDF
+             Save PDF
           </button>
         )}
       </div>
@@ -691,7 +691,7 @@ Be specific with dollar amounts where possible. Max 200 words.`;
                   <div style={{ display: "flex", gap: 8, marginLeft: 16 }}>
                     <button onClick={() => loadFromHistory(entry)} style={{ padding: "6px 12px", fontSize: 11, fontWeight: 700, background: "#e6f4ff", border: "1px solid #00ABE4", color: CYAN, borderRadius: 6, cursor: "pointer", fontFamily: "Barlow, sans-serif" }}>Load</button>
                     <button onClick={() => exportPDF(entry)} style={{ padding: "6px 12px", fontSize: 11, fontWeight: 700, background: "#f0faf5", border: "1px solid #16a34a", color: GREEN, borderRadius: 6, cursor: "pointer", fontFamily: "Barlow, sans-serif" }}>PDF</button>
-                    <button onClick={() => deleteHistoryEntry(entry.id)} style={{ padding: "6px 12px", fontSize: 11, fontWeight: 700, background: "#fff1f1", border: "1px solid #fca5a5", color: RED, borderRadius: 6, cursor: "pointer", fontFamily: "Barlow, sans-serif" }}>✕</button>
+                    <button onClick={() => deleteHistoryEntry(entry.id)} style={{ padding: "6px 12px", fontSize: 11, fontWeight: 700, background: "#fff1f1", border: "1px solid #fca5a5", color: RED, borderRadius: 6, cursor: "pointer", fontFamily: "Barlow, sans-serif" }}></button>
                   </div>
                 </div>
               ))}
