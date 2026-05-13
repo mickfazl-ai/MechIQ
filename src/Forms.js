@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { pythonAIFetch } from './pythonApi';
+import FormEditorTab from './FormEditor';
 import { supabase } from './supabase';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -7,16 +7,15 @@ import * as XLSX from 'xlsx';
 import PaperScan from './PaperScan';
 
 // ─── SHARED AI HELPER ─────────────────────────────────────────────────────────
-// All AI calls route through Python service (Railway) via pythonAIFetch.
+// All AI calls route through /api/ai-insight (Vercel serverless proxy).
 // The Anthropic API key lives server-side only — never exposed to the browser.
 // Used by: AIGeneratorModal (prestart + service sheets) and Depreciation.js
 async function callAI(messages, maxTokens = 2000) {
-  // ── Routes to Python service via pythonAIFetch ─────────────────────────
   const { data: { session } } = await supabase.auth.getSession();
   const token = session?.access_token;
   if (!token) throw new Error('Not authenticated');
 
-  const response = await pythonAIFetch({
+  const response = await fetch('/api/ai-insight', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -716,27 +715,88 @@ function PrestartTab({ userRole, prestartAsset, prestartAssetId, prestartAssetNu
 
   const exportPDF = (submission) => {
     const doc = new jsPDF();
-    doc.setFillColor(13, 21, 21); doc.rect(0, 0, 210, 297, 'F');
-    doc.setTextColor(0, 194, 224); doc.setFontSize(20); doc.setFont('helvetica', 'bold');
-    doc.text('MECH IQ - PRESTART CHECKLIST', 14, 20);
-    doc.setTextColor(160, 176, 176); doc.setFontSize(9); doc.setFont('helvetica', 'normal');
-    doc.text('Asset: ' + submission.asset + '   Operator: ' + submission.operator_name + '   Date: ' + submission.date, 14, 30);
-    doc.text('Site: ' + (submission.site_area || '-') + '   Hrs: ' + (submission.hrs_start || '-'), 14, 36);
+    const W = 210, blue = [14, 165, 233], navy = [15, 30, 55], grey = [100, 116, 139], lightgrey = [241, 245, 249], midgrey = [226, 232, 240], white = [255, 255, 255], green = [34, 197, 94], red = [239, 68, 68];
+
+    // ── Header accent bar ──
+    doc.setFillColor(...blue); doc.rect(0, 0, W, 10, 'F');
+
+    // ── Logo / title block ──
+    doc.setFillColor(...navy); doc.rect(0, 10, W, 32, 'F');
+    doc.setTextColor(255, 255, 255); doc.setFontSize(18); doc.setFont('helvetica', 'bold');
+    doc.text('MechIQ', 14, 26);
+    doc.setFontSize(9); doc.setFont('helvetica', 'normal');
+    doc.setTextColor(160, 200, 220);
+    doc.text('PRESTART CHECKLIST', 14, 34);
+    // Status badge
+    const hasDefects = submission.defects_found;
+    doc.setFillColor(...(hasDefects ? red : green));
+    doc.roundedRect(W - 52, 16, 38, 14, 3, 3, 'F');
+    doc.setTextColor(255, 255, 255); doc.setFontSize(8); doc.setFont('helvetica', 'bold');
+    doc.text(hasDefects ? '⚠ DEFECTS' : '✓ CLEAR', W - 33, 24.5, { align: 'center' });
+
+    // ── Metadata block ──
+    let y = 52;
+    doc.setFillColor(...lightgrey); doc.rect(0, 42, W, 28, 'F');
+    doc.setFontSize(8); doc.setFont('helvetica', 'bold'); doc.setTextColor(...grey);
+    const meta = [
+      ['ASSET', submission.asset || '—'], ['DATE', submission.date || '—'],
+      ['OPERATOR', submission.operator_name || '—'], ['SITE', submission.site_area || '—'],
+      ['HOURS', String(submission.hrs_start || '—')], ['TEMPLATE', (templates.find(t => t.id === submission.template_id)?.name) || '—'],
+    ];
+    meta.forEach(([k, v], i) => {
+      const x = 14 + (i % 3) * 62, my = 50 + Math.floor(i / 3) * 12;
+      doc.setFont('helvetica', 'bold'); doc.setTextColor(...grey); doc.text(k, x, my);
+      doc.setFont('helvetica', 'normal'); doc.setTextColor(...navy); doc.text(v, x, my + 5);
+    });
+
+    y = 76;
     const template = templates.find(t => t.id === submission.template_id);
-    let y = 45;
     if (template) {
       template.sections.forEach((section, si) => {
-        doc.setTextColor(0, 194, 224); doc.setFontSize(11); doc.setFont('helvetica', 'bold');
-        doc.text(section.title.toUpperCase(), 14, y); y += 6;
+        if (y > 260) { doc.addPage(); doc.setFillColor(...blue); doc.rect(0, 0, W, 3, 'F'); y = 14; }
+        // Section header
+        doc.setFillColor(...midgrey); doc.rect(0, y - 4, W, 12, 'F');
+        doc.setFillColor(...blue); doc.rect(0, y - 4, 3, 12, 'F');
+        doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor(...navy);
+        doc.text(section.title.toUpperCase(), 8, y + 3.5); y += 12;
         const rows = section.items.map(item => {
-          const label = item.label || item;
+          const label = typeof item === 'string' ? item : (item.label || '');
           const key = si + '_' + label;
-          const v = submission.responses && submission.responses[key];
-          return [label, formatValue(item.type || 'check', v), (v && v.comment) || ''];
+          const v = submission.responses?.[key];
+          const val = formatValue((item.type || 'check'), v);
+          const comment = (v && v.comment) || '';
+          return [label, val, comment];
         });
-        autoTable(doc, { startY: y, head: [['Item', 'Value', 'Comment']], body: rows, theme: 'plain', headStyles: { fillColor: [26, 47, 47], textColor: [160, 176, 176], fontSize: 8 }, bodyStyles: { fillColor: [13, 21, 21], textColor: [255, 255, 255], fontSize: 8 }, styles: { lineColor: [26, 47, 47], lineWidth: 0.1 } });
+        autoTable(doc, {
+          startY: y,
+          head: [['Item', 'Result', 'Comment']],
+          body: rows,
+          theme: 'grid',
+          headStyles: { fillColor: navy, textColor: white, fontSize: 8, fontStyle: 'bold', cellPadding: 4 },
+          bodyStyles: { fillColor: white, textColor: navy, fontSize: 8, cellPadding: 3.5 },
+          alternateRowStyles: { fillColor: lightgrey },
+          columnStyles: { 0: { cellWidth: 90 }, 1: { cellWidth: 30, halign: 'center' }, 2: { cellWidth: 'auto' } },
+          styles: { lineColor: midgrey, lineWidth: 0.3, overflow: 'linebreak' },
+          didDrawCell: (data) => {
+            if (data.section === 'body' && data.column.index === 1) {
+              const val = (data.cell.text[0] || '').toLowerCase();
+              if (val === '✓' || val === 'pass' || val === 'ok') { doc.setTextColor(...green); }
+              else if (val === '✗' || val === 'fail') { doc.setTextColor(...red); }
+              else { doc.setTextColor(...navy); }
+            }
+          },
+        });
         y = doc.lastAutoTable.finalY + 8;
       });
+    }
+    // ── Footer ──
+    const pages = doc.internal.getNumberOfPages();
+    for (let p = 1; p <= pages; p++) {
+      doc.setPage(p);
+      doc.setFillColor(...lightgrey); doc.rect(0, 285, W, 12, 'F');
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(7); doc.setTextColor(...grey);
+      doc.text('Generated by MechIQ · mechiq.com.au · ' + new Date().toLocaleDateString('en-AU'), 14, 292);
+      doc.text('Page ' + p + ' of ' + pages, W - 14, 292, { align: 'right' });
     }
     doc.save('MechIQ-Prestart-' + submission.asset + '-' + submission.date + '.pdf');
   };
@@ -1342,41 +1402,119 @@ function ServiceSheetsTab({ userRole }) {
 
   const exportServicePDF = (submission) => {
     const doc = new jsPDF();
-    doc.setFillColor(13, 21, 21); doc.rect(0, 0, 210, 297, 'F');
-    doc.setTextColor(0, 194, 224); doc.setFontSize(20); doc.setFont('helvetica', 'bold');
-    doc.text('MECH IQ - SERVICE SHEET', 14, 20);
-    doc.setTextColor(160, 176, 176); doc.setFontSize(9); doc.setFont('helvetica', 'normal');
-    doc.text('Asset: ' + submission.asset + '   Technician: ' + submission.technician + '   Date: ' + submission.date, 14, 30);
-    doc.text('Service: ' + (submission.service_type || '-') + '   Odometer/Hrs: ' + (submission.odometer || '-'), 14, 36);
+    const W = 210, blue = [14, 165, 233], navy = [15, 30, 55], grey = [100, 116, 139], lightgrey = [241, 245, 249], midgrey = [226, 232, 240], white = [255, 255, 255], green = [34, 197, 94], amber = [245, 158, 11];
+
+    // ── Header accent bar ──
+    doc.setFillColor(...blue); doc.rect(0, 0, W, 10, 'F');
+
+    // ── Logo / title block ──
+    doc.setFillColor(...navy); doc.rect(0, 10, W, 32, 'F');
+    doc.setTextColor(255, 255, 255); doc.setFontSize(18); doc.setFont('helvetica', 'bold');
+    doc.text('MechIQ', 14, 26);
+    doc.setFontSize(9); doc.setFont('helvetica', 'normal'); doc.setTextColor(160, 200, 220);
+    doc.text('SERVICE SHEET', 14, 34);
+    // Service type badge
+    if (submission.service_type) {
+      doc.setFillColor(...amber);
+      doc.roundedRect(W - 66, 16, 52, 14, 3, 3, 'F');
+      doc.setTextColor(255, 255, 255); doc.setFontSize(8); doc.setFont('helvetica', 'bold');
+      doc.text(submission.service_type.toUpperCase(), W - 40, 24.5, { align: 'center' });
+    }
+
+    // ── Metadata block ──
+    doc.setFillColor(...lightgrey); doc.rect(0, 42, W, 28, 'F');
+    const meta = [
+      ['ASSET', submission.asset || '—'], ['DATE', submission.date || '—'],
+      ['TECHNICIAN', submission.technician || '—'], ['SERVICE TYPE', submission.service_type || '—'],
+      ['HOURS / ODO', String(submission.odometer || '—')], ['TEMPLATE', (templates.find(t => t.id === submission.template_id)?.name) || '—'],
+    ];
+    meta.forEach(([k, v], i) => {
+      const x = 14 + (i % 3) * 62, my = 50 + Math.floor(i / 3) * 12;
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(8); doc.setTextColor(...grey); doc.text(k, x, my);
+      doc.setFont('helvetica', 'normal'); doc.setTextColor(...navy); doc.text(String(v), x, my + 5);
+    });
+
+    let y = 76;
     const template = templates.find(t => t.id === submission.template_id);
-    let y = 45;
-    if (template && template.sections) {
+    if (template?.sections) {
       template.sections.forEach((section, si) => {
-        doc.setTextColor(0, 194, 224); doc.setFontSize(11); doc.setFont('helvetica', 'bold');
-        doc.text(section.title.toUpperCase(), 14, y); y += 6;
+        if (y > 255) { doc.addPage(); doc.setFillColor(...blue); doc.rect(0, 0, W, 3, 'F'); y = 14; }
+        doc.setFillColor(...midgrey); doc.rect(0, y - 4, W, 12, 'F');
+        doc.setFillColor(...blue); doc.rect(0, y - 4, 3, 12, 'F');
+        doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor(...navy);
+        doc.text(section.title.toUpperCase(), 8, y + 3.5); y += 12;
         const rows = section.items.map(item => {
-          const label = item.label || item;
+          const label = typeof item === 'string' ? item : (item.label || '');
           const key = si + '_' + label;
-          const v = submission.responses && submission.responses[key];
-          return [label, formatValue(item.type || 'check', v), (v && v.comment) || ''];
+          const v = submission.responses?.[key];
+          return [label, formatValue((item.type || 'check'), v), (v && v.comment) || ''];
         });
-        autoTable(doc, { startY: y, head: [['Item', 'Value', 'Comment']], body: rows, theme: 'plain', headStyles: { fillColor: [26, 47, 47], textColor: [160, 176, 176], fontSize: 8 }, bodyStyles: { fillColor: [13, 21, 21], textColor: [255, 255, 255], fontSize: 8 }, styles: { lineColor: [26, 47, 47], lineWidth: 0.1 } });
+        autoTable(doc, {
+          startY: y, head: [['Item', 'Result', 'Comment']], body: rows, theme: 'grid',
+          headStyles: { fillColor: navy, textColor: white, fontSize: 8, fontStyle: 'bold', cellPadding: 4 },
+          bodyStyles: { fillColor: white, textColor: navy, fontSize: 8, cellPadding: 3.5 },
+          alternateRowStyles: { fillColor: lightgrey },
+          columnStyles: { 0: { cellWidth: 90 }, 1: { cellWidth: 30, halign: 'center' }, 2: { cellWidth: 'auto' } },
+          styles: { lineColor: midgrey, lineWidth: 0.3, overflow: 'linebreak' },
+        });
         y = doc.lastAutoTable.finalY + 8;
       });
     }
-    if (submission.parts && submission.parts.filter(p => p.name).length > 0) {
-      doc.setTextColor(0, 194, 224); doc.setFontSize(11); doc.setFont('helvetica', 'bold');
-      doc.text('PARTS USED', 14, y); y += 6;
-      autoTable(doc, { startY: y, head: [['Part', 'Qty', 'Unit Cost', 'Total']], body: submission.parts.filter(p => p.name).map(p => [p.name, p.qty, '$' + p.cost, '$' + (parseFloat(p.qty || 0) * parseFloat(p.cost || 0)).toFixed(2)]), theme: 'plain', headStyles: { fillColor: [26, 47, 47], textColor: [160, 176, 176], fontSize: 8 }, bodyStyles: { fillColor: [13, 21, 21], textColor: [255, 255, 255], fontSize: 8 }, styles: { lineColor: [26, 47, 47], lineWidth: 0.1 } });
+
+    // ── Parts used ──
+    const usedParts = (submission.parts || []).filter(p => p.name);
+    if (usedParts.length > 0) {
+      if (y > 250) { doc.addPage(); doc.setFillColor(...blue); doc.rect(0, 0, W, 3, 'F'); y = 14; }
+      doc.setFillColor(...midgrey); doc.rect(0, y - 4, W, 12, 'F');
+      doc.setFillColor(245, 158, 11); doc.rect(0, y - 4, 3, 12, 'F');
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor(...navy);
+      doc.text('PARTS USED', 8, y + 3.5); y += 12;
+      const partTotal = usedParts.reduce((s, p) => s + (parseFloat(p.qty||0) * parseFloat(p.cost||0)), 0);
+      autoTable(doc, {
+        startY: y, head: [['Part / Description', 'Qty', 'Unit Cost', 'Total']],
+        body: [...usedParts.map(p => [p.name, String(p.qty||'—'), p.cost ? '$' + p.cost : '—', p.cost ? '$' + (parseFloat(p.qty||0)*parseFloat(p.cost||0)).toFixed(2) : '—']),
+               ['', '', 'TOTAL', '$' + partTotal.toFixed(2)]],
+        theme: 'grid',
+        headStyles: { fillColor: navy, textColor: white, fontSize: 8, fontStyle: 'bold', cellPadding: 4 },
+        bodyStyles: { fillColor: white, textColor: navy, fontSize: 8, cellPadding: 3.5 },
+        alternateRowStyles: { fillColor: lightgrey },
+        columnStyles: { 0: { cellWidth: 'auto' }, 1: { cellWidth: 22, halign: 'center' }, 2: { cellWidth: 30, halign: 'right' }, 3: { cellWidth: 30, halign: 'right' } },
+        styles: { lineColor: midgrey, lineWidth: 0.3 },
+      });
       y = doc.lastAutoTable.finalY + 8;
     }
-    if (submission.labour && submission.labour.filter(l => l.description).length > 0) {
-      doc.setTextColor(0, 194, 224); doc.setFontSize(11); doc.setFont('helvetica', 'bold');
-      doc.text('LABOUR', 14, y); y += 6;
-      autoTable(doc, { startY: y, head: [['Task', 'Hours']], body: submission.labour.filter(l => l.description).map(l => [l.description, l.hours + 'h']), theme: 'plain', headStyles: { fillColor: [26, 47, 47], textColor: [160, 176, 176], fontSize: 8 }, bodyStyles: { fillColor: [13, 21, 21], textColor: [255, 255, 255], fontSize: 8 }, styles: { lineColor: [26, 47, 47], lineWidth: 0.1 } });
+
+    // ── Labour ──
+    const usedLabour = (submission.labour || []).filter(l => l.description);
+    if (usedLabour.length > 0) {
+      if (y > 250) { doc.addPage(); doc.setFillColor(...blue); doc.rect(0, 0, W, 3, 'F'); y = 14; }
+      doc.setFillColor(...midgrey); doc.rect(0, y - 4, W, 12, 'F');
+      doc.setFillColor(...green); doc.rect(0, y - 4, 3, 12, 'F');
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor(...navy);
+      doc.text('LABOUR', 8, y + 3.5); y += 12;
+      const labourTotal = usedLabour.reduce((s, l) => s + parseFloat(l.hours||0), 0);
+      autoTable(doc, {
+        startY: y, head: [['Task / Description', 'Hours']],
+        body: [...usedLabour.map(l => [l.description, l.hours + 'h']),
+               ['TOTAL', labourTotal.toFixed(1) + 'h']],
+        theme: 'grid',
+        headStyles: { fillColor: navy, textColor: white, fontSize: 8, fontStyle: 'bold', cellPadding: 4 },
+        bodyStyles: { fillColor: white, textColor: navy, fontSize: 8, cellPadding: 3.5 },
+        alternateRowStyles: { fillColor: lightgrey },
+        columnStyles: { 0: { cellWidth: 'auto' }, 1: { cellWidth: 30, halign: 'center' } },
+        styles: { lineColor: midgrey, lineWidth: 0.3 },
+      });
     }
-    doc.setTextColor(160, 176, 176); doc.setFontSize(8);
-    doc.text('Generated by Mech IQ - mechiq.coastlinemm.com.au', 14, 285);
+
+    // ── Footer ──
+    const pages = doc.internal.getNumberOfPages();
+    for (let p = 1; p <= pages; p++) {
+      doc.setPage(p);
+      doc.setFillColor(...lightgrey); doc.rect(0, 285, W, 12, 'F');
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(7); doc.setTextColor(...grey);
+      doc.text('Generated by MechIQ · mechiq.com.au · ' + new Date().toLocaleDateString('en-AU'), 14, 292);
+      doc.text('Page ' + p + ' of ' + pages, W - 14, 292, { align: 'right' });
+    }
     doc.save('MechIQ-ServiceSheet-' + submission.asset + '-' + submission.date + '.pdf');
   };
 
@@ -1512,7 +1650,7 @@ function ServiceSheetsTab({ userRole }) {
                       reader.onload = async (ev) => {
                         const b64 = ev.target.result.split(',')[1];
                         try {
-                          const res = await pythonAIFetch({ method:'POST', headers:{'Content-Type':'application/json'},
+                          const res = await fetch('/api/ai-insight', { method:'POST', headers:{'Content-Type':'application/json'},
                             body: JSON.stringify({ model:'claude-sonnet-4-5', max_tokens:300,
                               messages:[{ role:'user', content:[
                                 { type:'image', source:{ type:'base64', media_type:file.type, data:b64 }},
@@ -1587,7 +1725,7 @@ function ServiceSheetsTab({ userRole }) {
                       reader.onload = async (ev) => {
                         const b64 = ev.target.result.split(',')[1];
                         try {
-                          const res = await pythonAIFetch({ method:'POST', headers:{'Content-Type':'application/json'},
+                          const res = await fetch('/api/ai-insight', { method:'POST', headers:{'Content-Type':'application/json'},
                             body: JSON.stringify({ model:'claude-sonnet-4-5', max_tokens:400,
                               messages:[{ role:'user', content:[
                                 { type:'image', source:{ type:'base64', media_type:file.type, data:b64 }},
@@ -2354,11 +2492,13 @@ function Forms({ userRole, initialTab, prestartAsset, prestartAssetId, prestartA
   const [activeTab, setActiveTab] = useState(initialTab || 'prestarts');
   useEffect(() => { if (initialTab) setActiveTab(initialTab); }, [initialTab]);
 
+  const isAdmin = ['admin', 'master', 'supervisor'].includes(userRole?.role);
   const TABS = [
     { id: 'prestarts',     label: 'Prestarts'        },
     { id: 'service-sheets',label: 'Service Sheets'   },
     { id: 'assets',        label: '🚛 Assets'         },
     { id: 'paper_scan',    label: 'Scan Paper Form'  },
+    ...(isAdmin ? [{ id: 'form_editor', label: '✏️ Form Editor' }] : []),
   ];
 
   const tabStyle = (id) => ({
@@ -2387,6 +2527,7 @@ function Forms({ userRole, initialTab, prestartAsset, prestartAssetId, prestartA
       {activeTab === 'service-sheets'&& <ServiceSheetsTab userRole={userRole} />}
       {activeTab === 'assets'        && <AssetFormsTab userRole={userRole} />}
       {activeTab === 'paper_scan'    && <PaperScan userRole={userRole} />}
+      {activeTab === 'form_editor'    && <FormEditorTab userRole={userRole} />}
     </div>
   );
 }
