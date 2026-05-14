@@ -1230,10 +1230,10 @@ function Dashboard({ companyId, userRole }) {
                 <div style={{ fontSize:11, color:'var(--text-faint)' }}>{k.sub}</div>
                 <div style={{ fontSize:9, color:'var(--text-faint)', fontWeight:600, letterSpacing:'0.5px', opacity:0.6 }}>TAP TO VIEW</div>
               </div>
-        )}
             </div>
           ))}
         </div>
+        )}
 
         {/* ── Fleet health bar ── */}
         {!loading && assets.length > 0 && (
