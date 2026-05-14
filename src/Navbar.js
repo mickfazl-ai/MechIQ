@@ -92,24 +92,23 @@ const CSS = `
     margin-left:auto; display:flex; align-items:center; color:#D1D5DB;
   }
 
-  .sidebar-tooltip {
-    position:absolute; left:calc(100% + 14px); top:50%;
-    transform:translateY(-50%);
+  /* Tooltip rendered as fixed-position div in Navbar root — avoids overflow clipping */
+  .nav-tooltip {
+    position:fixed; left:68px;
     background:#1F2937; color:#F9FAFB;
     padding:5px 10px;
     font-size:12px; font-weight:600;
     font-family:'Inter',system-ui,sans-serif;
-    white-space:nowrap; pointer-events:none; opacity:0;
-    transition:opacity 0.12s; z-index:9999;
+    white-space:nowrap; pointer-events:none;
+    z-index:9999; transform:translateY(-50%);
     box-shadow:0 4px 12px rgba(0,0,0,.2);
+    transition:opacity 0.1s;
   }
-  .sidebar-tooltip::before {
+  .nav-tooltip::before {
     content:''; position:absolute;
     right:100%; top:50%; transform:translateY(-50%);
     border:5px solid transparent; border-right-color:#1F2937;
   }
-  .sidebar:not(.expanded) .sidebar-item:hover + .sidebar-tooltip { opacity:1; }
-  .sidebar:not(.expanded) .sidebar-item:hover .sidebar-tooltip { opacity:1; }
 
   .sidebar-flyout {
     position:absolute; left:calc(100% + 6px); top:0;
@@ -251,12 +250,14 @@ const IC = {
   chat:         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>,
   parts:        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>,
   logout:       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>,
+  excavator:    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="14" width="11" height="5" rx="1"/><rect x="3" y="17" width="2" height="3"/><rect x="8" y="17" width="2" height="3"/><path d="M12 16.5h3l4-6h-3l-2 3h-2"/><path d="M19 10.5l2-3h-4l-1 3"/><rect x="18" y="7" width="4" height="3" rx="0.5"/></svg>,
+  onboarding:   <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 014-4h4a4 4 0 014 4v2"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="16" y1="11" x2="22" y2="11"/></svg>,
 };
 
 // ─── Nav structure ─────────────────────────────────────────────────────────────
 const NAV_STRUCTURE = [
   { id: 'dashboard',    label: 'Dashboard',    ik: 'dashboard',    roles: ['admin','supervisor','technician','operator'], feature: 'dashboard' },
-  { id: 'assets',       label: 'Assets',       ik: 'assets',       roles: ['admin','supervisor'], feature: 'assets',
+  { id: 'assets',       label: 'Assets',       ik: 'excavator',       roles: ['admin','supervisor'], feature: 'assets',
     children: [
       { id: 'assets', subPage: 'units',        label: 'Units',        roles: ['admin','supervisor'] },
       { id: 'assets', subPage: 'onboarding',   label: 'Onboarding',   roles: ['admin','supervisor'] },
@@ -264,7 +265,7 @@ const NAV_STRUCTURE = [
       { id: 'assets', subPage: 'tracker',      label: 'Tracker',      roles: ['admin','supervisor'] },
     ],
   },
-  { id: 'onboarding', label: 'Onboarding', ik: 'assets', roles: ['admin','supervisor'], feature: 'assets' },
+  { id: 'onboarding', label: 'Onboarding', ik: 'onboarding', roles: ['admin','supervisor'], feature: 'assets' },
   { id: 'maintenance',  label: 'Maintenance',  ik: 'maintenance',  roles: ['admin','supervisor','technician'], feature: 'maintenance',
     children: [
       { id: 'maintenance', subPage: 'scheduled',   label: 'Planned Maintenance', roles: ['admin','supervisor','technician'] },
@@ -327,7 +328,7 @@ function RoleBadge({ role }) {
 }
 
 // ─── Sidebar nav item ──────────────────────────────────────────────────────────
-function SidebarItem({ item, currentPage, currentSubPage, onNav, expanded, flyoutOpen, setFlyoutOpen }) {
+function SidebarItem({ item, currentPage, currentSubPage, onNav, expanded, flyoutOpen, setFlyoutOpen, setNavTip }) {
   const hasChildren = item.children?.length > 0;
   const isActive = currentPage === item.id || (hasChildren && item.children.some(c => c.id === currentPage));
   const isFlyout = flyoutOpen === item.id;
@@ -350,11 +351,16 @@ function SidebarItem({ item, currentPage, currentSubPage, onNav, expanded, flyou
 
   return (
     <div ref={ref} style={{ position: 'relative' }}>
-      <div className={`sidebar-item${isActive ? ' active' : ''}`} onClick={handleClick}>
+      <div
+        className={`sidebar-item${isActive ? ' active' : ''}`}
+        onClick={handleClick}
+        onMouseEnter={e => { const r=e.currentTarget.getBoundingClientRect(); setNavTip&&setNavTip({show:true,y:r.top+r.height/2,text:item.label}); }}
+        onMouseLeave={() => setNavTip&&setNavTip({show:false,y:0,text:''}) }
+      >
         <span className="sbi-icon">{IC[item.ik] || IC.settings}</span>
         <span className="sbi-label">{item.label}</span>
       </div>
-      <span className="sidebar-tooltip">{item.label}</span>
+
 
       {/* Inline sub-items */}
       {hasChildren && expanded && (
@@ -406,6 +412,7 @@ function Navbar({ currentPage, currentSubPage, setCurrentPage, onLogout, session
   const [mobileOpen, setMobileOpen] = useState(false);
   const [companyLogo, setCompanyLogo] = useState(null);
   const [companyName, setCompanyName] = useState('');
+  const [navTip, setNavTip] = useState({ show:false, y:0, text:'' });
   const switcherRef = useRef(null);
   const isMaster = userRole?.role === 'master';
   const role = viewingCompany ? 'admin' : (userRole?.role || 'operator');
@@ -540,6 +547,7 @@ function Navbar({ currentPage, currentSubPage, setCurrentPage, onLogout, session
               expanded={expanded}
               flyoutOpen={flyoutOpen}
               setFlyoutOpen={setFlyoutOpen}
+              setNavTip={setNavTip}
             />
           ))}
         </div>
@@ -664,6 +672,11 @@ function Navbar({ currentPage, currentSubPage, setCurrentPage, onLogout, session
           </div>
         </div>
       </div>
+      {navTip.show && (
+        <div className="nav-tooltip" style={{ top: navTip.y, opacity: navTip.show ? 1 : 0 }}>
+          {navTip.text}
+        </div>
+      )}
     </>
   );
 }
