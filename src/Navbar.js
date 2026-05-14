@@ -452,7 +452,7 @@ function RailItem({ item, currentPage, currentSubPage, onNav, flyout, setFlyout 
 }
 
 /* ─── MAIN COMPONENT ─────────────────────────────────────────────────────────── */
-export default function Navbar({ currentPage, currentSubPage, setCurrentPage, onLogout, session, userRole, viewingCompany, onSelectCompany, onExitCompany }) {
+export default function Navbar({ currentPage, currentSubPage=null, setCurrentPage, onLogout, session, userRole, viewingCompany, onSelectCompany, onExitCompany, isDemo }) {
   const [flyout,      setFlyout]      = useState(null);
   const [userDD,      setUserDD]      = useState(false);
   const [coDD,        setCoDD]        = useState(false);
