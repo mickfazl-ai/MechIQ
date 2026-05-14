@@ -401,9 +401,7 @@ const PAGE_TITLES = {
 
 // ─── Main Navbar ───────────────────────────────────────────────────────────────
 function Navbar({ currentPage, currentSubPage, setCurrentPage, onLogout, session, userRole, viewingCompany, onSelectCompany, onExitCompany }) {
-  const [expanded, setExpanded] = useState(() => {
-    try { return localStorage.getItem('mechiq_sidebar_expanded') === 'true'; } catch { return false; }
-  });
+  const [expanded, setExpanded] = useState(false); // Always icon-only
   const [flyoutOpen, setFlyoutOpen] = useState(null);
   const [companies, setCompanies] = useState([]);
   const [switcherOpen, setSwitcherOpen] = useState(false);
