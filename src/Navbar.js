@@ -1,448 +1,431 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from './supabase';
 
-/* ─── GLOBAL CSS ────────────────────────────────────────────────────────────── */
+// ─── CSS ──────────────────────────────────────────────────────────────────────
 const CSS = `
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+  @keyframes flyout-in {
+    from { opacity:0; transform:translateX(-6px) scale(0.98); }
+    to   { opacity:1; transform:translateX(0) scale(1); }
+  }
+  @keyframes banner-in {
+    from { opacity:0; transform:translateY(-100%); }
+    to   { opacity:1; transform:translateY(0); }
+  }
 
-/* ── Icon Rail ── */
-.miq-rail {
-  position: fixed; left: 0; top: 0; bottom: 0; width: 60px;
-  background: #fff;
-  border-right: 1px solid #E5E7EB;
-  display: flex; flex-direction: column; align-items: center;
-  z-index: 300;
-  user-select: none;
-}
-.miq-rail.has-banner { top: 40px; }
+  /* ── Sidebar rail ── */
+  .sidebar {
+    position:fixed; left:0; top:0; bottom:0;
+    width:60px;
+    background:#FFFFFF;
+    display:flex; flex-direction:column; align-items:center;
+    z-index:300;
+    border-right:1px solid #E5E7EB;
+    transition:width 0.22s cubic-bezier(0.16,1,0.3,1);
+    overflow:visible;
+    box-shadow:1px 0 3px rgba(0,0,0,.05);
+  }
+  .sidebar.expanded { width:220px; }
+  .sidebar.has-banner { top:40px; }
 
-/* Logo mark */
-.miq-logo {
-  width: 60px; height: 60px; flex-shrink: 0;
-  display: flex; align-items: center; justify-content: center;
-  border-bottom: 1px solid #E5E7EB;
-  cursor: pointer;
-}
-.miq-logo-mark {
-  width: 32px; height: 32px;
-  background: #1976D2; border-radius: 8px;
-  display: flex; align-items: center; justify-content: center;
-  font-family: 'Inter', system-ui, sans-serif;
-  font-size: 15px; font-weight: 800; color: #fff; letter-spacing: -0.5px;
-}
+  /* Logo mark */
+  .sidebar-brand {
+    width:100%; height:56px;
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer; flex-shrink:0;
+    border-bottom:1px solid #E5E7EB;
+    overflow:hidden; padding:0 14px; user-select:none; gap:10px;
+  }
+  .brand-mark {
+    width:30px; height:30px; flex-shrink:0;
+    background:#1976D2;
+    display:flex; align-items:center; justify-content:center;
+    font-size:13px; font-weight:800; color:#fff;
+  }
+  .sidebar-brand .brand-word {
+    font-family:'Inter',var(--font-body),system-ui,sans-serif;
+    font-size:16px; font-weight:800; letter-spacing:-0.4px;
+    white-space:nowrap; color:#111827;
+    opacity:0; transform:translateX(-6px);
+    transition:opacity 0.18s, transform 0.18s;
+  }
+  .sidebar.expanded .brand-word { opacity:1; transform:translateX(0); }
+  .brand-mech { color:#111827; }
+  .brand-iq   { color:#1976D2; }
 
-/* Nav scroll area */
-.miq-nav { flex: 1; width: 100%; overflow-y: auto; overflow-x: visible; padding: 8px 0; scrollbar-width: none; }
-.miq-nav::-webkit-scrollbar { display: none; }
+  /* Nav scroll */
+  .sidebar-nav {
+    flex:1; width:100%;
+    overflow-y:auto; overflow-x:visible;
+    padding:8px 0; scrollbar-width:none;
+  }
+  .sidebar-nav::-webkit-scrollbar { display:none; }
 
-/* Section divider */
-.miq-divider { width: 28px; height: 1px; background: #E5E7EB; margin: 6px auto; }
+  /* Section divider */
+  .sidebar-section {
+    width:100%; padding:10px 0 3px;
+    font-size:9px; font-weight:700; letter-spacing:1px;
+    text-transform:uppercase; color:#C9D0DC;
+    text-align:center; overflow:hidden;
+    opacity:0; transition:opacity 0.18s;
+    pointer-events:none;
+  }
+  .sidebar.expanded .sidebar-section { opacity:1; text-align:left; padding-left:16px; }
 
-/* Nav item */
-.miq-item {
-  position: relative;
-  width: 44px; height: 40px;
-  margin: 1px 8px;
-  border-radius: 8px;
-  display: flex; align-items: center; justify-content: center;
-  cursor: pointer;
-  color: #9CA3AF;
-  transition: background 0.12s, color 0.12s;
-  flex-shrink: 0;
-}
-.miq-item:hover { background: #F3F4F6; color: #374151; }
-.miq-item.active { background: #EBF3FC; color: #1976D2; }
-.miq-item.active::before {
-  content: '';
-  position: absolute; left: -8px; top: 8px; bottom: 8px;
-  width: 3px; background: #1976D2; border-radius: 0 3px 3px 0;
-}
+  /* Nav item */
+  .sidebar-item {
+    position:relative;
+    width:calc(100% - 16px); height:40px; margin:1px 8px;
+    display:flex; align-items:center; gap:10px;
+    padding:0 10px; cursor:pointer;
+    color:#9CA3AF;
+    font-size:13px; font-weight:500;
+    font-family:'Inter',var(--font-body),system-ui,sans-serif;
+    transition:color 0.12s, background 0.12s;
+    white-space:nowrap; overflow:hidden; user-select:none;
+  }
+  .sidebar-item:hover { color:#374151; background:#F9FAFB; }
+  .sidebar-item.active { color:#1976D2; background:#EBF3FC; font-weight:600; }
+  .sidebar-item.active::before {
+    content:''; position:absolute;
+    left:-8px; top:8px; bottom:8px;
+    width:3px; background:#1976D2;
+  }
+  .sidebar-item.active .sbi-icon { color:#1976D2; }
 
-/* Tooltip */
-.miq-tip {
-  position: absolute;
-  left: calc(100% + 12px); top: 50%;
-  transform: translateY(-50%);
-  background: #111827; color: #F9FAFB;
-  padding: 5px 10px; border-radius: 6px;
-  font-family: 'Inter', system-ui, sans-serif;
-  font-size: 12px; font-weight: 600;
-  white-space: nowrap; pointer-events: none;
-  opacity: 0; transition: opacity 0.1s;
-  z-index: 9999;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-}
-.miq-tip::before {
-  content: '';
-  position: absolute; right: 100%; top: 50%;
-  transform: translateY(-50%);
-  border: 5px solid transparent;
-  border-right-color: #111827;
-}
-.miq-item:hover .miq-tip { opacity: 1; }
+  .sbi-icon {
+    font-size:16px; flex-shrink:0;
+    width:20px; text-align:center;
+    display:flex; align-items:center; justify-content:center;
+    transition:color 0.12s; color:inherit;
+  }
+  .sbi-label {
+    flex:1; opacity:0; transform:translateX(-6px);
+    transition:opacity 0.18s, transform 0.18s;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+    font-size:13px;
+  }
+  .sidebar.expanded .sbi-label { opacity:1; transform:translateX(0); }
+  .sbi-caret {
+    font-size:9px; flex-shrink:0; transition:transform 0.2s;
+    margin-left:auto; display:flex; align-items:center; color:#C9D0DC;
+  }
 
-/* Flyout panel (sub-items) */
-.miq-flyout {
-  position: absolute;
-  left: calc(100% + 14px); top: 0;
-  background: #fff;
-  border: 1px solid #E5E7EB;
-  border-radius: 10px;
-  min-width: 200px;
-  z-index: 9999;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.10), 0 2px 6px rgba(0,0,0,0.05);
-  overflow: hidden;
-  animation: miq-flyout-in 0.15s cubic-bezier(0.16,1,0.3,1);
-}
-@keyframes miq-flyout-in {
-  from { opacity: 0; transform: translateX(-6px) scale(0.98); }
-  to   { opacity: 1; transform: translateX(0) scale(1); }
-}
-.miq-flyout-hdr {
-  padding: 10px 14px 8px;
-  font-family: 'Inter', system-ui, sans-serif;
-  font-size: 10px; font-weight: 700; letter-spacing: 0.8px;
-  text-transform: uppercase; color: #9CA3AF;
-  border-bottom: 1px solid #F3F4F6;
-}
-.miq-flyout-item {
-  display: flex; align-items: center; gap: 8px;
-  padding: 9px 14px;
-  font-family: 'Inter', system-ui, sans-serif;
-  font-size: 13px; font-weight: 500; color: #374151;
-  cursor: pointer; border-bottom: 1px solid #F9FAFB;
-  transition: background 0.1s, color 0.1s;
-  white-space: nowrap;
-}
-.miq-flyout-item:last-child { border-bottom: none; }
-.miq-flyout-item:hover { background: #F3F4F6; color: #111827; }
-.miq-flyout-item.on { background: #EBF3FC; color: #1976D2; font-weight: 600; }
-.miq-flyout-dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; opacity: 0.4; flex-shrink: 0; }
+  /* Tooltip — shows on hover when collapsed */
+  .sidebar-tooltip {
+    position:absolute; left:calc(100% + 14px); top:50%;
+    transform:translateY(-50%);
+    background:#1F2937; color:#F9FAFB;
+    padding:5px 10px;
+    font-size:12px; font-weight:600;
+    font-family:'Inter',system-ui,sans-serif;
+    white-space:nowrap; pointer-events:none; opacity:0;
+    transition:opacity 0.12s; z-index:9999;
+    box-shadow:0 4px 12px rgba(0,0,0,0.2);
+  }
+  .sidebar-tooltip::before {
+    content:''; position:absolute;
+    right:100%; top:50%; transform:translateY(-50%);
+    border:5px solid transparent;
+    border-right-color:#1F2937;
+  }
+  .sidebar:not(.expanded) .sidebar-item:hover .sidebar-tooltip { opacity:1; }
 
-/* Rail footer */
-.miq-footer { width: 100%; flex-shrink: 0; border-top: 1px solid #E5E7EB; padding: 8px 0; display: flex; flex-direction: column; align-items: center; gap: 2px; }
-.miq-footer-btn {
-  width: 44px; height: 36px; border-radius: 8px;
-  display: flex; align-items: center; justify-content: center;
-  cursor: pointer; color: #9CA3AF;
-  transition: background 0.12s, color 0.12s;
-  border: none; background: none; position: relative;
-}
-.miq-footer-btn:hover { background: #F3F4F6; color: #374151; }
-.miq-footer-btn:hover .miq-tip { opacity: 1; }
-.miq-avatar-btn {
-  width: 32px; height: 32px; border-radius: 8px;
-  background: #EBF3FC; color: #1976D2;
-  font-family: 'Inter', system-ui, sans-serif;
-  font-size: 13px; font-weight: 700;
-  display: flex; align-items: center; justify-content: center;
-  cursor: pointer; border: none; position: relative;
-  flex-shrink: 0; transition: background 0.12s;
-}
-.miq-avatar-btn:hover { background: #BFDBFE; }
-.miq-avatar-btn:hover .miq-tip { opacity: 1; }
+  /* Flyout (sub-items when collapsed) */
+  .sidebar-flyout {
+    position:absolute; left:calc(100% + 6px); top:0;
+    background:#fff; border:1px solid #E5E7EB;
+    min-width:192px; z-index:9999;
+    box-shadow:0 8px 24px rgba(0,0,0,.10);
+    overflow:hidden; animation:flyout-in 0.18s cubic-bezier(0.16,1,0.3,1);
+  }
+  .sidebar-flyout-header {
+    padding:9px 14px 7px; font-size:10px; font-weight:700;
+    color:#9CA3AF; letter-spacing:1px; text-transform:uppercase;
+    border-bottom:1px solid #F3F4F6;
+  }
+  .sidebar-flyout-item {
+    padding:9px 14px; font-size:13px; font-weight:500;
+    color:#374151; cursor:pointer;
+    border-bottom:1px solid #F9FAFB;
+    transition:background 0.1s; white-space:nowrap;
+    display:flex; align-items:center; gap:8px;
+    font-family:'Inter',var(--font-body),system-ui,sans-serif;
+  }
+  .sidebar-flyout-item:last-child { border-bottom:none; }
+  .sidebar-flyout-item:hover { background:#F3F4F6; color:#111827; }
+  .sidebar-flyout-item.active { background:#EBF3FC; color:#1976D2; font-weight:600; }
+  .sidebar-flyout-item .item-dot {
+    width:5px; height:5px; border-radius:50%;
+    background:currentColor; opacity:0.4; flex-shrink:0;
+  }
 
-/* ── Topbar ── */
-.miq-topbar {
-  position: fixed; left: 60px; top: 0; right: 0; height: 56px;
-  background: #fff;
-  border-bottom: 1px solid #E5E7EB;
-  display: flex; align-items: center; padding: 0 20px; gap: 16px;
-  z-index: 200;
-}
-.miq-topbar.has-banner { top: 40px; }
+  /* Sub-items (expanded inline) */
+  .sidebar-sub { overflow:hidden; transition:max-height 0.22s cubic-bezier(0.16,1,0.3,1); }
+  .sidebar-sub-item {
+    height:34px; display:flex; align-items:center;
+    gap:10px; padding:0 10px 0 38px; cursor:pointer;
+    color:#9CA3AF; font-size:12px; font-weight:500;
+    font-family:'Inter',var(--font-body),system-ui,sans-serif;
+    white-space:nowrap; overflow:hidden;
+    transition:color 0.12s, background 0.12s; user-select:none;
+    margin:0 8px; width:calc(100% - 16px);
+  }
+  .sidebar-sub-item:hover { color:#374151; background:#F9FAFB; }
+  .sidebar-sub-item.active { color:#1976D2; font-weight:600; background:#EBF3FC; }
+  .sub-dot { width:4px; height:4px; border-radius:50%; background:currentColor; flex-shrink:0; opacity:0.4; }
 
-.miq-breadcrumb { display: flex; align-items: center; gap: 6px; flex: 1; }
-.miq-breadcrumb-root {
-  font-family: 'Inter', system-ui, sans-serif;
-  font-size: 13px; font-weight: 600; color: #9CA3AF;
-  cursor: pointer; transition: color 0.12s; text-decoration: none;
-}
-.miq-breadcrumb-root:hover { color: #374151; }
-.miq-breadcrumb-sep { color: #D1D5DB; font-size: 13px; }
-.miq-breadcrumb-cur {
-  font-family: 'Inter', system-ui, sans-serif;
-  font-size: 15px; font-weight: 700; color: #111827; letter-spacing: -0.2px;
-}
+  /* Footer */
+  .sidebar-footer {
+    width:100%; padding:8px 0 0;
+    border-top:1px solid #E5E7EB; flex-shrink:0;
+  }
+  .sidebar-toggle {
+    width:100%; height:38px;
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer; color:#9CA3AF;
+    transition:color 0.15s, background 0.15s;
+    background:none; border:none; font-size:16px; flex-shrink:0;
+  }
+  .sidebar-toggle:hover { color:#374151; background:#F9FAFB; }
 
-.miq-topbar-right { display: flex; align-items: center; gap: 10px; }
+  /* Topbar */
+  .topbar {
+    position:fixed; left:60px; top:0; right:0; height:56px;
+    background:#FFFFFF;
+    border-bottom:1px solid #E5E7EB;
+    display:flex; align-items:center; padding:0 20px; gap:12px;
+    z-index:200;
+    transition:left 0.22s cubic-bezier(0.16,1,0.3,1);
+  }
+  .topbar.sb-expanded { left:220px; }
+  .topbar.has-banner  { top:40px; }
+  .topbar-title {
+    font-family:'Inter',var(--font-body),system-ui,sans-serif;
+    font-size:15px; font-weight:700; letter-spacing:-0.3px;
+    color:#111827; flex:1;
+  }
+  .topbar-right { display:flex; align-items:center; gap:10px; flex-shrink:0; }
 
-/* Search bar */
-.miq-search {
-  display: flex; align-items: center; gap: 8px;
-  background: #F9FAFB; border: 1px solid #E5E7EB; border-radius: 8px;
-  padding: 6px 12px; cursor: pointer;
-  transition: border-color 0.15s, background 0.15s;
-  min-width: 180px;
-}
-.miq-search:hover { border-color: #D1D5DB; background: #fff; }
-.miq-search-text { font-family: 'Inter', system-ui, sans-serif; font-size: 13px; color: #9CA3AF; }
-.miq-search-key { background: #E5E7EB; color: #6B7280; font-family: 'Inter', system-ui, sans-serif; font-size: 10px; font-weight: 600; padding: 1px 5px; border-radius: 4px; margin-left: auto; }
+  /* Admin banner */
+  .nav-viewing-banner {
+    background:#1976D2; color:#fff; padding:7px 20px;
+    display:flex; align-items:center; justify-content:space-between;
+    font-size:12px; font-weight:600; letter-spacing:0.3px;
+    animation:banner-in 0.25s ease;
+    position:fixed; top:0; left:0; right:0; z-index:400;
+  }
+  .role-badge {
+    padding:3px 10px;
+    font-size:10px; font-weight:700; letter-spacing:0.5px;
+    text-transform:uppercase; white-space:nowrap;
+  }
 
-/* Icon button in topbar */
-.miq-topbar-icon {
-  width: 34px; height: 34px; border-radius: 7px;
-  display: flex; align-items: center; justify-content: center;
-  color: #6B7280; cursor: pointer; position: relative;
-  border: 1px solid transparent; background: transparent;
-  transition: background 0.12s, border-color 0.12s, color 0.12s;
-  flex-shrink: 0;
-}
-.miq-topbar-icon:hover { background: #F3F4F6; border-color: #E5E7EB; color: #374151; }
-.miq-notif-dot {
-  position: absolute; top: 6px; right: 6px;
-  width: 7px; height: 7px; border-radius: 50%;
-  background: #B91C1C; border: 1.5px solid #fff;
-}
+  /* Company switcher */
+  .company-switcher-dropdown {
+    position:absolute; right:0; top:calc(100% + 10px);
+    background:#fff; border:1px solid #E5E7EB;
+    min-width:220px; z-index:2000;
+    box-shadow:0 8px 24px rgba(0,0,0,.10);
+    overflow:hidden; animation:flyout-in 0.2s cubic-bezier(0.16,1,0.3,1);
+  }
+  .company-switcher-item {
+    padding:10px 16px; cursor:pointer; font-size:13px; font-weight:500;
+    color:#374151; border-bottom:1px solid #F9FAFB;
+    transition:background 0.12s; display:flex; align-items:center; gap:8px;
+    font-family:'Inter',var(--font-body),system-ui,sans-serif;
+  }
+  .company-switcher-item:last-child { border-bottom:none; }
+  .company-switcher-item:hover { background:#F9FAFB; }
+  .company-switcher-item.active { background:#EBF3FC; color:#1976D2; font-weight:600; }
+  .company-switcher-item.exit { color:#B91C1C; font-weight:600; }
+  .company-switcher-item.exit:hover { background:#FEF2F2; }
 
-/* User chip */
-.miq-user-chip {
-  display: flex; align-items: center; gap: 9px;
-  padding: 4px 10px 4px 5px;
-  background: #F9FAFB; border: 1px solid #E5E7EB;
-  border-radius: 10px; cursor: pointer;
-  transition: border-color 0.12s, background 0.12s;
-  position: relative;
-}
-.miq-user-chip:hover { border-color: #D1D5DB; background: #fff; }
-.miq-user-avatar {
-  width: 26px; height: 26px; border-radius: 6px;
-  background: #1976D2; color: #fff;
-  font-family: 'Inter', system-ui, sans-serif;
-  font-size: 11px; font-weight: 800;
-  display: flex; align-items: center; justify-content: center;
-  flex-shrink: 0;
-}
-.miq-user-name { font-family: 'Inter', system-ui, sans-serif; font-size: 13px; font-weight: 600; color: #111827; }
-.miq-user-role { font-family: 'Inter', system-ui, sans-serif; font-size: 10px; font-weight: 600; color: #9CA3AF; margin-top: 0; }
+  /* Buttons */
+  .nav-pill {
+    padding:5px 14px; border:none;
+    font-size:11px; font-weight:600; cursor:pointer;
+    letter-spacing:0.3px; transition:all 0.15s;
+    font-family:'Inter',var(--font-body),system-ui,sans-serif; white-space:nowrap;
+  }
+  .nav-pill-primary { background:#1976D2; color:#fff; box-shadow:0 1px 4px rgba(25,118,210,.25); }
+  .nav-pill-primary:hover { background:#1565C0; }
+  .nav-pill-ghost { background:transparent; color:#6B7280; border:1px solid #E5E7EB; }
+  .nav-pill-ghost:hover { border-color:#1976D2; color:#1976D2; background:#EBF3FC; }
 
-/* Role badges */
-.miq-role { display: inline-flex; align-items: center; padding: 1px 7px; border-radius: 4px; font-family: 'Inter', system-ui, sans-serif; font-size: 10px; font-weight: 700; border: 1px solid transparent; white-space: nowrap; }
+  /* Mobile overlay */
+  .sidebar-overlay {
+    display:none; position:fixed; inset:0;
+    background:rgba(0,0,0,0.35); z-index:299;
+  }
+  @media (max-width:768px) {
+    .sidebar { width:0 !important; overflow:hidden; transition:width 0.22s; }
+    .sidebar.mobile-open { width:220px !important; overflow:visible; }
+    .sidebar-overlay.visible { display:block; }
+    .topbar { left:0 !important; }
+    .topbar-hamburger { display:flex !important; }
+  }
+  .topbar-hamburger {
+    display:none; background:none; border:none;
+    color:#6B7280; cursor:pointer; padding:8px;
+    align-items:center; border-radius:0;
+    min-width:36px; min-height:36px; justify-content:center;
+  }
+  .topbar-hamburger:hover { background:#F3F4F6; }
+`
 
-/* User dropdown */
-.miq-user-dd {
-  position: absolute; right: 0; top: calc(100% + 8px);
-  background: #fff; border: 1px solid #E5E7EB;
-  border-radius: 10px; min-width: 220px; z-index: 9999;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.10);
-  overflow: hidden;
-  animation: miq-flyout-in 0.15s cubic-bezier(0.16,1,0.3,1);
-}
-.miq-user-dd-hdr { padding: 12px 14px; border-bottom: 1px solid #F3F4F6; }
-.miq-user-dd-name { font-family: 'Inter', system-ui, sans-serif; font-size: 14px; font-weight: 700; color: #111827; }
-.miq-user-dd-email { font-family: 'Inter', system-ui, sans-serif; font-size: 12px; color: #9CA3AF; margin-top: 2px; }
-.miq-user-dd-item {
-  display: flex; align-items: center; gap: 9px;
-  padding: 9px 14px; cursor: pointer;
-  font-family: 'Inter', system-ui, sans-serif;
-  font-size: 13px; font-weight: 500; color: #374151;
-  border-bottom: 1px solid #F9FAFB; transition: background 0.1s;
-}
-.miq-user-dd-item:last-child { border-bottom: none; }
-.miq-user-dd-item:hover { background: #F3F4F6; }
-.miq-user-dd-item.danger { color: #B91C1C; }
-.miq-user-dd-item.danger:hover { background: #FEF2F2; }
-
-/* Company switcher */
-.miq-co-btn {
-  display: flex; align-items: center; gap: 7px;
-  padding: 6px 12px; border-radius: 7px;
-  background: #EBF3FC; border: 1px solid #BFDBFE;
-  color: #1976D2; cursor: pointer;
-  font-family: 'Inter', system-ui, sans-serif;
-  font-size: 12px; font-weight: 600;
-  transition: background 0.12s; white-space: nowrap;
-  position: relative;
-}
-.miq-co-btn:hover { background: #DBEAFE; }
-.miq-co-dd {
-  position: absolute; right: 0; top: calc(100% + 8px);
-  background: #fff; border: 1px solid #E5E7EB;
-  border-radius: 10px; min-width: 220px; z-index: 9999;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.10);
-  overflow: hidden;
-  animation: miq-flyout-in 0.15s cubic-bezier(0.16,1,0.3,1);
-}
-.miq-co-dd-item {
-  display: flex; align-items: center; gap: 9px;
-  padding: 9px 14px; cursor: pointer;
-  font-family: 'Inter', system-ui, sans-serif;
-  font-size: 13px; font-weight: 500; color: #374151;
-  border-bottom: 1px solid #F9FAFB; transition: background 0.1s;
-}
-.miq-co-dd-item:last-child { border-bottom: none; }
-.miq-co-dd-item:hover { background: #F3F4F6; }
-.miq-co-dd-item.active { background: #EBF3FC; color: #1976D2; font-weight: 600; }
-.miq-co-dd-item.exit { color: #B91C1C; font-weight: 600; }
-.miq-co-dd-item.exit:hover { background: #FEF2F2; }
-
-/* Banner */
-.miq-banner {
-  position: fixed; top: 0; left: 0; right: 0; height: 40px; z-index: 400;
-  background: #1976D2; color: #fff;
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 0 20px;
-  font-family: 'Inter', system-ui, sans-serif;
-  font-size: 13px; font-weight: 500;
-}
-.miq-banner-exit {
-  background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3);
-  color: #fff; padding: 4px 12px; border-radius: 5px;
-  font-family: 'Inter', system-ui, sans-serif;
-  font-size: 12px; font-weight: 700; cursor: pointer;
-  transition: background 0.12s;
-}
-.miq-banner-exit:hover { background: rgba(255,255,255,0.25); }
-
-/* Mobile overlay */
-.miq-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.3); z-index: 299; }
-@media (max-width: 768px) {
-  .miq-rail { transform: translateX(-100%); transition: transform 0.22s; }
-  .miq-rail.mob-open { transform: translateX(0); }
-  .miq-overlay.visible { display: block; }
-  .miq-topbar { left: 0 !important; }
-  .miq-ham { display: flex !important; }
-}
-.miq-ham { display: none; background: none; border: none; color: #6B7280; cursor: pointer; padding: 8px; border-radius: 6px; align-items: center; justify-content: center; width: 36px; height: 36px; }
-.miq-ham:hover { background: #F3F4F6; }
-
-/* Content offset */
-.main-content { margin-left: 60px !important; margin-top: 56px !important; }
-.main-content.has-banner { margin-top: 96px !important; }
-`;
-
-/* ─── SVG ICONS ─────────────────────────────────────────────────────────────── */
+// ─── SVG Icons ─────────────────────────────────────────────────────────────────
 const IC = {
-  dashboard:    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>,
-  assets:       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>,
-  maintenance:  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>,
-  forms:        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14,2 14,8 20,8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>,
-  scanner:      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 7 23 1 17 1"/><line x1="16" y1="8" x2="23" y2="1"/><polyline points="1 17 1 23 7 23"/><line x1="8" y1="16" x2="1" y2="23"/><line x1="3" y1="12" x2="21" y2="12"/></svg>,
-  chat:         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>,
-  parts:        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>,
-  oil_sampling: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2V9M9 21H5a2 2 0 01-2-2V9m0 0h18"/></svg>,
-  reports:      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>,
-  admin:        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>,
-  settings:     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>,
-  master:       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>,
-  logout:       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>,
-  download:     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>,
-  notif:        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>,
-  search:       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>,
-  ham:          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>,
-  chevDown:     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"/></svg>,
-  building:     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>,
+  dashboard:    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>,
+  assets:       <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>,
+  maintenance:  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>,
+  forms:        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14,2 14,8 20,8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>,
+  scanner:      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 7 23 1 17 1"/><line x1="16" y1="8" x2="23" y2="1"/><polyline points="1 17 1 23 7 23"/><line x1="8" y1="16" x2="1" y2="23"/><line x1="3" y1="12" x2="21" y2="12"/></svg>,
+  oil_sampling: <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2V9M9 21H5a2 2 0 01-2-2V9m0 0h18"/></svg>,
+  reports:      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>,
+  admin:        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>,
+  settings:     <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>,
+  master:       <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>,
+  chevron:      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"/></svg>,
+  collapse:     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="11 17 6 12 11 7"/><polyline points="18 17 13 12 18 7"/></svg>,
+  expand:       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="13 17 18 12 13 7"/><polyline points="6 17 11 12 6 7"/></svg>,
+  hamburger:    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>,
+  chat:         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>,
+  parts:        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>,
+  logout:       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>,
 };
 
-/* ─── NAV STRUCTURE ──────────────────────────────────────────────────────────── */
-const NAV = [
-  { id:'dashboard',   label:'Dashboard',    ik:'dashboard',   roles:['admin','supervisor','technician','operator'] },
-  { id:'assets',      label:'Assets',       ik:'assets',      roles:['admin','supervisor'],
-    children:[
-      { id:'assets', subPage:'units',        label:'Units' },
-      { id:'assets', subPage:'onboarding',   label:'Onboarding' },
-      { id:'assets', subPage:'depreciation', label:'Depreciation' },
-      { id:'assets', subPage:'tracker',      label:'Tracker' },
-    ]},
-  { id:'maintenance', label:'Maintenance',  ik:'maintenance', roles:['admin','supervisor','technician'],
-    children:[
-      { id:'maintenance', subPage:'scheduled',   label:'Planned Maintenance' },
-      { id:'maintenance', subPage:'work_orders', label:'Work Orders' },
-      { id:'maintenance', subPage:'schedules',   label:'Service Schedules' },
-      { id:'maintenance', subPage:'calendar',    label:'Calendar' },
-    ]},
-  { id:'forms',       label:'Forms',        ik:'forms',       roles:['admin','supervisor','technician','operator'],
-    children:[
-      { id:'forms', subPage:'prestarts',      label:'Prestarts' },
-      { id:'forms', subPage:'service-sheets', label:'Service Sheets' },
-    ]},
-  { id:'scanner',     label:'Scanner',      ik:'scanner',     roles:['technician','operator'] },
-  { id:'chat',        label:'Messages',     ik:'chat',        roles:['admin','supervisor','technician','operator'] },
-  { id:'parts',       label:'Parts',        ik:'parts',       roles:['admin','supervisor','technician'] },
-  { id:'oil_sampling',label:'Oil Sampling', ik:'oil_sampling',roles:['admin','supervisor'] },
-  { id:'reports',     label:'Reports',      ik:'reports',     roles:['admin','supervisor'],
-    children:[
-      { id:'reports', subPage:'downtime-log',  label:'Downtime Log' },
-      { id:'reports', subPage:'downtime',      label:'Downtime Analysis' },
-      { id:'reports', subPage:'availability',  label:'Availability' },
-    ]},
-  { id:'admin',       label:'Admin',        ik:'admin',       roles:['admin'],
-    children:[
-      { id:'admin', subPage:'company',          label:'Company Details' },
-      { id:'admin', subPage:'users',            label:'Users & Roles' },
-      { id:'admin', subPage:'notifs',           label:'Notifications' },
-      { id:'admin', subPage:'billing',          label:'Billing & Plan' },
-      { id:'admin', subPage:'data',             label:'Data & Export' },
-      { id:'admin', subPage:'daily_reports',    label:'Daily Reports' },
-      { id:'admin', subPage:'error_log',        label:'Error Log' },
-      { id:'admin', subPage:'assets_settings',  label:'Assets' },
-      { id:'admin', subPage:'labels',           label:'Labels' },
-    ]},
-  { id:'settings',    label:'Settings',     ik:'settings',    roles:['admin','supervisor'],
-    children:[
-      { id:'settings', subPage:'format',       label:'Format & Theme' },
-      { id:'settings', subPage:'datetime',     label:'Date & Time' },
-      { id:'settings', subPage:'sync',         label:'OneDrive Sync' },
-      { id:'settings', subPage:'app_modifier', label:'App Requests' },
-      { id:'settings', subPage:'password',     label:'Password Reset' },
-    ]},
+// ─── Nav structure ─────────────────────────────────────────────────────────────
+const NAV_STRUCTURE = [
+  { id: 'dashboard',    label: 'Dashboard',    ik: 'dashboard',    roles: ['admin','supervisor','technician','operator'], feature: 'dashboard' },
+  { id: 'assets',       label: 'Assets',       ik: 'assets',       roles: ['admin','supervisor'], feature: 'assets',
+    children: [
+      { id: 'assets', subPage: 'units',        label: 'Units',        roles: ['admin','supervisor'] },
+      { id: 'assets', subPage: 'onboarding',   label: 'Onboarding',   roles: ['admin','supervisor'] },
+      { id: 'assets', subPage: 'depreciation', label: 'Depreciation', roles: ['admin','supervisor'] },
+      { id: 'assets', subPage: 'tracker',      label: 'Tracker',      roles: ['admin','supervisor'] },
+    ],
+  },
+  { id: 'onboarding', label: 'Onboarding', ik: 'assets', roles: ['admin','supervisor'], feature: 'assets' },
+  { id: 'maintenance',  label: 'Maintenance',  ik: 'maintenance',  roles: ['admin','supervisor','technician'], feature: 'maintenance',
+    children: [
+      { id: 'maintenance', subPage: 'scheduled',   label: 'Planned Maintenance', roles: ['admin','supervisor','technician'] },
+      { id: 'maintenance', subPage: 'work_orders', label: 'Work Orders',       roles: ['admin','supervisor','technician'] },
+      { id: 'maintenance', subPage: 'schedules',   label: 'Service Schedules', roles: ['admin','supervisor','technician'] },
+      { id: 'maintenance', subPage: 'calendar',    label: 'Calendar',          roles: ['admin','supervisor','technician'] },
+    ],
+  },
+  { id: 'forms',        label: 'Forms',        ik: 'forms',        roles: ['admin','supervisor','technician','operator'], feature: 'prestart',
+    children: [
+      { id: 'forms', subPage: 'prestarts',      label: 'Prestarts',      roles: ['admin','supervisor','technician','operator'] },
+      { id: 'forms', subPage: 'service-sheets', label: 'Service Sheets', roles: ['admin','supervisor','technician'] },
+    ],
+  },
+  { id: 'scanner',      label: 'Scanner',      ik: 'scanner',      roles: ['technician','operator'], feature: 'scanner' },
+  { id: 'chat',         label: 'Messages',     ik: 'chat',         roles: ['admin','supervisor','technician','operator'], feature: null },
+  { id: 'parts',        label: 'Parts',        ik: 'parts',        roles: ['admin','supervisor','technician'], feature: null },
+  { id: 'oil_sampling', label: 'Oil Sampling', ik: 'oil_sampling', roles: ['admin','supervisor'], feature: 'oil_sampling' },
+  { id: 'reports',      label: 'Reports',      ik: 'reports',      roles: ['admin','supervisor'], feature: 'reports',
+    children: [
+      { id: 'reports', subPage: 'downtime-log',  label: 'Downtime Log',      roles: ['admin','supervisor'] },
+      { id: 'reports', subPage: 'downtime',      label: 'Downtime Analysis', roles: ['admin','supervisor'] },
+      { id: 'reports', subPage: 'availability',  label: 'Availability',      roles: ['admin','supervisor'] },
+    ],
+  },
+  { id: 'admin',        label: 'Admin',        ik: 'admin',        roles: ['admin'], feature: null,
+    children: [
+      { id: 'admin', subPage: 'company',  label: 'Company Details', roles: ['admin'] },
+      { id: 'admin', subPage: 'users',    label: 'Users & Roles',   roles: ['admin'] },
+      { id: 'admin', subPage: 'notifs',   label: 'Notifications',   roles: ['admin'] },
+      { id: 'admin', subPage: 'billing',  label: 'Billing & Plan',  roles: ['admin'] },
+      { id: 'admin', subPage: 'data',             label: 'Data & Export',   roles: ['admin'] },
+      { id: 'admin', subPage: 'daily_reports',     label: 'Daily Reports',   roles: ['admin'] },
+      { id: 'admin', subPage: 'error_log',          label: 'Error Log',       roles: ['admin'] },
+      { id: 'admin', subPage: 'assets_settings',  label: 'Assets',          roles: ['admin'] },
+      { id: 'admin', subPage: 'labels',           label: 'Labels',          roles: ['admin'] },
+    ],
+  },
+  { id: 'settings',     label: 'Settings',     ik: 'settings',     roles: ['admin','supervisor'], feature: null,
+    children: [
+      { id: 'settings', subPage: 'format',       label: 'Format & Theme', roles: ['admin','supervisor'] },
+      { id: 'settings', subPage: 'datetime',     label: 'Date & Time',    roles: ['admin','supervisor'] },
+      { id: 'settings', subPage: 'sync',         label: 'OneDrive Sync',  roles: ['admin','supervisor'] },
+      { id: 'settings', subPage: 'app_modifier', label: 'App Requests',   roles: ['admin','supervisor'] },
+      { id: 'settings', subPage: 'password',     label: 'Password Reset', roles: ['admin','supervisor'] },
+    ],
+  },
 ];
 
-const PAGE_TITLES = {
-  dashboard:'Dashboard', assets:'Assets', onboarding:'Onboarding', maintenance:'Maintenance',
-  forms:'Forms', scanner:'Scanner', oil_sampling:'Oil Sampling',
-  reports:'Reports', admin:'Admin', settings:'Settings', master:'Master Admin',
-  users:'Users', export:'Data Export', chat:'Messages', parts:'Parts',
-};
-
-const ROLE_COLOURS = {
-  master:     { bg:'#EDE9FE', color:'#6D28D9', border:'#C4B5FD' },
-  admin:      { bg:'#EBF3FC', color:'#1976D2', border:'#BFDBFE' },
-  supervisor: { bg:'#FFFBEB', color:'#B45309', border:'#FCD34D' },
-  technician: { bg:'#F0FDF4', color:'#15803D', border:'#86EFAC' },
-  operator:   { bg:'#F3F4F6', color:'#6B7280', border:'#D1D5DB' },
+const ROLE_STYLE = {
+  master:     { bg: '#ede9fe', color: 'var(--purple)', border: '#c4b5fd' },
+  admin:      { bg: '#e0f4ff', color: '#1976D2', border: '#7dd3fc' },
+  supervisor: { bg: 'var(--amber-bg)', color: 'var(--amber)', border: '#fcd34d' },
+  technician: { bg: 'var(--green-bg)', color: 'var(--green)', border: '#86efac' },
+  operator:   { bg: '#f1f5f9', color: '#64748b', border: '#cbd5e1' },
 };
 function RoleBadge({ role }) {
-  const s = ROLE_COLOURS[role] || ROLE_COLOURS.operator;
-  return <span className="miq-role" style={{ background:s.bg, color:s.color, borderColor:s.border }}>{role}</span>;
+  const s = ROLE_STYLE[role] || ROLE_STYLE.operator;
+  return <span className="role-badge" style={{ background: s.bg, color: s.color, border: `1px solid ${s.border}` }}>{role}</span>;
 }
 
-/* ─── RAIL ITEM ──────────────────────────────────────────────────────────────── */
-function RailItem({ item, currentPage, currentSubPage, onNav, flyout, setFlyout }) {
+// ─── Sidebar nav item ──────────────────────────────────────────────────────────
+function SidebarItem({ item, currentPage, currentSubPage, onNav, expanded, flyoutOpen, setFlyoutOpen }) {
+  const hasChildren = item.children?.length > 0;
+  const isActive = currentPage === item.id || (hasChildren && item.children.some(c => c.id === currentPage));
+  const isFlyout = flyoutOpen === item.id;
+  const [inlineOpen, setInlineOpen] = useState(isActive);
   const ref = useRef(null);
-  const isActive = currentPage === item.id || item.children?.some(c => c.id === currentPage && c.subPage === currentSubPage);
-  const hasSubs = item.children?.length > 0;
-  const open = flyout === item.id;
 
   useEffect(() => {
-    if (!open) return;
-    const h = e => { if (ref.current && !ref.current.contains(e.target)) setFlyout(null); };
+    const h = e => { if (isFlyout && ref.current && !ref.current.contains(e.target)) setFlyoutOpen(null); };
     document.addEventListener('mousedown', h);
     return () => document.removeEventListener('mousedown', h);
-  }, [open]);
+  }, [isFlyout]);
 
-  const click = () => {
-    if (hasSubs) { setFlyout(open ? null : item.id); }
-    else { onNav(item.id, null); setFlyout(null); }
+  useEffect(() => { if (isActive && expanded) setInlineOpen(true); }, [isActive, expanded]);
+
+  const handleClick = () => {
+    if (!hasChildren) { onNav(item.id, null); setFlyoutOpen(null); return; }
+    if (expanded) setInlineOpen(o => !o);
+    else setFlyoutOpen(isFlyout ? null : item.id);
   };
 
   return (
-    <div ref={ref} style={{ position:'relative' }}>
-      <div className={`miq-item${isActive ? ' active' : ''}`} onClick={click}>
-        {IC[item.ik] || IC.settings}
-        {!hasSubs && <div className="miq-tip">{item.label}</div>}
-        {hasSubs && !open && <div className="miq-tip">{item.label}</div>}
+    <div ref={ref} style={{ position: 'relative' }}>
+      <div className={`sidebar-item${isActive ? ' active' : ''}`} onClick={handleClick}>
+        <span className="sbi-icon">{IC[item.ik] || IC.settings}</span>
+        <span className="sbi-label">{item.label}</span>
+        {hasChildren && expanded && (
+          <span className="sbi-caret" style={{ transform: inlineOpen ? 'rotate(180deg)' : 'none' }}>{IC.chevron}</span>
+        )}
+        {!expanded && <span className="sidebar-tooltip">{item.label}</span>}
       </div>
-      {hasSubs && open && (
-        <div className="miq-flyout">
-          <div className="miq-flyout-hdr">{item.label}</div>
+
+      {/* Inline sub-items */}
+      {hasChildren && expanded && (
+        <div className="sidebar-sub" style={{ maxHeight: inlineOpen ? `${item.children.length * 36}px` : '0' }}>
           {item.children.map(c => (
             <div
-              key={c.id + c.subPage}
-              className={`miq-flyout-item${currentPage === c.id && currentSubPage === c.subPage ? ' on' : ''}`}
-              onClick={() => { onNav(c.id, c.subPage); setFlyout(null); }}
+              key={`${c.id}-${c.subPage}`}
+              className={`sidebar-sub-item${currentPage === c.id && currentSubPage === c.subPage ? ' active' : ''}`}
+              onClick={() => onNav(c.id, c.subPage)}
             >
-              <span className="miq-flyout-dot" />{c.label}
+              <span className="sub-dot" />{c.label}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Flyout (collapsed) */}
+      {hasChildren && !expanded && isFlyout && (
+        <div className="sidebar-flyout">
+          <div className="sidebar-flyout-header">{item.label}</div>
+          {item.children.map(c => (
+            <div
+              key={`${c.id}-${c.subPage}`}
+              className={`sidebar-flyout-item${currentPage === c.id && currentSubPage === c.subPage ? ' active' : ''}`}
+              onClick={() => { onNav(c.id, c.subPage); setFlyoutOpen(null); }}
+            >
+              <span className="item-dot" />{c.label}
             </div>
           ))}
         </div>
@@ -451,259 +434,286 @@ function RailItem({ item, currentPage, currentSubPage, onNav, flyout, setFlyout 
   );
 }
 
-/* ─── MAIN COMPONENT ─────────────────────────────────────────────────────────── */
-export default function Navbar({ currentPage, currentSubPage=null, setCurrentPage, onLogout, session, userRole, viewingCompany, onSelectCompany, onExitCompany, isDemo }) {
-  const [flyout,      setFlyout]      = useState(null);
-  const [userDD,      setUserDD]      = useState(false);
-  const [coDD,        setCoDD]        = useState(false);
-  const [mobOpen,     setMobOpen]     = useState(false);
-  const [companies,   setCompanies]   = useState([]);
-  const [coName,      setCoName]      = useState('');
-  const [coLogo,      setCoLogo]      = useState(null);
-  const userDDRef = useRef(null);
-  const coDDRef   = useRef(null);
+const PAGE_TITLES = {
+  dashboard: 'Dashboard', assets: 'Assets', onboarding: 'Onboarding', maintenance: 'Maintenance',
+  forms: 'Forms', scanner: 'Scanner', oil_sampling: 'Oil Sampling',
+  reports: 'Reports', admin: 'Admin', settings: 'Settings', master: 'Master Admin',
+  users: 'Users', export: 'Data Export', chat: 'Messages', parts: 'Parts',
+};
 
+// ─── Main Navbar ───────────────────────────────────────────────────────────────
+function Navbar({ currentPage, currentSubPage, setCurrentPage, onLogout, session, userRole, viewingCompany, onSelectCompany, onExitCompany }) {
+  const [expanded, setExpanded] = useState(() => {
+    try { return localStorage.getItem('mechiq_sidebar_expanded') !== 'false'; } catch { return true; }
+  });
+  const [flyoutOpen, setFlyoutOpen] = useState(null);
+  const [companies, setCompanies] = useState([]);
+  const [switcherOpen, setSwitcherOpen] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [companyLogo, setCompanyLogo] = useState(null);
+  const [companyName, setCompanyName] = useState('');
+  const switcherRef = useRef(null);
   const isMaster = userRole?.role === 'master';
-  const role     = viewingCompany ? 'admin' : (userRole?.role || 'operator');
+  const role = viewingCompany ? 'admin' : (userRole?.role || 'operator');
   const features = viewingCompany?.features || userRole?.company_features || {};
-  const hasBanner = !!(isMaster && viewingCompany);
-  const displayName = userRole?.name || session?.user?.email?.split('@')[0] || 'User';
-  const email = session?.user?.email || '';
 
   useEffect(() => {
-    if (!document.getElementById('miq-nav-css')) {
-      const s = document.createElement('style'); s.id = 'miq-nav-css'; s.textContent = CSS;
+    if (!document.getElementById('navbar-css')) {
+      const s = document.createElement('style'); s.id = 'navbar-css'; s.textContent = CSS;
       document.head.appendChild(s);
     }
-    updateLayout();
-  }, [hasBanner]);
+  }, []);
+
+  const updateLayout = (exp, banner) => {
+    const mc = document.querySelector('.main-content');
+    if (mc) {
+      const isMobile = window.innerWidth <= 1024;
+      mc.style.marginLeft = isMobile ? '56px' : (exp ? '220px' : '56px');
+      mc.style.marginTop = banner ? '90px' : '56px';
+      mc.style.width = isMobile ? `calc(100vw - 56px)` : '';
+      mc.style.maxWidth = isMobile ? `calc(100vw - 56px)` : '';
+    }
+  };
+
+  useEffect(() => {
+    try { localStorage.setItem('mechiq_sidebar_expanded', String(expanded)); } catch {}
+    updateLayout(expanded, hasBanner);
+  }, [expanded]);
+
+  useEffect(() => { updateLayout(expanded, hasBanner); }, []);
 
   useEffect(() => { if (isMaster) fetchCompanies(); }, [isMaster]);
 
   useEffect(() => {
     const cid = viewingCompany?.id || userRole?.company_id;
-    if (!cid || isMaster) { setCoLogo(null); setCoName(''); return; }
-    supabase.from('companies').select('name,logo_url').eq('id', cid).single()
-      .then(({ data }) => { if (data) { setCoName(data.name||''); setCoLogo(data.logo_url||null); } });
+    if (!cid || isMaster) { setCompanyLogo(null); setCompanyName(''); return; }
+    supabase.from('companies').select('name, logo_url').eq('id', cid).single().then(({ data }) => {
+      if (data) {
+        setCompanyName(data.name || '');
+        setCompanyLogo(data.logo_url || null);
+      }
+    });
   }, [userRole?.company_id, viewingCompany?.id, isMaster]);
 
   useEffect(() => {
-    const h = e => {
-      if (userDDRef.current && !userDDRef.current.contains(e.target)) setUserDD(false);
-      if (coDDRef.current   && !coDDRef.current.contains(e.target))   setCoDD(false);
-    };
+    const h = e => { if (switcherRef.current && !switcherRef.current.contains(e.target)) setSwitcherOpen(false); };
     document.addEventListener('mousedown', h);
     return () => document.removeEventListener('mousedown', h);
   }, []);
 
-  useEffect(() => {
-    const h = e => { if (e.detail?.page) handleNav(e.detail.page, e.detail.subPage||null); };
-    window.addEventListener('mechiq-navigate', h);
-    return () => window.removeEventListener('mechiq-navigate', h);
-  }, []);
-
-  useEffect(() => {
-    const onResize = () => updateLayout();
-    window.addEventListener('resize', onResize);
-    return () => window.removeEventListener('resize', onResize);
-  }, [hasBanner]);
-
-  const updateLayout = () => {
-    const mc = document.querySelector('.main-content');
-    if (mc) {
-      mc.style.marginLeft = '60px';
-      mc.style.marginTop  = hasBanner ? '96px' : '56px';
-    }
-  };
-
   const fetchCompanies = async () => {
-    const { data } = await supabase.from('companies').select('id,name,status').eq('status','active').order('name');
+    const { data } = await supabase.from('companies').select('id, name, status').eq('status', 'active').order('name');
     setCompanies(data || []);
   };
 
-  const handleNav = (id, subPage) => { setCurrentPage(id, subPage); setFlyout(null); setMobOpen(false); };
+  const handleNav = (id, subPage) => { setCurrentPage(id, subPage); setFlyoutOpen(null); setMobileOpen(false); };
 
   const visibleItems = (() => {
     if (isMaster && !viewingCompany) {
       return [
-        ...NAV.filter(i => i.id !== 'admin' && i.id !== 'settings'),
-        { id:'master', label:'Master Admin', ik:'master', roles:['master'],
-          children:[
-            { id:'master', subPage:'companies', label:'Companies' },
-            { id:'master', subPage:'register',  label:'New Company' },
-            { id:'master', subPage:'requests',  label:'App Requests' },
-          ]},
+        ...NAV_STRUCTURE.filter(i => i.id !== 'admin' && i.id !== 'settings'),
+        { id: 'master', label: 'Master Admin', ik: 'master', roles: ['master'],
+          children: [
+            { id: 'master', subPage: 'companies', label: 'Companies',       roles: ['master'] },
+            { id: 'master', subPage: 'register',  label: 'New Company',     roles: ['master'] },
+            { id: 'master', subPage: 'requests',  label: 'App Requests',    roles: ['master'] },
+          ]
+        },
       ];
     }
-    return NAV
+    return NAV_STRUCTURE
       .filter(item => item.roles.includes(role) && !(item.feature && features[item.feature] === false))
-      .map(item => ({ ...item, children: item.children?.filter(c => !c.roles || c.roles.includes(role)) }));
+      .map(item => ({ ...item, children: item.children?.filter(c => c.roles.includes(role)) }));
   })();
 
-  // Page title for topbar
-  const pageTitle = (() => {
-    if (currentSubPage) {
-      const allSubs = NAV.flatMap(i => i.children || []);
-      const match = allSubs.find(c => c.id === currentPage && c.subPage === currentSubPage);
-      if (match) return match.label;
-    }
-    return PAGE_TITLES[currentPage] || currentPage;
-  })();
+  const displayName = userRole?.name || session?.user?.email?.split('@')[0] || 'User';
+  const hasBanner = isMaster && viewingCompany;
 
-  const parentTitle = currentSubPage ? (PAGE_TITLES[currentPage] || currentPage) : null;
+  // Re-run layout on window resize
+  React.useEffect(() => {
+    const onResize = () => updateLayout(expanded, hasBanner);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, [expanded, hasBanner]);
+
+  // Listen for programmatic navigation events from child components
+  useEffect(() => {
+    const onNav = (e) => {
+      if (e.detail?.page) handleNav(e.detail.page, e.detail.subPage || null);
+    };
+    window.addEventListener('mechiq-navigate', onNav);
+    return () => window.removeEventListener('mechiq-navigate', onNav);
+  }, []);
 
   return (
     <>
-      {/* Admin viewing banner */}
       {hasBanner && (
-        <div className="miq-banner">
-          <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-            {IC.building}
-            <span style={{ opacity:0.8 }}>Viewing as admin:</span>
+        <div className="nav-viewing-banner">
+          <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ opacity: 0.7 }}>Viewing as:</span>
             <strong>{viewingCompany.name}</strong>
-          </div>
-          <button className="miq-banner-exit" onClick={onExitCompany}>✕ Exit view</button>
+            <span style={{ background: 'rgba(255,255,255,0.2)', padding: '1px 8px', borderRadius: 10, fontSize: 11 }}>Admin</span>
+          </span>
+          <button
+            onClick={onExitCompany}
+            style={{ background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.3)', color: '#fff', padding: '4px 14px', borderRadius: 6, cursor: 'pointer', fontWeight: 700, fontSize: 11, fontFamily: 'inherit' }}
+            onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.28)'}
+            onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.15)'}
+          >
+            ✕ Exit View
+          </button>
         </div>
       )}
 
       {/* Mobile overlay */}
-      <div className={`miq-overlay${mobOpen ? ' visible' : ''}`} onClick={() => setMobOpen(false)} />
+      <div className={`sidebar-overlay${mobileOpen ? ' visible' : ''}`} onClick={() => setMobileOpen(false)} />
 
-      {/* Icon rail */}
-      <nav className={`miq-rail${hasBanner ? ' has-banner' : ''}${mobOpen ? ' mob-open' : ''}`}>
-
-        {/* Logo */}
-        <div className="miq-logo" onClick={() => handleNav(isMaster && !viewingCompany ? 'master' : 'dashboard', null)}>
-          <div className="miq-logo-mark">M</div>
+      {/* Sidebar */}
+      <div className={`sidebar${expanded ? ' expanded' : ''}${hasBanner ? ' has-banner' : ''}${mobileOpen ? ' mobile-open' : ''}`}>
+        {/* Brand */}
+        <div className="sidebar-brand" onClick={() => handleNav(isMaster && !viewingCompany ? 'master' : 'dashboard', null)}>
+          <div className="brand-mark">M</div>
+          <div className="brand-word"><span className="brand-mech">Mech</span><span className="brand-iq">IQ</span></div>
         </div>
 
-        {/* Nav items */}
-        <div className="miq-nav">
-          {visibleItems.map((item, i) => {
-            const prevItem = visibleItems[i - 1];
-            const showDivider = i > 0 && (
-              (item.id === 'reports'  && prevItem?.id !== 'reports') ||
-              (item.id === 'admin'    && prevItem?.id !== 'admin') ||
-              (item.id === 'settings' && prevItem?.id !== 'settings') ||
-              (item.id === 'master'   && prevItem?.id !== 'master')
-            );
-            return (
-              <React.Fragment key={item.id + item.ik}>
-                {showDivider && <div className="miq-divider" />}
-                <RailItem
-                  item={item}
-                  currentPage={currentPage}
-                  currentSubPage={currentSubPage}
-                  onNav={handleNav}
-                  flyout={flyout}
-                  setFlyout={setFlyout}
-                />
-              </React.Fragment>
-            );
-          })}
+        {/* Nav */}
+        <div className="sidebar-nav">
+          {visibleItems.map(item => (
+            <SidebarItem
+              key={item.id + item.ik}
+              item={item}
+              currentPage={currentPage}
+              currentSubPage={currentSubPage}
+              onNav={handleNav}
+              expanded={expanded}
+              flyoutOpen={flyoutOpen}
+              setFlyoutOpen={setFlyoutOpen}
+            />
+          ))}
         </div>
 
         {/* Footer */}
-        <div className="miq-footer">
-          {/* Download app */}
-          <a href="https://mechiq.coastlinemm.com.au/MechIQ.apk" download className="miq-footer-btn" title="Download App">
-            {IC.download}
-            <div className="miq-tip">Download App</div>
-          </a>
-          {/* Avatar */}
-          <div className="miq-avatar-btn" title={displayName} onClick={() => setUserDD(o => !o)} style={{ marginBottom:4 }}>
-            {(displayName||'?')[0].toUpperCase()}
-            <div className="miq-tip">{displayName}</div>
-          </div>
-        </div>
-      </nav>
-
-      {/* Topbar */}
-      <header className={`miq-topbar${hasBanner ? ' has-banner' : ''}`}>
-        {/* Mobile hamburger */}
-        <button className="miq-ham" onClick={() => setMobOpen(o => !o)}>{IC.ham}</button>
-
-        {/* Breadcrumb */}
-        <div className="miq-breadcrumb">
-          {parentTitle && <>
-            <span className="miq-breadcrumb-root" onClick={() => handleNav(currentPage, null)}>{parentTitle}</span>
-            <span className="miq-breadcrumb-sep">/</span>
-          </>}
-          <span className="miq-breadcrumb-cur">{pageTitle}</span>
-        </div>
-
-        <div className="miq-topbar-right">
-          {/* Search hint */}
-          <div className="miq-search">
-            <span style={{ color:'#9CA3AF' }}>{IC.search}</span>
-            <span className="miq-search-text">Search MechIQ…</span>
-            <span className="miq-search-key">⌘K</span>
-          </div>
-
-          {/* Notifications */}
-          <div className="miq-topbar-icon" title="Notifications">
-            {IC.notif}
-            <span className="miq-notif-dot" />
-          </div>
-
-          {/* Company logo / name */}
-          {coLogo && <img src={coLogo} alt={coName} style={{ maxHeight:30, maxWidth:120, objectFit:'contain' }} />}
-          {!coLogo && coName && <span style={{ fontSize:13, fontWeight:600, color:'#6B7280' }}>{coName}</span>}
-
-          {/* Master: company switcher */}
-          {isMaster && (
-            <div ref={coDDRef} style={{ position:'relative' }}>
-              <button className="miq-co-btn" onClick={() => setCoDD(o => !o)}>
-                {IC.building}
-                {viewingCompany ? viewingCompany.name : 'View Company'}
-                <span style={{ opacity:0.7, marginLeft:2 }}>{IC.chevDown}</span>
+        <div className="sidebar-footer">
+          {expanded ? (
+            <div style={{ padding: '8px 12px', display: 'flex', flexDirection: 'column', gap: 7 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'rgba(0,171,228,0.18)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#1976D2', fontSize: 12, fontWeight: 800, flexShrink: 0 }}>
+                  {displayName[0]?.toUpperCase()}
+                </div>
+                <div style={{ flex: 1, overflow: 'hidden' }}>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginBottom: 2 }}>{displayName}</div>
+                  <RoleBadge role={isMaster ? 'master' : (userRole?.role || 'operator')} />
+                </div>
+              </div>
+              <a
+                href="https://mechiq.coastlinemm.com.au/MechIQ.apk"
+                download
+                style={{ width: '100%', padding: '6px', background: '#EBF3FC', border: '1px solid #BFDBFE', color: '#1976D2', borderRadius: 6, cursor: 'pointer', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.8px', fontFamily: 'Inter, sans-serif', transition: 'all 0.15s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, textDecoration: 'none' }}
+              >
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                Download App
+              </a>
+              <button
+                onClick={onLogout}
+                style={{ width: '100%', padding: '5px', background: '#F9FAFB', border: '1px solid #E5E7EB', color: '#9CA3AF', borderRadius: 6, cursor: 'pointer', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.8px', fontFamily: 'Inter, sans-serif', transition: 'all 0.15s' }}
+                onMouseEnter={e => e.currentTarget.style.color = '#f87171'}
+                onMouseLeave={e => e.currentTarget.style.color = 'var(--text-faint)'}
+              >
+                Logout
               </button>
-              {coDD && (
-                <div className="miq-co-dd">
-                  <div style={{ padding:'10px 14px 8px', borderBottom:'1px solid #F3F4F6', fontSize:10, fontWeight:700, color:'#9CA3AF', letterSpacing:'0.8px', textTransform:'uppercase' }}>Active Companies</div>
-                  {viewingCompany && <div className="miq-co-dd-item exit" onClick={() => { onExitCompany(); setCoDD(false); }}>← Exit company view</div>}
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, padding: '6px 0' }}>
+              <div title={displayName} style={{ width: 28, height: 28, borderRadius: '50%', background: 'rgba(0,171,228,0.18)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#1976D2', fontSize: 12, fontWeight: 800 }}>
+                {displayName[0]?.toUpperCase()}
+              </div>
+              <a href="https://mechiq.coastlinemm.com.au/MechIQ.apk" download title="Download App" style={{ background: 'none', border: 'none', color: '#1976D2', cursor: 'pointer', padding: 4, borderRadius: 6, display: 'flex', alignItems: 'center', transition: 'color 0.15s', textDecoration: 'none' }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              </a>
+              <button onClick={onLogout} title="Logout" style={{ background: 'none', border: 'none', color: 'var(--text-faint)', cursor: 'pointer', padding: 4, borderRadius: 6, display: 'flex', alignItems: 'center', transition: 'color 0.15s' }}
+                onMouseEnter={e => e.currentTarget.style.color = '#f87171'}
+                onMouseLeave={e => e.currentTarget.style.color = 'var(--text-faint)'}
+              >{IC.logout}</button>
+            </div>
+          )}
+        </div>
+
+        {/* Collapse toggle */}
+        <button className="sidebar-toggle" onClick={() => { setExpanded(e => !e); setFlyoutOpen(null); }} title={expanded ? 'Collapse' : 'Expand'}>
+          {expanded ? IC.collapse : IC.expand}
+        </button>
+      </div>
+
+      {/* Top bar */}
+      <div className={`topbar${expanded ? ' sb-expanded' : ''}${hasBanner ? ' has-banner' : ''}`}>
+        <button className="topbar-hamburger" onClick={() => setMobileOpen(o => !o)}>{IC.hamburger}</button>
+        <div className="topbar-title">
+          {(() => {
+            if (currentSubPage) {
+              const allSubs = NAV_STRUCTURE.flatMap(i => i.children || []);
+              const match = allSubs.find(c => c.id === currentPage && c.subPage === currentSubPage);
+              if (match) return match.label;
+            }
+            return PAGE_TITLES[currentPage] || currentPage;
+          })()}
+        </div>
+        {/* Company logo */}
+        {companyLogo && (
+          <div style={{ flex:1, display:'flex', justifyContent:'center', alignItems:'center', padding:'0 16px' }}>
+            <img
+              src={companyLogo}
+              alt={companyName}
+              style={{ maxHeight:36, maxWidth:180, objectFit:'contain', display:'block' }}
+            />
+          </div>
+        )}
+        {!companyLogo && companyName && (
+          <div style={{ flex:1, display:'flex', justifyContent:'center', alignItems:'center' }}>
+            <span style={{ fontSize:13, fontWeight:700, color:'var(--text-muted)', letterSpacing:'0.5px' }}>{companyName}</span>
+          </div>
+        )}
+        <div className="topbar-right">
+          {isMaster && (
+            <div ref={switcherRef} style={{ position: 'relative' }}>
+              <button onClick={() => setSwitcherOpen(o => !o)} className="nav-pill nav-pill-primary" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                {viewingCompany ? '🏢' : '🔭'}
+                {viewingCompany ? viewingCompany.name : 'View Company'}
+                <span style={{ opacity: 0.7, fontSize: 9, display: 'inline-block', transition: 'transform 0.2s', transform: switcherOpen ? 'rotate(180deg)' : 'none' }}>▾</span>
+              </button>
+              {switcherOpen && (
+                <div className="company-switcher-dropdown">
+                  <div style={{ padding: '10px 16px 8px', borderBottom: '1px solid #f0f6fc' }}>
+                    <div style={{ fontSize: 10, fontWeight: 800, color: 'var(--text-muted)', letterSpacing: '1.2px', textTransform: 'uppercase' }}>Active Companies</div>
+                  </div>
+                  {viewingCompany && (
+                    <div className="company-switcher-item exit" onClick={() => { onExitCompany(); setSwitcherOpen(false); }}>← Exit Company View</div>
+                  )}
                   {companies.length === 0
-                    ? <div style={{ padding:'14px 16px', color:'#9CA3AF', fontSize:12 }}>No active companies</div>
+                    ? <div style={{ padding: '14px 16px', color: 'var(--text-muted)', fontSize: 12 }}>No active companies</div>
                     : companies.map(c => (
-                        <div key={c.id} className={`miq-co-dd-item${viewingCompany?.id === c.id ? ' active' : ''}`} onClick={() => { onSelectCompany(c); setCoDD(false); }}>
-                          <span style={{ width:7, height:7, borderRadius:'50%', background:'#15803D', flexShrink:0 }} />{c.name}
-                        </div>
-                      ))
+                      <div key={c.id} className={`company-switcher-item${viewingCompany?.id === c.id ? ' active' : ''}`} onClick={() => { onSelectCompany(c); setSwitcherOpen(false); }}>
+                        <span style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--green)', flexShrink: 0 }} />{c.name}
+                      </div>
+                    ))
                   }
                 </div>
               )}
             </div>
           )}
-
-          {/* User chip */}
-          <div ref={userDDRef} className="miq-user-chip" onClick={() => setUserDD(o => !o)}>
-            <div className="miq-user-avatar">{(displayName||'?')[0].toUpperCase()}</div>
-            <div>
-              <div className="miq-user-name">{displayName}</div>
-              <RoleBadge role={isMaster ? 'master' : (userRole?.role || 'operator')} />
+          {/* User info in topbar */}
+          <div style={{ display:'flex', alignItems:'center', gap:9, padding:'4px 10px 4px 6px', borderRadius:10, border:'1px solid var(--border)', background:'var(--surface-2)', cursor:'default' }}>
+            <div style={{ width:28, height:28, borderRadius:8, background:'linear-gradient(135deg,var(--accent),var(--accent-dark))', display:'flex', alignItems:'center', justifyContent:'center', fontSize:11, fontWeight:800, color:'#fff', flexShrink:0 }}>
+              {(displayName||'?')[0].toUpperCase()}
             </div>
-            <span style={{ color:'#9CA3AF', marginLeft:2 }}>{IC.chevDown}</span>
-
-            {userDD && (
-              <div className="miq-user-dd" onClick={e => e.stopPropagation()}>
-                <div className="miq-user-dd-hdr">
-                  <div className="miq-user-dd-name">{displayName}</div>
-                  <div className="miq-user-dd-email">{email}</div>
-                </div>
-                <div className="miq-user-dd-item" onClick={() => { handleNav('settings', 'password'); setUserDD(false); }}>
-                  <span style={{ opacity:0.5 }}>{IC.settings}</span> Account settings
-                </div>
-                <a href="https://mechiq.coastlinemm.com.au/MechIQ.apk" download className="miq-user-dd-item" style={{ textDecoration:'none', color:'#374151' }} onClick={() => setUserDD(false)}>
-                  <span style={{ opacity:0.5 }}>{IC.download}</span> Download Android app
-                </a>
-                <div className="miq-user-dd-item danger" onClick={() => { onLogout(); setUserDD(false); }}>
-                  <span style={{ opacity:0.7 }}>{IC.logout}</span> Sign out
-                </div>
-              </div>
-            )}
+            <div style={{ display:'flex', flexDirection:'column', gap:1 }}>
+              <span style={{ fontSize:12, fontWeight:600, color:'var(--text-primary)', lineHeight:1.2 }}>{displayName}</span>
+              {!isMaster && <RoleBadge role={userRole?.role || 'operator'} />}
+            </div>
           </div>
         </div>
-      </header>
+      </div>
     </>
   );
 }
+
+export default Navbar;

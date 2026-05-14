@@ -9,24 +9,21 @@ import {
 } from 'recharts';
 
 // ─── Colour palette ───────────────────────────────────────────────────────────
-const PALETTE = [
-  '#0ea5e9','#22c55e','#f59e0b','#ef4444','#8b5cf6',
-  '#06b6d4','#84cc16','#f97316','#ec4899','#14b8a6',
-];
+const PALETTE = ['#1976D2','#15803D','#B45309','#B91C1C'];
 
 // ─── Display types ────────────────────────────────────────────────────────────
 const DISPLAY_TYPES = [
   { id:'kpi',  label:'KPI Number', icon:'#️⃣', desc:'Single big number with trend' },
-  { id:'bar',  label:'Bar Chart',  icon:'📊', desc:'Compare values across categories' },
-  { id:'line', label:'Line Chart', icon:'📈', desc:'Trends over time' },
-  { id:'pie',  label:'Pie Chart',  icon:'🥧', desc:'Show proportions' },
-  { id:'list', label:'List',       icon:'📋', desc:'Scrollable item list' },
+  { id:'bar',  label:'Bar Chart',  icon:'', desc:'Compare values across categories' },
+  { id:'line', label:'Line Chart', icon:'', desc:'Trends over time' },
+  { id:'pie',  label:'Pie Chart',  icon:'', desc:'Show proportions' },
+  { id:'list', label:'List',       icon:'', desc:'Scrollable item list' },
 ];
 
 // ─── Data source definitions ──────────────────────────────────────────────────
 export const DATA_SOURCES = {
   assets: {
-    label: 'Assets / Fleet', icon: '🚛', table: 'assets',
+    label: 'Assets / Fleet', icon:'', table: 'assets',
     metrics: {
       total:           { label: 'Total Fleet Count',     kpi: true,  chart: false },
       by_status:       { label: 'Assets by Status',      kpi: false, chart: true,  list: true },
@@ -38,7 +35,7 @@ export const DATA_SOURCES = {
     },
   },
   maintenance: {
-    label: 'Maintenance Tasks', icon: '🔧', table: 'maintenance',
+    label: 'Maintenance Tasks', icon:'', table: 'maintenance',
     metrics: {
       overdue:         { label: 'Overdue Services',      kpi: true,  chart: false, urgent: true },
       due_soon:        { label: 'Due Soon',              kpi: true,  chart: false, warn: true },
@@ -48,7 +45,7 @@ export const DATA_SOURCES = {
     },
   },
   work_orders: {
-    label: 'Work Orders', icon: '📝', table: 'work_orders',
+    label: 'Work Orders', icon:'', table: 'work_orders',
     metrics: {
       open_count:      { label: 'Open Work Orders',      kpi: true,  chart: false, warn: true },
       critical_count:  { label: 'Critical WOs',          kpi: true,  chart: false, urgent: true },
@@ -59,7 +56,7 @@ export const DATA_SOURCES = {
     },
   },
   service_schedules: {
-    label: 'Service Schedules', icon: '📅', table: 'service_schedules',
+    label: 'Service Schedules', icon:'', table: 'service_schedules',
     metrics: {
       overdue:         { label: 'Predicted Overdue',     kpi: true,  chart: false, urgent: true },
       due_week:        { label: 'Predicted Due This Week',kpi: true, chart: false, warn: true },
@@ -68,7 +65,7 @@ export const DATA_SOURCES = {
     },
   },
   prestarts: {
-    label: 'Prestarts', icon: '📋', table: 'form_submissions',
+    label: 'Prestarts', icon:'', table: 'form_submissions',
     metrics: {
       total_today:     { label: 'Submitted Today',       kpi: true,  chart: false },
       defect_rate:     { label: 'Defect Rate This Week %',kpi: true, chart: false, warn: true },
@@ -79,7 +76,7 @@ export const DATA_SOURCES = {
     },
   },
   downtime: {
-    label: 'Downtime', icon: '⬇', table: 'downtime',
+    label: 'Downtime', icon: '', table: 'downtime',
     metrics: {
       hours_month:     { label: 'Hours Lost This Month', kpi: true,  chart: false, urgent: true },
       incidents_month: { label: 'Incidents This Month',  kpi: true,  chart: false, warn: true },
@@ -89,7 +86,7 @@ export const DATA_SOURCES = {
     },
   },
   parts: {
-    label: 'Parts & Stock', icon: '🔩', table: 'parts_inventory',
+    label: 'Parts & Stock', icon:'', table: 'parts_inventory',
     metrics: {
       low_stock:       { label: 'Low Stock Items',       kpi: true,  chart: false, warn: true },
       total_value:     { label: 'Total Inventory Value', kpi: true,  chart: false },
@@ -98,7 +95,7 @@ export const DATA_SOURCES = {
     },
   },
   oil_samples: {
-    label: 'Oil Sampling', icon: '🧪', table: 'oil_samples',
+    label: 'Oil Sampling', icon:'', table: 'oil_samples',
     metrics: {
       alert_count:     { label: 'Critical Alerts',       kpi: true,  chart: false, urgent: true },
       caution_count:   { label: 'Caution Samples',       kpi: true,  chart: false, warn: true },
@@ -480,7 +477,7 @@ export function WidgetCustom({ config, companyId, onEdit, onDelete, isAdmin }) {
 
       <div style={headerStyle}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span style={{ fontSize: 16 }}>{config.icon || src?.icon || '📊'}</span>
+          <span style={{ fontSize: 16 }}>{config.icon || src?.icon || ''}</span>
           <span style={titleStyle}>{config.label}</span>
         </div>
         {isAdmin && (
@@ -497,7 +494,7 @@ export function WidgetCustom({ config, companyId, onEdit, onDelete, isAdmin }) {
 
 // ─── Widget Builder Modal ─────────────────────────────────────────────────────
 export function WidgetBuilderModal({ onSave, onClose, editConfig, companyId }) {
-  const blankConfig = { label: '', icon: '📊', displayType: 'kpi', dataSource: 'assets', metrics: ['total'], color: '#0ea5e9', size: 'md', timeRange: '30d' };
+  const blankConfig = { label: '', icon: '', displayType: 'kpi', dataSource: 'assets', metrics: ['total'], color: '#1976D2', size: 'md', timeRange: '30d' };
   const [step, setStep] = useState(1); // 1=type, 2=source+metric, 3=style
   const [config, setConfig] = useState(editConfig ? { ...blankConfig, ...editConfig } : blankConfig);
   const [saving, setSaving] = useState(false);
@@ -573,7 +570,7 @@ export function WidgetBuilderModal({ onSave, onClose, editConfig, companyId }) {
 
   const iStyle = { width: '100%', padding: '9px 12px', border: '1px solid var(--border)', borderRadius: 8, background: 'var(--surface)', color: 'var(--text-primary)', fontSize: 13, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' };
 
-  const ICONS = ['📊','📈','📉','🔧','🚛','⚠️','✅','📋','🔩','🧪','💰','⏱','🔥','🎯','📅','💧','⬇','🔴','🟡','🟢'];
+
 
   return (
     <>
@@ -695,23 +692,15 @@ export function WidgetBuilderModal({ onSave, onClose, editConfig, companyId }) {
                   <label style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: 6 }}>Widget Name</label>
                   <input value={config.label} onChange={e=>upd('label',e.target.value)} placeholder="e.g. Fleet Down Count" style={iStyle} autoFocus />
                 </div>
-                <div style={{ marginBottom: 14 }}>
-                  <label style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: 6 }}>Icon</label>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                    {ICONS.map(ic => (
-                      <button key={ic} onClick={()=>upd('icon',ic)}
-                        style={{ width:36, height:36, fontSize:18, border:`2px solid ${config.icon===ic?'var(--accent)':'var(--border)'}`, borderRadius:8, background:config.icon===ic?'rgba(14,165,233,0.08)':'var(--surface)', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center' }}>
-                        {ic}
-                      </button>
-                    ))}
-                  </div>
-                </div>
+
                 <div style={{ marginBottom: 14 }}>
                   <label style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: 6 }}>Accent Colour</label>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                    {PALETTE.map(c => (
-                      <button key={c} onClick={()=>upd('color',c)}
-                        style={{ width:28, height:28, borderRadius:'50%', background:c, border:`3px solid ${config.color===c?'var(--text-primary)':'transparent'}`, cursor:'pointer', transition:'all 0.1s' }} />
+                  <div style={{ display: 'flex', gap: 6 }}>
+                    {[['#1976D2','Blue'],['#15803D','Green'],['#B45309','Amber'],['#B91C1C','Red']].map(([clr,name]) => (
+                      <button key={clr} onClick={()=>upd('color',clr)}
+                        style={{ flex:1, padding:'7px 4px', border:`2px solid ${config.color===clr?clr:'#E5E7EB'}`, background:config.color===clr?clr+'15':'#F9FAFB', fontSize:11, fontWeight:700, color:config.color===clr?clr:'#6B7280', cursor:'pointer', fontFamily:'inherit', borderRadius:0 }}>
+                        {name}
+                      </button>
                     ))}
                   </div>
                 </div>
@@ -720,7 +709,7 @@ export function WidgetBuilderModal({ onSave, onClose, editConfig, companyId }) {
                   <div style={{ display: 'flex', gap: 8 }}>
                     {[['sm','Small'],['md','Medium'],['lg','Full Width']].map(([id,label])=>(
                       <button key={id} onClick={()=>upd('size',id)}
-                        style={{ flex:1, padding:'8px', borderRadius:8, border:`1px solid ${config.size===id?'var(--accent)':'var(--border)'}`, background:config.size===id?'rgba(14,165,233,0.08)':'var(--surface)', fontSize:12, fontWeight:600, color:config.size===id?'var(--accent)':'var(--text-muted)', cursor:'pointer' }}>
+                        style={{ flex:1, padding:'8px', borderRadius:0, border:`1px solid ${config.size===id?'#1976D2':'#E5E7EB'}`, background:config.size===id?'#EBF3FC':'#fff', fontSize:12, fontWeight:600, color:config.size===id?'#1976D2':'#6B7280', cursor:'pointer' }}>
                         {label}
                       </button>
                     ))}
