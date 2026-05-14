@@ -49,7 +49,7 @@ const INPUT_TYPES = [
 ];
 
 const CamIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#00c2e0" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1976D2" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
     <circle cx="12" cy="13" r="4"/>
   </svg>
@@ -127,7 +127,7 @@ function ItemInput({ item, value, onChange, companyId }) {
     <select
       value={(value && value.status) || ''}
       onChange={e => onChange({ ...value, status: e.target.value })}
-      style={{ ...base, backgroundColor: (value && value.status) === 'OK' ? '#0a2a1a' : (value && value.status) === 'Defect' ? '#2a0a0a' : '#0a0f0f', color: (value && value.status) === 'OK' ? '#00c264' : (value && value.status) === 'Defect' ? '#e94560' : 'white' }}
+      style={{ ...base, backgroundColor: (value && value.status) === 'OK' ? '#F0FDF4' : (value && value.status) === 'Defect' ? '#FEF2F2' : '#F9FAFB', color: (value && value.status) === 'OK' ? '#15803D' : (value && value.status) === 'Defect' ? '#B91C1C' : 'white' }}
     >
       <option value="">Select</option>
       <option value="OK">OK</option>
@@ -155,7 +155,7 @@ function ItemInput({ item, value, onChange, companyId }) {
             <button onClick={() => onChange({ ...value, photo_url: null })} style={{ ...base, padding: '3px 8px', color: 'var(--red)', cursor: 'pointer' }}>X</button>
           </div>
         ) : (
-          <label style={{ background: 'var(--accent-light)', border: '1px solid #00c2e040', color: 'var(--accent)', padding: '5px 12px', borderRadius: '4px', cursor: 'pointer', fontSize: '12px' }}>
+          <label style={{ background: 'var(--accent-light)', border: '1px solid #BFDBFE', color: 'var(--accent)', padding: '5px 12px', borderRadius: '4px', cursor: 'pointer', fontSize: '12px' }}>
             {uploading ? 'Uploading...' : 'Take/Upload Photo'}
             <input type="file" accept="image/*" capture="environment" onChange={handlePhoto} style={{ display: 'none' }} />
           </label>
@@ -257,7 +257,7 @@ function FormRow({ item, formKey, responses, onResponse, companyId }) {
       <td style={{ verticalAlign: 'middle', textAlign: 'center' }}>
         <label style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
           {value.row_photo_url
-            ? <img src={value.row_photo_url} alt="" style={{ width: '36px', height: '28px', objectFit: 'cover', borderRadius: '3px', border: '1px solid #00c2e0' }} />
+            ? <img src={value.row_photo_url} alt="" style={{ width: '36px', height: '28px', objectFit: 'cover', borderRadius: '3px', border: '1px solid #1976D2' }} />
             : <CamIcon />
           }
           <input type="file" accept="image/*" capture="environment" style={{ display: 'none' }} onChange={handleRowPhoto} />
@@ -345,7 +345,7 @@ function AIGeneratorModal({ mode, onClose, onGenerated }) {
       <label style={{
         display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
         padding: '28px 16px', border: `2px dashed ${file ? 'var(--green)' : 'var(--border)'}`,
-        borderRadius: '10px', cursor: 'pointer', background: file ? '#001a0d' : '#060c0c',
+        borderRadius: '10px', cursor: 'pointer', background: file ? '#F0FDF4' : '#F9FAFB',
         transition: 'all 0.2s', gap: '8px',
       }}>
         {file ? (
@@ -381,10 +381,10 @@ function AIGeneratorModal({ mode, onClose, onGenerated }) {
           ].map(t => (
             <button key={t.id} onClick={() => { setInputType(t.id); setFile(null); setError(''); }} style={{
               padding: '10px 6px', background: inputType === t.id ? 'var(--accent-light)' : 'var(--surface-2)',
-              border: '1px solid ' + (inputType === t.id ? '#00c2e0' : '#1a2f2f'),
+              border: '1px solid ' + (inputType === t.id ? '#1976D2' : '#E5E7EB'),
               borderRadius: '8px', cursor: 'pointer', transition: 'all 0.15s',
             }}>
-              <div style={{ color: inputType === t.id ? '#00c2e0' : '#a0b0b0', fontSize: '13px', fontWeight: 700 }}>{t.label}</div>
+              <div style={{ color: inputType === t.id ? '#1976D2' : '#a0b0b0', fontSize: '13px', fontWeight: 700 }}>{t.label}</div>
               <div style={{ color: inputType === t.id ? '#4aa8b8' : '#4a6a6a', fontSize: '10px', marginTop: '2px' }}>{t.desc}</div>
             </button>
           ))}
@@ -407,7 +407,7 @@ function AIGeneratorModal({ mode, onClose, onGenerated }) {
 
         <div style={{ display: 'flex', gap: '10px' }}>
           <button onClick={onClose} style={{ flex: 1, padding: '12px', background: 'transparent', border: '1px solid var(--border)', color: '#a0b0b0', borderRadius: '6px', cursor: 'pointer' }}>Cancel</button>
-          <button onClick={handleGenerate} disabled={loading} style={{ flex: 2, padding: '12px', background: loading ? '#1a2f2f' : 'linear-gradient(135deg, #00c2e0, #0090a8)', border: 'none', color: loading ? '#a0b0b0' : '#000', borderRadius: '6px', cursor: loading ? 'not-allowed' : 'pointer', fontWeight: 700 }}>
+          <button onClick={handleGenerate} disabled={loading} style={{ flex: 2, padding: '12px', background: loading ? '#E5E7EB' : 'linear-gradient(135deg, #1976D2, #0090a8)', border: 'none', color: loading ? '#a0b0b0' : '#000', borderRadius: '6px', cursor: loading ? 'not-allowed' : 'pointer', fontWeight: 700 }}>
             {loading ? (loadingMsg || 'Generating...') : 'Generate with AI'}
           </button>
         </div>
@@ -432,7 +432,7 @@ function BuilderItem({ item, si, ii, onUpdate, onRemove }) {
       >
         {INPUT_TYPES.map(t => <option key={t.id} value={t.id}>{t.label}</option>)}
       </select>
-      <button onClick={() => onRemove(si, ii)} style={{ flexShrink: 0, backgroundColor: 'transparent', border: '1px solid #f0c0c0', color: '#e94560', padding: '5px 9px', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: 700 }}></button>
+      <button onClick={() => onRemove(si, ii)} style={{ flexShrink: 0, backgroundColor: 'transparent', border: '1px solid #f0c0c0', color: '#B91C1C', padding: '5px 9px', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: 700 }}></button>
     </div>
   );
 }
@@ -500,8 +500,8 @@ function AssetPicker({ assets, value = [], onChange }) {
               >
                 <span style={{
                   width: '16px', height: '16px', borderRadius: '4px', flexShrink: 0,
-                  background: checked ? '#00c2e0' : '#fff',
-                  border: '1.5px solid ' + (checked ? '#00c2e0' : '#c8d4e0'),
+                  background: checked ? '#1976D2' : '#fff',
+                  border: '1.5px solid ' + (checked ? '#1976D2' : '#c8d4e0'),
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   color: '#fff', fontSize: '10px', fontWeight: 700,
                 }}>
@@ -558,7 +558,7 @@ function SignaturePad({ sigCanvas, isSigning, setIsSigning, setSignatureData }) 
       const canvas = sigCanvas.current;
       if (!canvas) return;
       const ctx = canvas.getContext('2d');
-      ctx.strokeStyle = '#00c2e0';
+      ctx.strokeStyle = '#1976D2';
       ctx.lineWidth = 2;
       let drawing = false;
       canvas.onmousedown = (e) => { drawing = true; ctx.beginPath(); ctx.moveTo(e.offsetX, e.offsetY); };
@@ -820,7 +820,7 @@ function PrestartTab({ userRole, prestartAsset, prestartAssetId, prestartAssetNu
         <div className="page-header">
           <h2>{aiPreview ? 'AI Generated - Review and Edit' : editingTemplateId ? 'Edit Prestart Template' : 'Form Builder'}</h2>
           <div style={{ display: 'flex', gap: '10px' }}>
-            <button className="btn-primary" style={{ background: 'linear-gradient(135deg, #00c2e0, #0090a8)', color: '#000' }} onClick={() => setShowAI(true)}>Generate with AI</button>
+            <button className="btn-primary" style={{ background: 'linear-gradient(135deg, #1976D2, #0090a8)', color: '#FFFFFF' }} onClick={() => setShowAI(true)}>Generate with AI</button>
             <button className="btn-primary" onClick={() => { setView('list'); setAiPreview(null); setEditingTemplateId(null); setBuilder({ name:'', description:'', sections:[], asset_ids:[] }); }}>Back</button>
           </div>
         </div>
@@ -838,10 +838,10 @@ function PrestartTab({ userRole, prestartAsset, prestartAssetId, prestartAssetNu
               <button onClick={() => setBuilder(prev => ({ ...prev, sections: prev.sections.filter((_, i) => i !== si) }))} className="btn-delete">Remove</button>
             </div>
             {section.items.map((item, ii) => <BuilderItem key={ii} item={item} si={si} ii={ii} onUpdate={updateItem} onRemove={removeItem} />)}
-            <button onClick={() => addItem(si)} style={{ backgroundColor: 'transparent', color: 'var(--accent)', border: '1px dashed #00c2e0', padding: '6px 14px', borderRadius: '4px', cursor: 'pointer', marginTop: '5px', width: '100%' }}>+ Add Item</button>
+            <button onClick={() => addItem(si)} style={{ backgroundColor: 'transparent', color: 'var(--accent)', border: '1px dashed #1976D2', padding: '6px 14px', borderRadius: '4px', cursor: 'pointer', marginTop: '5px', width: '100%' }}>+ Add Item</button>
           </div>
         ))}
-        <button onClick={() => setBuilder(prev => ({ ...prev, sections: [...prev.sections, { title: '', items: [] }] }))} style={{ marginTop: '15px', backgroundColor: 'transparent', color: 'var(--accent)', border: '1px dashed #00c2e0', padding: '10px 20px', borderRadius: '4px', cursor: 'pointer', width: '100%' }}>+ Add Section</button>
+        <button onClick={() => setBuilder(prev => ({ ...prev, sections: [...prev.sections, { title: '', items: [] }] }))} style={{ marginTop: '15px', backgroundColor: 'transparent', color: 'var(--accent)', border: '1px dashed #1976D2', padding: '10px 20px', borderRadius: '4px', cursor: 'pointer', width: '100%' }}>+ Add Section</button>
         <button className="btn-primary" style={{ marginTop: '15px', width: '100%', padding: '14px' }} onClick={saveTemplate}>Save Template</button>
       </div>
     );
@@ -903,8 +903,8 @@ function PrestartTab({ userRole, prestartAsset, prestartAssetId, prestartAssetNu
         {/* Stats bar */}
         <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 20 }}>
           {statBox(submissions.length, 'Total', '#2d8cf0')}
-          {statBox(defectCount, 'Defects', '#e94560')}
-          {statBox(submissions.length - defectCount, 'Clear', '#00c264')}
+          {statBox(defectCount, 'Defects', '#B91C1C')}
+          {statBox(submissions.length - defectCount, 'Clear', '#15803D')}
           {statBox(thisMonth, 'This Month', '#f59e0b')}
         </div>
 
@@ -986,7 +986,7 @@ function PrestartTab({ userRole, prestartAsset, prestartAssetId, prestartAssetNu
                         display: 'inline-flex', alignItems: 'center', gap: 4,
                         padding: '3px 10px', borderRadius: 20, fontSize: 11, fontWeight: 700,
                         background: s.defects_found ? '#fff1f2' : '#f0fdf4',
-                        color: s.defects_found ? '#e94560' : '#00c264',
+                        color: s.defects_found ? '#B91C1C' : '#15803D',
                         border: '1px solid ' + (s.defects_found ? '#fecdd3' : '#bbf7d0'),
                       }}>
                         {s.defects_found ? ' Defects' : ' Clear'}
@@ -1017,7 +1017,7 @@ function PrestartTab({ userRole, prestartAsset, prestartAssetId, prestartAssetNu
           <button className="btn-primary" onClick={() => { setView('history'); setSelectedIds(new Set()); setFilters({ search: '', asset: '', dateFrom: '', dateTo: '', status: 'all' }); }}> Records</button>
           {userRole && userRole.role !== 'technician' && (
             <>
-              <button className="btn-primary" style={{ background: 'linear-gradient(135deg, #00c2e0, #0090a8)', color: '#000' }} onClick={() => setShowAI(true)}>Generate with AI</button>
+              <button className="btn-primary" style={{ background: 'linear-gradient(135deg, #1976D2, #0090a8)', color: '#FFFFFF' }} onClick={() => setShowAI(true)}>Generate with AI</button>
               <button className="btn-primary" onClick={() => setView('builder')}>+ Build Form</button>
             </>
           )}
@@ -1052,7 +1052,7 @@ function PrestartTab({ userRole, prestartAsset, prestartAssetId, prestartAssetNu
       {displayTemplates.length === 0 && templates.length === 0 ? (
         <div className="form-card" style={{ textAlign: 'center', padding: '40px' }}>
           <p style={{ color: '#a0b0b0', marginBottom: '20px' }}>No prestart templates yet.</p>
-          {userRole && userRole.role !== 'technician' && <button className="btn-primary" style={{ background: 'linear-gradient(135deg, #00c2e0, #0090a8)', color: '#000', padding: '12px 24px' }} onClick={() => setShowAI(true)}>Generate with AI</button>}
+          {userRole && userRole.role !== 'technician' && <button className="btn-primary" style={{ background: 'linear-gradient(135deg, #1976D2, #0090a8)', color: '#FFFFFF', padding: '12px 24px' }} onClick={() => setShowAI(true)}>Generate with AI</button>}
         </div>
       ) : (
         <>
@@ -1491,7 +1491,7 @@ function ServiceSheetsTab({ userRole }) {
               ))}
             </tbody>
           </table>
-          <button onClick={() => setForm({ ...form, parts: [...form.parts, { name: '', qty: '', cost: '', part_id: null }] })} style={{ marginTop: '10px', backgroundColor: 'transparent', color: 'var(--accent)', border: '1px dashed #00c2e0', padding: '6px 14px', borderRadius: '4px', cursor: 'pointer' }}>+ Add Part</button>
+          <button onClick={() => setForm({ ...form, parts: [...form.parts, { name: '', qty: '', cost: '', part_id: null }] })} style={{ marginTop: '10px', backgroundColor: 'transparent', color: 'var(--accent)', border: '1px dashed #1976D2', padding: '6px 14px', borderRadius: '4px', cursor: 'pointer' }}>+ Add Part</button>
 
           {/* QR Scanner Modal */}
           {showPartQR && (
@@ -1681,7 +1681,7 @@ function ServiceSheetsTab({ userRole }) {
               ))}
             </tbody>
           </table>
-          <button onClick={() => setForm({ ...form, labour: [...form.labour, { description: '', hours: '' }] })} style={{ marginTop: '10px', backgroundColor: 'transparent', color: 'var(--accent)', border: '1px dashed #00c2e0', padding: '6px 14px', borderRadius: '4px', cursor: 'pointer' }}>+ Add Labour</button>
+          <button onClick={() => setForm({ ...form, labour: [...form.labour, { description: '', hours: '' }] })} style={{ marginTop: '10px', backgroundColor: 'transparent', color: 'var(--accent)', border: '1px dashed #1976D2', padding: '6px 14px', borderRadius: '4px', cursor: 'pointer' }}>+ Add Labour</button>
         </div>
         <div className="form-card" style={{ marginTop: '15px' }}>
           <h3 style={{ marginBottom: '10px' }}>Notes</h3>
@@ -1689,7 +1689,7 @@ function ServiceSheetsTab({ userRole }) {
           <h3 style={{ marginBottom: '10px' }}>Technician Signature</h3>
           <SignaturePad sigCanvas={sigCanvas} isSigning={isSigning} setIsSigning={setIsSigning} setSignatureData={setSignatureData} />
         </div>
-        <div className="form-card" style={{ marginTop: '15px', backgroundColor: '#0a1a1a', border: '1px solid #00c2e030' }}>
+        <div className="form-card" style={{ marginTop: '15px', backgroundColor: '#0a1a1a', border: '1px solid #1976D230' }}>
           <h3 style={{ color: 'var(--accent)', marginBottom: '12px' }}>Summary</h3>
           <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
             <div><span style={{ color: '#a0b0b0', fontSize: '12px' }}>PARTS TOTAL</span><div style={{ color: '#ff6b00', fontWeight: 700, fontSize: '20px' }}>${totalPartsValue.toFixed(2)}</div></div>
@@ -1708,7 +1708,7 @@ function ServiceSheetsTab({ userRole }) {
         <div className="page-header">
           <h2>{aiPreview ? 'AI Generated - Review and Edit' : ssEditingTemplateId ? 'Edit Service Sheet Template' : 'Service Sheet Builder'}</h2>
           <div style={{ display: 'flex', gap: '10px' }}>
-            <button className="btn-primary" style={{ background: 'linear-gradient(135deg, #00c2e0, #0090a8)', color: '#000' }} onClick={() => setShowAI(true)}>Generate with AI</button>
+            <button className="btn-primary" style={{ background: 'linear-gradient(135deg, #1976D2, #0090a8)', color: '#FFFFFF' }} onClick={() => setShowAI(true)}>Generate with AI</button>
             <button className="btn-primary" onClick={() => { setView('list'); setAiPreview(null); setSsEditingTemplateId(null); setBuilder({ name:'', description:'', service_type:'', sections:[], parts_template:[], labour_items:[], asset_ids:[] }); }}>Back</button>
           </div>
         </div>
@@ -1727,10 +1727,10 @@ function ServiceSheetsTab({ userRole }) {
               <button onClick={() => setBuilder(prev => ({ ...prev, sections: prev.sections.filter((_, i) => i !== si) }))} className="btn-delete">Remove</button>
             </div>
             {section.items.map((item, ii) => <BuilderItem key={ii} item={item} si={si} ii={ii} onUpdate={updateItem} onRemove={removeItem} />)}
-            <button onClick={() => addItem(si)} style={{ backgroundColor: 'transparent', color: 'var(--accent)', border: '1px dashed #00c2e0', padding: '6px 14px', borderRadius: '4px', cursor: 'pointer', marginTop: '5px', width: '100%' }}>+ Add Item</button>
+            <button onClick={() => addItem(si)} style={{ backgroundColor: 'transparent', color: 'var(--accent)', border: '1px dashed #1976D2', padding: '6px 14px', borderRadius: '4px', cursor: 'pointer', marginTop: '5px', width: '100%' }}>+ Add Item</button>
           </div>
         ))}
-        <button onClick={() => setBuilder(prev => ({ ...prev, sections: [...prev.sections, { title: '', items: [] }] }))} style={{ marginTop: '15px', backgroundColor: 'transparent', color: 'var(--accent)', border: '1px dashed #00c2e0', padding: '10px 20px', borderRadius: '4px', cursor: 'pointer', width: '100%' }}>+ Add Section</button>
+        <button onClick={() => setBuilder(prev => ({ ...prev, sections: [...prev.sections, { title: '', items: [] }] }))} style={{ marginTop: '15px', backgroundColor: 'transparent', color: 'var(--accent)', border: '1px dashed #1976D2', padding: '10px 20px', borderRadius: '4px', cursor: 'pointer', width: '100%' }}>+ Add Section</button>
         <button className="btn-primary" style={{ marginTop: '15px', width: '100%', padding: '14px' }} onClick={saveTemplate}>Save Template</button>
       </div>
     );
@@ -1795,7 +1795,7 @@ function ServiceSheetsTab({ userRole }) {
         <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 20 }}>
           {statBox(submissions.length, 'Total', '#2d8cf0')}
           {statBox('$' + totalParts.toFixed(0), 'Parts Cost', '#ff6b00')}
-          {statBox(totalLabour.toFixed(1) + 'h', 'Labour Hrs', '#00c2e0')}
+          {statBox(totalLabour.toFixed(1) + 'h', 'Labour Hrs', '#1976D2')}
           {statBox(thisMonth, 'This Month', '#f59e0b')}
         </div>
 
@@ -1867,7 +1867,7 @@ function ServiceSheetsTab({ userRole }) {
                     <td>{s.technician}</td>
                     <td style={{ color: '#6b7a8d' }}>{s.service_type || '—'}</td>
                     <td style={{ color: '#ff6b00', fontWeight: 600 }}>${parseFloat(s.total_parts_cost || 0).toFixed(2)}</td>
-                    <td style={{ color: '#00c2e0', fontWeight: 600 }}>{parseFloat(s.total_labour_hours || 0).toFixed(1)}h</td>
+                    <td style={{ color: '#1976D2', fontWeight: 600 }}>{parseFloat(s.total_labour_hours || 0).toFixed(1)}h</td>
                     <td>
                       <div style={{ display: 'flex', gap: 6 }}>
                         <button className="btn-primary" style={{ padding: '4px 10px', fontSize: '12px' }} onClick={() => exportServicePDF(s)}>PDF</button>
@@ -1893,7 +1893,7 @@ function ServiceSheetsTab({ userRole }) {
           <button className="btn-primary" onClick={() => { setView('history'); setSelectedIds(new Set()); setFilters({ search: '', asset: '', dateFrom: '', dateTo: '', tech: '' }); }}> Records</button>
           {userRole && userRole.role !== 'technician' && (
             <>
-              <button className="btn-primary" style={{ background: 'linear-gradient(135deg, #00c2e0, #0090a8)', color: '#000' }} onClick={() => setShowAI(true)}>Generate with AI</button>
+              <button className="btn-primary" style={{ background: 'linear-gradient(135deg, #1976D2, #0090a8)', color: '#FFFFFF' }} onClick={() => setShowAI(true)}>Generate with AI</button>
               <button className="btn-primary" onClick={() => setView('builder')}>+ Build Form</button>
             </>
           )}
@@ -1931,7 +1931,7 @@ function ServiceSheetsTab({ userRole }) {
             {templates.length === 0 ? (
               <div className="form-card" style={{ textAlign: 'center', padding: '40px' }}>
                 <p style={{ color: '#a0b0b0', marginBottom: '20px' }}>No service sheet templates yet.</p>
-                {userRole && userRole.role !== 'technician' && <button className="btn-primary" style={{ background: 'linear-gradient(135deg, #00c2e0, #0090a8)', color: '#000', padding: '12px 24px' }} onClick={() => setShowAI(true)}>Generate with AI</button>}
+                {userRole && userRole.role !== 'technician' && <button className="btn-primary" style={{ background: 'linear-gradient(135deg, #1976D2, #0090a8)', color: '#FFFFFF', padding: '12px 24px' }} onClick={() => setShowAI(true)}>Generate with AI</button>}
               </div>
             ) : (
               <>
@@ -2233,7 +2233,7 @@ Return ONLY valid JSON — no markdown, no explanation:
     <div>
       {/* Toast */}
       {toast && (
-        <div style={{ position:'fixed', bottom:24, right:24, zIndex:3000, padding:'12px 20px', borderRadius:10, background: toast.type==='error'?'var(--red)':'#00c264', color:'#fff', fontSize:13, fontWeight:700, boxShadow:'0 8px 32px rgba(0,0,0,0.2)', animation:'fadeUp 0.2s ease' }}>
+        <div style={{ position:'fixed', bottom:24, right:24, zIndex:3000, padding:'12px 20px', borderRadius:10, background: toast.type==='error'?'var(--red)':'#15803D', color:'#fff', fontSize:13, fontWeight:700, boxShadow:'0 8px 32px rgba(0,0,0,0.2)', animation:'fadeUp 0.2s ease' }}>
           {toast.msg}
         </div>
       )}

@@ -32,7 +32,7 @@ const CSS = `
   }
   .r-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(0,171,228,0.12); }
   .r-btn {
-    padding: 9px 18px; background: #00ABE4; color: #fff; border: none;
+    padding: 9px 18px; background: #1976D2; color: #fff; border: none;
     border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer;
     font-family: inherit; letter-spacing: 0.4px; box-shadow: 0 3px 10px rgba(0,171,228,0.3);
     transition: all 0.15s; white-space: nowrap;
@@ -608,7 +608,7 @@ function Reports({ companyId, userRole, initialTab }) {
                       return (
                         <tr key={a.asset} className="r-row" style={{ borderBottom:'1px solid #eaf3fb', opacity:0, animation:`fadeUp 0.3s ease ${i*35}ms forwards` }}>
                           <Td style={{ fontWeight:700, color:'var(--text-primary)' }}>{a.asset}</Td>
-                          <Td><Chip text={`${a.totalRunHours}h`} color="#00ABE4" bg="#e0f4ff" /></Td>
+                          <Td><Chip text={`${a.totalRunHours}h`} color="#1976D2" bg="#e0f4ff" /></Td>
                           <Td style={{ color:'var(--text-muted)' }}>{a.targetHours}h</Td>
                           <Td>
                             <div style={{ display:'flex', alignItems:'center', gap:10 }}>

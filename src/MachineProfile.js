@@ -12,15 +12,15 @@ const CSS = `
   .mp-card { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:20px 22px; box-shadow:var(--shadow-sm); }
   .mp-row { transition:background 0.1s; }
   .mp-row:hover { background:var(--surface-2); }
-  .mp-start-btn { width:100%; padding:14px; background:linear-gradient(135deg,var(--accent),#0096cc); color:#fff; border:none; border-radius:12px; font-size:14px; font-weight:800; cursor:pointer; font-family:inherit; letter-spacing:0.5px; box-shadow:0 6px 20px rgba(0,171,228,0.35); transition:all 0.2s; margin-bottom:20px; }
-  .mp-start-btn:hover { transform:translateY(-2px); box-shadow:0 10px 28px rgba(0,171,228,0.45); }
+  .mp-start-btn { width:100%; padding:14px; background:linear-gradient(135deg,var(--accent),#1565C0); color:#fff; border:none; border-radius:12px; font-size:14px; font-weight:800; cursor:pointer; font-family:inherit; letter-spacing:0.5px; box-shadow:0 6px 20px rgba(25,118,210,0.35); transition:all 0.2s; margin-bottom:20px; }
+  .mp-start-btn:hover { transform:translateY(-2px); box-shadow:0 10px 28px rgba(25,118,210,0.45); }
   .mp-action-row { display:flex; gap:10px; margin-bottom:20px; }
   .mp-action-btn { flex:1; padding:11px 14px; border:none; border-radius:10px; font-size:13px; font-weight:700; cursor:pointer; font-family:inherit; letter-spacing:0.3px; transition:all 0.2s; display:flex; align-items:center; justify-content:center; gap:7px; }
   .mp-action-btn:hover { transform:translateY(-1px); }
-  .mp-action-btn.prestart { background:linear-gradient(135deg,var(--accent),#0096cc); color:#fff; box-shadow:0 4px 14px rgba(0,171,228,0.3); }
-  .mp-action-btn.prestart:hover { box-shadow:0 8px 22px rgba(0,171,228,0.4); }
+  .mp-action-btn.prestart { background:linear-gradient(135deg,var(--accent),#1565C0); color:#fff; box-shadow:0 4px 14px rgba(25,118,210,0.3); }
+  .mp-action-btn.prestart:hover { box-shadow:0 8px 22px rgba(25,118,210,0.4); }
   .mp-action-btn.servicesheet { background:#fff; color:#1a2b3c; border:1.5px solid #dde2ea; box-shadow:0 2px 8px rgba(0,0,0,0.07); }
-  .mp-action-btn.servicesheet:hover { border-color:var(--accent); color:var(--accent); box-shadow:0 4px 14px rgba(0,171,228,0.15); }
+  .mp-action-btn.servicesheet:hover { border-color:var(--accent); color:var(--accent); box-shadow:0 4px 14px rgba(25,118,210,0.15); }
 
   .mp-tabs { display:flex; gap:3px; background:var(--surface-2); border-radius:12px; padding:4px; margin-bottom:20px; border:1px solid var(--border); flex-wrap:wrap; }
   .mp-tab { padding:8px 16px; border:none; border-radius:9px; cursor:pointer; font-size:12px; font-weight:600; transition:all 0.15s; font-family:inherit; white-space:nowrap; }
@@ -689,16 +689,16 @@ function ServiceScheduleModal({ asset, schedule, onClose, onSaved }) {
                 {isNumeric ? (
                   <>
                     <input
-                      style={{ ...fStyle, paddingRight: 48, borderColor: '#00c2e0', background: '#f8feff' }}
+                      style={{ ...fStyle, paddingRight: 48, borderColor: '#1976D2', background: '#F9FAFB' }}
                       type="number"
                       placeholder="e.g. 8000"
                       value={form.next_due_override}
                       onChange={e => setForm(f => ({ ...f, next_due_override: e.target.value }))}
                     />
-                    <span style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', fontSize: 11, fontWeight: 700, color: '#00c2e0', pointerEvents: 'none' }}>{iType.unit}</span>
+                    <span style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', fontSize: 11, fontWeight: 700, color: '#1976D2', pointerEvents: 'none' }}>{iType.unit}</span>
                   </>
                 ) : (
-                  <input style={{ ...fStyle, borderColor: '#00c2e0', background: '#f8feff' }} type="date" value={form.next_due_override} onChange={e => setForm(f => ({ ...f, next_due_override: e.target.value }))} />
+                  <input style={{ ...fStyle, borderColor: '#1976D2', background: '#F9FAFB' }} type="date" value={form.next_due_override} onChange={e => setForm(f => ({ ...f, next_due_override: e.target.value }))} />
                 )}
               </div>
               <div style={{ fontSize: 11, color: '#6b7a8d', marginTop: 4 }}>
@@ -718,7 +718,7 @@ function ServiceScheduleModal({ asset, schedule, onClose, onSaved }) {
 
         <div style={{ display: 'flex', gap: 10 }}>
           <button onClick={onClose} style={{ flex: 1, padding: '10px', background: '#f8fafc', border: '1px solid #dde2ea', borderRadius: 8, fontSize: 13, fontWeight: 600, color: '#6b7a8d', cursor: 'pointer' }}>Cancel</button>
-          <button onClick={handleSave} disabled={saving} style={{ flex: 2, padding: '10px', background: saving ? '#a0b0b0' : 'linear-gradient(135deg, #00c2e0, #0090a8)', border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 700, color: '#fff', cursor: saving ? 'not-allowed' : 'pointer' }}>
+          <button onClick={handleSave} disabled={saving} style={{ flex: 2, padding: '10px', background: saving ? '#a0b0b0' : '#1976D2', border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 700, color: '#fff', cursor: saving ? 'not-allowed' : 'pointer' }}>
             {saving ? 'Saving…' : isEdit ? 'Save Changes' : 'Add Schedule'}
           </button>
         </div>

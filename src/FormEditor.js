@@ -22,14 +22,14 @@ const TYPE_MAP = Object.fromEntries(ITEM_TYPES.map(t => [t.id, t]));
 // ─── Phone Preview (renders real ScanPage dark-theme styles) ─────────────────
 const PREVIEW_CSS = `
   @import url('https://fonts.googleapis.com/css2?family=Barlow:wght@400;600;700&family=Barlow+Condensed:wght@700;800;900&display=swap');
-  .pv-wrap { background:#09111f; min-height:100%; padding:16px 14px 32px; font-family:'Barlow',sans-serif; color:#dde3ed; }
+  .pv-wrap { background:#F9FAFB; min-height:100%; padding:16px 14px 32px; font-family:'Barlow',sans-serif; color:#111827; }
   .pv-topbar { display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; }
-  .pv-logo { font-family:'Barlow Condensed',sans-serif; font-weight:900; font-size:14px; letter-spacing:4px; color:#dde3ed; }
+  .pv-logo { font-family:'Barlow Condensed',sans-serif; font-weight:900; font-size:14px; letter-spacing:4px; color:#111827; }
   .pv-logo em { color:#1e88e5; font-style:normal; }
   .pv-form-title { font-family:'Barlow Condensed',sans-serif; font-size:16px; font-weight:800; text-transform:uppercase; letter-spacing:1px; margin-bottom:10px; }
   .pv-form-title em { color:#1e88e5; font-style:normal; }
   .pv-asset-tag { background:rgba(30,136,229,0.1); border:1px solid rgba(30,136,229,0.2); border-radius:3px; padding:8px 10px; margin-bottom:14px; font-size:11px; color:rgba(221,227,237,0.7); }
-  .pv-asset-tag strong { color:#dde3ed; font-weight:700; }
+  .pv-asset-tag strong { color:#111827; font-weight:700; }
   .pv-fl { margin-bottom:12px; }
   .pv-lbl { display:block; font-size:9px; font-weight:700; color:rgba(221,227,237,0.35); letter-spacing:1.5px; text-transform:uppercase; margin-bottom:4px; }
   .pv-inp { width:100%; padding:9px 10px; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); border-radius:3px; color:rgba(221,227,237,0.4); font-size:12px; box-sizing:border-box; }
@@ -53,7 +53,7 @@ function MobilePreview({ builder, mode }) {
   const hasContent = sections.length > 0;
 
   return (
-    <div style={{ height: '100%', overflowY: 'auto', background: '#09111f', borderRadius: 8 }}>
+    <div style={{ height: '100%', overflowY: 'auto', background: '#F9FAFB', borderRadius: 8 }}>
       <style>{PREVIEW_CSS}</style>
       <div className="pv-wrap">
         <div className="pv-topbar">
@@ -150,8 +150,8 @@ function ItemRow({ item, si, ii, isActive, onSelect, onUpdate, onRemove, onMoveU
         <button onClick={e => { e.stopPropagation(); onMoveDown(); }} disabled={isLast}
           style={{ background: 'none', border: 'none', cursor: isLast ? 'not-allowed' : 'pointer', color: 'var(--text-faint)', fontSize: 10, padding: '1px 3px', lineHeight: 1, opacity: isLast ? 0.3 : 0.7 }}>▼</button>
       </div>
-      {/* Type badge */}
-      <span style={{ fontSize: 15, flexShrink: 0, width: 22, textAlign: 'center' }}>{typeInfo.icon}</span>
+      {/* Type pill */}
+      <span style={{ fontSize: 10, fontWeight: 800, padding: '2px 7px', borderRadius: 10, background: `${typeInfo.color}18`, color: typeInfo.color, flexShrink: 0, letterSpacing: '0.3px', border: `1px solid ${typeInfo.color}30` }}>{typeInfo.label}</span>
       {/* Label (editable inline) */}
       <input
         value={item.label || ''}
@@ -427,54 +427,47 @@ export default function FormEditorTab({ userRole }) {
   const iStyle = { width: '100%', padding: '9px 12px', border: '1px solid var(--border)', borderRadius: 8, background: 'var(--surface)', color: 'var(--text-primary)', fontSize: 13, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' };
 
   return (
-    <div style={{ display: 'flex', gap: 0, height: 'calc(100vh - 180px)', minHeight: 600, overflow: 'hidden' }}>
+    <div style={{ display: 'flex', gap: 0, height: 'calc(100vh - 160px)', minHeight: 600, overflow: 'hidden' }}>
 
-      {/* ── Left: Template list sidebar ──────────────────────────────────── */}
-      <div style={{ width: 220, flexShrink: 0, borderRight: '1px solid var(--border)', display: 'flex', flexDirection: 'column', background: 'var(--surface-2)' }}>
-        {/* Mode toggle */}
-        <div style={{ padding: '12px 10px', borderBottom: '1px solid var(--border)' }}>
-          <div style={{ display: 'flex', background: 'var(--surface)', borderRadius: 8, padding: 3, gap: 3 }}>
-            {[['prestart', 'Prestarts'], ['service', 'Service']].map(([id, label]) => (
-              <button key={id} onClick={() => setMode(id)}
-                style={{ flex: 1, padding: '6px 4px', border: 'none', borderRadius: 6, background: mode === id ? 'var(--accent)' : 'transparent', color: mode === id ? '#fff' : 'var(--text-muted)', fontSize: 11, fontWeight: 700, cursor: 'pointer', transition: 'all 0.15s' }}>
-                {label}
-              </button>
-            ))}
-          </div>
-        </div>
 
-        {/* New template button */}
-        <div style={{ padding: '10px 10px 6px' }}>
-          <button onClick={newTemplate}
-            style={{ width: '100%', padding: '8px', background: 'linear-gradient(135deg,var(--accent),#0090a8)', color: '#fff', border: 'none', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
-            + New Template
-          </button>
-        </div>
-
-        {/* Template list */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: '4px 10px 10px' }}>
-          {templates.length === 0 && (
-            <div style={{ fontSize: 12, color: 'var(--text-faint)', padding: '12px 0', textAlign: 'center', fontStyle: 'italic' }}>
-              No templates yet
-            </div>
-          )}
-          {templates.map(t => (
-            <div key={t.id}
-              onClick={() => selectTemplate(t)}
-              style={{ padding: '9px 10px', borderRadius: 7, marginBottom: 4, cursor: 'pointer', background: selectedId === t.id ? 'rgba(14,165,233,0.12)' : 'transparent', border: `1px solid ${selectedId === t.id ? 'rgba(14,165,233,0.35)' : 'transparent'}`, transition: 'all 0.12s' }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 2 }}>{t.name || 'Untitled'}</div>
-              <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>
-                {(t.sections || []).length} section{(t.sections || []).length !== 1 ? 's' : ''} · {(t.sections || []).reduce((n, s) => n + (s.items?.length || 0), 0)} items
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
 
       {/* ── Centre: Builder ───────────────────────────────────────────────── */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 0 }}>
         {/* Builder toolbar */}
-        <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)', background: 'var(--surface)', display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+        <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)', background: 'var(--surface)', display: 'flex', flexDirection: 'column', gap: 10, flexShrink: 0 }}>
+          {/* Template picker row */}
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            {/* Mode toggle */}
+            <div style={{ display: 'flex', background: 'var(--surface-2)', borderRadius: 8, padding: 3, gap: 2, flexShrink: 0 }}>
+              {[['prestart', 'Prestarts'], ['service', 'Service']].map(([id, label]) => (
+                <button key={id} onClick={() => setMode(id)}
+                  style={{ padding: '5px 12px', border: 'none', borderRadius: 6, background: mode === id ? 'var(--accent)' : 'transparent', color: mode === id ? '#fff' : 'var(--text-muted)', fontSize: 11, fontWeight: 700, cursor: 'pointer', transition: 'all 0.15s' }}>
+                  {label}
+                </button>
+              ))}
+            </div>
+            {/* Template dropdown */}
+            <select
+              value={selectedId || ''}
+              onChange={e => {
+                const t = templates.find(t => t.id === e.target.value);
+                if (t) selectTemplate(t); else newTemplate();
+              }}
+              style={{ flex: 1, padding: '7px 10px', background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 13, color: 'var(--text-primary)', cursor: 'pointer', fontFamily: 'inherit' }}>
+              <option value="">— New template —</option>
+              {templates.map(t => (
+                <option key={t.id} value={t.id}>
+                  {t.name || 'Untitled'} ({(t.sections||[]).length}s · {(t.sections||[]).reduce((n,s)=>n+(s.items?.length||0),0)} items)
+                </option>
+              ))}
+            </select>
+            <button onClick={newTemplate}
+              style={{ padding: '7px 14px', background: 'linear-gradient(135deg,var(--accent),#1565C0)', color: '#fff', border: 'none', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer', flexShrink: 0 }}>
+              + New
+            </button>
+          </div>
+          {/* Name / save row */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <div style={{ flex: 1, minWidth: 0 }}>
             <input
               value={builder.name}
@@ -499,9 +492,10 @@ export default function FormEditorTab({ userRole }) {
           {selectedId && (
             <button onClick={deleteTemplate}
               style={{ padding: '8px 12px', background: 'var(--red-bg)', color: 'var(--red)', border: '1px solid var(--red-border)', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer', flexShrink: 0 }}>
-              🗑
+              Del
             </button>
           )}
+          </div>{/* end name/save row */}
         </div>
 
         {/* AI Prompt bar */}
@@ -593,7 +587,7 @@ export default function FormEditorTab({ userRole }) {
         {/* Phone frame */}
         <div style={{ flex: 1, padding: '16px 20px', overflowY: 'auto', display: 'flex', justifyContent: 'center' }}>
           <div style={{
-            width: 240, borderRadius: 24, border: '3px solid #2d3748', boxShadow: '0 20px 60px rgba(0,0,0,0.4), inset 0 0 0 1px rgba(255,255,255,0.05)', overflow: 'hidden', background: '#09111f',
+            width: 240, borderRadius: 24, border: '2px solid #E5E7EB', boxShadow: '0 20px 60px rgba(0,0,0,0.4), inset 0 0 0 1px rgba(255,255,255,0.05)', overflow: 'hidden', background: '#F9FAFB',
             position: 'relative',
           }}>
             {/* Phone notch */}

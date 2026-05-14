@@ -30,7 +30,7 @@ export const showDemoAlert = () => {
   el.innerHTML = `
     <div style="
       position:fixed; bottom:24px; left:50%; transform:translateX(-50%);
-      background:#0ea5e9; color:#fff; padding:12px 24px; border-radius:12px;
+      background:#1976D2; color:#fff; padding:12px 24px; border-radius:12px;
       font-size:13px; font-weight:700; z-index:9999;
       box-shadow:0 8px 32px rgba(14,165,233,0.4);
       display:flex; align-items:center; gap:10px;

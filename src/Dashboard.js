@@ -1156,7 +1156,7 @@ function Dashboard({ companyId, userRole }) {
           <div style={{ display:'flex', gap:8 }}>
             {isAdmin && (
               <button onClick={() => { setEditingWidget(null); setShowBuilder(true); }}
-                style={{ padding:'7px 14px', background:'linear-gradient(135deg,var(--accent),#0090a8)', color:'#fff', border:'none', borderRadius:8, cursor:'pointer', fontSize:12, fontWeight:700, display:'flex', alignItems:'center', gap:6 }}>
+                style={{ padding:'7px 14px', background:'var(--accent)', color:'#fff', border:'none', borderRadius:8, cursor:'pointer', fontSize:12, fontWeight:700, display:'flex', alignItems:'center', gap:6 }}>
                 + Widget
               </button>
             )}

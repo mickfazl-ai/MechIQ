@@ -96,9 +96,9 @@ function ExternalCalendarModal({ companyId, calendarToken, onClose, onRegenToken
     <button onClick={()=>setTab(id)} style={{ flex:1, padding:'8px', border:'none', borderRadius:7, background:tab===id?'#fff':'transparent', color:tab===id?'#1a2b3c':'#6b7a8d', fontWeight:tab===id?700:500, fontSize:13, cursor:'pointer', boxShadow:tab===id?'0 1px 4px rgba(0,0,0,0.1)':'none', transition:'all 0.15s' }}>{label}</button>
   );
   const appBtn = (id) => (
-    <button key={id} onClick={()=>setApp(id)} style={{ flex:1, padding:'8px 4px', background:app===id?'#f0f7ff':'#f8fafc', border:`2px solid ${app===id?'#2d8cf0':'#dde2ea'}`, borderRadius:8, cursor:'pointer', display:'flex', flexDirection:'column', alignItems:'center', gap:4 }}>
+    <button key={id} onClick={()=>setApp(id)} style={{ flex:1, padding:'8px 4px', background:app===id?'#f0f7ff':'#f8fafc', border:`2px solid ${app===id?'#1976D2':'#dde2ea'}`, borderRadius:8, cursor:'pointer', display:'flex', flexDirection:'column', alignItems:'center', gap:4 }}>
       {APPS[id].logo}
-      <span style={{ fontSize:10, fontWeight:700, color:app===id?'#2d8cf0':'#6b7a8d' }}>{APPS[id].name.split(' ')[0]}</span>
+      <span style={{ fontSize:10, fontWeight:700, color:app===id?'#1976D2':'#6b7a8d' }}>{APPS[id].name.split(' ')[0]}</span>
     </button>
   );
 
@@ -135,7 +135,7 @@ function ExternalCalendarModal({ companyId, calendarToken, onClose, onRegenToken
                   <div style={{ fontSize:11, fontWeight:700, color:'#6b7a8d', textTransform:'uppercase', letterSpacing:'0.5px', marginBottom:6 }}>Your subscription URL</div>
                   <div style={{ display:'flex', gap:8, marginBottom:6 }}>
                     <div style={{ flex:1, background:'#f8fafc', border:'1px solid #dde2ea', borderRadius:8, padding:'10px 12px', fontSize:11, color:'#1a2b3c', fontFamily:'monospace', wordBreak:'break-all', lineHeight:1.6 }}>{feedUrl}</div>
-                    <button onClick={()=>copy(feedUrl,'url')} style={{ flexShrink:0, padding:'10px 14px', background:copied==='url'?'#00c264':'#2d8cf0', color:'#fff', border:'none', borderRadius:8, fontSize:12, fontWeight:700, cursor:'pointer' }}>
+                    <button onClick={()=>copy(feedUrl,'url')} style={{ flexShrink:0, padding:'10px 14px', background:copied==='url'?'var(--green)':'#1976D2', color:'#fff', border:'none', borderRadius:8, fontSize:12, fontWeight:700, cursor:'pointer' }}>
                       {copied==='url'?'✓ Copied!':'Copy'}
                     </button>
                   </div>
@@ -218,7 +218,7 @@ function SendToUsersModal({ ev, dateStr, eventsMap, year, month, userRole, onClo
     setDone(true);
   };
 
-  const RC = { admin:'#2d8cf0', supervisor:'#f59e0b', technician:'#00c264', operator:'#a0b0b0' };
+  const RC = { admin:'#1976D2', supervisor:'#f59e0b', technician:'var(--green)', operator:'#a0b0b0' };
   const mBtn = (id,lbl) => (
     <button onClick={()=>setMode(id)} style={{ flex:1, padding:'7px', border:'none', borderRadius:7, background:mode===id?'#fff':'transparent', color:mode===id?'#1a2b3c':'#6b7a8d', fontWeight:mode===id?700:500, fontSize:13, cursor:'pointer', boxShadow:mode===id?'0 1px 4px rgba(0,0,0,0.1)':'none' }}>{lbl}</button>
   );
@@ -256,13 +256,13 @@ function SendToUsersModal({ ev, dateStr, eventsMap, year, month, userRole, onClo
             <>
               <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:8 }}>
                 <span style={{ fontSize:12, fontWeight:700, color:'#6b7a8d' }}>{selected.size} of {users.length} selected</span>
-                <button onClick={toggleAll} style={{ fontSize:12, fontWeight:700, color:'#2d8cf0', background:'none', border:'none', cursor:'pointer' }}>{allSel?'Clear all':'Select all'}</button>
+                <button onClick={toggleAll} style={{ fontSize:12, fontWeight:700, color:'#1976D2', background:'none', border:'none', cursor:'pointer' }}>{allSel?'Clear all':'Select all'}</button>
               </div>
               <div style={{ display:'flex', flexDirection:'column', gap:4 }}>
                 {users.map(u=>(
                   <div key={u.email} onClick={()=>toggle(u.email)}
                     style={{ display:'flex', alignItems:'center', gap:10, padding:'10px 12px', borderRadius:8, background:selected.has(u.email)?'#f0f7ff':'#f8fafc', border:`1px solid ${selected.has(u.email)?'#93c5fd':'#dde2ea'}`, cursor:'pointer', transition:'all 0.15s' }}>
-                    <div style={{ width:18, height:18, borderRadius:4, background:selected.has(u.email)?'#2d8cf0':'#fff', border:`1.5px solid ${selected.has(u.email)?'#2d8cf0':'#c8d4e0'}`, display:'flex', alignItems:'center', justifyContent:'center', color:'#fff', fontSize:10, fontWeight:700, flexShrink:0 }}>
+                    <div style={{ width:18, height:18, borderRadius:4, background:selected.has(u.email)?'#1976D2':'#fff', border:`1.5px solid ${selected.has(u.email)?'#1976D2':'#c8d4e0'}`, display:'flex', alignItems:'center', justifyContent:'center', color:'#fff', fontSize:10, fontWeight:700, flexShrink:0 }}>
                       {selected.has(u.email)?'✓':''}
                     </div>
                     <div style={{ flex:1, minWidth:0 }}>
@@ -282,7 +282,7 @@ function SendToUsersModal({ ev, dateStr, eventsMap, year, month, userRole, onClo
             <div style={{ textAlign:'center', padding:'10px', background:'#f0fdf4', border:'1px solid #bbf7d0', borderRadius:8, fontSize:13, fontWeight:700, color:'#166534' }}>✓ .ics downloaded — email app opened</div>
           ) : (
             <button onClick={handleSend} disabled={selected.size===0}
-              style={{ width:'100%', padding:'12px', background:selected.size>0?'#2d8cf0':'#e5e7eb', color:selected.size>0?'#fff':'#9ca3af', border:'none', borderRadius:9, fontSize:14, fontWeight:700, cursor:selected.size>0?'pointer':'not-allowed', transition:'all 0.2s' }}>
+              style={{ width:'100%', padding:'12px', background:selected.size>0?'#1976D2':'#e5e7eb', color:selected.size>0?'#fff':'#9ca3af', border:'none', borderRadius:9, fontSize:14, fontWeight:700, cursor:selected.size>0?'pointer':'not-allowed', transition:'all 0.2s' }}>
               {selected.size===0?'Select at least one user':`📩 Send to ${selected.size} user${selected.size>1?'s':''}`}
             </button>
           )}
@@ -468,7 +468,7 @@ function Calendar({ userRole, setCurrentPage }) {
                             style={{ padding:'6px 12px', background:'var(--accent)', color:'#fff', border:'none', borderRadius:7, fontSize:11, fontWeight:700, cursor:'pointer' }}>📄 Service Sheet</button>
                         )}
                         <button onClick={()=>{setSelectedDay(null);setSendModal({ev,dateStr});}}
-                          style={{ padding:'6px 12px', background:'#f0f7ff', color:'#2d8cf0', border:'1px solid #93c5fd', borderRadius:7, fontSize:11, fontWeight:700, cursor:'pointer' }}>👥 Send to Users</button>
+                          style={{ padding:'6px 12px', background:'#f0f7ff', color:'#1976D2', border:'1px solid #93c5fd', borderRadius:7, fontSize:11, fontWeight:700, cursor:'pointer' }}>👥 Send to Users</button>
                         <button onClick={()=>{setSelectedDay(null);setShowExternal(true);}}
                           style={{ padding:'6px 12px', background:'var(--accent-light)', color:'var(--accent)', border:'1px solid rgba(0,194,224,0.3)', borderRadius:7, fontSize:11, fontWeight:700, cursor:'pointer' }}>🔗 External Calendar</button>
                       </div>

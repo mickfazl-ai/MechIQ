@@ -3,11 +3,11 @@ import { supabase } from './supabase';
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
 
-const CYAN = '#00ABE4';
+const CYAN = '#1976D2';
 const GREEN = '#166534';
 const RED = '#dc2626';
 const ORANGE = '#ff6b00';
-const BORDER = '#d6e6f2';
+const BORDER = '#E5E7EB';
 const CARD = '#ffffff';
 
 const DATASETS = [
@@ -283,16 +283,16 @@ const isAdmin = userRole?.role === 'admin' || userRole?.role === 'master';
                   gap: 12,
                   padding: '12px 16px',
                   borderRadius: 8,
-                  border: `1px solid ${on ? '#00ABE4' : '#d6e6f2'}`,
+                  border: `1px solid ${on ? '#1976D2' : '#E5E7EB'}`,
                   background: on ? '#e6f4ff' : '#ffffff',
                   cursor: 'pointer',
                   transition: 'all 0.15s',
-                  boxShadow: on ? '0 0 0 2px #00ABE422' : 'none',
+                  boxShadow: on ? '0 0 0 2px rgba(25,118,210,0.13)' : 'none',
                 }}
               >
                 <div style={{
                   width: 20, height: 20, borderRadius: 4,
-                  border: `2px solid ${on ? '#00ABE4' : '#c0cdd8'}`,
+                  border: `2px solid ${on ? '#1976D2' : '#D1D5DB'}`,
                   background: on ? CYAN : 'transparent',
                   flexShrink: 0,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -343,7 +343,7 @@ const isAdmin = userRole?.role === 'admin' || userRole?.role === 'master';
       {loading && progress && (
         <div style={{ background: '#f0f7ff', border: `1px solid ${CYAN}33`, borderRadius: 8, padding: '12px 16px', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 10 }}>
           <span style={{ display: 'inline-block', width: 12, height: 12, border: '2px solid #1a2f2f', borderTopColor: CYAN, borderRadius: '50%', animation: 'spin 0.8s linear infinite', flexShrink: 0 }} />
-          <span style={{ color: '#0077cc', fontSize: 13 }}>{progress}</span>
+          <span style={{ color: '#1976D2', fontSize: 13 }}>{progress}</span>
           <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
         </div>
       )}

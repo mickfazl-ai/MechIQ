@@ -40,7 +40,7 @@ const CSS = `
     font-size:10px; font-weight:700; letter-spacing:0.8px; text-transform:uppercase;
     transition:all 0.15s; font-family:var(--font-display);
   }
-  .feat-on  { background:rgba(0,255,136,0.12); color:#00ff88; border:1px solid rgba(0,204,106,0.4); }
+  .feat-on  { background:var(--green-bg); color:var(--green); border:1px solid var(--green-border); }
   .feat-off { background:rgba(255,51,102,0.08); color:#ff3366; border:1px solid rgba(204,34,68,0.3); }
   .feat-on:hover  { background:rgba(0,255,136,0.2); box-shadow:0 0 10px rgba(0,255,136,0.2); }
   .feat-off:hover { background:rgba(255,51,102,0.15); box-shadow:0 0 10px rgba(255,51,102,0.15); }
@@ -50,7 +50,7 @@ const CSS = `
     font-size:10px; font-weight:700; letter-spacing:0.8px; text-transform:uppercase;
     font-family:var(--font-display);
   }
-  .pill-active    { background:rgba(0,255,136,0.1);  color:#00ff88; border:1px solid rgba(0,204,106,0.4); }
+  .pill-active    { background:var(--green-bg);  color:var(--green); border:1px solid var(--green-border); }
   .pill-pending   { background:rgba(255,170,0,0.1);  color:#ffaa00; border:1px solid rgba(204,136,0,0.4); }
   .pill-suspended { background:rgba(255,51,102,0.1); color:#ff3366; border:1px solid rgba(204,34,68,0.4); }
   .tab-btn {
@@ -66,10 +66,10 @@ const CSS = `
     font-size:11px; font-weight:700; letter-spacing:0.8px; text-transform:uppercase;
     transition:all 0.15s; font-family:var(--font-display);
   }
-  .ma-action.approve  { background:rgba(0,255,136,0.12); color:#00ff88; border:1px solid rgba(0,204,106,0.4); }
+  .ma-action.approve  { background:var(--green-bg); color:var(--green); border:1px solid var(--green-border); }
   .ma-action.reject   { background:rgba(255,51,102,0.1); color:#ff3366; border:1px solid rgba(204,34,68,0.3); }
   .ma-action.suspend  { background:rgba(255,51,102,0.1); color:#ff3366; border:1px solid rgba(204,34,68,0.3); }
-  .ma-action.activate { background:rgba(0,255,136,0.12); color:#00ff88; border:1px solid rgba(0,204,106,0.4); }
+  .ma-action.activate { background:var(--green-bg); color:var(--green); border:1px solid var(--green-border); }
   .ma-action.pending  { background:rgba(255,170,0,0.1);  color:#ffaa00; border:1px solid rgba(204,136,0,0.3); }
   .ma-action.export   { background:rgba(0,212,255,0.08); color:var(--accent); border:1px solid var(--accent-dark); }
   .ma-action.danger   { background:rgba(255,51,102,0.08); color:#ff3366; border:1px solid rgba(204,34,68,0.3); }
@@ -792,7 +792,7 @@ function MasterAdmin({ initialTab }) {
   const counts = { all:companies.length, pending:companies.filter(c=>c.status==='pending').length, active:companies.filter(c=>c.status==='active').length, suspended:companies.filter(c=>c.status==='suspended').length };
 
   const pillClass = (s) => `status-pill pill-${s||'pending'}`;
-  const statusDot = (s) => ({ active:'#00ff88', pending:'#ffaa00', suspended:'#ff3366' }[s]||'#7ab8e8');
+  const statusDot = (s) => ({ active:'var(--green)', pending:'var(--amber)', suspended:'var(--red)' }[s]||'#60A5FA');
 
   return (
     <div style={{ maxWidth:1200, margin:'0 auto' }}>

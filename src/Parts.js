@@ -484,7 +484,7 @@ function PartForm({ part, assets, onSave, onCancel, userRole }) {
             {assets.map(a => {
               const checked = (form.compatible_asset_ids||[]).includes(a.id);
               return (
-                <label key={a.id} style={{ display:'flex', alignItems:'center', gap:5, padding:'3px 10px', borderRadius:20, fontSize:12, fontWeight:600, cursor:'pointer', background: checked ? 'var(--accent-light)' : 'var(--surface)', border: `1px solid ${checked ? 'rgba(0,194,224,0.35)' : 'var(--border)'}`, color: checked ? 'var(--accent)' : 'var(--text-muted)', userSelect:'none', transition:'all 0.12s' }}>
+                <label key={a.id} style={{ display:'flex', alignItems:'center', gap:5, padding:'3px 10px', borderRadius:20, fontSize:12, fontWeight:600, cursor:'pointer', background: checked ? 'var(--accent-light)' : 'var(--surface)', border: `1px solid ${checked ? 'rgba(25,118,210,0.35)' : 'var(--border)'}`, color: checked ? 'var(--accent)' : 'var(--text-muted)', userSelect:'none', transition:'all 0.12s' }}>
                   <input type="checkbox" style={{ display:'none' }} checked={checked}
                     onChange={() => {
                       const ids = form.compatible_asset_ids || [];
@@ -641,7 +641,7 @@ Return a JSON array where each item is:
           {/* Intro */}
           {step === 'intro' && (
             <div>
-              <div style={{ background:'var(--accent-light)', border:'1px solid rgba(0,194,224,0.2)', borderRadius:10, padding:'16px 18px', marginBottom:20 }}>
+              <div style={{ background:'var(--accent-light)', border:'1px solid rgba(25,118,210,0.2)', borderRadius:10, padding:'16px 18px', marginBottom:20 }}>
                 <div style={{ fontWeight:700, color:'var(--accent)', marginBottom:6 }}>How it works</div>
                 <div style={{ fontSize:13, color:'var(--text-secondary)', lineHeight:1.7 }}>
                   AI analyses every part's name, part number, category and description against your fleet's make, model, type and engine details. It suggests which assets each part is compatible with — you review and approve before anything is saved.
@@ -663,7 +663,7 @@ Return a JSON array where each item is:
               <div style={{ fontSize:12, color:'var(--text-muted)', marginBottom:20, padding:'10px 14px', background:'var(--surface-2)', borderRadius:8, border:'1px solid var(--border)' }}>
                  This will only update parts you approve. Existing assignments are kept unless you change them.
               </div>
-              <button onClick={run} style={{ padding:'12px 28px', background:'linear-gradient(135deg,var(--accent),#0090a8)', color:'#fff', border:'none', borderRadius:9, fontSize:14, fontWeight:700, cursor:'pointer', boxShadow:'0 4px 14px rgba(0,194,224,0.3)' }}>
+              <button onClick={run} style={{ padding:'12px 28px', background:'var(--accent)', color:'#fff', border:'none', borderRadius:9, fontSize:14, fontWeight:700, cursor:'pointer', boxShadow:'0 4px 14px rgba(25,118,210,0.3)' }}>
                  Run AI Smart Match
               </button>
             </div>
@@ -676,7 +676,7 @@ Return a JSON array where each item is:
               <div style={{ fontSize:16, fontWeight:700, color:'var(--text-primary)', marginBottom:8 }}>Analysing your parts inventory…</div>
               <div style={{ fontSize:13, color:'var(--text-muted)', marginBottom:24 }}>{statusMsg}</div>
               <div style={{ height:6, background:'var(--surface-2)', borderRadius:3, overflow:'hidden', maxWidth:320, margin:'0 auto' }}>
-                <div style={{ height:'100%', background:'linear-gradient(90deg,var(--accent),#0090a8)', borderRadius:3, width:`${progress}%`, transition:'width 0.5s ease' }} />
+                <div style={{ height:'100%', background:'var(--accent)', borderRadius:3, width:`${progress}%`, transition:'width 0.5s ease' }} />
               </div>
               <div style={{ fontSize:12, color:'var(--text-muted)', marginTop:8 }}>{progress}%</div>
             </div>
@@ -691,7 +691,7 @@ Return a JSON array where each item is:
                 </div>
                 <div style={{ display:'flex', gap:8 }}>
                   <button onClick={()=>setAccepted(Object.fromEntries(matches.map(m=>[m.partId,true])))}
-                    style={{ padding:'5px 12px', background:'var(--accent-light)', color:'var(--accent)', border:'1px solid rgba(0,194,224,0.3)', borderRadius:6, fontSize:12, fontWeight:700, cursor:'pointer' }}>
+                    style={{ padding:'5px 12px', background:'var(--accent-light)', color:'var(--accent)', border:'1px solid rgba(25,118,210,0.3)', borderRadius:6, fontSize:12, fontWeight:700, cursor:'pointer' }}>
                     Accept All
                   </button>
                   <button onClick={()=>setAccepted(Object.fromEntries(matches.map(m=>[m.partId,false])))}
@@ -707,7 +707,7 @@ Return a JSON array where each item is:
                 const acc = accepted[m.partId] !== false;
                 return (
                   <div key={m.partId} onClick={()=>setAccepted(p=>({...p,[m.partId]:!acc}))}
-                    style={{ padding:'12px 16px', borderRadius:10, border:`1px solid ${acc?'rgba(0,194,224,0.3)':'var(--border)'}`, background:acc?'var(--accent-light)':'var(--surface-2)', marginBottom:8, cursor:'pointer', transition:'all 0.15s', userSelect:'none' }}>
+                    style={{ padding:'12px 16px', borderRadius:10, border:`1px solid ${acc?'rgba(25,118,210,0.3)':'var(--border)'}`, background:acc?'var(--accent-light)':'var(--surface-2)', marginBottom:8, cursor:'pointer', transition:'all 0.15s', userSelect:'none' }}>
                     <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', gap:12 }}>
                       <div style={{ flex:1 }}>
                         <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:4 }}>
@@ -1008,7 +1008,7 @@ function Parts({ userRole }) {
           {isAdmin && <button onClick={() => setShowQR(true)} style={{ padding: '9px 16px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: 'pointer', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 6 }}> QR Stickers</button>}
           <button onClick={exportParts} style={{ padding: '9px 16px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: 'pointer', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 6 }}> Export</button>
           {isAdmin && <button onClick={() => setShowAI(true)} style={{ padding: '9px 16px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: 'pointer', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 6 }}> AI Import</button>}
-          {isAdmin && <button onClick={() => setShowSmartMatch(true)} style={{ padding: '9px 16px', background: 'linear-gradient(135deg,var(--accent),#0090a8)', border: 'none', borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: 'pointer', color: '#fff', display: 'flex', alignItems: 'center', gap: 6, boxShadow: '0 2px 10px rgba(0,194,224,0.25)' }}> Smart Match</button>}
+          {isAdmin && <button onClick={() => setShowSmartMatch(true)} style={{ padding: '9px 16px', background: 'var(--accent)', border: 'none', borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: 'pointer', color: '#fff', display: 'flex', alignItems: 'center', gap: 6, boxShadow: '0 2px 10px rgba(25,118,210,0.25)' }}> Smart Match</button>}
           {isAdmin && <button onClick={() => { setEditPart(null); setShowForm(s => !s); }} style={{ padding: '9px 16px', background: showForm ? 'var(--surface-2)' : 'var(--accent)', color: showForm ? 'var(--text-secondary)' : '#fff', border: '1px solid ' + (showForm ? 'var(--border)' : 'var(--accent)'), borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
             {showForm ? ' Close' : '+ Add Part'}
           </button>}
@@ -1100,13 +1100,13 @@ function Parts({ userRole }) {
                               const compat = (Array.isArray(p.compatible_asset_ids) ? p.compatible_asset_ids : []).map(id => (assets||[]).find(a => a.id === id)).filter(Boolean);
                               if (compat.length === 0) {
                                 const linked = assets.find(a => a.id === p.linked_asset_id);
-                                if (linked) return <span style={{ fontSize:11, fontWeight:600, padding:'2px 8px', borderRadius:20, background:'var(--accent-light)', color:'var(--accent)', border:'1px solid rgba(0,194,224,0.25)' }}>{linked.name}</span>;
+                                if (linked) return <span style={{ fontSize:11, fontWeight:600, padding:'2px 8px', borderRadius:20, background:'var(--accent-light)', color:'var(--accent)', border:'1px solid rgba(25,118,210,0.25)' }}>{linked.name}</span>;
                                 return <span style={{ fontSize:11, color:'var(--text-faint)', fontStyle:'italic' }}>General stock</span>;
                               }
                               return (
                                 <div style={{ display:'flex', flexWrap:'wrap', gap:3 }}>
                                   {compat.slice(0,3).map(a => (
-                                    <span key={a.id} style={{ fontSize:10, fontWeight:700, padding:'2px 7px', borderRadius:20, background:'var(--accent-light)', color:'var(--accent)', border:'1px solid rgba(0,194,224,0.25)', whiteSpace:'nowrap' }}>
+                                    <span key={a.id} style={{ fontSize:10, fontWeight:700, padding:'2px 7px', borderRadius:20, background:'var(--accent-light)', color:'var(--accent)', border:'1px solid rgba(25,118,210,0.25)', whiteSpace:'nowrap' }}>
                                       {a.asset_number||a.name}
                                     </span>
                                   ))}

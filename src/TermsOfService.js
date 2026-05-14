@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 
-const CYAN = '#00c2e0';
+const CYAN = '#1976D2';
 const BORDER = '#1a2f2f';
-const CARD = '#0d1515';
+const CARD = '#FFFFFF';
 
 const SECTIONS = [
   {
@@ -119,7 +119,7 @@ export default function TermsOfService() {
       </p>
 
       {/* Intro card */}
-      <div style={{ background: '#060b0b', border: `1px solid ${CYAN}22`, borderRadius: 10, padding: '16px 20px', marginBottom: 24 }}>
+      <div style={{ background: '#FFFFFF', border: `1px solid ${CYAN}22`, borderRadius: 10, padding: '16px 20px', marginBottom: 24 }}>
         <p style={{ margin: 0, color: '#c8dada', fontSize: 13, lineHeight: 1.7 }}>
           Please read these Terms of Service carefully before using Mech IQ. These Terms govern your use of the software and form a binding legal agreement between you and Coastline Mechanical. By creating an account or using the Software, you confirm that you have read, understood, and agree to these Terms.
         </p>
@@ -166,7 +166,7 @@ export default function TermsOfService() {
       })}
 
       {/* Footer */}
-      <div style={{ marginTop: 28, padding: '16px 20px', background: '#060b0b', border: `1px solid ${BORDER}`, borderRadius: 10 }}>
+      <div style={{ marginTop: 28, padding: '16px 20px', background: '#FFFFFF', border: `1px solid ${BORDER}`, borderRadius: 10 }}>
         <p style={{ margin: 0, color: '#4a6a6a', fontSize: 11, textAlign: 'center' }}>
           © {new Date().getFullYear()} Coastline Mechanical. All rights reserved. Mech IQ is a registered product of Coastline Mechanical.
           These Terms were last updated {effectiveDate}.

@@ -15,7 +15,7 @@ const CSS = `
   .sidebar {
     position: fixed; left: 0; top: 0; bottom: 0;
     width: 56px;
-    background: var(--sidebar-bg, #111827);
+    background: var(--sidebar-bg, #FFFFFF);
     display: flex; flex-direction: column; align-items: center;
     padding: 0 0 0;
     z-index: 300;
@@ -70,7 +70,7 @@ const CSS = `
   .sidebar-item.active::before {
     content: ''; position: absolute;
     left: 0; top: 6px; bottom: 6px;
-    width: 3px; background: #00ABE4; border-radius: 0 3px 3px 0;
+    width: 3px; background: #1976D2; border-radius: 0 3px 3px 0;
   }
   .sbi-icon {
     font-size: 16px; flex-shrink: 0;
@@ -185,7 +185,7 @@ const CSS = `
   .topbar-right { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
 
   .nav-viewing-banner {
-    background: linear-gradient(90deg, #0070b8, #00ABE4);
+    background: linear-gradient(90deg, #0070b8, #1976D2);
     color: #fff; padding: 7px 20px;
     display: flex; align-items: center; justify-content: space-between;
     font-size: 12px; font-weight: 600; letter-spacing: 0.3px;
@@ -223,8 +223,8 @@ const CSS = `
     text-transform: uppercase; letter-spacing: 1px;
     transition: all 0.15s; font-family: var(--font-body); white-space: nowrap;
   }
-  .nav-pill-primary { background: #00ABE4; color: #fff; box-shadow: 0 2px 8px rgba(0,171,228,0.28); }
-  .nav-pill-primary:hover { background: #0096cc; transform: translateY(-1px); }
+  .nav-pill-primary { background: #1976D2; color: #fff; box-shadow: 0 2px 8px rgba(25,118,210,0.28); }
+  .nav-pill-primary:hover { background: #1565C0; transform: translateY(-1px); }
   .nav-pill-ghost { background: transparent; color: var(--text-muted); border: 1.5px solid #dde8f2; }
   .nav-pill-ghost:hover { border-color: var(--accent); color: var(--accent); background: var(--surface-2); }
 
@@ -552,7 +552,7 @@ function Navbar({ currentPage, currentSubPage, setCurrentPage, onLogout, session
           {expanded ? (
             <><span className="brand-word brand-mech">MECH</span><span className="brand-word brand-iq">IQ</span></>
           ) : (
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#00ABE4" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1976D2" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/>
             </svg>
           )}
@@ -579,7 +579,7 @@ function Navbar({ currentPage, currentSubPage, setCurrentPage, onLogout, session
           {expanded ? (
             <div style={{ padding: '8px 12px', display: 'flex', flexDirection: 'column', gap: 7 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'rgba(0,171,228,0.18)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent)', fontSize: 12, fontWeight: 800, flexShrink: 0 }}>
+                <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'rgba(25,118,210,0.18)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent)', fontSize: 12, fontWeight: 800, flexShrink: 0 }}>
                   {displayName[0]?.toUpperCase()}
                 </div>
                 <div style={{ flex: 1, overflow: 'hidden' }}>
@@ -606,7 +606,7 @@ function Navbar({ currentPage, currentSubPage, setCurrentPage, onLogout, session
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, padding: '6px 0' }}>
-              <div title={displayName} style={{ width: 28, height: 28, borderRadius: '50%', background: 'rgba(0,171,228,0.18)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent)', fontSize: 12, fontWeight: 800 }}>
+              <div title={displayName} style={{ width: 28, height: 28, borderRadius: '50%', background: 'rgba(25,118,210,0.18)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent)', fontSize: 12, fontWeight: 800 }}>
                 {displayName[0]?.toUpperCase()}
               </div>
               <a href="https://mechiq.coastlinemm.com.au/MechIQ.apk" download title="Download App" style={{ background: 'none', border: 'none', color: 'var(--accent)', cursor: 'pointer', padding: 4, borderRadius: 6, display: 'flex', alignItems: 'center', transition: 'color 0.15s', textDecoration: 'none' }}>

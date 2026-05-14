@@ -35,7 +35,7 @@ const C = {
   textMuted: 'var(--text-muted)', accent: 'var(--accent)',
   red: 'var(--red, #ff3366)', redBg: 'var(--red-glow, rgba(255,51,102,0.12))',
   amber: 'var(--amber, #ffaa00)', amberBg: 'var(--amber-glow, rgba(255,170,0,0.12))',
-  green: 'var(--green, #00ff88)', greenBg: 'var(--green-glow, rgba(0,255,136,0.12))',
+  green: 'var(--green, #00ff88)', greenBg: 'var(--green-glow, var(--green-bg))',
   purple: 'var(--purple, #aa55ff)', purpleBg: 'var(--purple-glow, rgba(170,85,255,0.12))',
 };
 
