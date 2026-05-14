@@ -397,7 +397,7 @@ function SidebarItem({ item, currentPage, currentSubPage, onNav, expanded, flyou
         {hasChildren && expanded && (
           <span className="sbi-caret" style={{ transform: inlineOpen ? 'rotate(180deg)' : 'none' }}>{IC.chevron}</span>
         )}
-        {!expanded && <span className="sidebar-tooltip">{item.label}</span>}
+        <span className="sidebar-tooltip">{item.label}</span>
       </div>
 
       {/* Inline sub-items */}
@@ -443,9 +443,7 @@ const PAGE_TITLES = {
 
 // ─── Main Navbar ───────────────────────────────────────────────────────────────
 function Navbar({ currentPage, currentSubPage, setCurrentPage, onLogout, session, userRole, viewingCompany, onSelectCompany, onExitCompany }) {
-  const [expanded, setExpanded] = useState(() => {
-    try { return localStorage.getItem('mechiq_sidebar_expanded') !== 'false'; } catch { return true; }
-  });
+  const expanded = false; // Always icon-only rail
   const [flyoutOpen, setFlyoutOpen] = useState(null);
   const [companies, setCompanies] = useState([]);
   const [switcherOpen, setSwitcherOpen] = useState(false);
@@ -467,17 +465,13 @@ function Navbar({ currentPage, currentSubPage, setCurrentPage, onLogout, session
   const updateLayout = (exp, banner) => {
     const mc = document.querySelector('.main-content');
     if (mc) {
-      const isMobile = window.innerWidth <= 1024;
-      mc.style.marginLeft = isMobile ? '56px' : (exp ? '220px' : '56px');
+      mc.style.marginLeft = '60px';
       mc.style.marginTop = banner ? '90px' : '56px';
-      mc.style.width = isMobile ? `calc(100vw - 56px)` : '';
-      mc.style.maxWidth = isMobile ? `calc(100vw - 56px)` : '';
     }
   };
 
   useEffect(() => {
-    try { localStorage.setItem('mechiq_sidebar_expanded', String(expanded)); } catch {}
-    updateLayout(expanded, hasBanner);
+    updateLayout(false, hasBanner);
   }, [expanded]);
 
   useEffect(() => { updateLayout(expanded, hasBanner); }, []);
@@ -569,7 +563,7 @@ function Navbar({ currentPage, currentSubPage, setCurrentPage, onLogout, session
       <div className={`sidebar-overlay${mobileOpen ? ' visible' : ''}`} onClick={() => setMobileOpen(false)} />
 
       {/* Sidebar */}
-      <div className={`sidebar${expanded ? ' expanded' : ''}${hasBanner ? ' has-banner' : ''}${mobileOpen ? ' mobile-open' : ''}`}>
+      <div className={`sidebar${hasBanner ? ' has-banner' : ''}${mobileOpen ? ' mobile-open' : ''}`}>
         {/* Brand */}
         <div className="sidebar-brand" onClick={() => handleNav(isMaster && !viewingCompany ? 'master' : 'dashboard', null)}>
           <div className="brand-mark">M</div>
@@ -594,58 +588,33 @@ function Navbar({ currentPage, currentSubPage, setCurrentPage, onLogout, session
 
         {/* Footer */}
         <div className="sidebar-footer">
-          {expanded ? (
-            <div style={{ padding: '8px 12px', display: 'flex', flexDirection: 'column', gap: 7 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'rgba(0,171,228,0.18)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#1976D2', fontSize: 12, fontWeight: 800, flexShrink: 0 }}>
-                  {displayName[0]?.toUpperCase()}
-                </div>
-                <div style={{ flex: 1, overflow: 'hidden' }}>
-                  <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginBottom: 2 }}>{displayName}</div>
-                  <RoleBadge role={isMaster ? 'master' : (userRole?.role || 'operator')} />
-                </div>
+          {/* User avatar */}
+          <div style={{ width:'100%', display:'flex', flexDirection:'column', alignItems:'center', gap:4, padding:'6px 0' }}>
+            <div title={displayName} style={{ position:'relative', width:36, height:36, display:'flex', alignItems:'center', justifyContent:'center' }}>
+              <div style={{ width:28, height:28, background:'#EBF3FC', display:'flex', alignItems:'center', justifyContent:'center', fontSize:11, fontWeight:800, color:'#1976D2', flexShrink:0, cursor:'default' }}>
+                {(displayName||'?')[0].toUpperCase()}
               </div>
-              <a
-                href="https://mechiq.coastlinemm.com.au/MechIQ.apk"
-                download
-                style={{ width: '100%', padding: '6px', background: '#EBF3FC', border: '1px solid #BFDBFE', color: '#1976D2', borderRadius: 6, cursor: 'pointer', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.8px', fontFamily: 'Inter, sans-serif', transition: 'all 0.15s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, textDecoration: 'none' }}
-              >
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                Download App
-              </a>
-              <button
-                onClick={onLogout}
-                style={{ width: '100%', padding: '5px', background: '#F9FAFB', border: '1px solid #E5E7EB', color: '#9CA3AF', borderRadius: 6, cursor: 'pointer', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.8px', fontFamily: 'Inter, sans-serif', transition: 'all 0.15s' }}
-                onMouseEnter={e => e.currentTarget.style.color = '#f87171'}
-                onMouseLeave={e => e.currentTarget.style.color = 'var(--text-faint)'}
-              >
-                Logout
-              </button>
+              <span className="sidebar-tooltip">{displayName} · {isMaster ? 'master' : (userRole?.role || 'operator')}</span>
             </div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, padding: '6px 0' }}>
-              <div title={displayName} style={{ width: 28, height: 28, borderRadius: '50%', background: 'rgba(0,171,228,0.18)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#1976D2', fontSize: 12, fontWeight: 800 }}>
-                {displayName[0]?.toUpperCase()}
-              </div>
-              <a href="https://mechiq.coastlinemm.com.au/MechIQ.apk" download title="Download App" style={{ background: 'none', border: 'none', color: '#1976D2', cursor: 'pointer', padding: 4, borderRadius: 6, display: 'flex', alignItems: 'center', transition: 'color 0.15s', textDecoration: 'none' }}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-              </a>
-              <button onClick={onLogout} title="Logout" style={{ background: 'none', border: 'none', color: 'var(--text-faint)', cursor: 'pointer', padding: 4, borderRadius: 6, display: 'flex', alignItems: 'center', transition: 'color 0.15s' }}
-                onMouseEnter={e => e.currentTarget.style.color = '#f87171'}
-                onMouseLeave={e => e.currentTarget.style.color = 'var(--text-faint)'}
-              >{IC.logout}</button>
-            </div>
-          )}
-        </div>
-
-        {/* Collapse toggle */}
-        <button className="sidebar-toggle" onClick={() => { setExpanded(e => !e); setFlyoutOpen(null); }} title={expanded ? 'Collapse' : 'Expand'}>
-          {expanded ? IC.collapse : IC.expand}
-        </button>
-      </div>
+            <a href="https://mechiq.coastlinemm.com.au/MechIQ.apk" download title="Download App"
+              style={{ position:'relative', width:36, height:32, display:'flex', alignItems:'center', justifyContent:'center', color:'#9CA3AF', textDecoration:'none', transition:'color .12s' }}
+              onMouseEnter={e=>e.currentTarget.style.color='#374151'}
+              onMouseLeave={e=>e.currentTarget.style.color='#9CA3AF'}>
+              {IC.download || <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>}
+              <span className="sidebar-tooltip">Download App</span>
+            </a>
+            <button onClick={onLogout} title="Logout"
+              style={{ position:'relative', width:36, height:32, display:'flex', alignItems:'center', justifyContent:'center', background:'none', border:'none', color:'#9CA3AF', cursor:'pointer', transition:'color .12s' }}
+              onMouseEnter={e=>e.currentTarget.style.color='#B91C1C'}
+              onMouseLeave={e=>e.currentTarget.style.color='#9CA3AF'}>
+              {IC.logout}
+              <span className="sidebar-tooltip">Logout</span>
+            </button>
+          </div>
+        </div></div>
 
       {/* Top bar */}
-      <div className={`topbar${expanded ? ' sb-expanded' : ''}${hasBanner ? ' has-banner' : ''}`}>
+      <div className={`topbar${hasBanner ? ' has-banner' : ''}`}>
         <button className="topbar-hamburger" onClick={() => setMobileOpen(o => !o)}>{IC.hamburger}</button>
         <div className="topbar-title">
           {(() => {
