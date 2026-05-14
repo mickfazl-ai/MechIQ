@@ -12,37 +12,33 @@ const CSS = `
     to   { opacity:1; transform:translateY(0); }
   }
 
-  /* ── Sidebar rail ── */
   .sidebar {
-    position:fixed; left:0; top:0; bottom:0;
-    width:60px;
+    position:fixed; left:0; top:0; bottom:0; width:60px;
     background:#FFFFFF;
     display:flex; flex-direction:column; align-items:center;
     z-index:300;
     border-right:1px solid #E5E7EB;
     transition:width 0.22s cubic-bezier(0.16,1,0.3,1);
     overflow:visible;
-    box-shadow:1px 0 3px rgba(0,0,0,.05);
+    box-shadow:1px 0 3px rgba(0,0,0,.04);
   }
   .sidebar.expanded { width:220px; }
   .sidebar.has-banner { top:40px; }
 
-  /* Logo mark */
   .sidebar-brand {
-    width:100%; height:56px;
+    width:100%; height:56px; flex-shrink:0;
     display:flex; align-items:center; justify-content:center;
-    cursor:pointer; flex-shrink:0;
-    border-bottom:1px solid #E5E7EB;
+    cursor:pointer; border-bottom:1px solid #E5E7EB;
     overflow:hidden; padding:0 14px; user-select:none; gap:10px;
   }
   .brand-mark {
-    width:30px; height:30px; flex-shrink:0;
-    background:#1976D2;
+    width:30px; height:30px; flex-shrink:0; background:#1976D2;
     display:flex; align-items:center; justify-content:center;
+    font-family:'Inter',system-ui,sans-serif;
     font-size:13px; font-weight:800; color:#fff;
   }
   .sidebar-brand .brand-word {
-    font-family:'Inter',var(--font-body),system-ui,sans-serif;
+    font-family:'Inter',system-ui,sans-serif;
     font-size:16px; font-weight:800; letter-spacing:-0.4px;
     white-space:nowrap; color:#111827;
     opacity:0; transform:translateX(-6px);
@@ -52,7 +48,6 @@ const CSS = `
   .brand-mech { color:#111827; }
   .brand-iq   { color:#1976D2; }
 
-  /* Nav scroll */
   .sidebar-nav {
     flex:1; width:100%;
     overflow-y:auto; overflow-x:visible;
@@ -60,18 +55,6 @@ const CSS = `
   }
   .sidebar-nav::-webkit-scrollbar { display:none; }
 
-  /* Section divider */
-  .sidebar-section {
-    width:100%; padding:10px 0 3px;
-    font-size:9px; font-weight:700; letter-spacing:1px;
-    text-transform:uppercase; color:#C9D0DC;
-    text-align:center; overflow:hidden;
-    opacity:0; transition:opacity 0.18s;
-    pointer-events:none;
-  }
-  .sidebar.expanded .sidebar-section { opacity:1; text-align:left; padding-left:16px; }
-
-  /* Nav item */
   .sidebar-item {
     position:relative;
     width:calc(100% - 16px); height:40px; margin:1px 8px;
@@ -79,7 +62,7 @@ const CSS = `
     padding:0 10px; cursor:pointer;
     color:#9CA3AF;
     font-size:13px; font-weight:500;
-    font-family:'Inter',var(--font-body),system-ui,sans-serif;
+    font-family:'Inter',system-ui,sans-serif;
     transition:color 0.12s, background 0.12s;
     white-space:nowrap; overflow:hidden; user-select:none;
   }
@@ -93,10 +76,9 @@ const CSS = `
   .sidebar-item.active .sbi-icon { color:#1976D2; }
 
   .sbi-icon {
-    font-size:16px; flex-shrink:0;
-    width:20px; text-align:center;
+    font-size:16px; flex-shrink:0; width:20px;
     display:flex; align-items:center; justify-content:center;
-    transition:color 0.12s; color:inherit;
+    color:inherit; transition:color 0.12s;
   }
   .sbi-label {
     flex:1; opacity:0; transform:translateX(-6px);
@@ -107,10 +89,9 @@ const CSS = `
   .sidebar.expanded .sbi-label { opacity:1; transform:translateX(0); }
   .sbi-caret {
     font-size:9px; flex-shrink:0; transition:transform 0.2s;
-    margin-left:auto; display:flex; align-items:center; color:#C9D0DC;
+    margin-left:auto; display:flex; align-items:center; color:#D1D5DB;
   }
 
-  /* Tooltip — shows on hover when collapsed */
   .sidebar-tooltip {
     position:absolute; left:calc(100% + 14px); top:50%;
     transform:translateY(-50%);
@@ -120,17 +101,15 @@ const CSS = `
     font-family:'Inter',system-ui,sans-serif;
     white-space:nowrap; pointer-events:none; opacity:0;
     transition:opacity 0.12s; z-index:9999;
-    box-shadow:0 4px 12px rgba(0,0,0,0.2);
+    box-shadow:0 4px 12px rgba(0,0,0,.2);
   }
   .sidebar-tooltip::before {
     content:''; position:absolute;
     right:100%; top:50%; transform:translateY(-50%);
-    border:5px solid transparent;
-    border-right-color:#1F2937;
+    border:5px solid transparent; border-right-color:#1F2937;
   }
   .sidebar:not(.expanded) .sidebar-item:hover .sidebar-tooltip { opacity:1; }
 
-  /* Flyout (sub-items when collapsed) */
   .sidebar-flyout {
     position:absolute; left:calc(100% + 6px); top:0;
     background:#fff; border:1px solid #E5E7EB;
@@ -142,14 +121,14 @@ const CSS = `
     padding:9px 14px 7px; font-size:10px; font-weight:700;
     color:#9CA3AF; letter-spacing:1px; text-transform:uppercase;
     border-bottom:1px solid #F3F4F6;
+    font-family:'Inter',system-ui,sans-serif;
   }
   .sidebar-flyout-item {
-    padding:9px 14px; font-size:13px; font-weight:500;
-    color:#374151; cursor:pointer;
-    border-bottom:1px solid #F9FAFB;
+    padding:9px 14px; font-size:13px; font-weight:500; color:#374151;
+    cursor:pointer; border-bottom:1px solid #F9FAFB;
     transition:background 0.1s; white-space:nowrap;
     display:flex; align-items:center; gap:8px;
-    font-family:'Inter',var(--font-body),system-ui,sans-serif;
+    font-family:'Inter',system-ui,sans-serif;
   }
   .sidebar-flyout-item:last-child { border-bottom:none; }
   .sidebar-flyout-item:hover { background:#F3F4F6; color:#111827; }
@@ -159,13 +138,12 @@ const CSS = `
     background:currentColor; opacity:0.4; flex-shrink:0;
   }
 
-  /* Sub-items (expanded inline) */
   .sidebar-sub { overflow:hidden; transition:max-height 0.22s cubic-bezier(0.16,1,0.3,1); }
   .sidebar-sub-item {
     height:34px; display:flex; align-items:center;
     gap:10px; padding:0 10px 0 38px; cursor:pointer;
     color:#9CA3AF; font-size:12px; font-weight:500;
-    font-family:'Inter',var(--font-body),system-ui,sans-serif;
+    font-family:'Inter',system-ui,sans-serif;
     white-space:nowrap; overflow:hidden;
     transition:color 0.12s, background 0.12s; user-select:none;
     margin:0 8px; width:calc(100% - 16px);
@@ -174,53 +152,39 @@ const CSS = `
   .sidebar-sub-item.active { color:#1976D2; font-weight:600; background:#EBF3FC; }
   .sub-dot { width:4px; height:4px; border-radius:50%; background:currentColor; flex-shrink:0; opacity:0.4; }
 
-  /* Footer */
   .sidebar-footer {
-    width:100%; padding:8px 0 0;
+    width:100%; padding:6px 0;
     border-top:1px solid #E5E7EB; flex-shrink:0;
+    display:flex; flex-direction:column; align-items:center; gap:2px;
   }
-  .sidebar-toggle {
-    width:100%; height:38px;
-    display:flex; align-items:center; justify-content:center;
-    cursor:pointer; color:#9CA3AF;
-    transition:color 0.15s, background 0.15s;
-    background:none; border:none; font-size:16px; flex-shrink:0;
-  }
-  .sidebar-toggle:hover { color:#374151; background:#F9FAFB; }
+  .sidebar-toggle { display:none; }
 
-  /* Topbar */
   .topbar {
     position:fixed; left:60px; top:0; right:0; height:56px;
-    background:#FFFFFF;
-    border-bottom:1px solid #E5E7EB;
+    background:#FFFFFF; border-bottom:1px solid #E5E7EB;
     display:flex; align-items:center; padding:0 20px; gap:12px;
-    z-index:200;
-    transition:left 0.22s cubic-bezier(0.16,1,0.3,1);
+    z-index:200; transition:left 0.22s cubic-bezier(0.16,1,0.3,1);
   }
   .topbar.sb-expanded { left:220px; }
   .topbar.has-banner  { top:40px; }
   .topbar-title {
-    font-family:'Inter',var(--font-body),system-ui,sans-serif;
+    font-family:'Inter',system-ui,sans-serif;
     font-size:15px; font-weight:700; letter-spacing:-0.3px;
     color:#111827; flex:1;
   }
   .topbar-right { display:flex; align-items:center; gap:10px; flex-shrink:0; }
 
-  /* Admin banner */
   .nav-viewing-banner {
     background:#1976D2; color:#fff; padding:7px 20px;
     display:flex; align-items:center; justify-content:space-between;
-    font-size:12px; font-weight:600; letter-spacing:0.3px;
+    font-size:12px; font-weight:600;
     animation:banner-in 0.25s ease;
     position:fixed; top:0; left:0; right:0; z-index:400;
   }
   .role-badge {
-    padding:3px 10px;
-    font-size:10px; font-weight:700; letter-spacing:0.5px;
-    text-transform:uppercase; white-space:nowrap;
+    padding:3px 10px; font-size:10px; font-weight:700;
+    letter-spacing:0.5px; text-transform:uppercase; white-space:nowrap;
   }
-
-  /* Company switcher */
   .company-switcher-dropdown {
     position:absolute; right:0; top:calc(100% + 10px);
     background:#fff; border:1px solid #E5E7EB;
@@ -232,27 +196,22 @@ const CSS = `
     padding:10px 16px; cursor:pointer; font-size:13px; font-weight:500;
     color:#374151; border-bottom:1px solid #F9FAFB;
     transition:background 0.12s; display:flex; align-items:center; gap:8px;
-    font-family:'Inter',var(--font-body),system-ui,sans-serif;
+    font-family:'Inter',system-ui,sans-serif;
   }
   .company-switcher-item:last-child { border-bottom:none; }
   .company-switcher-item:hover { background:#F9FAFB; }
   .company-switcher-item.active { background:#EBF3FC; color:#1976D2; font-weight:600; }
   .company-switcher-item.exit { color:#B91C1C; font-weight:600; }
   .company-switcher-item.exit:hover { background:#FEF2F2; }
-
-  /* Buttons */
   .nav-pill {
     padding:5px 14px; border:none;
     font-size:11px; font-weight:600; cursor:pointer;
-    letter-spacing:0.3px; transition:all 0.15s;
-    font-family:'Inter',var(--font-body),system-ui,sans-serif; white-space:nowrap;
+    transition:all 0.15s; font-family:'Inter',system-ui,sans-serif; white-space:nowrap;
   }
   .nav-pill-primary { background:#1976D2; color:#fff; box-shadow:0 1px 4px rgba(25,118,210,.25); }
   .nav-pill-primary:hover { background:#1565C0; }
-  .nav-pill-ghost { background:transparent; color:#6B7280; border:1px solid #E5E7EB; }
+  .nav-pill-ghost { background:transparent; color:#6B7280; border:1.5px solid #E5E7EB; }
   .nav-pill-ghost:hover { border-color:#1976D2; color:#1976D2; background:#EBF3FC; }
-
-  /* Mobile overlay */
   .sidebar-overlay {
     display:none; position:fixed; inset:0;
     background:rgba(0,0,0,0.35); z-index:299;
@@ -265,9 +224,8 @@ const CSS = `
     .topbar-hamburger { display:flex !important; }
   }
   .topbar-hamburger {
-    display:none; background:none; border:none;
-    color:#6B7280; cursor:pointer; padding:8px;
-    align-items:center; border-radius:0;
+    display:none; background:none; border:none; color:#6B7280;
+    cursor:pointer; padding:8px; align-items:center;
     min-width:36px; min-height:36px; justify-content:center;
   }
   .topbar-hamburger:hover { background:#F3F4F6; }
@@ -357,7 +315,7 @@ const NAV_STRUCTURE = [
 
 const ROLE_STYLE = {
   master:     { bg: '#ede9fe', color: 'var(--purple)', border: '#c4b5fd' },
-  admin:      { bg: '#e0f4ff', color: '#1976D2', border: '#7dd3fc' },
+  admin:      { bg: '#e0f4ff', color: 'var(--accent)', border: '#7dd3fc' },
   supervisor: { bg: 'var(--amber-bg)', color: 'var(--amber)', border: '#fcd34d' },
   technician: { bg: 'var(--green-bg)', color: 'var(--green)', border: '#86efac' },
   operator:   { bg: '#f1f5f9', color: '#64748b', border: '#cbd5e1' },
@@ -397,7 +355,7 @@ function SidebarItem({ item, currentPage, currentSubPage, onNav, expanded, flyou
         {hasChildren && expanded && (
           <span className="sbi-caret" style={{ transform: inlineOpen ? 'rotate(180deg)' : 'none' }}>{IC.chevron}</span>
         )}
-        <span className="sidebar-tooltip">{item.label}</span>
+        {!expanded && <span className="sidebar-tooltip">{item.label}</span>}
       </div>
 
       {/* Inline sub-items */}
@@ -443,7 +401,9 @@ const PAGE_TITLES = {
 
 // ─── Main Navbar ───────────────────────────────────────────────────────────────
 function Navbar({ currentPage, currentSubPage, setCurrentPage, onLogout, session, userRole, viewingCompany, onSelectCompany, onExitCompany }) {
-  const expanded = false; // Always icon-only rail
+  const [expanded, setExpanded] = useState(() => {
+    try { return localStorage.getItem('mechiq_sidebar_expanded') === 'true'; } catch { return false; }
+  });
   const [flyoutOpen, setFlyoutOpen] = useState(null);
   const [companies, setCompanies] = useState([]);
   const [switcherOpen, setSwitcherOpen] = useState(false);
@@ -456,6 +416,7 @@ function Navbar({ currentPage, currentSubPage, setCurrentPage, onLogout, session
   const features = viewingCompany?.features || userRole?.company_features || {};
 
   useEffect(() => {
+    localStorage.setItem('mechiq_sidebar_expanded', 'false');
     if (!document.getElementById('navbar-css')) {
       const s = document.createElement('style'); s.id = 'navbar-css'; s.textContent = CSS;
       document.head.appendChild(s);
@@ -465,13 +426,17 @@ function Navbar({ currentPage, currentSubPage, setCurrentPage, onLogout, session
   const updateLayout = (exp, banner) => {
     const mc = document.querySelector('.main-content');
     if (mc) {
-      mc.style.marginLeft = '60px';
+      const isMobile = window.innerWidth <= 1024;
+      mc.style.marginLeft = isMobile ? '56px' : (exp ? '220px' : '56px');
       mc.style.marginTop = banner ? '90px' : '56px';
+      mc.style.width = isMobile ? `calc(100vw - 56px)` : '';
+      mc.style.maxWidth = isMobile ? `calc(100vw - 56px)` : '';
     }
   };
 
   useEffect(() => {
-    updateLayout(false, hasBanner);
+    try { localStorage.setItem('mechiq_sidebar_expanded', String(expanded)); } catch {}
+    updateLayout(expanded, hasBanner);
   }, [expanded]);
 
   useEffect(() => { updateLayout(expanded, hasBanner); }, []);
@@ -563,7 +528,7 @@ function Navbar({ currentPage, currentSubPage, setCurrentPage, onLogout, session
       <div className={`sidebar-overlay${mobileOpen ? ' visible' : ''}`} onClick={() => setMobileOpen(false)} />
 
       {/* Sidebar */}
-      <div className={`sidebar${hasBanner ? ' has-banner' : ''}${mobileOpen ? ' mobile-open' : ''}`}>
+      <div className={`sidebar${expanded ? ' expanded' : ''}${hasBanner ? ' has-banner' : ''}${mobileOpen ? ' mobile-open' : ''}`}>
         {/* Brand */}
         <div className="sidebar-brand" onClick={() => handleNav(isMaster && !viewingCompany ? 'master' : 'dashboard', null)}>
           <div className="brand-mark">M</div>
@@ -588,33 +553,58 @@ function Navbar({ currentPage, currentSubPage, setCurrentPage, onLogout, session
 
         {/* Footer */}
         <div className="sidebar-footer">
-          {/* User avatar */}
-          <div style={{ width:'100%', display:'flex', flexDirection:'column', alignItems:'center', gap:4, padding:'6px 0' }}>
-            <div title={displayName} style={{ position:'relative', width:36, height:36, display:'flex', alignItems:'center', justifyContent:'center' }}>
-              <div style={{ width:28, height:28, background:'#EBF3FC', display:'flex', alignItems:'center', justifyContent:'center', fontSize:11, fontWeight:800, color:'#1976D2', flexShrink:0, cursor:'default' }}>
-                {(displayName||'?')[0].toUpperCase()}
+          {expanded ? (
+            <div style={{ padding: '8px 12px', display: 'flex', flexDirection: 'column', gap: 7 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <div style={{ width: 28, height: 28, borderRadius: '50%', background: '#EBF3FC', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent)', fontSize: 12, fontWeight: 800, flexShrink: 0 }}>
+                  {displayName[0]?.toUpperCase()}
+                </div>
+                <div style={{ flex: 1, overflow: 'hidden' }}>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginBottom: 2 }}>{displayName}</div>
+                  <RoleBadge role={isMaster ? 'master' : (userRole?.role || 'operator')} />
+                </div>
               </div>
-              <span className="sidebar-tooltip">{displayName} · {isMaster ? 'master' : (userRole?.role || 'operator')}</span>
+              <a
+                href="https://mechiq.coastlinemm.com.au/MechIQ.apk"
+                download
+                style={{ width: '100%', padding: '6px', background: '#EBF3FC', border: '1px solid #BFDBFE', color: 'var(--accent)', borderRadius: 6, cursor: 'pointer', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.8px', fontFamily: 'Inter, sans-serif', transition: 'all 0.15s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, textDecoration: 'none' }}
+              >
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                Download App
+              </a>
+              <button
+                onClick={onLogout}
+                style={{ width: '100%', padding: '5px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--text-faint)', borderRadius: 6, cursor: 'pointer', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.8px', fontFamily: 'Inter, sans-serif', transition: 'all 0.15s' }}
+                onMouseEnter={e => e.currentTarget.style.color = '#f87171'}
+                onMouseLeave={e => e.currentTarget.style.color = 'var(--text-faint)'}
+              >
+                Logout
+              </button>
             </div>
-            <a href="https://mechiq.coastlinemm.com.au/MechIQ.apk" download title="Download App"
-              style={{ position:'relative', width:36, height:32, display:'flex', alignItems:'center', justifyContent:'center', color:'#9CA3AF', textDecoration:'none', transition:'color .12s' }}
-              onMouseEnter={e=>e.currentTarget.style.color='#374151'}
-              onMouseLeave={e=>e.currentTarget.style.color='#9CA3AF'}>
-              {IC.download || <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>}
-              <span className="sidebar-tooltip">Download App</span>
-            </a>
-            <button onClick={onLogout} title="Logout"
-              style={{ position:'relative', width:36, height:32, display:'flex', alignItems:'center', justifyContent:'center', background:'none', border:'none', color:'#9CA3AF', cursor:'pointer', transition:'color .12s' }}
-              onMouseEnter={e=>e.currentTarget.style.color='#B91C1C'}
-              onMouseLeave={e=>e.currentTarget.style.color='#9CA3AF'}>
-              {IC.logout}
-              <span className="sidebar-tooltip">Logout</span>
-            </button>
-          </div>
-        </div></div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, padding: '6px 0' }}>
+              <div title={displayName} style={{ width: 28, height: 28, borderRadius: '50%', background: '#EBF3FC', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent)', fontSize: 12, fontWeight: 800 }}>
+                {displayName[0]?.toUpperCase()}
+              </div>
+              <a href="https://mechiq.coastlinemm.com.au/MechIQ.apk" download title="Download App" style={{ background: 'none', border: 'none', color: 'var(--accent)', cursor: 'pointer', padding: 4, borderRadius: 6, display: 'flex', alignItems: 'center', transition: 'color 0.15s', textDecoration: 'none' }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              </a>
+              <button onClick={onLogout} title="Logout" style={{ background: 'none', border: 'none', color: 'var(--text-faint)', cursor: 'pointer', padding: 4, borderRadius: 6, display: 'flex', alignItems: 'center', transition: 'color 0.15s' }}
+                onMouseEnter={e => e.currentTarget.style.color = '#f87171'}
+                onMouseLeave={e => e.currentTarget.style.color = 'var(--text-faint)'}
+              >{IC.logout}</button>
+            </div>
+          )}
+        </div>
+
+        {/* Collapse toggle */}
+        <button className="sidebar-toggle" onClick={() => { setExpanded(e => !e); setFlyoutOpen(null); }} title={expanded ? 'Collapse' : 'Expand'}>
+          {expanded ? IC.collapse : IC.expand}
+        </button>
+      </div>
 
       {/* Top bar */}
-      <div className={`topbar${hasBanner ? ' has-banner' : ''}`}>
+      <div className={`topbar${expanded ? ' sb-expanded' : ''}${hasBanner ? ' has-banner' : ''}`}>
         <button className="topbar-hamburger" onClick={() => setMobileOpen(o => !o)}>{IC.hamburger}</button>
         <div className="topbar-title">
           {(() => {
