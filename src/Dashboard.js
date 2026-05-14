@@ -430,18 +430,18 @@ function AccordionCards({ loading, assets, maint, wos, PCOLOR, StatusBadge }) {
 /* ── Widget Definitions ── */
 const WIDGET_DEFS = [
   { id:'kpi_strip',      label:'KPI Strip',            icon:'', defaultSize:'lg',  desc:'Total Fleet, Active, Down, Overdue, Open WOs' },
-  { id:'prestart_kpi',   label:'Prestart KPIs',        icon:defaultSize:'wide', desc:'Daily prestart completion per machine with missing prestart alerts' },
-  { id:'service_kpi',    label:'Service KPIs',         icon:defaultSize:'wide', desc:'Service schedule status — overdue, due soon, completed' },
-  { id:'fleet_health',   label:'Fleet Health',         icon:defaultSize:'lg',  desc:'Overall fleet status bar' },
-  { id:'breakdowns',     label:'Breakdowns',           icon:defaultSize:'md',  desc:'Current down machines' },
-  { id:'overdue',        label:'Overdue Services',     icon:defaultSize:'md',  desc:'Services past due date' },
-  { id:'due_today',      label:'Service Due Today',    icon:defaultSize:'md',  desc:'Services due today' },
-  { id:'priority_wos',  label:'Priority Work Orders', icon:defaultSize:'md',  desc:'Critical and high priority jobs' },
-  { id:'oil_sampling',  label:'Oil Sampling',         icon:defaultSize:'md',  desc:'Overdue samples and high alerts' },
-  { id:'parts_stock',   label:'Parts Low Stock',      icon:defaultSize:'sm',  desc:'Parts below minimum stock level' },
-  { id:'downtime_summary',label:'Downtime Summary',   icon:defaultSize:'sm',  desc:'Hours lost this month' },
-  { id:'calendar_preview',label:'Calendar Preview',   icon:defaultSize:'lg',  desc:'Next 7 days of scheduled services' },
-  { id:'messages',      label:'Messages',             icon:defaultSize:'sm',  desc:'Unread messages and recent activity' },
+  { id:'prestart_kpi',   label:'Prestart KPIs',        icon:'', defaultSize:'wide', desc:'Daily prestart completion per machine with missing prestart alerts' },
+  { id:'service_kpi',    label:'Service KPIs',         icon:'', defaultSize:'wide', desc:'Service schedule status — overdue, due soon, completed' },
+  { id:'fleet_health',   label:'Fleet Health',         icon:'', defaultSize:'lg',  desc:'Overall fleet status bar' },
+  { id:'breakdowns',     label:'Breakdowns',           icon:'', defaultSize:'md',  desc:'Current down machines' },
+  { id:'overdue',        label:'Overdue Services',     icon:'', defaultSize:'md',  desc:'Services past due date' },
+  { id:'due_today',      label:'Service Due Today',    icon:'', defaultSize:'md',  desc:'Services due today' },
+  { id:'priority_wos',  label:'Priority Work Orders', icon:'', defaultSize:'md',  desc:'Critical and high priority jobs' },
+  { id:'oil_sampling',  label:'Oil Sampling',         icon:'', defaultSize:'md',  desc:'Overdue samples and high alerts' },
+  { id:'parts_stock',   label:'Parts Low Stock',      icon:'', defaultSize:'sm',  desc:'Parts below minimum stock level' },
+  { id:'downtime_summary',label:'Downtime Summary',   icon:'', defaultSize:'sm',  desc:'Hours lost this month' },
+  { id:'calendar_preview',label:'Calendar Preview',   icon:'', defaultSize:'lg',  desc:'Next 7 days of scheduled services' },
+  { id:'messages',      label:'Messages',             icon:'', defaultSize:'sm',  desc:'Unread messages and recent activity' },
 ];
 
 const DEFAULT_LAYOUT = WIDGET_DEFS.map(w => ({ id:w.id, enabled:true, size:w.defaultSize }));
