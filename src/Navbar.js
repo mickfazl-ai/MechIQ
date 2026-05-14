@@ -64,7 +64,7 @@ const CSS = `
     font-size:13px; font-weight:500;
     font-family:'Inter',system-ui,sans-serif;
     transition:color 0.12s, background 0.12s;
-    white-space:nowrap; overflow:hidden; user-select:none;
+    white-space:nowrap; user-select:none;
   }
   .sidebar-item:hover { color:#374151; background:#F9FAFB; }
   .sidebar-item.active { color:#1976D2; background:#EBF3FC; font-weight:600; }
@@ -108,6 +108,7 @@ const CSS = `
     right:100%; top:50%; transform:translateY(-50%);
     border:5px solid transparent; border-right-color:#1F2937;
   }
+  .sidebar:not(.expanded) .sidebar-item:hover + .sidebar-tooltip { opacity:1; }
   .sidebar:not(.expanded) .sidebar-item:hover .sidebar-tooltip { opacity:1; }
 
   .sidebar-flyout {
@@ -342,9 +343,9 @@ function SidebarItem({ item, currentPage, currentSubPage, onNav, expanded, flyou
   useEffect(() => { if (isActive && expanded) setInlineOpen(true); }, [isActive, expanded]);
 
   const handleClick = () => {
-    if (!hasChildren) { onNav(item.id, null); setFlyoutOpen(null); return; }
-    if (expanded) setInlineOpen(o => !o);
-    else setFlyoutOpen(isFlyout ? null : item.id);
+    // Always navigate to the item's page — sub-pages handled by internal tabs
+    onNav(item.id, null);
+    setFlyoutOpen(null);
   };
 
   return (
@@ -352,11 +353,8 @@ function SidebarItem({ item, currentPage, currentSubPage, onNav, expanded, flyou
       <div className={`sidebar-item${isActive ? ' active' : ''}`} onClick={handleClick}>
         <span className="sbi-icon">{IC[item.ik] || IC.settings}</span>
         <span className="sbi-label">{item.label}</span>
-        {hasChildren && expanded && (
-          <span className="sbi-caret" style={{ transform: inlineOpen ? 'rotate(180deg)' : 'none' }}>{IC.chevron}</span>
-        )}
-        {!expanded && <span className="sidebar-tooltip">{item.label}</span>}
       </div>
+      <span className="sidebar-tooltip">{item.label}</span>
 
       {/* Inline sub-items */}
       {hasChildren && expanded && (
@@ -424,11 +422,8 @@ function Navbar({ currentPage, currentSubPage, setCurrentPage, onLogout, session
   const updateLayout = (exp, banner) => {
     const mc = document.querySelector('.main-content');
     if (mc) {
-      const isMobile = window.innerWidth <= 1024;
-      mc.style.marginLeft = isMobile ? '56px' : (exp ? '220px' : '56px');
+      mc.style.marginLeft = '60px';
       mc.style.marginTop = banner ? '90px' : '56px';
-      mc.style.width = isMobile ? `calc(100vw - 56px)` : '';
-      mc.style.maxWidth = isMobile ? `calc(100vw - 56px)` : '';
     }
   };
 
