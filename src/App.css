@@ -25,13 +25,13 @@
   /* Borders */
   --border:         #e5e7eb;
   --border-strong:  #d1d5db;
-  --border-focus:   #0ea5e9;
+  --border-focus:   #1976D2;
 
   /* Accent — sky blue */
-  --accent:         #0ea5e9;
-  --accent-dark:    #0284c7;
-  --accent-light:   #e0f2fe;
-  --accent-glow:    rgba(14,165,233,0.15);
+  --accent:         #1976D2;
+  --accent-dark:    #1565C0;
+  --accent-light:   #EBF3FC;
+  --accent-glow:    rgba(25,118,210,0.15);
 
   /* Status */
   --green:          #16a34a;
@@ -55,15 +55,15 @@
   --sidebar-text:        #94a3b8;
   --sidebar-text-muted:  #475569;
   --sidebar-hover:       rgba(255,255,255,0.06);
-  --sidebar-active:      rgba(14,165,233,0.18);
+  --sidebar-active:      rgba(25,118,210,0.18);
   --sidebar-active-text: #38bdf8;
   --sb-border:      rgba(255,255,255,0.06);
   --sb-text:        #94a3b8;
   --sb-text-muted:  #475569;
   --sb-hover:       rgba(255,255,255,0.06);
-  --sb-active:      rgba(14,165,233,0.18);
+  --sb-active:      rgba(25,118,210,0.18);
   --sb-active-text: #38bdf8;
-  --sb-indicator:   #0ea5e9;
+  --sb-indicator:   #1976D2;
 
   /* Topbar */
   --topbar-bg:      rgba(255,255,255,0.92);
@@ -107,7 +107,7 @@ body.theme-dark {
   --border-focus:   #38bdf8;
 
   --accent:         #38bdf8;
-  --accent-dark:    #0ea5e9;
+  --accent-dark:    #1976D2;
   --accent-light:   rgba(56,189,248,0.12);
   --accent-glow:    rgba(56,189,248,0.20);
 
@@ -168,7 +168,7 @@ body.theme-navy {
   --border-focus:   #38bdf8;
 
   --accent:         #38bdf8;
-  --accent-dark:    #0ea5e9;
+  --accent-dark:    #1976D2;
   --accent-light:   rgba(56,189,248,0.12);
   --accent-glow:    rgba(56,189,248,0.18);
 
@@ -476,7 +476,7 @@ label {
 .badge-green  { color:var(--green);  background:var(--green-bg);  border:1px solid var(--green-border); }
 .badge-amber  { color:var(--amber);  background:var(--amber-bg);  border:1px solid var(--amber-border); }
 .badge-red    { color:var(--red);    background:var(--red-bg);    border:1px solid var(--red-border); }
-.badge-blue   { color:var(--accent); background:var(--accent-light); border:1px solid rgba(14,165,233,0.25); }
+.badge-blue   { color:var(--accent); background:var(--accent-light); border:1px solid rgba(25,118,210,0.25); }
 .badge-purple { color:var(--purple); background:var(--purple-bg); border:1px solid var(--purple-border); }
 .badge-muted  { color:var(--text-muted); background:var(--surface-2); border:1px solid var(--border); }
 
@@ -617,9 +617,9 @@ label {
   border: 1px solid var(--border); cursor: pointer; transition: all 0.15s;
 }
 .chip:hover { border-color: var(--border-strong); color: var(--text-secondary); }
-.chip.active { background: var(--accent-light); color: var(--accent); border-color: rgba(14,165,233,.3); }
+.chip.active { background: var(--accent-light); color: var(--accent); border-color: rgba(25,118,210,.3); }
 .chip .chip-count { background: var(--surface-3); color: var(--text-muted); border-radius: 99px; padding: 1px 7px; font-size: 11px; }
-.chip.active .chip-count { background: rgba(14,165,233,.15); color: var(--accent); }
+.chip.active .chip-count { background: rgba(25,118,210,.15); color: var(--accent); }
 
 /* ─── TOGGLE SWITCH ───────────────────────────────────────────── */
 .toggle-switch {
