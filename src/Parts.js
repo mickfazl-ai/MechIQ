@@ -443,8 +443,8 @@ function TransactionModal({ part, userRole, assets, workOrders, onClose, onDone 
 
 // ─── Part Form ────────────────────────────────────────────────────────────────
 function PartForm({ part, assets, onSave, onCancel, userRole }) {
-  const blank = { name: '', part_number: '', category: '', supplier: '', supplier_contact: '', unit_cost: '', quantity: '', min_quantity: 5, unit: 'ea', location: '', linked_asset_id: '', description: '', notes: '' };
-  const [form, setForm] = useState(part || blank);
+  const blank = { name: '', part_number: '', category: '', supplier: '', supplier_contact: '', unit_cost: '', quantity: '', min_quantity: 5, unit: 'ea', location: '', linked_asset_id: '', compatible_asset_ids: [], description: '', notes: '' };
+  const [form, setForm] = useState({ ...(part || blank), compatible_asset_ids: part?.compatible_asset_ids || [] });
   const [saving, setSaving] = useState(false);
   const F = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
@@ -452,7 +452,7 @@ function PartForm({ part, assets, onSave, onCancel, userRole }) {
     if (!form.name) return alert('Part name is required');
     setSaving(true);
     try {
-      const payload = { ...form, company_id: userRole.company_id, unit_cost: parseFloat(form.unit_cost) || 0, quantity: parseInt(form.quantity) || 0, min_quantity: parseInt(form.min_quantity) || 5, linked_asset_id: form.linked_asset_id || null, updated_at: new Date().toISOString() };
+      const payload = { ...form, company_id: userRole.company_id, unit_cost: parseFloat(form.unit_cost) || 0, quantity: parseInt(form.quantity) || 0, min_quantity: parseInt(form.min_quantity) || 5, linked_asset_id: form.linked_asset_id || null, compatible_asset_ids: Array.isArray(form.compatible_asset_ids) ? form.compatible_asset_ids : [], updated_at: new Date().toISOString() };
       if (part?.id) { await supabase.from('parts').update(payload).eq('id', part.id); }
       else { await supabase.from('parts').insert(payload); }
       onSave();
@@ -477,11 +477,26 @@ function PartForm({ part, assets, onSave, onCancel, userRole }) {
           </select>
         </div>
         <div><label className="parts-label">Storage Location</label><input className="parts-input" placeholder="e.g. Shelf A3, Workshop" value={form.location} onChange={e => F('location', e.target.value)} /></div>
-        <div><label className="parts-label">Linked Asset</label>
-          <select className="parts-input" value={form.linked_asset_id} onChange={e => F('linked_asset_id', e.target.value)}>
-            <option value="">No specific asset</option>
-            {assets.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
-          </select>
+        <div style={{ gridColumn: 'span 2' }}>
+          <label className="parts-label">Compatible Assets (select all that use this part)</label>
+          <div style={{ display:'flex', flexWrap:'wrap', gap:6, padding:'8px 10px', border:'1px solid var(--border)', borderRadius:8, background:'var(--surface-2)', minHeight:40, cursor:'pointer' }}
+            onClick={e => e.stopPropagation()}>
+            {assets.map(a => {
+              const checked = (form.compatible_asset_ids||[]).includes(a.id);
+              return (
+                <label key={a.id} style={{ display:'flex', alignItems:'center', gap:5, padding:'3px 10px', borderRadius:20, fontSize:12, fontWeight:600, cursor:'pointer', background: checked ? 'var(--accent-light)' : 'var(--surface)', border: `1px solid ${checked ? 'rgba(25,118,210,0.35)' : 'var(--border)'}`, color: checked ? 'var(--accent)' : 'var(--text-muted)', userSelect:'none', transition:'all 0.12s' }}>
+                  <input type="checkbox" style={{ display:'none' }} checked={checked}
+                    onChange={() => {
+                      const ids = form.compatible_asset_ids || [];
+                      F('compatible_asset_ids', checked ? ids.filter(id => id !== a.id) : [...ids, a.id]);
+                    }} />
+                  {checked ? '✓ ' : ''}{a.asset_number ? `${a.asset_number} · ` : ''}{a.name}
+                </label>
+              );
+            })}
+            {assets.length === 0 && <span style={{ fontSize:12, color:'var(--text-faint)', fontStyle:'italic' }}>No assets in fleet</span>}
+          </div>
+          <div style={{ fontSize:11, color:'var(--text-muted)', marginTop:4 }}>Select multiple assets if this part is shared. Leave all unselected for general/workshop stock.</div>
         </div>
       </div>
       <div style={{ marginBottom: 14 }}>
@@ -499,7 +514,263 @@ function PartForm({ part, assets, onSave, onCancel, userRole }) {
 }
 
 // ─── Main Parts Component ──────────────────────────────────────────────────────
-export default function Parts({ userRole }) {
+export default 
+// ─── AI Smart Match Modal ─────────────────────────────────────────────────────
+function AISmartMatchModal({ parts, assets, userRole, onClose, onApplied }) {
+  const [step,       setStep]       = useState('intro'); // intro | running | review | done
+  const [matches,    setMatches]    = useState([]);      // [{partId, partName, assetIds, reasoning}]
+  const [accepted,   setAccepted]   = useState({});      // partId -> bool
+  const [saving,     setSaving]     = useState(false);
+  const [progress,   setProgress]   = useState(0);
+  const [statusMsg,  setStatusMsg]  = useState('');
+
+  const run = async () => {
+    setStep('running'); setProgress(10);
+    setStatusMsg('Preparing fleet data…');
+    try {
+      const assetSummary = assets.map(a => ({
+        id: a.id,
+        label: [a.asset_number, a.name].filter(Boolean).join(' — '),
+        type: a.type || '',
+        make: a.make || '',
+        model: a.model || '',
+        year: a.year || '',
+        engine: a.engine_model || '',
+      }));
+
+      const partsSummary = parts.map(p => ({
+        id: p.id,
+        name: p.name,
+        part_number: p.part_number || '',
+        category: p.category || '',
+        description: p.description || '',
+        supplier: p.supplier || '',
+        current_assets: (p.compatible_asset_ids||[]).length > 0
+          ? (p.compatible_asset_ids||[]).map(id => assets.find(a=>a.id===id)?.name).filter(Boolean).join(', ')
+          : assets.find(a=>a.id===p.linked_asset_id)?.name || 'Unassigned',
+      }));
+
+      setProgress(30); setStatusMsg('Sending to AI for analysis…');
+
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+
+      const prompt = `You are a heavy equipment maintenance expert. I have a fleet of assets and a parts inventory. 
+Your job is to analyse each part's name, part number, category and description and determine which assets it is compatible with.
+
+ASSETS IN FLEET:
+${JSON.stringify(assetSummary, null, 2)}
+
+PARTS TO ANALYSE (${partsSummary.length} parts):
+${JSON.stringify(partsSummary, null, 2)}
+
+Rules:
+- A part can be compatible with MULTIPLE assets if they share the same make/model/engine
+- Generic consumables (rags, cable ties, lubricants, safety items) should match ALL assets
+- Engine oil filters, air filters etc — match to assets with the same engine make
+- Hydraulic parts — match to hydraulic equipment types
+- If a part number contains a brand prefix (e.g. "CAT-", "KOM-", "MAN-") match to that brand's assets
+- If unsure, leave the assetIds array empty rather than guess
+- Return ONLY valid JSON, no markdown, no explanation
+
+Return a JSON array where each item is:
+{
+  "partId": <number>,
+  "partName": "<string>",
+  "assetIds": [<array of asset id numbers that are compatible>],
+  "confidence": "high|medium|low",
+  "reasoning": "<one sentence explaining why>"
+}`;
+
+      const resp = await fetch('/api/ai-insight', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ model: 'claude-sonnet-4-5', max_tokens: 4000, messages: [{ role: 'user', content: prompt }] })
+      });
+
+      setProgress(70); setStatusMsg('Parsing AI response…');
+      const data = await resp.json();
+      const text = (data.content||[]).map(c=>c.text||'').join('');
+      const parsed = JSON.parse(text.replace(/```json|```/g,'').trim());
+
+      // Only include parts where AI found matches
+      const withMatches = parsed.filter(m => m.assetIds && m.assetIds.length > 0);
+      setMatches(withMatches);
+
+      // Default all to accepted
+      const acc = {};
+      withMatches.forEach(m => { acc[m.partId] = true; });
+      setAccepted(acc);
+
+      setProgress(100); setStep('review');
+    } catch(e) {
+      alert('AI matching failed: ' + e.message);
+      setStep('intro');
+    }
+  };
+
+  const apply = async () => {
+    setSaving(true);
+    const toUpdate = matches.filter(m => accepted[m.partId]);
+    for (const m of toUpdate) {
+      await supabase.from('parts').update({ compatible_asset_ids: m.assetIds }).eq('id', m.partId);
+    }
+    setSaving(false);
+    setStep('done');
+    onApplied();
+  };
+
+  const CONF_COLORS = { high: 'var(--green)', medium: 'var(--amber)', low: 'var(--red)' };
+
+  return (
+    <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.6)', zIndex:400, display:'flex', alignItems:'center', justifyContent:'center', padding:20, backdropFilter:'blur(4px)' }}>
+      <div style={{ background:'var(--surface)', border:'1px solid var(--border)', borderRadius:16, width:'100%', maxWidth:720, maxHeight:'85vh', display:'flex', flexDirection:'column', boxShadow:'0 24px 60px rgba(0,0,0,0.3)' }}>
+        
+        {/* Header */}
+        <div style={{ padding:'20px 24px 16px', borderBottom:'1px solid var(--border)', display:'flex', justifyContent:'space-between', alignItems:'center', flexShrink:0 }}>
+          <div>
+            <div style={{ fontSize:17, fontWeight:800, color:'var(--text-primary)' }}>✦ AI Smart Match</div>
+            <div style={{ fontSize:12, color:'var(--text-muted)', marginTop:2 }}>Automatically assign parts to compatible assets using AI</div>
+          </div>
+          {step !== 'running' && <button onClick={onClose} style={{ background:'none', border:'none', fontSize:20, cursor:'pointer', color:'var(--text-muted)' }}>✕</button>}
+        </div>
+
+        {/* Body */}
+        <div style={{ flex:1, overflowY:'auto', padding:24 }}>
+
+          {/* Intro */}
+          {step === 'intro' && (
+            <div>
+              <div style={{ background:'var(--accent-light)', border:'1px solid rgba(25,118,210,0.2)', borderRadius:10, padding:'16px 18px', marginBottom:20 }}>
+                <div style={{ fontWeight:700, color:'var(--accent)', marginBottom:6 }}>How it works</div>
+                <div style={{ fontSize:13, color:'var(--text-secondary)', lineHeight:1.7 }}>
+                  AI analyses every part's name, part number, category and description against your fleet's make, model, type and engine details. It suggests which assets each part is compatible with — you review and approve before anything is saved.
+                </div>
+              </div>
+              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:12, marginBottom:20 }}>
+                {[
+                  ['📦', 'Parts to analyse', `${parts.length} parts`],
+                  ['🚛', 'Assets in fleet', `${assets.length} assets`],
+                  ['🎯', 'Already matched', `${(parts||[]).filter(p=>Array.isArray(p.compatible_asset_ids)&&p.compatible_asset_ids.length>0).length} parts`],
+                ].map(([icon,lbl,val])=>(
+                  <div key={lbl} style={{ padding:'14px 16px', background:'var(--surface-2)', borderRadius:9, border:'1px solid var(--border)', textAlign:'center' }}>
+                    <div style={{ fontSize:22, marginBottom:4 }}>{icon}</div>
+                    <div style={{ fontSize:18, fontWeight:800, color:'var(--text-primary)' }}>{val}</div>
+                    <div style={{ fontSize:11, color:'var(--text-muted)', marginTop:2 }}>{lbl}</div>
+                  </div>
+                ))}
+              </div>
+              <div style={{ fontSize:12, color:'var(--text-muted)', marginBottom:20, padding:'10px 14px', background:'var(--surface-2)', borderRadius:8, border:'1px solid var(--border)' }}>
+                ⚠️ This will only update parts you approve. Existing assignments are kept unless you change them.
+              </div>
+              <button onClick={run} style={{ padding:'12px 28px', background:'linear-gradient(135deg,var(--accent),#0090a8)', color:'#fff', border:'none', borderRadius:9, fontSize:14, fontWeight:700, cursor:'pointer', boxShadow:'0 4px 14px rgba(25,118,210,0.3)' }}>
+                ✦ Run AI Smart Match
+              </button>
+            </div>
+          )}
+
+          {/* Running */}
+          {step === 'running' && (
+            <div style={{ textAlign:'center', padding:'40px 20px' }}>
+              <div style={{ fontSize:36, marginBottom:16 }}>🤖</div>
+              <div style={{ fontSize:16, fontWeight:700, color:'var(--text-primary)', marginBottom:8 }}>Analysing your parts inventory…</div>
+              <div style={{ fontSize:13, color:'var(--text-muted)', marginBottom:24 }}>{statusMsg}</div>
+              <div style={{ height:6, background:'var(--surface-2)', borderRadius:3, overflow:'hidden', maxWidth:320, margin:'0 auto' }}>
+                <div style={{ height:'100%', background:'linear-gradient(90deg,var(--accent),#0090a8)', borderRadius:3, width:`${progress}%`, transition:'width 0.5s ease' }} />
+              </div>
+              <div style={{ fontSize:12, color:'var(--text-muted)', marginTop:8 }}>{progress}%</div>
+            </div>
+          )}
+
+          {/* Review */}
+          {step === 'review' && (
+            <div>
+              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:16 }}>
+                <div style={{ fontSize:14, fontWeight:700, color:'var(--text-primary)' }}>
+                  AI found matches for <span style={{ color:'var(--accent)' }}>{matches.length}</span> parts
+                </div>
+                <div style={{ display:'flex', gap:8 }}>
+                  <button onClick={()=>setAccepted(Object.fromEntries(matches.map(m=>[m.partId,true])))}
+                    style={{ padding:'5px 12px', background:'var(--accent-light)', color:'var(--accent)', border:'1px solid rgba(25,118,210,0.3)', borderRadius:6, fontSize:12, fontWeight:700, cursor:'pointer' }}>
+                    Accept All
+                  </button>
+                  <button onClick={()=>setAccepted(Object.fromEntries(matches.map(m=>[m.partId,false])))}
+                    style={{ padding:'5px 12px', background:'var(--surface-2)', color:'var(--text-muted)', border:'1px solid var(--border)', borderRadius:6, fontSize:12, fontWeight:600, cursor:'pointer' }}>
+                    Reject All
+                  </button>
+                </div>
+              </div>
+              {matches.length === 0 ? (
+                <div style={{ textAlign:'center', padding:40, color:'var(--text-muted)', fontSize:13 }}>No matches found. Parts may need more detailed descriptions or part numbers for AI to match them.</div>
+              ) : matches.map(m => {
+                const matchedAssets = m.assetIds.map(id => assets.find(a=>a.id===id)).filter(Boolean);
+                const acc = accepted[m.partId] !== false;
+                return (
+                  <div key={m.partId} onClick={()=>setAccepted(p=>({...p,[m.partId]:!acc}))}
+                    style={{ padding:'12px 16px', borderRadius:10, border:`1px solid ${acc?'rgba(25,118,210,0.3)':'var(--border)'}`, background:acc?'var(--accent-light)':'var(--surface-2)', marginBottom:8, cursor:'pointer', transition:'all 0.15s', userSelect:'none' }}>
+                    <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', gap:12 }}>
+                      <div style={{ flex:1 }}>
+                        <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:4 }}>
+                          <div style={{ width:18, height:18, borderRadius:4, border:`2px solid ${acc?'var(--accent)':'var(--border)'}`, background:acc?'var(--accent)':'#fff', display:'flex', alignItems:'center', justifyContent:'center', fontSize:11, color:'#fff', flexShrink:0 }}>
+                            {acc?'✓':''}
+                          </div>
+                          <div style={{ fontWeight:700, color:'var(--text-primary)', fontSize:13 }}>{m.partName}</div>
+                          <span style={{ fontSize:10, fontWeight:700, padding:'2px 7px', borderRadius:20, background:(CONF_COLORS[m.confidence]||'#a0b0b0')+'18', color:CONF_COLORS[m.confidence]||'#a0b0b0', border:`1px solid ${(CONF_COLORS[m.confidence]||'#a0b0b0')}30` }}>
+                            {m.confidence}
+                          </span>
+                        </div>
+                        <div style={{ fontSize:11, color:'var(--text-muted)', marginLeft:26, marginBottom:6 }}>AI reason: {m.reasoning}</div>
+                        <div style={{ display:'flex', flexWrap:'wrap', gap:4, marginLeft:26 }}>
+                          {matchedAssets.map(a=>(
+                            <span key={a.id} style={{ fontSize:11, fontWeight:600, padding:'2px 9px', borderRadius:20, background:'var(--accent)', color:'#fff', opacity: acc?1:0.4 }}>
+                              {a.asset_number ? `${a.asset_number} · ` : ''}{a.name}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Done */}
+          {step === 'done' && (
+            <div style={{ textAlign:'center', padding:'40px 20px' }}>
+              <div style={{ fontSize:40, marginBottom:12 }}>✅</div>
+              <div style={{ fontSize:17, fontWeight:800, color:'var(--text-primary)', marginBottom:6 }}>Matches applied successfully</div>
+              <div style={{ fontSize:13, color:'var(--text-muted)', marginBottom:24 }}>
+                {Object.values(accepted).filter(Boolean).length} parts have been updated with compatible asset assignments.
+              </div>
+              <button onClick={onClose} style={{ padding:'10px 24px', background:'var(--accent)', color:'#fff', border:'none', borderRadius:8, fontSize:14, fontWeight:700, cursor:'pointer' }}>
+                Done
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        {step === 'review' && matches.length > 0 && (
+          <div style={{ padding:'14px 24px', borderTop:'1px solid var(--border)', display:'flex', justifyContent:'space-between', alignItems:'center', flexShrink:0 }}>
+            <div style={{ fontSize:13, color:'var(--text-muted)' }}>
+              <strong style={{ color:'var(--accent)' }}>{Object.values(accepted).filter(Boolean).length}</strong> of {matches.length} matches accepted
+            </div>
+            <div style={{ display:'flex', gap:8 }}>
+              <button onClick={onClose} style={{ padding:'9px 18px', background:'var(--surface-2)', color:'var(--text-secondary)', border:'1px solid var(--border)', borderRadius:8, fontSize:13, cursor:'pointer' }}>Cancel</button>
+              <button onClick={apply} disabled={saving || Object.values(accepted).every(v=>!v)}
+                style={{ padding:'9px 22px', background:'var(--accent)', color:'#fff', border:'none', borderRadius:8, fontSize:13, fontWeight:700, cursor:'pointer', opacity: saving||Object.values(accepted).every(v=>!v)?0.5:1 }}>
+                {saving ? 'Applying…' : `Apply ${Object.values(accepted).filter(Boolean).length} Match${Object.values(accepted).filter(Boolean).length!==1?'es':''}`}
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function Parts({ userRole }) {
   const [parts, setParts]           = useState([]);
   const [assets, setAssets]         = useState([]);
   const [workOrders, setWorkOrders] = useState([]);
@@ -510,6 +781,7 @@ export default function Parts({ userRole }) {
   const [editPart, setEditPart]     = useState(null);
   const [txPart, setTxPart]         = useState(null);
   const [showAI, setShowAI]         = useState(false);
+  const [showSmartMatch, setShowSmartMatch] = useState(false);
   const [showQR, setShowQR]         = useState(false);
   const [showScan, setShowScan]     = useState(false);
   const [activeAssetFilter, setActiveAssetFilter] = useState('general'); // 'general' | asset id | custom page id
@@ -579,11 +851,11 @@ export default function Parts({ userRole }) {
 
   // Page-filtered parts based on sidebar selection
   const pageFilteredParts = parts.filter(p => {
-    if (activeAssetFilter === 'general') return !p.linked_asset_id;
+    if (activeAssetFilter === 'general') return !p.linked_asset_id && (!p.compatible_asset_ids || !Array.isArray(p.compatible_asset_ids) || p.compatible_asset_ids.length === 0);
     if (activeAssetFilter === 'all') return true;
     const customPage = customPages.find(cp => cp.id === activeAssetFilter);
-    if (customPage) return customPage.categories.some(cat => p.category === cat) || customPage.assetIds.includes(String(p.linked_asset_id));
-    return String(p.linked_asset_id) === String(activeAssetFilter);
+    if (customPage) return customPage.categories.some(cat => p.category === cat) || customPage.assetIds.includes(String(p.linked_asset_id)) || (Array.isArray(p.compatible_asset_ids) ? p.compatible_asset_ids : []).some(id => (customPage.assetIds||[]).includes(String(id)));
+    return String(p.linked_asset_id) === String(activeAssetFilter) || (Array.isArray(p.compatible_asset_ids) ? p.compatible_asset_ids : []).includes(Number(activeAssetFilter));
   });
 
   const filtered = pageFilteredParts.filter(p => {
@@ -736,6 +1008,7 @@ export default function Parts({ userRole }) {
           {isAdmin && <button onClick={() => setShowQR(true)} style={{ padding: '9px 16px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: 'pointer', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 6 }}>🏷️ QR Stickers</button>}
           <button onClick={exportParts} style={{ padding: '9px 16px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: 'pointer', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 6 }}>📊 Export</button>
           {isAdmin && <button onClick={() => setShowAI(true)} style={{ padding: '9px 16px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: 'pointer', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 6 }}>🤖 AI Import</button>}
+          {isAdmin && <button onClick={() => setShowSmartMatch(true)} style={{ padding: '9px 16px', background: 'linear-gradient(135deg,var(--accent),#0090a8)', border: 'none', borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: 'pointer', color: '#fff', display: 'flex', alignItems: 'center', gap: 6, boxShadow: '0 2px 10px rgba(25,118,210,0.25)' }}>✦ Smart Match</button>}
           {isAdmin && <button onClick={() => { setEditPart(null); setShowForm(s => !s); }} style={{ padding: '9px 16px', background: showForm ? 'var(--surface-2)' : 'var(--accent)', color: showForm ? 'var(--text-secondary)' : '#fff', border: '1px solid ' + (showForm ? 'var(--border)' : 'var(--accent)'), borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
             {showForm ? '✕ Close' : '+ Add Part'}
           </button>}
@@ -822,7 +1095,26 @@ export default function Parts({ userRole }) {
                           </td>
                           <td style={{ fontSize: 12, color: 'var(--text-muted)' }}>{p.location || '—'}</td>
                           <td style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>{fmt(p.unit_cost)}</td>
-                          <td style={{ fontSize: 12, color: 'var(--text-muted)' }}>{assets.find(a => a.id === p.linked_asset_id)?.name || '—'}</td>
+                          <td>
+                            {(() => {
+                              const compat = (Array.isArray(p.compatible_asset_ids) ? p.compatible_asset_ids : []).map(id => (assets||[]).find(a => a.id === id)).filter(Boolean);
+                              if (compat.length === 0) {
+                                const linked = assets.find(a => a.id === p.linked_asset_id);
+                                if (linked) return <span style={{ fontSize:11, fontWeight:600, padding:'2px 8px', borderRadius:20, background:'var(--accent-light)', color:'var(--accent)', border:'1px solid rgba(25,118,210,0.25)' }}>{linked.name}</span>;
+                                return <span style={{ fontSize:11, color:'var(--text-faint)', fontStyle:'italic' }}>General stock</span>;
+                              }
+                              return (
+                                <div style={{ display:'flex', flexWrap:'wrap', gap:3 }}>
+                                  {compat.slice(0,3).map(a => (
+                                    <span key={a.id} style={{ fontSize:10, fontWeight:700, padding:'2px 7px', borderRadius:20, background:'var(--accent-light)', color:'var(--accent)', border:'1px solid rgba(25,118,210,0.25)', whiteSpace:'nowrap' }}>
+                                      {a.asset_number||a.name}
+                                    </span>
+                                  ))}
+                                  {compat.length > 3 && <span style={{ fontSize:10, fontWeight:700, padding:'2px 7px', borderRadius:20, background:'var(--surface-2)', color:'var(--text-muted)', border:'1px solid var(--border)' }}>+{compat.length-3}</span>}
+                                </div>
+                              );
+                            })()}
+                          </td>
                           <td>
                             <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
                               <button onClick={() => setTxPart(p)} className="parts-action-btn" style={{ background: 'var(--accent-light)', color: 'var(--accent)', border: '1px solid rgba(14,165,233,0.25)' }}>Stock ±</button>
@@ -988,6 +1280,7 @@ export default function Parts({ userRole }) {
       {/* Modals */}
       {txPart && <TransactionModal part={txPart} userRole={userRole} assets={assets} workOrders={workOrders} onClose={() => setTxPart(null)} onDone={() => { setTxPart(null); load(); }} />}
       {showAI && <AIImportModal userRole={userRole} assets={assets} onClose={() => setShowAI(false)} onImported={(n) => { setShowAI(false); load(); alert(`✓ Imported ${n} parts successfully!`); }} />}
+      {showSmartMatch && <AISmartMatchModal parts={parts} assets={assets} userRole={userRole} onClose={() => setShowSmartMatch(false)} onApplied={() => { setShowSmartMatch(false); load(); }} />}
       {showQR && <QRStickerModal parts={filtered} onClose={() => setShowQR(false)} onPrint={printQRStickers} />}
       {showScan && <AIScanModal parts={parts} userRole={userRole} onClose={() => setShowScan(false)} onDone={() => { setShowScan(false); load(); }} onSetTx={(p) => { setShowScan(false); setTxPart(p); }} />}
 

@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from './supabase';
+import { WidgetCustom, WidgetBuilderModal } from './CustomWidget';
+import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
 const CSS = `
   @keyframes shimmer { 0%{background-position:-200% 0} 100%{background-position:200% 0} }
@@ -72,12 +74,13 @@ const CSS = `
 
   .sk { background: linear-gradient(90deg, var(--surface-2) 25%, var(--surface-3) 50%, var(--surface-2) 75%); background-size: 200% 100%; animation: shimmer 1.4s infinite linear; border-radius: 6px; }
   /* ── Widget system ── */
-  .dash-grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 14px; }
-  .widget-sm  { grid-column: span 4; }
-  .widget-md  { grid-column: span 6; }
-  .widget-lg  { grid-column: span 12; }
-  @media(max-width:900px) { .widget-sm,.widget-md,.widget-lg { grid-column: span 12; } }
-  @media(min-width:901px) and (max-width:1200px) { .widget-sm { grid-column: span 6; } }
+  .dash-grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 16px; }
+  .widget-sm   { grid-column: span 4; }
+  .widget-md   { grid-column: span 6; }
+  .widget-lg   { grid-column: span 12; }
+  .widget-wide { grid-column: span 6; }
+  @media(max-width:900px) { .widget-sm,.widget-md,.widget-lg,.widget-wide { grid-column: span 12; } }
+  @media(min-width:901px) and (max-width:1200px) { .widget-sm { grid-column: span 6; } .widget-wide { grid-column: span 12; } }
   .widget-card { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:18px; transition:box-shadow 0.2s; }
   .widget-card.dragging { opacity:0.4; }
   .widget-card.drag-over { border-color:var(--accent); box-shadow:0 0 0 2px rgba(14,165,233,0.3); }
@@ -90,8 +93,11 @@ const CSS = `
   .widget-body.closed { max-height:0; opacity:0; }
   .widget-body.opened { max-height:2000px; opacity:1; }
   .widget-card:hover { box-shadow:0 4px 16px rgba(0,0,0,0.08); }
+  .widget-card:hover .widget-remove-btn { opacity:1 !important; }
+  .dash-widget:hover .widget-remove-btn { opacity:1 !important; }
   .custom-panel { position:fixed; top:0; right:0; bottom:0; width:360px; max-width:90vw; background:var(--bg); border-left:1px solid var(--border); box-shadow:-8px 0 40px rgba(0,0,0,0.2); z-index:300; display:flex; flex-direction:column; animation:slideIn 0.25s cubic-bezier(0.16,1,0.3,1); }
   @keyframes slideIn { from{transform:translateX(100%)} to{transform:translateX(0)} }
+  @keyframes slideUp { from{transform:translateY(100%)} to{transform:translateY(0)} }
   .custom-item { display:flex; align-items:center; gap:10px; padding:12px 16px; border-bottom:1px solid var(--border); cursor:grab; user-select:none; transition:background 0.1s; }
   .custom-item:hover { background:var(--surface); }
   .size-btn { padding:3px 8px; border-radius:5px; border:1px solid var(--border); background:var(--surface-2); color:var(--text-muted); font-size:10px; font-weight:700; cursor:pointer; font-family:inherit; }
@@ -360,7 +366,7 @@ function AccordionCards({ loading, assets, maint, wos, PCOLOR, StatusBadge }) {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 16 }}>
 
       {/* Breakdowns */}
-      <AccordionCard title="Current Breakdowns" count={breakdowns.length} color="var(--red)" bg="var(--red-bg)" border="var(--red-border)" icon="🔴" loading={loading} urgent={breakdowns.length > 0}>
+      <AccordionCard title="Current Breakdowns" count={breakdowns.length} color="var(--red)" bg="var(--red-bg)" border="var(--red-border)"  loading={loading} urgent={breakdowns.length > 0}>
         {breakdowns.length === 0 ? emptyRow('No breakdowns — all assets operational') :
           listTable(breakdowns, ['Asset','Number','Location'], (a, i) => (
             <tr key={a.id} style={{ borderBottom: '1px solid var(--border)' }}>
@@ -373,7 +379,7 @@ function AccordionCards({ loading, assets, maint, wos, PCOLOR, StatusBadge }) {
       </AccordionCard>
 
       {/* Service Due Today */}
-      <AccordionCard title="Service Due Today" count={dueToday.length} color="var(--accent)" bg="var(--accent-light)" border="rgba(14,165,233,0.3)" icon="📅" loading={loading}>
+      <AccordionCard title="Service Due Today" count={dueToday.length} color="var(--accent)" bg="var(--accent-light)" border="rgba(14,165,233,0.3)"  loading={loading}>
         {dueToday.length === 0 ? emptyRow('Nothing due today') :
           listTable(dueToday, ['Asset','Service','Assigned'], (m, i) => (
             <tr key={m.id} style={{ borderBottom: '1px solid var(--border)' }}>
@@ -386,7 +392,7 @@ function AccordionCards({ loading, assets, maint, wos, PCOLOR, StatusBadge }) {
       </AccordionCard>
 
       {/* Overdue Services */}
-      <AccordionCard title="Overdue Services" count={overdue.length} color="var(--amber)" bg="var(--amber-bg)" border="var(--amber-border)" icon="⚠️" loading={loading} urgent={overdue.length > 0}>
+      <AccordionCard title="Overdue Services" count={overdue.length} color="var(--amber)" bg="var(--amber-bg)" border="var(--amber-border)"  loading={loading} urgent={overdue.length > 0}>
         {overdue.length === 0 ? emptyRow('All services on schedule') :
           listTable(overdue, ['Asset','Service','Due'], (m, i) => (
             <tr key={m.id} style={{ borderBottom: '1px solid var(--border)' }}>
@@ -399,7 +405,7 @@ function AccordionCards({ loading, assets, maint, wos, PCOLOR, StatusBadge }) {
       </AccordionCard>
 
       {/* Priority Jobs */}
-      <AccordionCard title="Priority Jobs" count={priority.length} color="var(--red)" bg="var(--red-bg)" border="var(--red-border)" icon="🔥" loading={loading} urgent={priority.length > 0}>
+      <AccordionCard title="Priority Jobs" count={priority.length} color="var(--red)" bg="var(--red-bg)" border="var(--red-border)"  loading={loading} urgent={priority.length > 0}>
         {priority.length === 0 ? emptyRow('No critical or high priority jobs') :
           listTable(priority, ['Job','Asset','Priority','Status'], (w, i) => {
             const pc = PCOLOR[w.priority] || 'var(--text-muted)';
@@ -423,16 +429,19 @@ function AccordionCards({ loading, assets, maint, wos, PCOLOR, StatusBadge }) {
 
 /* ── Widget Definitions ── */
 const WIDGET_DEFS = [
-  { id:'fleet_health',    label:'Fleet Health',        icon:'🚛', defaultSize:'lg', desc:'Overall fleet status bar' },
-  { id:'breakdowns',      label:'Breakdowns',          icon:'🔴', defaultSize:'md', desc:'Current down machines' },
-  { id:'overdue',         label:'Overdue Services',    icon:'⚠️', defaultSize:'md', desc:'Services past due date' },
-  { id:'due_today',       label:'Service Due Today',   icon:'📅', defaultSize:'md', desc:'Services due today' },
-  { id:'priority_wos',    label:'Priority Work Orders',icon:'🔥', defaultSize:'md', desc:'Critical and high priority jobs' },
-  { id:'oil_sampling',    label:'Oil Sampling',        icon:'🧪', defaultSize:'md', desc:'Overdue samples and high alerts' },
-  { id:'parts_stock',     label:'Parts Low Stock',     icon:'🔩', defaultSize:'sm', desc:'Parts below minimum stock level' },
-  { id:'downtime_summary',label:'Downtime Summary',    icon:'📉', defaultSize:'sm', desc:'Hours lost this month' },
-  { id:'calendar_preview',label:'Calendar Preview',    icon:'📆', defaultSize:'lg', desc:'Next 7 days of scheduled services' },
-  { id:'messages',        label:'Messages',            icon:'💬', defaultSize:'sm', desc:'Unread messages and recent activity' },
+  { id:'kpi_strip',      label:'KPI Strip',            icon:'', defaultSize:'lg',  desc:'Total Fleet, Active, Down, Overdue, Open WOs' },
+  { id:'prestart_kpi',   label:'Prestart KPIs',        icon:'', defaultSize:'wide', desc:'Daily prestart completion per machine with missing prestart alerts' },
+  { id:'service_kpi',    label:'Service KPIs',         icon:'', defaultSize:'wide', desc:'Service schedule status — overdue, due soon, completed' },
+  { id:'fleet_health',   label:'Fleet Health',         icon:'', defaultSize:'lg',  desc:'Overall fleet status bar' },
+  { id:'breakdowns',     label:'Breakdowns',           icon:'', defaultSize:'md',  desc:'Current down machines' },
+  { id:'overdue',        label:'Overdue Services',     icon:'', defaultSize:'md',  desc:'Services past due date' },
+  { id:'due_today',      label:'Service Due Today',    icon:'', defaultSize:'md',  desc:'Services due today' },
+  { id:'priority_wos',  label:'Priority Work Orders', icon:'', defaultSize:'md',  desc:'Critical and high priority jobs' },
+  { id:'oil_sampling',  label:'Oil Sampling',         icon:'', defaultSize:'md',  desc:'Overdue samples and high alerts' },
+  { id:'parts_stock',   label:'Parts Low Stock',      icon:'', defaultSize:'sm',  desc:'Parts below minimum stock level' },
+  { id:'downtime_summary',label:'Downtime Summary',   icon:'', defaultSize:'sm',  desc:'Hours lost this month' },
+  { id:'calendar_preview',label:'Calendar Preview',   icon:'', defaultSize:'lg',  desc:'Next 7 days of scheduled services' },
+  { id:'messages',      label:'Messages',             icon:'', defaultSize:'sm',  desc:'Unread messages and recent activity' },
 ];
 
 const DEFAULT_LAYOUT = WIDGET_DEFS.map(w => ({ id:w.id, enabled:true, size:w.defaultSize }));
@@ -537,11 +546,16 @@ function CustomisePanel({ layout, onLayoutChange, onClose, onSaveDefault, isAdmi
 /* ── Individual Widgets ── */
 
 /* ── Expandable Widget Wrapper ── */
-function ExpandableWidget({ sizeClass, title, icon, count, countColor, countSize, summary, children, defaultOpen=false }) {
+function ExpandableWidget({ sizeClass, title, icon, count, countColor, countSize, summary, children, defaultOpen=false, onRemove }) {
   const [open, setOpen] = React.useState(defaultOpen);
   return (
-    <div className={`widget-card ${sizeClass}`} style={{ cursor:'default' }}>
-      <div className="widget-header" style={{ cursor:'pointer', userSelect:'none' }} onClick={() => setOpen(o => !o)}>
+    <div className={`widget-card ${sizeClass}`} style={{ cursor:'default', position:'relative' }}>
+      {onRemove && (
+        <button onClick={e=>{e.stopPropagation();onRemove();}} title="Remove widget"
+          style={{ position:'absolute', top:10, right:10, zIndex:10, background:'none', border:'none', cursor:'pointer', color:'var(--text-faint)', fontSize:16, lineHeight:1, padding:'2px 5px', borderRadius:4, opacity:0, transition:'opacity 0.15s' }}
+          className="widget-remove-btn">×</button>
+      )}
+      <div className="widget-header" style={{ cursor:'pointer', userSelect:'none', paddingRight: onRemove ? 24 : 0 }} onClick={() => setOpen(o => !o)}>
         <span className="widget-title">{icon} {title}</span>
         <div style={{ display:'flex', alignItems:'center', gap:10 }}>
           {count !== undefined && <span style={{ fontSize: countSize||20, fontWeight:900, color:countColor||'var(--text-primary)', fontFamily:'var(--font-display)' }}>{count}</span>}
@@ -556,23 +570,17 @@ function ExpandableWidget({ sizeClass, title, icon, count, countColor, countSize
   );
 }
 
-function WidgetFleetHealth({ assets, loading, onViewAsset }) {
+function WidgetFleetHealth({ assets, loading, onRemove }) {
   if (loading) return <div className="widget-card widget-lg"><Sk h="60px" /></div>;
   const total = assets.length, running = assets.filter(a=>a.status==='Running').length, down = assets.filter(a=>a.status==='Down').length, maint = assets.filter(a=>a.status==='Maintenance').length;
   return (
-    <ExpandableWidget sizeClass="widget-lg" title="Fleet Health" icon="🚛" count={total} countColor="var(--accent)" countSize={16} summary={`${running} running · ${down} down`} defaultOpen={true}>
+    <ExpandableWidget sizeClass="widget-lg" title="Fleet Health" onRemove={onRemove}  count={total} countColor="var(--accent)" countSize={16} summary={`${running} running · ${down} down`} defaultOpen={true}>
       <FleetHealthBar running={running} down={down} maintenance={maint} total={total} />
       <div style={{ marginTop:12, display:'flex', flexDirection:'column', gap:6 }}>
         {assets.map(a => {
           const c = a.status==='Down'?'var(--red)':a.status==='Maintenance'?'var(--amber)':' var(--green)';
           return (
-            <div
-              key={a.id}
-              onClick={() => onViewAsset && onViewAsset(a.id)}
-              style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'7px 10px', borderRadius:8, background:'var(--surface-2)', border:'1px solid var(--border)', cursor: onViewAsset ? 'pointer' : 'default', transition:'background 0.15s' }}
-              onMouseEnter={e => { if (onViewAsset) e.currentTarget.style.background='var(--surface-3, #e8f0f8)'; }}
-              onMouseLeave={e => { if (onViewAsset) e.currentTarget.style.background='var(--surface-2)'; }}
-            >
+            <div key={a.id} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'7px 10px', borderRadius:8, background:'var(--surface-2)', border:'1px solid var(--border)' }}>
               <div style={{ display:'flex', alignItems:'center', gap:8 }}>
                 <span style={{ width:8, height:8, borderRadius:'50%', background:c, display:'inline-block', flexShrink:0 }} />
                 <span style={{ fontSize:13, fontWeight:600, color:'var(--text-primary)' }}>{a.name}</span>
@@ -581,7 +589,6 @@ function WidgetFleetHealth({ assets, loading, onViewAsset }) {
               <div style={{ display:'flex', gap:10, alignItems:'center' }}>
                 {a.hours && <span style={{ fontSize:11, color:'var(--text-muted)' }}>{Number(a.hours).toLocaleString()} hrs</span>}
                 <span style={{ fontSize:11, fontWeight:700, color:c, padding:'2px 8px', background:c+'18', borderRadius:20 }}>{a.status}</span>
-                {onViewAsset && <span style={{ fontSize:11, color:'var(--text-muted)', opacity:0.5 }}>›</span>}
               </div>
             </div>
           );
@@ -591,10 +598,10 @@ function WidgetFleetHealth({ assets, loading, onViewAsset }) {
   );
 }
 
-function WidgetBreakdowns({ assets, loading, size }) {
+function WidgetBreakdowns({ assets, loading, size, onRemove }) {
   const breakdowns = assets.filter(a => a.status === 'Down');
   return (
-    <ExpandableWidget sizeClass={`widget-${size}`} title="Breakdowns" icon="🔴" count={loading?'—':breakdowns.length} countColor="var(--red)" summary={breakdowns[0]?.name}>
+    <ExpandableWidget sizeClass={`widget-${size}`} title="Breakdowns" onRemove={onRemove}  count={loading?'—':breakdowns.length} countColor="var(--red)" summary={breakdowns[0]?.name}>
       {!loading && breakdowns.length === 0 && <div style={{ fontSize:12, color:'var(--green)', fontWeight:600 }}>✓ All machines running</div>}
       {!loading && breakdowns.map(a => (
         <div key={a.id} style={{ padding:'8px 10px', borderRadius:8, background:'var(--red-bg)', border:'1px solid var(--red-border)', marginBottom:6 }}>
@@ -611,10 +618,10 @@ function WidgetBreakdowns({ assets, loading, size }) {
   );
 }
 
-function WidgetOverdue({ maint, loading, size }) {
+function WidgetOverdue({ maint, loading, size, onRemove, onDrillDown }) {
   const overdue = maint.filter(m => m.status === 'Overdue');
   return (
-    <ExpandableWidget sizeClass={`widget-${size}`} title="Overdue Services" icon="⚠️" count={loading?'—':overdue.length} countColor="var(--amber)" summary={overdue[0]?.asset}>
+    <ExpandableWidget sizeClass={`widget-${size}`} title="Overdue Services" onRemove={onRemove}  count={loading?'—':overdue.length} countColor="var(--amber)" summary={overdue[0]?.asset}>
       {!loading && overdue.length === 0 && <div style={{ fontSize:12, color:'var(--green)', fontWeight:600 }}>✓ No overdue services</div>}
       {!loading && overdue.map(m => (
         <div key={m.id} style={{ padding:'8px 10px', borderRadius:8, background:'var(--amber-bg)', border:'1px solid var(--amber-border)', marginBottom:6 }}>
@@ -627,11 +634,11 @@ function WidgetOverdue({ maint, loading, size }) {
   );
 }
 
-function WidgetDueToday({ maint, loading, size }) {
+function WidgetDueToday({ maint, loading, size, onRemove, onDrillDown }) {
   const today = new Date().toISOString().split('T')[0];
   const dueToday = maint.filter(m => m.next_due === today || m.status === 'Due Soon');
   return (
-    <ExpandableWidget sizeClass={`widget-${size}`} title="Due Today" icon="📅" count={loading?'—':dueToday.length} countColor="var(--accent)" summary={dueToday[0]?.asset}>
+    <ExpandableWidget sizeClass={`widget-${size}`} title="Due Today" onRemove={onRemove}  count={loading?'—':dueToday.length} countColor="var(--accent)" summary={dueToday[0]?.asset}>
       {!loading && dueToday.length === 0 && <div style={{ fontSize:12, color:'var(--text-muted)' }}>Nothing due today</div>}
       {!loading && dueToday.map(m => (
         <div key={m.id} style={{ padding:'8px 10px', borderRadius:8, background:'var(--accent-light)', border:'1px solid rgba(14,165,233,0.2)', marginBottom:6 }}>
@@ -644,10 +651,10 @@ function WidgetDueToday({ maint, loading, size }) {
   );
 }
 
-function WidgetPriorityWOs({ wos, loading, size }) {
+function WidgetPriorityWOs({ wos, loading, size, onRemove, onDrillDown }) {
   const priority = wos.filter(w => w.priority === 'Critical' || w.priority === 'High');
   return (
-    <ExpandableWidget sizeClass={`widget-${size}`} title="Priority Jobs" icon="🔥" count={loading?'—':priority.length} countColor="var(--red)" summary={priority[0]?.asset}>
+    <ExpandableWidget sizeClass={`widget-${size}`} title="Priority Jobs" onRemove={onRemove}  count={loading?'—':priority.length} countColor="var(--red)" summary={priority[0]?.asset}>
       {!loading && priority.length === 0 && <div style={{ fontSize:12, color:'var(--green)', fontWeight:600 }}>✓ No critical jobs</div>}
       {!loading && priority.map(w => {
         const c = w.priority==='Critical'?'var(--red)':'var(--amber)';
@@ -666,7 +673,7 @@ function WidgetPriorityWOs({ wos, loading, size }) {
   );
 }
 
-function WidgetOilSampling({ companyId, size }) {
+function WidgetOilSampling({ companyId, size, onRemove }) {
   const [samples, setSamples] = useState([]);
   const [loading, setLoading] = useState(true);
   useEffect(() => {
@@ -676,7 +683,7 @@ function WidgetOilSampling({ companyId, size }) {
   }, [companyId]);
   const alerts = samples.filter(s => s.ai_condition === 'CRITICAL' || s.ai_condition === 'WARNING');
   return (
-    <ExpandableWidget sizeClass={`widget-${size}`} title="Oil Sampling" icon="🧪" count={loading?'—':alerts.length} countColor={alerts.length>0?'var(--red)':'var(--green)'} summary={alerts[0]?.asset_name}>
+    <ExpandableWidget sizeClass={`widget-${size}`} title="Oil Sampling" onRemove={onRemove}  count={loading?'—':alerts.length} countColor={alerts.length>0?'var(--red)':'var(--green)'} summary={alerts[0]?.asset_name}>
       {!loading && alerts.length === 0 && <div style={{ fontSize:12, color:'var(--green)', fontWeight:600 }}>✓ All oil samples normal</div>}
       {!loading && alerts.map(s => {
         const c = s.ai_condition==='CRITICAL'?'var(--red)':'var(--amber)';
@@ -697,7 +704,7 @@ function WidgetOilSampling({ companyId, size }) {
   );
 }
 
-function WidgetPartsStock({ companyId, size }) {
+function WidgetPartsStock({ companyId, size, onRemove }) {
   const [parts, setParts] = useState([]);
   const [loading, setLoading] = useState(true);
   useEffect(() => {
@@ -706,7 +713,7 @@ function WidgetPartsStock({ companyId, size }) {
       .then(({ data }) => { setParts((data||[]).filter(p => p.quantity <= p.min_quantity)); setLoading(false); });
   }, [companyId]);
   return (
-    <ExpandableWidget sizeClass={`widget-${size}`} title="Low Stock Parts" icon="🔩" count={loading?'—':parts.length} countColor={parts.length>0?'var(--amber)':'var(--green)'} summary={parts[0]?.name}>
+    <ExpandableWidget sizeClass={`widget-${size}`} title="Low Stock Parts" onRemove={onRemove}  count={loading?'—':parts.length} countColor={parts.length>0?'var(--amber)':'var(--green)'} summary={parts[0]?.name}>
       {!loading && parts.length === 0 && <div style={{ fontSize:12, color:'var(--green)', fontWeight:600 }}>✓ All parts adequately stocked</div>}
       {!loading && parts.map(p => {
         const c = p.quantity===0?'var(--red)':'var(--amber)';
@@ -724,7 +731,7 @@ function WidgetPartsStock({ companyId, size }) {
   );
 }
 
-function WidgetDowntimeSummary({ companyId, size }) {
+function WidgetDowntimeSummary({ companyId, size, onRemove }) {
   const [hours, setHours] = useState(null);
   const [loading, setLoading] = useState(true);
   useEffect(() => {
@@ -734,14 +741,14 @@ function WidgetDowntimeSummary({ companyId, size }) {
       .then(({ data }) => { setHours((data||[]).reduce((s,d) => s + (parseFloat(d.hours)||0), 0)); setLoading(false); });
   }, [companyId]);
   return (
-    <ExpandableWidget sizeClass={`widget-${size}`} title="Downtime This Month" icon="📉" summary={loading?'':`${hours?.toFixed(1)} hrs lost`}>
+    <ExpandableWidget sizeClass={`widget-${size}`} title="Downtime This Month" onRemove={onRemove}  summary={loading?'':`${hours?.toFixed(1)} hrs lost`}>
       <div style={{ fontSize:36, fontWeight:900, color:'var(--red)', fontFamily:'var(--font-display)' }}>{loading ? '—' : hours?.toFixed(1)}<span style={{ fontSize:14, fontWeight:600, color:'var(--text-muted)', marginLeft:4 }}>hrs</span></div>
       {!loading && <div style={{ fontSize:12, color:'var(--text-muted)', marginTop:4 }}>Lost to unplanned downtime in {new Date().toLocaleString('default',{month:'long'})}</div>}
     </ExpandableWidget>
   );
 }
 
-function WidgetCalendarPreview({ companyId, size }) {
+function WidgetCalendarPreview({ companyId, size, onRemove }) {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   useEffect(() => {
@@ -761,7 +768,7 @@ function WidgetCalendarPreview({ companyId, size }) {
     });
   }, [companyId]);
   return (
-    <ExpandableWidget sizeClass={`widget-${size}`} title="Next 7 Days" icon="📆" count={loading?'—':events.length} countColor="var(--accent)" countSize={16} summary={events[0]?.label?.slice(0,30)}>
+    <ExpandableWidget sizeClass={`widget-${size}`} title="Next 7 Days"  onRemove={onRemove} count={loading?'—':events.length} countColor="var(--accent)" countSize={16} summary={events[0]?.label?.slice(0,30)}>
       {loading ? <Sk h="80px" /> : events.length === 0 ? <div style={{ fontSize:12, color:'var(--text-muted)' }}>Nothing scheduled in the next 7 days</div> : (
         events.map((ev, i) => (
           <div key={i} style={{ display:'flex', gap:10, padding:'8px 10px', borderRadius:8, background:'var(--surface-2)', border:'1px solid var(--border)', marginBottom:6, alignItems:'center' }}>
@@ -775,7 +782,7 @@ function WidgetCalendarPreview({ companyId, size }) {
   );
 }
 
-function WidgetMessages({ companyId, size }) {
+function WidgetMessages({ companyId, size, onRemove }) {
   const [msgs, setMsgs] = useState([]);
   const [loading, setLoading] = useState(true);
   useEffect(() => {
@@ -785,7 +792,7 @@ function WidgetMessages({ companyId, size }) {
   }, [companyId]);
   const ago = ts => { if(!ts)return''; const m=Math.floor((Date.now()-new Date(ts))/60000); if(m<60)return`${m}m ago`; if(m<1440)return`${Math.floor(m/60)}h ago`; return`${Math.floor(m/1440)}d ago`; };
   return (
-    <ExpandableWidget sizeClass={`widget-${size}`} title="Messages" icon="💬" count={loading?'—':msgs.length} countColor="var(--accent)" countSize={16}>
+    <ExpandableWidget sizeClass={`widget-${size}`} title="Messages" onRemove={onRemove}  count={loading?'—':msgs.length} countColor="var(--accent)" countSize={16}>
       {loading ? <Sk h="60px" /> : msgs.length === 0 ? <div style={{ fontSize:12, color:'var(--text-muted)' }}>No recent messages</div> : (
         msgs.map(m => (
           <div key={m.id} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'8px 10px', borderRadius:8, background:'var(--surface-2)', border:'1px solid var(--border)', marginBottom:6 }}>
@@ -799,7 +806,226 @@ function WidgetMessages({ companyId, size }) {
 }
 
 /* ── Main Dashboard ── */
-function Dashboard({ companyId, userRole, onViewAsset }) {
+
+// ─── KPI: Prestart Summary Widget ────────────────────────────────────────────
+function WidgetPrestartKPI({ companyId, loading, onRemove, onDrillDown }) {
+  const [data,        setData]        = React.useState(null);
+  const [viewPrestart,setViewPrestart]= React.useState(null);
+  const today = new Date().toISOString().split('T')[0];
+
+  React.useEffect(() => {
+    if (!companyId) return;
+    (async () => {
+      const [{ data: assets }, { data: subs }, { data: allSubs }] = await Promise.all([
+        supabase.from('assets').select('id,name,asset_number,hours,status').eq('company_id', companyId),
+        supabase.from('form_submissions').select('*').eq('company_id', companyId).eq('date', today),
+        supabase.from('form_submissions').select('asset,date,hrs_start').eq('company_id', companyId).order('date',{ascending:false}).limit(200),
+      ]);
+      const activeAssets = (assets||[]).filter(a => !/inactive|retired/i.test(a.status||''));
+      const todaySubs    = subs || [];
+
+      // Per-machine: did each asset get a prestart today?
+      const perMachine = activeAssets.map(a => {
+        const todayPs = todaySubs.filter(s => s.asset === a.name);
+        // Last prestart for this asset
+        const lastPs  = (allSubs||[]).filter(s => s.asset === a.name)[0];
+        const lastHrs = lastPs?.hrs_start || 0;
+        const hrsDiff = (a.hours||0) - lastHrs;
+        // Missing = no prestart today AND hours diff > 6 (machine worked but no prestart)
+        const workedToday = hrsDiff >= 6;
+        const missingToday = todayPs.length === 0 && workedToday;
+        return { ...a, todayCount: todayPs.length, lastPs, hrsDiff, missingToday, todayPs };
+      });
+
+      setData({
+        total:     activeAssets.length,
+        completed: [...new Set(todaySubs.map(s=>s.asset))].length,
+        missing:   perMachine.filter(m=>m.missingToday).length,
+        defects:   todaySubs.filter(s=>s.defects_found).length,
+        perMachine,
+        todaySubs,
+      });
+    })();
+  }, [companyId, today]);
+
+  if (loading || !data) return (
+    <div className="dash-widget" style={{ gridColumn:'span 2' }}>
+      <div className="dw-header"><div className="dw-title">Prestart KPIs</div></div>
+      <div style={{color:'var(--text-muted)',fontSize:13,padding:'20px 0'}}>Loading…</div>
+    </div>
+  );
+
+  const rate = data.total > 0 ? Math.round((data.completed/data.total)*100) : 0;
+  const rateColor = rate >= 90 ? 'var(--green)' : rate >= 70 ? 'var(--amber)' : 'var(--red)';
+
+  return (
+    <>
+    <div className="dash-widget" style={{ gridColumn:'span 2', position:'relative' }}>
+      {onRemove && (
+        <button onClick={onRemove} title="Remove widget"
+          style={{ position:'absolute', top:10, right:10, zIndex:10, background:'none', border:'none', cursor:'pointer', color:'var(--text-faint)', fontSize:18, lineHeight:1, padding:'2px 6px', borderRadius:4, opacity:0, transition:'opacity 0.15s' }}
+          className="widget-remove-btn">×</button>
+      )}
+      <div className="dw-header">
+        <div className="dw-title">Prestart KPIs — Today</div>
+        <div style={{ fontSize:11, color:'var(--text-muted)' }}>{today}</div>
+      </div>
+
+      {/* KPI row — clickable */}
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:10, marginBottom:18 }}>
+        {[
+          { label:'Completed',   val:data.completed, color:'var(--green)',  rows: data.perMachine.filter(m=>m.todayCount>0).map(m=>[m.asset_number?`${m.asset_number} — ${m.name}`:m.name, `${m.todayCount} prestart${m.todayCount>1?'s':''}`, m.hours?.toLocaleString()+' hrs']), cols:['Asset','Prestarts','Hours'], title:'Completed Today', icon:'✓', dd:'var(--green)' },
+          { label:'Total Units', val:data.total,     color:'var(--accent)', rows: data.perMachine.map(m=>[m.asset_number?`${m.asset_number} — ${m.name}`:m.name, m.todayCount>0?`✓ ${m.todayCount} done`:m.missingToday?'⚠ Missing':'—', m.hours?.toLocaleString()+' hrs']), cols:['Asset','Today','Hours'], title:'All Units', icon:'', dd:'var(--accent)' },
+          { label:'Missing',     val:data.missing,   color:data.missing>0?'var(--red)':'var(--green)', rows: data.perMachine.filter(m=>m.missingToday).map(m=>[m.asset_number?`${m.asset_number} — ${m.name}`:m.name, `${Math.round(m.hrsDiff)} hrs since last`, m.hours?.toLocaleString()+' hrs']), cols:['Asset','Time Since Last','Hours'], title:'Missing Prestarts', icon:'⚠', dd:'var(--red)', emptyMsg:'No missing prestarts today ✓' },
+          { label:'Defects',     val:data.defects,   color:data.defects>0?'var(--amber)':'var(--green)', rows: data.perMachine.filter(m=>m.todayPs?.some(p=>p.defects_found)).map(m=>[m.asset_number?`${m.asset_number} — ${m.name}`:m.name, `${m.todayPs.filter(p=>p.defects_found).length} defect${m.todayPs.filter(p=>p.defects_found).length>1?'s':''}`, m.hours?.toLocaleString()+' hrs']), cols:['Asset','Defects','Hours'], title:'Defects Found Today', icon:'', dd:'var(--amber)', emptyMsg:'No defects found today ✓' },
+        ].map(({ label, val, color, rows, cols, title, icon, dd, emptyMsg }) => (
+          <div key={label}
+            onClick={() => onDrillDown && onDrillDown({ title, icon, color:dd, columns:cols, rows, emptyMsg })}
+            style={{ background:'var(--surface-2)', borderRadius:8, padding:'12px 10px', textAlign:'center', border:`1px solid ${color}22`, cursor: onDrillDown ? 'pointer' : 'default', transition:'all 0.15s' }}
+            onMouseEnter={e=>{ if(onDrillDown){ e.currentTarget.style.background='var(--surface)'; e.currentTarget.style.borderColor=color; }}}
+            onMouseLeave={e=>{ e.currentTarget.style.background='var(--surface-2)'; e.currentTarget.style.borderColor=`${color}22`; }}>
+            <div style={{ fontSize:22, fontWeight:900, color }}>{val}</div>
+            <div style={{ fontSize:10, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.5px', marginTop:2 }}>{label}</div>
+            {onDrillDown && <div style={{ fontSize:8, color:'var(--text-faint)', marginTop:3, letterSpacing:'0.5px' }}>TAP</div>}
+          </div>
+        ))}
+      </div>
+
+      {/* Completion rate bar */}
+      <div style={{ marginBottom:16 }}>
+        <div style={{ display:'flex', justifyContent:'space-between', marginBottom:5 }}>
+          <span style={{ fontSize:11, fontWeight:700, color:'var(--text-muted)' }}>COMPLETION RATE</span>
+          <span style={{ fontSize:13, fontWeight:800, color:rateColor }}>{rate}%</span>
+        </div>
+        <div style={{ height:8, background:'var(--surface-2)', borderRadius:4, overflow:'hidden' }}>
+          <div style={{ height:'100%', width:`${rate}%`, background:rateColor, borderRadius:4, transition:'width 0.5s' }} />
+        </div>
+      </div>
+
+      {/* Per-machine breakdown */}
+      <div style={{ fontSize:11, fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.5px', marginBottom:8 }}>PER MACHINE</div>
+      <div style={{ display:'flex', flexDirection:'column', gap:5 }}>
+        {data.perMachine.map(m => (
+          <div key={m.id} style={{ display:'flex', alignItems:'center', gap:10, padding:'8px 10px', borderRadius:7, background: m.missingToday ? 'rgba(239,83,80,0.06)' : m.todayCount > 0 ? 'rgba(34,197,94,0.06)' : 'var(--surface-2)', border: `1px solid ${m.missingToday ? 'rgba(239,83,80,0.2)' : m.todayCount > 0 ? 'rgba(34,197,94,0.2)' : 'var(--border)'}`, cursor: m.todayPs?.length > 0 ? 'pointer' : 'default' }}
+            onClick={() => m.todayPs?.length > 0 && setViewPrestart({ subs: m.todayPs, asset: m })}>
+            <div style={{ width:8, height:8, borderRadius:'50%', background: m.missingToday ? 'var(--red)' : m.todayCount > 0 ? 'var(--green)' : 'var(--text-faint)', flexShrink:0 }} />
+            <div style={{ flex:1, minWidth:0 }}>
+              <div style={{ fontSize:12, fontWeight:600, color:'var(--text-primary)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+                {m.asset_number && <span style={{ color:'var(--accent)', marginRight:6, fontSize:11 }}>{m.asset_number}</span>}
+                {m.name}
+              </div>
+              <div style={{ fontSize:10, color:'var(--text-muted)' }}>
+                {m.missingToday ? `⚠ Missing — ${Math.round(m.hrsDiff)} hrs worked since last prestart` :
+                 m.todayCount > 0 ? `✓ ${m.todayCount} prestart${m.todayCount>1?'s':''} today` :
+                 m.hours < 6 ? 'Not yet operational today' : 'No prestart today'}
+              </div>
+            </div>
+            <div style={{ flexShrink:0, display:'flex', alignItems:'center', gap:6 }}>
+              <span style={{ fontSize:11, color:'var(--text-muted)' }}>{m.hours?.toLocaleString()} hrs</span>
+              {m.todayPs?.length > 0 && <span style={{ fontSize:11, color:'var(--accent)', fontWeight:700 }}>View →</span>}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+
+    {/* Prestart detail modal */}
+    {viewPrestart && (
+      <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.65)', zIndex:2000, display:'flex', alignItems:'center', justifyContent:'center', padding:16, backdropFilter:'blur(4px)' }}
+        onClick={() => setViewPrestart(null)}>
+        <div style={{ background:'var(--surface)', border:'1px solid var(--border)', borderRadius:14, width:'100%', maxWidth:600, maxHeight:'88vh', display:'flex', flexDirection:'column', boxShadow:'0 24px 60px rgba(0,0,0,0.4)' }}
+          onClick={e => e.stopPropagation()}>
+          <div style={{ padding:'18px 22px 14px', borderBottom:'1px solid var(--border)', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+            <div>
+              <div style={{ fontSize:15, fontWeight:800, color:'var(--text-primary)' }}>Prestarts — {viewPrestart.asset.name}</div>
+              <div style={{ fontSize:12, color:'var(--text-muted)', marginTop:2 }}>{viewPrestart.subs.length} submission{viewPrestart.subs.length!==1?'s':''} today</div>
+            </div>
+            <button onClick={() => setViewPrestart(null)} style={{ background:'none', border:'none', fontSize:22, cursor:'pointer', color:'var(--text-muted)' }}>✕</button>
+          </div>
+          <div style={{ flex:1, overflowY:'auto', padding:'14px 22px' }}>
+            {viewPrestart.subs.map((sub, si) => (
+              <div key={si} style={{ marginBottom:20 }}>
+                <div style={{ display:'flex', gap:16, marginBottom:12, padding:'10px 12px', background:'var(--surface-2)', borderRadius:7, flexWrap:'wrap' }}>
+                  <div><div style={{ fontSize:10, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.5px' }}>Operator</div><div style={{ fontWeight:700, fontSize:13 }}>{sub.operator_name||'—'}</div></div>
+                  <div><div style={{ fontSize:10, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.5px' }}>Hours</div><div style={{ fontWeight:700, fontSize:13 }}>{sub.hrs_start||'—'}</div></div>
+                  <div><div style={{ fontSize:10, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.5px' }}>Result</div><div style={{ fontWeight:700, fontSize:13, color: sub.defects_found ? 'var(--red)' : 'var(--green)' }}>{sub.defects_found ? '⚠ Defects' : '✓ All Clear'}</div></div>
+                  {sub.site_area && <div><div style={{ fontSize:10, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.5px' }}>Site</div><div style={{ fontWeight:700, fontSize:13 }}>{sub.site_area}</div></div>}
+                </div>
+                {sub.responses && Object.entries(sub.responses).slice(0,20).map(([key, val], i) => {
+                  const label = key.replace(/^\d+_/, '');
+                  let value = val?.status === 'OK' ? '✓ OK' : val?.status || val?.num || val?.text || val?.qty || val?.temp || val?.comment || JSON.stringify(val);
+                  const isDefect = val?.status && val.status !== 'OK';
+                  return (
+                    <div key={i} style={{ display:'flex', justifyContent:'space-between', padding:'6px 10px', borderBottom:'1px solid var(--border)', borderRadius: isDefect ? 4 : 0, background: isDefect ? 'rgba(239,83,80,0.06)' : 'transparent' }}>
+                      <span style={{ fontSize:12, color:'var(--text-secondary)' }}>{label}</span>
+                      <span style={{ fontSize:12, fontWeight:600, color: isDefect ? 'var(--red)' : value.includes('✓') ? 'var(--green)' : 'var(--text-primary)' }}>{String(value)}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    )}
+    </>
+  );
+}
+
+// ─── KPI: Service Schedule Widget ────────────────────────────────────────────
+function WidgetServiceKPI({ companyId, loading, onRemove, onDrillDown }) {
+  const [schedules, setSchedules] = React.useState([]);
+
+  React.useEffect(() => {
+    if (!companyId) return;
+    supabase.from('service_schedules').select('*').eq('company_id', companyId)
+      .then(({ data }) => setSchedules(data||[]));
+  }, [companyId]);
+
+  const overdue   = schedules.filter(s => s.status === 'overdue' || s.status === 'Overdue');
+  const dueSoon   = schedules.filter(s => s.status === 'Due Soon' || s.status === 'due_soon');
+  const upcoming  = schedules.filter(s => s.status === 'Upcoming' || s.status === 'upcoming');
+  const completed = schedules.filter(s => s.status === 'Completed' || s.status === 'completed');
+
+  return (
+    <div className="dash-widget" style={{ gridColumn:'span 2' }}>
+      <div className="dw-header"><div className="dw-title">Service Schedule KPIs</div></div>
+
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:10, marginBottom:18 }}>
+        {[
+          ['Overdue',   overdue.length,   'var(--red)',   '#ef535018'],
+          ['Due Soon',  dueSoon.length,   'var(--amber)', '#f59e0b18'],
+          ['Upcoming',  upcoming.length,  'var(--accent)','rgba(25,118,210,0.08)'],
+          ['Completed', completed.length, 'var(--green)', 'rgba(34,197,94,0.08)'],
+        ].map(([label, val, color, bg]) => (
+          <div key={label} style={{ background:bg, borderRadius:8, padding:'12px 10px', textAlign:'center', border:`1px solid ${color}33` }}>
+            <div style={{ fontSize:22, fontWeight:900, color }}>{val}</div>
+            <div style={{ fontSize:10, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.5px', marginTop:2 }}>{label}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Overdue + Due Soon list */}
+      {[...overdue, ...dueSoon].slice(0,8).map((s,i) => {
+        const isOD = s.status === 'overdue' || s.status === 'Overdue';
+        return (
+          <div key={i} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'8px 10px', borderRadius:6, marginBottom:5, background: isOD ? 'rgba(239,83,80,0.06)' : 'rgba(245,158,11,0.06)', border:`1px solid ${isOD?'rgba(239,83,80,0.2)':'rgba(245,158,11,0.2)'}` }}>
+            <div>
+              <div style={{ fontSize:12, fontWeight:600, color:'var(--text-primary)' }}>{s.asset_name||'—'}</div>
+              <div style={{ fontSize:11, color:'var(--text-muted)' }}>{s.service_name||s.task} · Every {s.interval_value} {s.interval_type}</div>
+            </div>
+            <span style={{ padding:'3px 10px', borderRadius:20, fontSize:11, fontWeight:700, background: isOD?'var(--red-bg)':'var(--amber-bg)', color: isOD?'var(--red)':'var(--amber)' }}>
+              {isOD ? '⚠ Overdue' : '↑ Due Soon'}
+            </span>
+          </div>
+        );
+      })}
+      {[...overdue,...dueSoon].length === 0 && <div style={{ fontSize:13, color:'var(--text-muted)', fontStyle:'italic' }}>✓ All services up to date</div>}
+    </div>
+  );
+}
+
+function Dashboard({ companyId, userRole }) {
   const [stats, setStats]   = useState(null);
   const [dt, setDT]         = useState([]);
   const [maint, setMaint]   = useState([]);
@@ -810,6 +1036,10 @@ function Dashboard({ companyId, userRole, onViewAsset }) {
   const [hVis, setHVis]     = useState(false);
   const [showCustomise, setShowCustomise] = useState(false);
   const [layout, setLayout] = useState(() => getLayout(companyId, userRole?.email || ''));
+  const [customWidgets, setCustomWidgets] = useState([]);
+  const [drillDown, setDrillDown] = useState(null); // { title, icon, color, rows, columns }
+  const [showBuilder, setShowBuilder] = useState(false);
+  const [editingWidget, setEditingWidget] = useState(null);
   const { toasts, add: toast } = useToast();
   const isAdmin = ['admin','supervisor'].includes(userRole?.role);
 
@@ -818,8 +1048,38 @@ function Dashboard({ companyId, userRole, onViewAsset }) {
       const s = document.createElement('style'); s.id='dash-css'; s.textContent=CSS; document.head.appendChild(s);
     }
     setTimeout(() => setHVis(true), 60);
-    if (companyId) load();
+    if (companyId) { load(); loadCustomWidgets(); }
   }, [companyId]);
+
+  const hideWidget = (id) => {
+    const next = layout.map(w => w.id === id ? { ...w, enabled: false } : w);
+    setLayout(next);
+    saveLayout(next, companyId, userRole?.email || '');
+    toast('Widget hidden — restore it from Customise', 'info');
+  };
+
+  const loadCustomWidgets = async () => {
+    const { data } = await supabase.from('custom_widgets').select('*').eq('company_id', companyId).order('created_at');
+    // Unwrap jsonb config column → flat widget object
+    const widgets = (data || []).map(row => ({ ...row.config, id: row.id }));
+    setCustomWidgets(widgets);
+  };
+
+  const handleWidgetSaved = (cfg) => {
+    setCustomWidgets(prev => {
+      const exists = prev.find(w => w.id === cfg.id);
+      return exists ? prev.map(w => w.id === cfg.id ? cfg : w) : [...prev, cfg];
+    });
+    setShowBuilder(false); setEditingWidget(null);
+    toast('Widget saved', 'success');
+  };
+
+  const deleteCustomWidget = async (id) => {
+    if (!window.confirm('Remove this widget from the dashboard?')) return;
+    await supabase.from('custom_widgets').delete().eq('id', id);
+    setCustomWidgets(prev => prev.filter(w => w.id !== id));
+    toast('Widget removed', 'success');
+  };
 
   const load = async (isRefresh=false) => {
     if (isRefresh) setRef(true); else setLoad(true);
@@ -856,31 +1116,52 @@ function Dashboard({ companyId, userRole, onViewAsset }) {
   const A = { cyan:'var(--accent)', red:'var(--red)', amber:'var(--amber)', green:'var(--green)' };
 
   const WIDGET_COMPONENTS = {
-    fleet_health:     (w) => <WidgetFleetHealth key={w.id} assets={assets} loading={loading} onViewAsset={onViewAsset} />,
-    breakdowns:       (w) => <WidgetBreakdowns key={w.id} assets={assets} loading={loading} size={w.size} />,
-    overdue:          (w) => <WidgetOverdue key={w.id} maint={maint} loading={loading} size={w.size} />,
-    due_today:        (w) => <WidgetDueToday key={w.id} maint={maint} loading={loading} size={w.size} />,
-    priority_wos:     (w) => <WidgetPriorityWOs key={w.id} wos={wos} loading={loading} size={w.size} />,
-    oil_sampling:     (w) => <WidgetOilSampling key={w.id} companyId={companyId} size={w.size} />,
-    parts_stock:      (w) => <WidgetPartsStock key={w.id} companyId={companyId} size={w.size} />,
-    downtime_summary: (w) => <WidgetDowntimeSummary key={w.id} companyId={companyId} size={w.size} />,
-    calendar_preview: (w) => <WidgetCalendarPreview key={w.id} companyId={companyId} size={w.size} />,
-    messages:         (w) => <WidgetMessages key={w.id} companyId={companyId} size={w.size} />,
+    kpi_strip:        (w) => null, // rendered separately in hero strip
+    fleet_health:     (w) => <WidgetFleetHealth key={w.id} assets={assets} loading={loading} onRemove={w.onRemove} />,
+    breakdowns:       (w) => <WidgetBreakdowns key={w.id} assets={assets} loading={loading} size={w.size} onRemove={w.onRemove} />,
+    overdue:          (w) => <WidgetOverdue key={w.id} maint={maint} loading={loading} size={w.size} onRemove={w.onRemove} onDrillDown={setDrillDown} />,
+    due_today:        (w) => <WidgetDueToday key={w.id} maint={maint} loading={loading} size={w.size} onRemove={w.onRemove} onDrillDown={setDrillDown} />,
+    priority_wos:     (w) => <WidgetPriorityWOs key={w.id} wos={wos} loading={loading} size={w.size} onRemove={w.onRemove} onDrillDown={setDrillDown} />,
+    oil_sampling:     (w) => <WidgetOilSampling key={w.id} companyId={companyId} size={w.size} onRemove={w.onRemove} />,
+    parts_stock:      (w) => <WidgetPartsStock key={w.id} companyId={companyId} size={w.size} onRemove={w.onRemove} />,
+    downtime_summary: (w) => <WidgetDowntimeSummary key={w.id} companyId={companyId} size={w.size} onRemove={w.onRemove} />,
+    calendar_preview:  (w) => <WidgetCalendarPreview key={w.id} companyId={companyId} size={w.size} onRemove={w.onRemove} />,
+    prestart_kpi:      (w) => <WidgetPrestartKPI key={w.id} companyId={companyId} loading={loading} onRemove={w.onRemove} onDrillDown={setDrillDown} />,
+    service_kpi:       (w) => <WidgetServiceKPI  key={w.id} companyId={companyId} loading={loading} onRemove={w.onRemove} onDrillDown={setDrillDown} />,
+    messages:         (w) => <WidgetMessages key={w.id} companyId={companyId} size={w.size} onRemove={w.onRemove} />,
   };
+
+  // ── Fleet health bar stats ──
+  const activeCount = assets.filter(a=>/active|running/i.test(a.status||'')).length;
+  const downCount   = assets.filter(a=>/down|offline|breakdown/i.test(a.status||'')).length;
+  const maintCount  = assets.filter(a=>/maintenance/i.test(a.status||'')).length;
+  const openWOCount = wos.length;
+  const overdueCount= maint.filter(m=>/overdue/i.test(m.status||'')).length;
 
   return (
     <>
       <ToastContainer toasts={toasts} />
       <div style={{ animation:'fadeUp 0.35s ease both' }}>
 
-        {/* ── Header ── */}
-        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:24, opacity:hVis?1:0, transform:hVis?'none':'translateY(-6px)', transition:'opacity 0.4s, transform 0.4s', flexWrap:'wrap', gap:10 }}>
-          <p style={{ fontSize:13, color:'var(--text-muted)', margin:0, fontWeight:400 }}>
-            {now.toLocaleDateString('en-AU',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}
-          </p>
+        {/* ── Top bar: date + actions ── */}
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:20, flexWrap:'wrap', gap:10 }}>
+          <div>
+            <div style={{ fontSize:20, fontWeight:800, color:'var(--text-primary)', letterSpacing:-0.3 }}>
+              {now.toLocaleDateString('en-AU',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}
+            </div>
+            <div style={{ fontSize:12, color:'var(--text-muted)', marginTop:2 }}>
+              {assets.length} assets · {activeCount} active · {downCount > 0 ? `${downCount} down` : 'none down'}
+            </div>
+          </div>
           <div style={{ display:'flex', gap:8 }}>
-            <button onClick={() => setShowCustomise(true)} style={{ padding:'7px 14px', background:'var(--surface)', border:'1px solid var(--border)', borderRadius:8, cursor:'pointer', fontSize:12, fontWeight:700, color:'var(--text-secondary)', display:'flex', alignItems:'center', gap:6 }}>
-              ⚙️ Customise
+            {isAdmin && (
+              <button onClick={() => { setEditingWidget(null); setShowBuilder(true); }}
+                style={{ padding:'7px 14px', background:'linear-gradient(135deg,var(--accent),#0090a8)', color:'#fff', border:'none', borderRadius:8, cursor:'pointer', fontSize:12, fontWeight:700, display:'flex', alignItems:'center', gap:6 }}>
+                + Widget
+              </button>
+            )}
+            <button onClick={() => setShowCustomise(true)} style={{ padding:'7px 14px', background:'var(--surface)', border:'1px solid var(--border)', borderRadius:8, cursor:'pointer', fontSize:12, fontWeight:600, color:'var(--text-secondary)', display:'flex', alignItems:'center', gap:6 }}>
+              Customise
             </button>
             <button className="refresh-btn" onClick={() => load(true)} disabled={refreshing}>
               <span style={{ display:'inline-block', animation:refreshing?'spin 0.8s linear infinite':'none' }}>↻</span>
@@ -889,35 +1170,262 @@ function Dashboard({ companyId, userRole, onViewAsset }) {
           </div>
         </div>
 
-        {/* ── Widget Grid ── */}
+        {/* ── Hero KPI Strip ── */}
+        {layout.find(w=>w.id==='kpi_strip')?.enabled !== false && (
+        <div style={{ display:'grid', gridTemplateColumns:'repeat(5,1fr)', gap:12, marginBottom:20 }}>
+          {[
+            {
+              label:'Total Fleet', value: assets.length, color:'var(--accent)', sub:'registered assets',
+              onClick: () => setDrillDown({
+                title:'All Fleet Assets', icon:'', color:'var(--accent)',
+                columns:['Asset','Type','Status','Location','Hours'],
+                rows: assets.map(a => [a.asset_number ? `${a.asset_number} — ${a.name}` : a.name, a.type||'—', a.status||'—', a.location||'—', a.hours ? a.hours.toLocaleString()+' hrs' : '—']),
+              }),
+            },
+            {
+              label:'Active', value: activeCount, color:'var(--green)', icon:'✓', sub:'operational now',
+              onClick: () => setDrillDown({
+                title:'Active Assets', icon:'', color:'var(--green)',
+                columns:['Asset','Type','Location','Hours'],
+                rows: assets.filter(a=>/running|active/i.test(a.status||'')).map(a => [a.asset_number ? `${a.asset_number} — ${a.name}` : a.name, a.type||'—', a.location||'—', a.hours ? a.hours.toLocaleString()+' hrs' : '—']),
+              }),
+            },
+            {
+              label:'Down', value: downCount, color: downCount>0?'var(--red)':'var(--text-muted)', sub:'offline / breakdown', urgent: downCount>0,
+              onClick: () => setDrillDown({
+                title:'Assets Down', icon:'', color:'var(--red)',
+                columns:['Asset','Type','Status','Location','Hours'],
+                rows: assets.filter(a=>/down|offline|breakdown/i.test(a.status||'')).map(a => [a.asset_number ? `${a.asset_number} — ${a.name}` : a.name, a.type||'—', a.status||'—', a.location||'—', a.hours ? a.hours.toLocaleString()+' hrs' : '—']),
+                emptyMsg: 'No assets currently down 👍',
+              }),
+            },
+            {
+              label:'Overdue Svc', value: overdueCount, color: overdueCount>0?'var(--red)':'var(--text-muted)', sub:'services past due', urgent: overdueCount>0,
+              onClick: () => setDrillDown({
+                title:'Overdue Services', icon:'', color:'var(--red)',
+                columns:['Asset','Service','Due','Interval','Status'],
+                rows: maint.filter(m=>/overdue/i.test(m.status||'')).map(m => [m.asset||m.asset_name||'—', m.task||m.service_name||'—', m.next_due||m.due_date||'—', m.interval_value ? `Every ${m.interval_value} ${m.interval_type||'hrs'}` : '—', m.status||'—']),
+                emptyMsg: 'No overdue services ✓',
+              }),
+            },
+            {
+              label:'Open WOs', value: openWOCount, color: openWOCount>0?'var(--amber)':'var(--text-muted)', sub:'work orders open', warn: openWOCount>0,
+              onClick: () => setDrillDown({
+                title:'Open Work Orders', icon:'', color:'var(--amber)',
+                columns:['Title','Asset','Priority','Status','Created'],
+                rows: wos.map(w => [w.title||w.defect_description||'—', w.asset||'—', w.priority||'—', w.status||'—', w.created_at ? new Date(w.created_at).toLocaleDateString('en-AU') : '—']),
+                emptyMsg: 'No open work orders ✓',
+              }),
+            },
+          ].map(k => (
+            <div key={k.label} className={`kpi-card${k.urgent?' urgent':k.warn?' warn':''}`}
+              onClick={k.onClick}
+              style={{ borderTop:`3px solid ${k.color}`, cursor:'pointer', userSelect:'none' }}>
+              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:10 }}>
+                <div style={{ fontSize:10, fontWeight:800, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.8px' }}>{k.label}</div>
+                
+              </div>
+              <div style={{ fontSize:32, fontWeight:900, color:k.color, lineHeight:1, marginBottom:4, animation:'countUp 0.4s ease' }}>{loading ? '—' : k.value}</div>
+              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+                <div style={{ fontSize:11, color:'var(--text-faint)' }}>{k.sub}</div>
+                <div style={{ fontSize:9, color:'var(--text-faint)', fontWeight:600, letterSpacing:'0.5px', opacity:0.6 }}>TAP TO VIEW</div>
+              </div>
+            </div>
+          ))}
+        </div>
+        )}
+
+        {/* ── Fleet health bar ── */}
+        {!loading && assets.length > 0 && (
+          <div className="panel" style={{ marginBottom:20, padding:'16px 20px' }}>
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:10 }}>
+              <div style={{ fontSize:11, fontWeight:800, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.8px' }}>Fleet Health</div>
+              <div style={{ display:'flex', gap:16, fontSize:11, color:'var(--text-muted)' }}>
+                {[['var(--green)','Active'],['var(--amber)','Maintenance'],['var(--red)','Down'],['var(--text-faint)','Other']].map(([c,l])=>(
+                  <span key={l} style={{ display:'flex', alignItems:'center', gap:5 }}>
+                    <span style={{ width:8, height:8, borderRadius:'50%', background:c, display:'inline-block' }}/>
+                    {l}
+                  </span>
+                ))}
+              </div>
+            </div>
+            <div style={{ display:'flex', height:10, borderRadius:5, overflow:'hidden', gap:2 }}>
+              {[
+                [activeCount,'var(--green)'],
+                [maintCount,'var(--amber)'],
+                [downCount,'var(--red)'],
+                [Math.max(0, assets.length-activeCount-maintCount-downCount),'var(--text-faint)'],
+              ].map(([v,c],i) => v > 0 && (
+                <div key={i} className="health-seg" style={{ flex:v, background:c, borderRadius:2 }} />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ── Main KPI widgets: Prestarts + Services side by side ── */}
+        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16, marginBottom:20 }}>
+          {layout.find(w=>w.id==='prestart_kpi')?.enabled !== false &&
+            <WidgetPrestartKPI companyId={companyId} loading={loading}
+              onRemove={isAdmin ? () => hideWidget('prestart_kpi') : undefined}
+              onDrillDown={setDrillDown} />}
+          {layout.find(w=>w.id==='service_kpi')?.enabled !== false &&
+            <WidgetServiceKPI companyId={companyId} loading={loading}
+              onRemove={isAdmin ? () => hideWidget('service_kpi') : undefined}
+              onDrillDown={setDrillDown} />}
+        </div>
+
+        {/* ── Widget Grid (customisable widgets below) ── */}
         <div className="dash-grid">
-          {layout.filter(w => w.enabled).map(w => {
+          {layout.filter(w => w.enabled && !['prestart_kpi','service_kpi'].includes(w.id)).map(w => {
             const renderer = WIDGET_COMPONENTS[w.id];
             if (!renderer) return null;
-            // Override class based on size
-            const sizeClass = w.size === 'lg' ? 'widget-lg' : w.size === 'sm' ? 'widget-sm' : 'widget-md';
-            return React.cloneElement(renderer(w), { className: undefined, style: undefined, 'data-size': w.size });
+            const sizeClass = w.size==='lg'?'widget-lg':w.size==='sm'?'widget-sm':w.size==='wide'?'widget-wide':'widget-md';
+            return (
+              <div key={w.id} className={sizeClass}>
+                {renderer({ ...w, onRemove: isAdmin ? () => hideWidget(w.id) : undefined })}
+              </div>
+            );
           })}
         </div>
 
-        {/* ── Service Intervals (always shown below widgets) ── */}
-        <div className="panel" style={{ marginTop:16 }}>
-          <div className="panel-title">Service Intervals <span style={{ marginLeft:'auto', fontSize:11, color:'var(--text-faint)', fontWeight:400, letterSpacing:0, textTransform:'none', fontFamily:'var(--font-body)' }}>Hours to next service</span></div>
-          {loading ? [0,1,2,3].map(i => (
-            <div key={i} style={{ marginBottom:16 }}>
-              <div style={{ display:'flex', justifyContent:'space-between', marginBottom:5 }}><Sk w="50%" h="12px" /><Sk w="22%" h="11px" /></div>
-              <Sk w="100%" h="6px" r="99px" />
+        {/* ── Custom Widgets ── */}
+        {customWidgets.length > 0 && (
+          <div style={{ marginBottom: 16 }}>
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:12 }}>
+              <div style={{ fontSize:11, fontWeight:800, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.8px' }}>
+                Custom Widgets
+              </div>
+              {isAdmin && (
+                <button onClick={() => { setEditingWidget(null); setShowBuilder(true); }}
+                  style={{ padding:'5px 12px', background:'var(--surface-2)', border:'1px dashed var(--border)', borderRadius:7, fontSize:11, fontWeight:700, color:'var(--accent)', cursor:'pointer' }}>
+                  + Add Widget
+                </button>
+              )}
             </div>
-          )) : progressAssets.length === 0 ? (
-            <EmptyState icon="⚙" title="No interval data" desc="Assets with hours tracked will appear here." />
-          ) : progressAssets.map(a => (
-            <ProgressBar key={a.id} label={a.asset_number ? `${a.asset_number} — ${a.name}` : (a.name||'Asset')} current={a.current_hours} max={a.next_service_hours} />
-          ))}
-        </div>
+            <div className="dash-grid">
+              {customWidgets.map(w => {
+                const sizeClass = w.size==='lg' ? 'widget-lg' : w.size==='sm' ? 'widget-sm' : 'widget-md';
+                return (
+                  <div key={w.id} className={sizeClass}>
+                    <WidgetCustom
+                      config={w}
+                      companyId={companyId}
+                      isAdmin={isAdmin}
+                      onEdit={() => { setEditingWidget(w); setShowBuilder(true); }}
+                      onDelete={() => deleteCustomWidget(w.id)}
+                    />
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* ── Empty custom widgets state (admin only) ── */}
+        {customWidgets.length === 0 && isAdmin && (
+          <div style={{ border:'1.5px dashed var(--border)', borderRadius:12, padding:'24px', textAlign:'center', marginBottom:16, cursor:'pointer' }}
+            onClick={() => { setEditingWidget(null); setShowBuilder(true); }}>
+            <div style={{ fontSize:28, marginBottom:8 }}>📊</div>
+            <div style={{ fontSize:13, fontWeight:700, color:'var(--text-secondary)', marginBottom:4 }}>No custom widgets yet</div>
+            <div style={{ fontSize:12, color:'var(--text-faint)', marginBottom:12 }}>Build widgets from your fleet data — KPIs, charts, lists — anything you want to track.</div>
+            <div style={{ display:'inline-block', padding:'8px 18px', background:'var(--accent)', color:'#fff', borderRadius:8, fontSize:12, fontWeight:700 }}>+ Create First Widget</div>
+          </div>
+        )}
+
+        {/* ── Service Intervals ── */}
+        {progressAssets.length > 0 && (
+          <div className="panel" style={{ marginTop:16 }}>
+            <div className="panel-title">Service Intervals
+              <span style={{ marginLeft:'auto', fontSize:11, color:'var(--text-faint)', fontWeight:400, letterSpacing:0, textTransform:'none', fontFamily:'var(--font-body)' }}>Hours to next service</span>
+            </div>
+            {progressAssets.map(a => (
+              <ProgressBar key={a.id} label={a.asset_number ? `${a.asset_number} — ${a.name}` : (a.name||'Asset')} current={a.current_hours} max={a.next_service_hours} />
+            ))}
+          </div>
+        )}
 
       </div>
 
-      {/* ── Customise Panel ── */}
+      {/* ── KPI Drill-Down Panel ── */}
+      {drillDown && (
+        <>
+          <div onClick={() => setDrillDown(null)} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.35)', zIndex:399, backdropFilter:'blur(2px)' }} />
+          <div style={{
+            position:'fixed', bottom:0, left:0, right:0,
+            maxHeight:'70vh', background:'var(--bg)',
+            borderTop:'1px solid var(--border)',
+            borderRadius:'16px 16px 0 0',
+            boxShadow:'0 -8px 40px rgba(0,0,0,0.25)',
+            zIndex:400, display:'flex', flexDirection:'column',
+            animation:'slideUp 0.25s cubic-bezier(0.16,1,0.3,1)',
+          }}>
+            {/* Handle */}
+            <div style={{ display:'flex', justifyContent:'center', padding:'10px 0 0' }}>
+              <div style={{ width:36, height:4, borderRadius:2, background:'var(--border)' }} />
+            </div>
+            {/* Header */}
+            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'14px 20px', borderBottom:'1px solid var(--border)', flexShrink:0 }}>
+              <div style={{ display:'flex', alignItems:'center', gap:12 }}>
+                <div style={{ width:36, height:36, borderRadius:10, background:`${drillDown.color}15`, border:`1.5px solid ${drillDown.color}40`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:18 }}>
+                  
+                </div>
+                <div>
+                  <div style={{ fontSize:16, fontWeight:800, color:'var(--text-primary)' }}>{drillDown.title}</div>
+                  <div style={{ fontSize:11, color:'var(--text-muted)', marginTop:1 }}>{drillDown.rows.length} record{drillDown.rows.length !== 1 ? 's' : ''}</div>
+                </div>
+              </div>
+              <button onClick={() => setDrillDown(null)} style={{ background:'none', border:'none', cursor:'pointer', fontSize:20, color:'var(--text-muted)', padding:'4px 8px' }}>✕</button>
+            </div>
+            {/* Table */}
+            <div style={{ overflowY:'auto', flex:1, padding:'0 20px 20px' }}>
+              {drillDown.rows.length === 0 ? (
+                <div style={{ padding:'40px 0', textAlign:'center', color:'var(--text-muted)', fontSize:14 }}>
+                  {drillDown.emptyMsg || 'No records found'}
+                </div>
+              ) : (
+                <table style={{ width:'100%', borderCollapse:'collapse', marginTop:4 }}>
+                  <thead>
+                    <tr>
+                      {drillDown.columns.map(col => (
+                        <th key={col} style={{ padding:'10px 12px', textAlign:'left', fontSize:10, fontWeight:800, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.8px', borderBottom:'2px solid var(--border)', whiteSpace:'nowrap' }}>{col}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {drillDown.rows.map((row, i) => (
+                      <tr key={i} style={{ borderBottom:'1px solid var(--border)', transition:'background 0.1s' }}
+                        onMouseEnter={e => e.currentTarget.style.background='var(--surface-2)'}
+                        onMouseLeave={e => e.currentTarget.style.background='transparent'}>
+                        {row.map((cell, j) => (
+                          <td key={j} style={{ padding:'11px 12px', fontSize:13, color: j===0 ? 'var(--text-primary)' : 'var(--text-secondary)', fontWeight: j===0 ? 600 : 400, whiteSpace: j===0 ? 'nowrap' : 'normal' }}>
+                            {j === 2 && drillDown.title.includes('Down') ? (
+                              <span style={{ padding:'2px 8px', borderRadius:20, fontSize:11, fontWeight:700, background:'rgba(239,68,68,0.1)', color:'var(--red)' }}>{cell}</span>
+                            ) : j === 2 && drillDown.title.includes('Overdue') ? (
+                              <span style={{ padding:'2px 8px', borderRadius:20, fontSize:11, fontWeight:700, background:'rgba(239,68,68,0.1)', color:'var(--red)' }}>{cell}</span>
+                            ) : j === 2 && drillDown.title.includes('Work') ? (
+                              <span style={{ padding:'2px 8px', borderRadius:20, fontSize:11, fontWeight:700, background: /critical/i.test(cell) ? 'rgba(239,68,68,0.1)' : /high/i.test(cell) ? 'rgba(245,158,11,0.1)' : 'var(--surface-2)', color: /critical/i.test(cell) ? 'var(--red)' : /high/i.test(cell) ? 'var(--amber)' : 'var(--text-muted)' }}>{cell}</span>
+                            ) : cell}
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          </div>
+        </>
+      )}
+
+      {showBuilder && isAdmin && (
+        <WidgetBuilderModal
+          companyId={companyId}
+          editConfig={editingWidget}
+          onSave={handleWidgetSaved}
+          onClose={() => { setShowBuilder(false); setEditingWidget(null); }}
+        />
+      )}
+
       {showCustomise && (
         <CustomisePanel
           layout={layout}

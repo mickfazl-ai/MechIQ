@@ -250,7 +250,7 @@ const CSS = `
 `;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-const AVATAR_COLORS = ['#0ea5e9','#8b5cf6','#ec4899','#10b981','#f59e0b','#ef4444','#06b6d4','#84cc16'];
+const AVATAR_COLORS = ['#1976D2','#8b5cf6','#ec4899','#10b981','#f59e0b','#ef4444','#06b6d4','#84cc16'];
 const avatarColor = (str) => AVATAR_COLORS[(str||'').split('').reduce((a,c)=>a+c.charCodeAt(0),0) % AVATAR_COLORS.length];
 const initials = (name) => (name||'?').split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
 const fmtTime = (ts) => { if(!ts)return''; const d=new Date(ts); return d.toLocaleTimeString('en-AU',{hour:'2-digit',minute:'2-digit'}); };

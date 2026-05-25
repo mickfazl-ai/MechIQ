@@ -22,14 +22,14 @@ const TYPE_MAP = Object.fromEntries(ITEM_TYPES.map(t => [t.id, t]));
 // ─── Phone Preview (renders real ScanPage dark-theme styles) ─────────────────
 const PREVIEW_CSS = `
   @import url('https://fonts.googleapis.com/css2?family=Barlow:wght@400;600;700&family=Barlow+Condensed:wght@700;800;900&display=swap');
-  .pv-wrap { background:#F9FAFB; min-height:100%; padding:16px 14px 32px; font-family:'Barlow',sans-serif; color:#111827; }
+  .pv-wrap { background:#F9FAFB; min-height:100%; padding:16px 14px 32px; font-family:'Barlow',sans-serif; color:#dde3ed; }
   .pv-topbar { display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; }
-  .pv-logo { font-family:'Barlow Condensed',sans-serif; font-weight:900; font-size:14px; letter-spacing:4px; color:#111827; }
+  .pv-logo { font-family:'Barlow Condensed',sans-serif; font-weight:900; font-size:14px; letter-spacing:4px; color:#dde3ed; }
   .pv-logo em { color:#1e88e5; font-style:normal; }
   .pv-form-title { font-family:'Barlow Condensed',sans-serif; font-size:16px; font-weight:800; text-transform:uppercase; letter-spacing:1px; margin-bottom:10px; }
   .pv-form-title em { color:#1e88e5; font-style:normal; }
   .pv-asset-tag { background:rgba(30,136,229,0.1); border:1px solid rgba(30,136,229,0.2); border-radius:3px; padding:8px 10px; margin-bottom:14px; font-size:11px; color:rgba(221,227,237,0.7); }
-  .pv-asset-tag strong { color:#111827; font-weight:700; }
+  .pv-asset-tag strong { color:#dde3ed; font-weight:700; }
   .pv-fl { margin-bottom:12px; }
   .pv-lbl { display:block; font-size:9px; font-weight:700; color:rgba(221,227,237,0.35); letter-spacing:1.5px; text-transform:uppercase; margin-bottom:4px; }
   .pv-inp { width:100%; padding:9px 10px; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); border-radius:3px; color:rgba(221,227,237,0.4); font-size:12px; box-sizing:border-box; }
@@ -462,7 +462,7 @@ export default function FormEditorTab({ userRole }) {
               ))}
             </select>
             <button onClick={newTemplate}
-              style={{ padding: '7px 14px', background: 'linear-gradient(135deg,var(--accent),#1565C0)', color: '#fff', border: 'none', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer', flexShrink: 0 }}>
+              style={{ padding: '7px 14px', background: 'linear-gradient(135deg,var(--accent),#0090a8)', color: '#fff', border: 'none', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer', flexShrink: 0 }}>
               + New
             </button>
           </div>
@@ -587,7 +587,7 @@ export default function FormEditorTab({ userRole }) {
         {/* Phone frame */}
         <div style={{ flex: 1, padding: '16px 20px', overflowY: 'auto', display: 'flex', justifyContent: 'center' }}>
           <div style={{
-            width: 240, borderRadius: 24, border: '2px solid #E5E7EB', boxShadow: '0 20px 60px rgba(0,0,0,0.4), inset 0 0 0 1px rgba(255,255,255,0.05)', overflow: 'hidden', background: '#F9FAFB',
+            width: 240, borderRadius: 24, border: '3px solid #2d3748', boxShadow: '0 20px 60px rgba(0,0,0,0.4), inset 0 0 0 1px rgba(255,255,255,0.05)', overflow: 'hidden', background: '#F9FAFB',
             position: 'relative',
           }}>
             {/* Phone notch */}

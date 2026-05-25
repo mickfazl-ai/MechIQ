@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-const CYAN = '#00c2e0';
+const CYAN = '#1976D2';
 const BORDER = '#1a2f2f';
 const CARD = '#0d1515';
 

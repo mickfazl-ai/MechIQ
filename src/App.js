@@ -20,7 +20,148 @@ import OilSampling from './OilSampling';
 import ScanPage from './ScanPage';
 import ForcePasswordChange from './ForcePasswordChange';
 import { supabase } from './supabase';
+import ContractorPortal from './ContractorPortal';
 import DemoTour from './DemoTour';
+
+
+// ─── Error Collector ──────────────────────────────────────────────────────────
+const MechIQErrors = {
+  _queue: [],
+  _flushing: false,
+
+  async log(error, context = {}) {
+    const entry = {
+      message:    error?.message || String(error),
+      stack:      error?.stack || null,
+      context:    JSON.stringify(context),
+      url:        window.location.href,
+      user_agent: navigator.userAgent.slice(0, 200),
+      occurred_at: new Date().toISOString(),
+    };
+    this._queue.push(entry);
+    if (!this._flushing) this._flush();
+  },
+
+  async _flush() {
+    this._flushing = true;
+    while (this._queue.length) {
+      const batch = this._queue.splice(0, 10);
+      try {
+        // Get company_id from supabase session if available
+        const { data: { session } } = await supabase.auth.getSession();
+        const userId = session?.user?.id || null;
+        const rows = batch.map(e => ({ ...e, user_id: userId }));
+        await supabase.from('error_logs').insert(rows);
+      } catch(e) { /* silently fail — don't cause recursive errors */ }
+    }
+    this._flushing = false;
+  }
+};
+
+// Global error listeners
+window.addEventListener('error', (e) => {
+  MechIQErrors.log(e.error || new Error(e.message), { type: 'uncaught', source: e.filename, line: e.lineno });
+});
+window.addEventListener('unhandledrejection', (e) => {
+  MechIQErrors.log(e.reason instanceof Error ? e.reason : new Error(String(e.reason)), { type: 'unhandled_promise' });
+});
+
+// ─── Error Boundary ───────────────────────────────────────────────────────────
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+  componentDidCatch(error, info) {
+    MechIQErrors.log(error, { type: 'react_boundary', component: info.componentStack?.split('\n')[1]?.trim() || 'unknown' });
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{ minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center', background:'#F3F4F6', flexDirection:'column', gap:16, padding:24, fontFamily:'sans-serif' }}>
+          <div style={{ fontSize:22, fontWeight:900, letterSpacing:4, color:'#dde3ed' }}>MECH<span style={{color:'#1e88e5'}}>IQ</span></div>
+          <div style={{ background:'#FFFFFF', border:'1px solid rgba(239,83,80,0.3)', borderTop:'3px solid #ef5350', borderRadius:6, padding:'28px 24px', maxWidth:420, width:'100%', textAlign:'center' }}>
+            <div style={{fontSize:32, marginBottom:12}}>⚠️</div>
+            <div style={{fontSize:16, fontWeight:700, color:'#dde3ed', marginBottom:8}}>Something went wrong</div>
+            <div style={{fontSize:13, color:'rgba(221,227,237,0.5)', marginBottom:20, lineHeight:1.5}}>
+              This error has been logged automatically. Click below to reload.
+            </div>
+            <div style={{fontSize:11, fontFamily:'monospace', color:'rgba(239,83,80,0.7)', background:'rgba(239,83,80,0.05)', padding:'8px 12px', borderRadius:4, marginBottom:20, textAlign:'left', wordBreak:'break-all'}}>
+              {this.state.error?.message}
+            </div>
+            <button onClick={() => window.location.reload()}
+              style={{padding:'10px 24px', background:'#1e88e5', color:'#fff', border:'none', borderRadius:4, fontSize:13, fontWeight:700, cursor:'pointer'}}>
+              Reload MechIQ
+            </button>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+// ─── Label Scan Router ────────────────────────────────────────────────────────
+function LabelScanRouter({ labelCode }) {
+  const [state,   setState]   = React.useState('loading');
+  const [assetId, setAssetId] = React.useState(null);
+
+  React.useEffect(() => {
+    (async () => {
+      try {
+        const { data, error } = await supabase
+          .from('generated_labels')
+          .select('asset_id, label_code')
+          .ilike('label_code', labelCode)
+          .maybeSingle();
+        if (error || !data)     { setState('notfound');   return; }
+        if (!data.asset_id)     { setState('unassigned'); return; }
+        setAssetId(data.asset_id);
+        setState('found');
+      } catch(e) { setState('notfound'); }
+    })();
+  }, [labelCode]);
+
+  const W = { minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center', background:'#F3F4F6', flexDirection:'column', gap:16, padding:24, fontFamily:'Barlow,sans-serif' };
+  const C = { background:'#FFFFFF', border:'1px solid rgba(255,255,255,0.09)', borderTop:'2px solid #1e88e5', borderRadius:4, padding:'32px 28px', width:'100%', maxWidth:380, textAlign:'center', color:'#dde3ed' };
+
+  if (state === 'loading') return (
+    <div style={W}>
+      <style>{`@keyframes sp{to{transform:rotate(360deg)}}`}</style>
+      <div style={{fontSize:22,fontWeight:900,letterSpacing:4,color:'#dde3ed'}}>MECH<span style={{color:'#1e88e5'}}>IQ</span></div>
+      <div style={{width:36,height:36,border:'3px solid rgba(30,136,229,0.2)',borderTopColor:'#1e88e5',borderRadius:'50%',animation:'sp 0.8s linear infinite'}} />
+      <div style={{color:'rgba(221,227,237,0.4)',fontSize:13}}>Looking up {labelCode}…</div>
+    </div>
+  );
+
+  if (state === 'notfound') return (
+    <div style={W}>
+      <div style={{fontSize:22,fontWeight:900,letterSpacing:4,color:'#dde3ed',marginBottom:8}}>MECH<span style={{color:'#1e88e5'}}>IQ</span></div>
+      <div style={C}>
+        <div style={{fontSize:36,marginBottom:12}}>⚠️</div>
+        <div style={{fontSize:18,fontWeight:700,marginBottom:8}}>Label not found</div>
+        <div style={{fontSize:13,color:'rgba(221,227,237,0.45)'}}>Label <strong style={{color:'#1e88e5'}}>{labelCode}</strong> does not exist or has not been assigned.<br/>Contact your site administrator.</div>
+      </div>
+    </div>
+  );
+
+  if (state === 'unassigned') return (
+    <div style={W}>
+      <div style={{fontSize:22,fontWeight:900,letterSpacing:4,color:'#dde3ed',marginBottom:8}}>MECH<span style={{color:'#1e88e5'}}>IQ</span></div>
+      <div style={C}>
+        <div style={{fontSize:36,marginBottom:12}}>🏷️</div>
+        <div style={{fontSize:18,fontWeight:700,marginBottom:8}}>Label not assigned</div>
+        <div style={{fontSize:13,color:'rgba(221,227,237,0.45)'}}>Label <strong style={{color:'#1e88e5'}}>{labelCode}</strong> has not been assigned to an asset yet.<br/>Contact your site administrator.</div>
+      </div>
+    </div>
+  );
+
+  return <ScanPage assetId={String(assetId)} />;
+}
+
 
 function App() {
   const [currentPage, setCurrentPageRaw] = useState('dashboard');
@@ -39,6 +180,7 @@ function App() {
   const pathname = window.location.pathname;
   const scanMatch = pathname.match(/^\/scan\/([a-f0-9-]{1,36}|\d+)$/);
   const partScanMatch = pathname.match(/^\/scan\/part\/([a-f0-9-]{1,36}|\d+)$/);
+  const labelScanMatch = pathname.match(/^\/scan\/label\/([A-Za-z0-9-]+)$/);
 
   const setCurrentPage = (page, subPage = null) => {
     if (page === 'assets') {
@@ -82,10 +224,12 @@ function App() {
       else setLoading(false);
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      if (session) fetchUserRole(session.user.email);
-      else { setUserRole(null); setLoading(false); }
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      // Only handle sign-out here — Login.js handles sign-in via the onAuth callback
+      // This prevents onAuthStateChange from bypassing the "Stay signed in?" prompt
+      if (event === 'SIGNED_OUT' || !session) {
+        setSession(null); setUserRole(null); setLoading(false);
+      }
     });
 
     // Global navigation event (fired from deep components like MachineProfile service tabs)
@@ -234,10 +378,6 @@ function App() {
     ? { ...userRole, role: 'admin', company_id: viewingCompany.id, company_features: viewingCompany.features || {} }
     : userRole;
 
-  // ── Public scan route — render before auth check ─────────────
-  if (scanMatch) return <ScanPage assetId={scanMatch[1]} />;
-  if (partScanMatch) return <ScanPage partId={partScanMatch[1]} />;
-
   const renderPage = () => {
     if (userRole?.role === 'master' && currentPage === 'master' && !viewingCompany) return <MasterAdmin initialTab={currentSubPage || 'companies'} key={currentSubPage} />;
 
@@ -286,6 +426,8 @@ function App() {
         return <Reports companyId={effectiveCompanyId} userRole={effectiveUserRole} initialTab={currentSubPage} />;
       case 'users':
         return <Users companyId={effectiveCompanyId} userRole={effectiveUserRole} />;
+      case 'onboarding':
+        return <Settings userRole={effectiveUserRole} initialTab='onboarding_admin' adminMode />;
       case 'admin':
         return <Settings userRole={effectiveUserRole} initialTab={currentSubPage || 'company'} key={currentSubPage} adminMode />;
       case 'settings':
@@ -304,6 +446,12 @@ function App() {
     }
   };
 
+  // Public routes — must be before loading/auth checks
+  if (labelScanMatch) return <LabelScanRouter labelCode={labelScanMatch[1]} />;
+  if (scanMatch) return <ScanPage assetId={scanMatch[1]} />;
+  if (partScanMatch) return <ScanPage partId={partScanMatch[1]} />;
+  if (pathname.startsWith('/contractor')) return <ContractorPortal />;
+
   if (loading) return (
     <div style={{ color: '#1a2b3c', padding: '50px', textAlign: 'center', backgroundColor: '#E9F1FA', height: '100vh' }}>
       Loading...
@@ -311,7 +459,7 @@ function App() {
   );
 
   if (!session) {
-    return <Login onAuth={(session) => { /* handled by onAuthStateChange */ }} />;
+    return <Login onAuth={(s) => { setSession(s); fetchUserRole(s.user.email); }} />;
   }
 
   // First login — force password change for new company admins
@@ -335,7 +483,7 @@ function App() {
       {isDemo && (
         <div style={{
           position: 'fixed', top: 56, left: 0, right: 0, zIndex: 199,
-          background: 'linear-gradient(90deg, #0ea5e9, #0284c7)',
+          background: 'linear-gradient(90deg, #1976D2, #0284c7)',
           padding: '9px 20px', display: 'flex', alignItems: 'center',
           justifyContent: 'space-between', gap: 12, flexWrap: 'wrap',
         }}>
@@ -351,7 +499,7 @@ function App() {
             <button onClick={() => setShowTour(true)} style={{ padding: '5px 14px', background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.3)', color: '#fff', borderRadius: 7, fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
               ▶ Guided Tour
             </button>
-            <a href="mailto:info@mechiq.com.au?subject=MechIQ Demo Enquiry" style={{ padding: '5px 14px', background: '#fff', color: '#0ea5e9', borderRadius: 7, fontSize: 12, fontWeight: 800, textDecoration: 'none', display: 'flex', alignItems: 'center' }}>
+            <a href="mailto:info@mechiq.com.au?subject=MechIQ Demo Enquiry" style={{ padding: '5px 14px', background: '#fff', color: '#1976D2', borderRadius: 7, fontSize: 12, fontWeight: 800, textDecoration: 'none', display: 'flex', alignItems: 'center' }}>
               Get Started →
             </a>
           </div>
@@ -368,4 +516,22 @@ function App() {
   );
 }
 
-export default App;
+// ─── Root Router ──────────────────────────────────────────────────────────────
+// Checks public routes BEFORE React state initialises - avoids auth race condition
+function Root() {
+  const pathname = window.location.pathname;
+  if (/^\/scan\/label\/([A-Za-z0-9-]+)$/.test(pathname)) {
+    const code = pathname.match(/^\/scan\/label\/([A-Za-z0-9-]+)$/)[1];
+    return <ErrorBoundary><LabelScanRouter labelCode={code} /></ErrorBoundary>;
+  }
+  if (/^\/scan\/([a-f0-9-]{1,36}|\d+)$/.test(pathname)) {
+    return <ErrorBoundary><ScanPage assetId={pathname.match(/^\/scan\/([a-f0-9-]{1,36}|\d+)$/)[1]} /></ErrorBoundary>;
+  }
+  if (/^\/scan\/part\/([a-f0-9-]{1,36}|\d+)$/.test(pathname)) {
+    return <ErrorBoundary><ScanPage partId={pathname.match(/^\/scan\/part\/([a-f0-9-]{1,36}|\d+)$/)[1]} /></ErrorBoundary>;
+  }
+  if (pathname.startsWith('/contractor')) return <ErrorBoundary><ContractorPortal /></ErrorBoundary>;
+  return <ErrorBoundary><App /></ErrorBoundary>;
+}
+
+export default Root;
