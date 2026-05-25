@@ -282,7 +282,7 @@ const NAV_STRUCTURE = [
       { id: 'assets', subPage: 'tracker',      label: 'Tracker',      roles: ['admin','supervisor'] },
     ],
   },
-  { id: 'onboarding', label: 'Onboarding', ik: 'assets', roles: ['admin','supervisor'], feature: 'assets' },
+  { id: 'admin', subPage: 'onboarding_admin', label: 'Onboarding', ik: 'assets', roles: ['admin','supervisor'], feature: 'assets' },
   { id: 'maintenance',  label: 'Maintenance',  ik: 'maintenance',  roles: ['admin','supervisor','technician'], feature: 'maintenance',
     children: [
       { id: 'maintenance', subPage: 'scheduled',   label: 'Planned Maintenance', roles: ['admin','supervisor','technician'] },
@@ -315,8 +315,6 @@ const NAV_STRUCTURE = [
       { id: 'admin', subPage: 'notifs',   label: 'Notifications',   roles: ['admin'] },
       { id: 'admin', subPage: 'billing',  label: 'Billing & Plan',  roles: ['admin'] },
       { id: 'admin', subPage: 'data',             label: 'Data & Export',   roles: ['admin'] },
-      { id: 'admin', subPage: 'daily_reports',     label: 'Daily Reports',   roles: ['admin'] },
-      { id: 'admin', subPage: 'error_log',          label: 'Error Log',       roles: ['admin'] },
       { id: 'admin', subPage: 'assets_settings',  label: 'Assets',          roles: ['admin'] },
       { id: 'admin', subPage: 'labels',           label: 'Labels',          roles: ['admin'] },
     ],
@@ -412,7 +410,7 @@ function SidebarItem({ item, currentPage, currentSubPage, onNav, expanded, flyou
 }
 
 const PAGE_TITLES = {
-  dashboard: 'Dashboard', assets: 'Assets', onboarding: 'Onboarding', maintenance: 'Maintenance',
+  dashboard: 'Dashboard', assets: 'Assets', maintenance: 'Maintenance',
   forms: 'Forms', scanner: 'Scanner', oil_sampling: 'Oil Sampling',
   reports: 'Reports', admin: 'Admin', settings: 'Settings', master: 'Master Admin',
   users: 'Users', export: 'Data Export', chat: 'Messages', parts: 'Parts',
