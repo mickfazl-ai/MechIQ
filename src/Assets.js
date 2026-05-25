@@ -106,7 +106,7 @@ function useToast() {
   return { toasts, add };
 }
 function Toasts({ toasts }) {
-  const P = { success: ['#00ff88','rgba(0,255,136,0.08)',''], error: ['#ff3366','rgba(255,51,102,0.08)',''], warning: ['#ffaa00','rgba(255,170,0,0.08)',''], info: ['#00d4ff','rgba(0,212,255,0.08)','ℹ'] };
+  const P = { success: ['#00ff88','rgba(0,255,136,0.08)','✓'], error: ['#ff3366','rgba(255,51,102,0.08)','✕'], warning: ['#ffaa00','rgba(255,170,0,0.08)','⚠'], info: ['#00d4ff','rgba(0,212,255,0.08)','ℹ'] };
   return (
     <div style={{ position: 'fixed', bottom: '28px', right: '28px', zIndex: 9999, display: 'flex', flexDirection: 'column', gap: '10px', pointerEvents: 'none' }}>
       {toasts.map(t => {
@@ -166,7 +166,7 @@ function QRModal({ asset, onClose }) {
       <div style={{ background: 'var(--surface)', border: '1px solid rgba(0,212,255,0.25)', borderRadius: '16px', padding: '28px', width: '400px', boxShadow: '0 24px 60px rgba(0,0,0,0.6), 0 0 40px rgba(0,212,255,0.08)', animation: 'fadeUp 0.3s ease' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
           <h3 style={{ fontFamily: "var(--font-display)", fontSize: '18px', fontWeight: 800, color: 'var(--text-primary)', margin: 0, textTransform: 'uppercase', letterSpacing: '1px' }}>QR Label Preview</h3>
-          <button onClick={onClose} style={{ background: 'transparent', border: '1px solid var(--border)', color: 'var(--text-muted)', width: '30px', height: '30px', borderRadius: '8px', cursor: 'pointer', fontSize: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s' }}></button>
+          <button onClick={onClose} style={{ background: 'transparent', border: '1px solid var(--border)', color: 'var(--text-muted)', width: '30px', height: '30px', borderRadius: '8px', cursor: 'pointer', fontSize: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s' }}>✕</button>
         </div>
         <div ref={ref} style={{ position: 'absolute', left: '-9999px' }}><QRCodeCanvas value={qrVal} size={300} level="H" /></div>
         <div style={{ background: '#0d1117', borderRadius: '12px', padding: '16px', display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '20px' }}>
@@ -188,8 +188,8 @@ function QRModal({ asset, onClose }) {
 }
 
 // ─── Asset Card ────────────────────────────────────────────────────────────────
-const TYPE_ICON = { 'Mobile Plant': '', 'Fixed Plant': '', 'Drilling Plant': '', 'Small Machinery': '', 'Vehicle': '', 'Truck': '', 'Excavator': '', 'Generator': '', 'Compressor': '' };
-function getIcon(type) { return TYPE_ICON[type] || ''; }
+const TYPE_ICON = { 'Mobile Plant': '🚜', 'Fixed Plant': '🏭', 'Drilling Plant': '⛏️', 'Small Machinery': '⚙️', 'Vehicle': '🚗', 'Truck': '🚛', 'Excavator': '🚜', 'Generator': '⚡', 'Compressor': '💨' };
+function getIcon(type) { return TYPE_ICON[type] || '🔧'; }
 
 function AssetCard({ asset, index, onView, onDelete, onQR, onQuickLog, onEdit, onServiceSheet, userRole }) {
   const [hovered, setHovered] = useState(false);
@@ -254,10 +254,10 @@ function ServiceSheetPickerModal({ asset, templates, onClose, onSelect }) {
       <div style={{ background:'var(--bg)', borderRadius:16, width:'100%', maxWidth:440, boxShadow:'0 20px 60px rgba(0,0,0,0.3)', overflow:'hidden' }}>
         <div style={{ padding:'18px 20px 14px', borderBottom:'1px solid var(--border)', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
           <div>
-            <div style={{ fontSize:16, fontWeight:800, color:'var(--text-primary)', fontFamily:'var(--font-display)' }}> Service Sheet</div>
+            <div style={{ fontSize:16, fontWeight:800, color:'var(--text-primary)', fontFamily:'var(--font-display)' }}>📄 Service Sheet</div>
             <div style={{ fontSize:12, color:'var(--text-muted)', marginTop:2 }}>{asset.name}</div>
           </div>
-          <button onClick={onClose} style={{ background:'none', border:'none', cursor:'pointer', fontSize:20, color:'var(--text-muted)' }}></button>
+          <button onClick={onClose} style={{ background:'none', border:'none', cursor:'pointer', fontSize:20, color:'var(--text-muted)' }}>✕</button>
         </div>
         <div style={{ padding:20 }}>
           {templates.length === 0 ? (
@@ -431,7 +431,7 @@ function UnitsTab({ userRole, onViewAsset, toast }) {
           <div style={{ background:'var(--surface)', borderRadius:16, padding:28, width:'100%', maxWidth:560, maxHeight:'85vh', overflowY:'auto', border:'1px solid var(--border)', boxShadow:'0 20px 60px rgba(0,0,0,0.3)' }}>
             <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:20 }}>
               <div style={{ fontSize:17, fontWeight:800, color:'var(--text-primary)' }}>Edit Asset — {editAsset.asset_number}</div>
-              <button onClick={() => setEditAsset(null)} style={{ background:'none', border:'none', color:'var(--text-muted)', cursor:'pointer', fontSize:18 }}></button>
+              <button onClick={() => setEditAsset(null)} style={{ background:'none', border:'none', color:'var(--text-muted)', cursor:'pointer', fontSize:18 }}>✕</button>
             </div>
             <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, marginBottom:14 }}>
               {[
@@ -588,7 +588,7 @@ function UnitsTab({ userRole, onViewAsset, toast }) {
         ];
         const OWN_LABELS = { owned:'Company Owned', dry_hire:'Dry Hire', wet_hire:'Wet Hire' };
         const OWN_COLORS = { owned:'var(--green)', dry_hire:'var(--amber)', wet_hire:'#8b5cf6' };
-        const TYPE_ICONS = { Generator:'', Compressor:'', Excavator:'', Vehicle:'', Truck:'', Welder:'', Crane:'', EWP:'', MSV:'', default:'' };
+        const TYPE_ICONS = { Generator:'⚡', Compressor:'💨', Excavator:'🏗️', Vehicle:'🚛', Truck:'🚚', Welder:'🔧', Crane:'🏗️', EWP:'🦺', MSV:'🚌', default:'⚙️' };
         const typeIcon = t => { const k = Object.keys(TYPE_ICONS).find(k => (t||'').toLowerCase().includes(k.toLowerCase())); return TYPE_ICONS[k]||TYPE_ICONS.default; };
         const SC = { Running:'var(--green)', Down:'var(--red)', Maintenance:'var(--amber)', Active:'var(--green)', Standby:'#8b5cf6' };
         const sortVal = (a, col) => {
@@ -617,7 +617,7 @@ function UnitsTab({ userRole, onViewAsset, toast }) {
 
         if (filtered.length===0) return (
           <div style={{ textAlign:'center',padding:'64px 20px',background:'var(--surface)',border:'1px solid var(--border)',borderRadius:16 }}>
-            <div style={{ fontSize:48,marginBottom:14 }}>{search||filter!=='All'?'':''}</div>
+            <div style={{ fontSize:48,marginBottom:14 }}>{search||filter!=='All'?'🔍':'⚙️'}</div>
             <div style={{ fontSize:16,fontWeight:700,color:'var(--text-primary)',marginBottom:6 }}>{search?'No assets match your search':filter!=='All'?`No ${filter} assets`:'No assets yet'}</div>
             <div style={{ fontSize:13,color:'var(--text-muted)',maxWidth:280,margin:'0 auto' }}>{search||filter!=='All'?'Try adjusting your filters.':'Add your first asset or use Onboarding.'}</div>
           </div>
@@ -678,7 +678,7 @@ function UnitsTab({ userRole, onViewAsset, toast }) {
                       <td style={{ padding:'12px 14px', textAlign:'right' }} onClick={e=>e.stopPropagation()}>
                         <div style={{ display:'flex',gap:6,justifyContent:'flex-end' }}>
                           <button onClick={()=>onViewAsset&&onViewAsset(asset.id)} style={{ padding:'5px 12px',background:'var(--accent)',color:'#fff',border:'none',borderRadius:6,fontSize:11,fontWeight:700,cursor:'pointer',whiteSpace:'nowrap' }}>View →</button>
-                          <button onClick={()=>setPrintAsset(asset)} style={{ padding:'5px 10px',background:'var(--surface-2)',color:'var(--text-secondary)',border:'1px solid var(--border)',borderRadius:6,fontSize:11,fontWeight:700,cursor:'pointer' }} title="Print QR"></button>
+                          <button onClick={()=>setPrintAsset(asset)} style={{ padding:'5px 10px',background:'var(--surface-2)',color:'var(--text-secondary)',border:'1px solid var(--border)',borderRadius:6,fontSize:11,fontWeight:700,cursor:'pointer' }} title="Print QR">📄</button>
                         </div>
                       </td>
                     </tr>
@@ -706,7 +706,7 @@ function StepBar({ current }) {
           <React.Fragment key={i}>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flexShrink: 0 }}>
               <div style={{ width: '34px', height: '34px', borderRadius: '50%', background: c, color: (done||active) ? 'var(--bg)' : 'var(--text-faint)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '13px', transition: 'all 0.3s', boxShadow: active ? `0 0 0 4px ${c}28` : 'none' }}>
-                {done ? '' : i + 1}
+                {done ? '✓' : i + 1}
               </div>
               <div style={{ fontSize: '10px', marginTop: '5px', color: active ? 'var(--accent)' : done ? 'var(--green)' : 'var(--text-faint)', fontWeight: active || done ? 700 : 500, whiteSpace: 'nowrap', letterSpacing: '0.3px' }}>{label}</div>
             </div>
@@ -837,7 +837,7 @@ function OnboardingTab({ userRole, onComplete, toast }) {
     }
     setSaving(false);
     setSavedAsset(data); setStep(5);
-    toast(`${data.asset_number} onboarded successfully! `, 'success');
+    toast(`${data.asset_number} onboarded successfully! 🎉`, 'success');
   };
 
   const printQR = () => {
@@ -903,7 +903,7 @@ function OnboardingTab({ userRole, onComplete, toast }) {
               padding: '11px 32px', borderRadius: '10px', border: `1px solid ${hasRego === v ? 'var(--accent-dark)' : 'var(--border)'}`,
               background: hasRego === v ? 'var(--accent-glow)' : 'var(--surface-2)', color: hasRego === v ? 'var(--accent)' : 'var(--text-muted)',
               fontWeight: 700, fontSize: '14px', cursor: 'pointer', transition: 'all 0.15s', fontFamily:'var(--font-display)',
-            }}>{v ? ' Yes' : ' No'}</button>
+            }}>{v ? '✅ Yes' : '❌ No'}</button>
           ))}
         </div>
       </div>
@@ -943,7 +943,7 @@ function OnboardingTab({ userRole, onComplete, toast }) {
       {isAdmin ? (
         <>
           <div style={{ display: 'flex', gap: '8px', alignItems: 'center', padding: '10px 14px', background: 'rgba(255,170,0,0.08)', border: '1px solid rgba(204,136,0,0.3)', borderRadius: '8px', marginBottom: '18px' }}>
-            <span></span>
+            <span>🔒</span>
             <span style={{ fontSize: '12px', color: 'var(--amber)', fontWeight: 600, fontFamily:'var(--font-display)' }}>Admin Only — purchase price and depreciation not visible to technicians</span>
           </div>
           <FieldGroup title="Purchase Information" optional>
@@ -979,7 +979,7 @@ function OnboardingTab({ userRole, onComplete, toast }) {
         </>
       ) : (
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center', padding: '12px 16px', background: 'rgba(0,212,255,0.06)', border: '1px solid var(--border)', borderRadius: '10px', marginBottom: '18px' }}>
-          <span></span>
+          <span>🔒</span>
           <span style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 600, fontFamily:'var(--font-display)' }}>Purchase and financial details are visible to admins only.</span>
         </div>
       )}
@@ -1000,7 +1000,7 @@ function OnboardingTab({ userRole, onComplete, toast }) {
           <div key={interval.id} style={{ display:'flex', alignItems:'center', gap:12, padding:'14px 16px', background: interval.enabled ? 'var(--accent-light)' : 'var(--surface-2)', border:`1px solid ${interval.enabled ? 'rgba(14,165,233,0.3)' : 'var(--border)'}`, borderRadius:10, transition:'all 0.15s' }}>
             <div onClick={() => setIntervals(prev => prev.map((x,i) => i===idx ? {...x, enabled:!x.enabled} : x))}
               style={{ width:22, height:22, borderRadius:4, border:`2px solid ${interval.enabled ? 'var(--accent)' : 'var(--border)'}`, background: interval.enabled ? 'var(--accent)' : 'transparent', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', flexShrink:0, transition:'all 0.15s' }}>
-              {interval.enabled && <span style={{ color:'#fff', fontSize:12, fontWeight:800 }}></span>}
+              {interval.enabled && <span style={{ color:'#fff', fontSize:12, fontWeight:800 }}>✓</span>}
             </div>
             {interval.custom ? (
               <div style={{ display:'flex', gap:8, flex:1, flexWrap:'wrap' }}>
@@ -1029,7 +1029,7 @@ function OnboardingTab({ userRole, onComplete, toast }) {
         ))}
       </div>
       <div style={{ padding:'12px 16px', background:'var(--surface-2)', borderRadius:8, border:'1px solid var(--border)', fontSize:12, color:'var(--text-muted)' }}>
-         Starting from current hours: <strong style={{ color:'var(--text-primary)' }}>{form.hours || 0} hrs</strong>. You can edit these later from the asset's Service Schedule tab.
+        💡 Starting from current hours: <strong style={{ color:'var(--text-primary)' }}>{form.hours || 0} hrs</strong>. You can edit these later from the asset's Service Schedule tab.
       </div>
     </div>
   );
@@ -1116,7 +1116,7 @@ function OnboardingTab({ userRole, onComplete, toast }) {
           <div style={{ background:'var(--surface)', borderRadius:16, padding:28, width:'100%', maxWidth:560, maxHeight:'85vh', overflowY:'auto', border:'1px solid var(--border)', boxShadow:'0 20px 60px rgba(0,0,0,0.3)' }}>
             <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:20 }}>
               <div style={{ fontSize:17, fontWeight:800, color:'var(--text-primary)' }}>Edit Asset — {editAsset.asset_number}</div>
-              <button onClick={() => setEditAsset(null)} style={{ background:'none', border:'none', color:'var(--text-muted)', cursor:'pointer', fontSize:18 }}></button>
+              <button onClick={() => setEditAsset(null)} style={{ background:'none', border:'none', color:'var(--text-muted)', cursor:'pointer', fontSize:18 }}>✕</button>
             </div>
             <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, marginBottom:14 }}>
               {[
@@ -1202,7 +1202,7 @@ function OnboardingTab({ userRole, onComplete, toast }) {
                         <td style={{ padding:'9px 14px' }}>
                           <button onClick={() => setEditAsset(a)}
                             style={{ padding:'4px 12px', background:'var(--surface-2)', color:'var(--text-secondary)', border:'1px solid var(--border)', borderRadius:6, fontSize:11, fontWeight:700, cursor:'pointer', whiteSpace:'nowrap' }}>
-                             Edit
+                            ✏️ Edit
                           </button>
                         </td>
                       </tr>
@@ -1391,12 +1391,12 @@ function TrackerPlaceholder({ userRole }) {
               ±{accuracy}m · {lastUpdate?.toLocaleTimeString('en-AU',{hour:'2-digit',minute:'2-digit',second:'2-digit'})}
             </span>
           )}
-          {gpsError && <span style={{ fontSize:12, color:'var(--red)' }}> {gpsError}</span>}
+          {gpsError && <span style={{ fontSize:12, color:'var(--red)' }}>⚠ {gpsError}</span>}
           <button onClick={watching ? stopTracking : startTracking}
             style={{ padding:'9px 18px', borderRadius:8, border: watching ? '1px solid var(--red-border)' : 'none',
               background: watching ? 'var(--red-bg)' : 'var(--accent)', color: watching ? 'var(--red)' : '#fff',
               fontWeight:700, fontSize:13, cursor:'pointer', fontFamily:'inherit', transition:'all 0.15s' }}>
-            {watching ? '⏹ Stop Tracking' : ' Track My Location'}
+            {watching ? '⏹ Stop Tracking' : '📡 Track My Location'}
           </button>
         </div>
       </div>
@@ -1476,17 +1476,17 @@ function TrackerPlaceholder({ userRole }) {
               <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:6 }}>
                 <div style={{ fontSize:13, fontWeight:700, color:'var(--text-primary)', lineHeight:1.3 }}>{selected.name}</div>
                 <button onClick={() => setSelected(null)}
-                  style={{ border:'none', background:'none', cursor:'pointer', color:'var(--text-muted)', fontSize:16, padding:0, marginLeft:8 }}></button>
+                  style={{ border:'none', background:'none', cursor:'pointer', color:'var(--text-muted)', fontSize:16, padding:0, marginLeft:8 }}>✕</button>
               </div>
               <div style={{ fontSize:11, color:'var(--text-muted)', marginBottom:5 }}>{selected.asset_number} · {selected.type||'Asset'}</div>
               <span style={{ display:'inline-block', padding:'2px 9px', borderRadius:20, fontSize:11, fontWeight:700,
                 background:(SC[selected.status]||'var(--text-muted)')+'18', color:SC[selected.status]||'var(--text-muted)' }}>{selected.status}</span>
               {selected.last_lat ? (
                 <div style={{ fontSize:11, color:'var(--text-muted)', marginTop:6 }}>
-                   {selected.last_lat.toFixed(5)}, {selected.last_lng.toFixed(5)}
+                  📍 {selected.last_lat.toFixed(5)}, {selected.last_lng.toFixed(5)}
                 </div>
               ) : (
-                <div style={{ fontSize:11, color:'var(--text-muted)', marginTop:6 }}> No GPS data — hardware needed</div>
+                <div style={{ fontSize:11, color:'var(--text-muted)', marginTop:6 }}>📡 No GPS data — hardware needed</div>
               )}
             </div>
           )}
@@ -1528,7 +1528,7 @@ function TrackerPlaceholder({ userRole }) {
       {/* Hardware recommendations */}
       <div style={{ marginTop:20, background:'var(--surface)', border:'1px solid var(--border)', borderRadius:12, overflow:'hidden' }}>
         <div style={{ padding:'14px 20px', borderBottom:'1px solid var(--border)', display:'flex', alignItems:'center', gap:10 }}>
-          <span style={{ fontSize:18 }}></span>
+          <span style={{ fontSize:18 }}>🛰️</span>
           <div>
             <div style={{ fontSize:14, fontWeight:700, color:'var(--text-primary)' }}>Recommended GPS Hardware</div>
             <div style={{ fontSize:12, color:'var(--text-muted)' }}>Works for fleet vehicles, heavy machinery and trailers — all compatible with MechIQ via API</div>
@@ -1551,7 +1551,7 @@ function TrackerPlaceholder({ userRole }) {
                 <span style={{ fontSize:10, fontWeight:700, padding:'2px 7px', borderRadius:20,
                   background:h.badgeC+'22', color:h.badgeC, whiteSpace:'nowrap', marginLeft:8 }}>{h.badge}</span>
               </div>
-              <div style={{ fontSize:11, color:'var(--text-muted)', marginBottom:6 }}> {h.use}</div>
+              <div style={{ fontSize:11, color:'var(--text-muted)', marginBottom:6 }}>🔧 {h.use}</div>
               <div style={{ fontSize:13, fontWeight:700, color:'var(--accent)', marginBottom:10 }}>{h.price}</div>
               <ul style={{ margin:0, paddingLeft:16, fontSize:12, color:'var(--text-secondary)', lineHeight:1.9 }}>
                 {h.features.map(f => <li key={f}>{f}</li>)}
@@ -1560,7 +1560,7 @@ function TrackerPlaceholder({ userRole }) {
           ))}
         </div>
         <div style={{ padding:'11px 20px', background:'var(--surface-2)', fontSize:12, color:'var(--text-muted)', borderTop:'1px solid var(--border)' }}>
-           <strong>To activate tracking:</strong> Your chosen device pushes GPS coordinates to MechIQ via REST API, updating <code style={{fontFamily:'var(--font-mono)',background:'var(--surface-3)',padding:'1px 5px',borderRadius:4}}>last_lat</code>, <code style={{fontFamily:'var(--font-mono)',background:'var(--surface-3)',padding:'1px 5px',borderRadius:4}}>last_lng</code> and <code style={{fontFamily:'var(--font-mono)',background:'var(--surface-3)',padding:'1px 5px',borderRadius:4}}>last_seen</code> on each asset in real time.
+          💡 <strong>To activate tracking:</strong> Your chosen device pushes GPS coordinates to MechIQ via REST API, updating <code style={{fontFamily:'var(--font-mono)',background:'var(--surface-3)',padding:'1px 5px',borderRadius:4}}>last_lat</code>, <code style={{fontFamily:'var(--font-mono)',background:'var(--surface-3)',padding:'1px 5px',borderRadius:4}}>last_lng</code> and <code style={{fontFamily:'var(--font-mono)',background:'var(--surface-3)',padding:'1px 5px',borderRadius:4}}>last_seen</code> on each asset in real time.
         </div>
       </div>
     </div>
@@ -1591,9 +1591,9 @@ function Assets({ userRole, onViewAsset, initialTab }) {
   }, []);
 
   const TABS = [
-    { id:'units',       label:'Fleet Units',  icon:'' },
-    { id:'depreciation',label:'Depreciation', icon:'' },
-    { id:'tracker',     label:'Tracker',      icon:'' },
+    { id:'units',       label:'Fleet Units',  icon:'🚛' },
+    { id:'depreciation',label:'Depreciation', icon:'📉' },
+    { id:'tracker',     label:'Tracker',      icon:'📡' },
   ];
 
   return (

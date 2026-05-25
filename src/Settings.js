@@ -165,7 +165,7 @@ function CompanyDetails({ userRole }) {
     if (pwForm.newPw.length < 8) { setPwMsg('Minimum 8 characters'); return; }
     const { error } = await supabase.auth.updateUser({ password: pwForm.newPw });
     if (error) { setPwMsg(error.message); }
-    else { setPwMsg(' Password updated'); setPwForm({ newPw: '', confirm: '' }); }
+    else { setPwMsg('✓ Password updated'); setPwForm({ newPw: '', confirm: '' }); }
     setTimeout(() => setPwMsg(''), 4000);
   };
 
@@ -201,7 +201,7 @@ function CompanyDetails({ userRole }) {
           <div style={{ width: 90, height: 90, borderRadius: 12, border: '2px dashed var(--border)', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'var(--surface-2)', flexShrink: 0 }}>
             {logoUrl
               ? <img src={logoUrl} alt="logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
-              : <span style={{ fontSize: 32, opacity: 0.3 }}></span>}
+              : <span style={{ fontSize: 32, opacity: 0.3 }}>🏢</span>}
           </div>
           <div>
             <button onClick={() => fileRef.current.click()} style={{ ...saveBtn(), marginBottom: 8, display: 'block' }}>
@@ -343,7 +343,7 @@ function CompanyDetails({ userRole }) {
       {/* ── Save ── */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 32 }}>
         <button onClick={handleSave} disabled={saving} style={saveBtn()}>
-          {saving ? 'Saving…' : saved ? ' Saved' : 'Save Changes'}
+          {saving ? 'Saving…' : saved ? '✓ Saved' : 'Save Changes'}
         </button>
         {saved && <span style={{ fontSize: 13, color: 'var(--green)', fontWeight: 600 }}>Changes saved successfully</span>}
       </div>
@@ -363,7 +363,7 @@ function CompanyDetails({ userRole }) {
         </div>
         <div style={{ marginTop: 14, display: 'flex', alignItems: 'center', gap: 12 }}>
           <button onClick={handlePasswordChange} style={saveBtn()}>Update Password</button>
-          {pwMsg && <span style={{ fontSize: 13, color: pwMsg.startsWith('') ? 'var(--green)' : 'var(--red)', fontWeight: 600 }}>{pwMsg}</span>}
+          {pwMsg && <span style={{ fontSize: 13, color: pwMsg.startsWith('✓') ? 'var(--green)' : 'var(--red)', fontWeight: 600 }}>{pwMsg}</span>}
         </div>
       </div>
     </div>
@@ -441,7 +441,7 @@ function Notifications({ userRole }) {
       ))}
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
         <button onClick={handleSave} style={saveBtn()}>Save Preferences</button>
-        {saved && <span style={{ fontSize: 13, color: 'var(--green)', fontWeight: 600 }}> Saved</span>}
+        {saved && <span style={{ fontSize: 13, color: 'var(--green)', fontWeight: 600 }}>✓ Saved</span>}
       </div>
     </div>
   );
@@ -467,7 +467,7 @@ function UsersRoles({ userRole }) {
     setInviting(true);
     const { error } = await supabase.from('user_roles').insert({ ...invite, company_id: userRole.company_id });
     if (error) setMsg(error.message);
-    else { setMsg(' User added'); setInvite({ email: '', name: '', role: 'technician' }); fetchUsers(); }
+    else { setMsg('✓ User added'); setInvite({ email: '', name: '', role: 'technician' }); fetchUsers(); }
     setInviting(false); setTimeout(() => setMsg(''), 4000);
   };
 
@@ -505,7 +505,7 @@ function UsersRoles({ userRole }) {
             {inviting ? 'Adding…' : '+ Add User'}
           </button>
         </div>
-        {msg && <div style={{ marginTop: 10, fontSize: 13, color: msg.startsWith('') ? 'var(--green)' : 'var(--red)', fontWeight: 600 }}>{msg}</div>}
+        {msg && <div style={{ marginTop: 10, fontSize: 13, color: msg.startsWith('✓') ? 'var(--green)' : 'var(--red)', fontWeight: 600 }}>{msg}</div>}
       </div>
 
       <div style={card}>
@@ -519,7 +519,7 @@ function UsersRoles({ userRole }) {
           ].map(({ role, perms }) => (
             <div key={role} style={{ border: `1px solid ${RC[role]}30`, borderRadius: 8, padding: 14, borderTop: `3px solid ${RC[role]}` }}>
               <div style={{ fontSize: 13, fontWeight: 700, color: RC[role], marginBottom: 10, textTransform: 'capitalize' }}>{role}</div>
-              {perms.map(p => <div key={p} style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4 }}> {p}</div>)}
+              {perms.map(p => <div key={p} style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4 }}>✓ {p}</div>)}
             </div>
           ))}
         </div>
@@ -579,7 +579,7 @@ function Billing({ userRole }) {
       <div style={card}>
         <SectionHeader title="Plans & Pricing" desc="Contact us to discuss the right plan for your fleet" />
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', padding: '32px 20px', gap: 20 }}>
-          <div style={{ width: 64, height: 64, borderRadius: 16, background: 'var(--accent-light)', border: '1px solid rgba(14,165,233,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28 }}></div>
+          <div style={{ width: 64, height: 64, borderRadius: 16, background: 'var(--accent-light)', border: '1px solid rgba(14,165,233,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28 }}>⚙️</div>
           <div>
             <div style={{ fontSize: 18, fontWeight: 800, color: 'var(--text-primary)', marginBottom: 8 }}>MechIQ Fleet Management</div>
             <div style={{ fontSize: 14, color: 'var(--text-muted)', maxWidth: 400, lineHeight: 1.6 }}>
@@ -848,14 +848,14 @@ Records exported:
         <div style={{ border: '2px solid var(--accent)', borderRadius: 12, padding: 22, marginBottom: 16, background: 'var(--accent-light)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16, flexWrap: 'wrap' }}>
             <div>
-              <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--text-primary)', marginBottom: 6 }}> Full Export Package</div>
+              <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--text-primary)', marginBottom: 6 }}>📦 Full Export Package</div>
               <div style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.6, maxWidth: 400 }}>
                 Downloads a ZIP containing:
               </div>
               <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 8, lineHeight: 1.8 }}>
-                 Excel spreadsheet with 8 tabs (Assets, Work Orders, Maintenance, Service Schedules, Downtime, Oil Samples, Prestarts, Parts)<br />
-                 PDF for every Work Order<br />
-                 PDF for every Prestart submission
+                📊 Excel spreadsheet with 8 tabs (Assets, Work Orders, Maintenance, Service Schedules, Downtime, Oil Samples, Prestarts, Parts)<br />
+                📄 PDF for every Work Order<br />
+                📋 PDF for every Prestart submission
               </div>
             </div>
             <button onClick={exportZip} disabled={!!exporting}
@@ -875,12 +875,12 @@ Records exported:
         <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 10 }}>Individual Exports</div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
           {[
-            { id: 'assets',      icon: '', label: 'Assets',           table: 'assets' },
-            { id: 'work_orders', icon: '', label: 'Work Orders',       table: 'work_orders' },
-            { id: 'maintenance', icon: '', label: 'Maintenance',       table: 'maintenance' },
+            { id: 'assets',      icon: '⚙️', label: 'Assets',           table: 'assets' },
+            { id: 'work_orders', icon: '📋', label: 'Work Orders',       table: 'work_orders' },
+            { id: 'maintenance', icon: '🔧', label: 'Maintenance',       table: 'maintenance' },
             { id: 'downtime',    icon: '⏱', label: 'Downtime Log',      table: 'downtime' },
-            { id: 'oil_samples', icon: '', label: 'Oil Samples',       table: 'oil_samples' },
-            { id: 'parts',       icon: '', label: 'Parts Inventory',   table: 'parts' },
+            { id: 'oil_samples', icon: '🔬', label: 'Oil Samples',       table: 'oil_samples' },
+            { id: 'parts',       icon: '🔩', label: 'Parts Inventory',   table: 'parts' },
           ].map(e => (
             <div key={e.id} style={{ border: '1px solid var(--border)', borderRadius: 8, padding: '12px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10 }}>
               <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
@@ -982,18 +982,18 @@ function DateTimeSettings({ userRole }) {
       'Australia/Sydney', 'Australia/Melbourne', 'Australia/Brisbane',
       'Australia/Adelaide', 'Australia/Perth', 'Australia/Darwin', 'Australia/Hobart',
     ]},
-    { group: ' Asia Pacific', zones: [
+    { group: '🌏 Asia Pacific', zones: [
       'Pacific/Auckland', 'Pacific/Auckland', 'Asia/Singapore',
       'Asia/Tokyo', 'Asia/Shanghai', 'Asia/Dubai',
     ]},
-    { group: ' Europe', zones: [
+    { group: '🌍 Europe', zones: [
       'Europe/London', 'Europe/Paris', 'Europe/Berlin',
     ]},
-    { group: ' Americas', zones: [
+    { group: '🌎 Americas', zones: [
       'America/New_York', 'America/Chicago', 'America/Denver',
       'America/Los_Angeles', 'America/Vancouver',
     ]},
-    { group: ' UTC', zones: ['UTC'] },
+    { group: '🌐 UTC', zones: ['UTC'] },
   ];
 
   const formatTime = (date, tz) => {
@@ -1074,7 +1074,7 @@ function DateTimeSettings({ userRole }) {
           {formatDate(now, selectedTz)}
         </div>
         <div style={{ fontSize:12, color:'var(--text-muted)', display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}>
-          <span></span>
+          <span>🌏</span>
           <span>{selectedTz}</span>
           {locationName && <span>— {locationName}</span>}
         </div>
@@ -1083,7 +1083,7 @@ function DateTimeSettings({ userRole }) {
       {/* Detect location button */}
       <div style={{ marginBottom:20, display:'flex', gap:10, alignItems:'center' }}>
         <button onClick={detectLocation} disabled={detecting} style={{ padding:'9px 18px', background:detecting?'var(--surface-2)':'var(--accent)', color:detecting?'var(--text-muted)':'#fff', border:'none', borderRadius:9, fontSize:13, fontWeight:700, cursor:detecting?'wait':'pointer', display:'flex', alignItems:'center', gap:8 }}>
-          {detecting ? '⏳ Detecting…' : ' Auto-detect My Location'}
+          {detecting ? '⏳ Detecting…' : '📍 Auto-detect My Location'}
         </button>
         {detectedTz && detectedTz !== selectedTz && (
           <span style={{ fontSize:12, color:'var(--text-muted)' }}>Detected: <strong>{detectedTz}</strong></span>
@@ -1132,7 +1132,7 @@ function DateTimeSettings({ userRole }) {
       </div>
 
       <button onClick={save} style={{ padding:'10px 28px', background:'var(--accent)', color:'#fff', border:'none', borderRadius:9, fontSize:13, fontWeight:700, cursor:'pointer' }}>
-        {saved ? ' Saved!' : 'Save Settings'}
+        {saved ? '✓ Saved!' : 'Save Settings'}
       </button>
     </div>
   );
@@ -1226,7 +1226,7 @@ function OneDriveSync({ userRole }) {
       const fullPath = `${folderPath}/${dateStr}`;
       log(`Creating folder: ${fullPath}`);
       const folderId = await ensureFolder(fullPath);
-      log(' Folder ready');
+      log('✓ Folder ready');
       const cid = userRole.company_id;
       const [
         { data: assets }, { data: maintenance }, { data: workOrders },
@@ -1253,10 +1253,10 @@ function OneDriveSync({ userRole }) {
       for (const [name, data] of files) {
         if (!data?.length) { log(`⏭ ${name} — no data`); continue; }
         const ok = await uploadFile(folderId, name, new Blob([toCSV(data)], { type: 'text/csv' }));
-        log(ok ? ` ${name} (${data.length} records)` : ` ${name} — failed`);
+        log(ok ? `✓ ${name} (${data.length} records)` : `✗ ${name} — failed`);
       }
-      log(' Sync complete!');
-    } catch(e) { log(` Error: ${e.message}`); }
+      log('✅ Sync complete!');
+    } catch(e) { log(`✗ Error: ${e.message}`); }
     setSyncing(false);
   };
 
@@ -1268,21 +1268,21 @@ function OneDriveSync({ userRole }) {
       <div style={{ background:'var(--surface)', border:'1px solid var(--border)', borderRadius:14, padding:20, marginTop:16, marginBottom:20 }}>
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', flexWrap:'wrap', gap:12 }}>
           <div style={{ display:'flex', alignItems:'center', gap:12 }}>
-            <div style={{ width:44, height:44, borderRadius:12, background:connected?'rgba(34,197,94,0.1)':'var(--surface-2)', border:`1px solid ${connected?'rgba(34,197,94,0.3)':'var(--border)'}`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:22 }}></div>
+            <div style={{ width:44, height:44, borderRadius:12, background:connected?'rgba(34,197,94,0.1)':'var(--surface-2)', border:`1px solid ${connected?'rgba(34,197,94,0.3)':'var(--border)'}`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:22 }}>☁️</div>
             <div>
               <div style={{ fontSize:14, fontWeight:700, color:'var(--text-primary)' }}>{connected ? `Connected — ${account?.displayName || account?.userPrincipalName || 'Microsoft Account'}` : 'Not connected'}</div>
               <div style={{ fontSize:12, color:'var(--text-muted)', marginTop:2 }}>{connected ? account?.userPrincipalName : 'Sign in with your Microsoft account'}</div>
             </div>
           </div>
           {connected ? <button onClick={disconnect} style={{ padding:'8px 16px', background:'var(--red-bg)', color:'var(--red)', border:'1px solid var(--red-border)', borderRadius:9, fontSize:12, fontWeight:700, cursor:'pointer' }}>Disconnect</button>
-          : <button onClick={connectOneDrive} style={{ padding:'10px 20px', background:'#0078d4', color:'#fff', border:'none', borderRadius:9, fontSize:13, fontWeight:700, cursor:'pointer' }}> Connect OneDrive</button>}
+          : <button onClick={connectOneDrive} style={{ padding:'10px 20px', background:'#0078d4', color:'#fff', border:'none', borderRadius:9, fontSize:13, fontWeight:700, cursor:'pointer' }}>🔗 Connect OneDrive</button>}
         </div>
       </div>
       <div style={{ marginBottom:16 }}>
         <label style={{ fontSize:12, fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.5px', display:'block', marginBottom:6 }}>OneDrive Folder Path</label>
         <div style={{ display:'flex', gap:8 }}>
           <input value={folderPath} onChange={e => setFolderPath(e.target.value)} placeholder="e.g. MechIQ or Documents/MechIQ/Backups" style={{ ...iStyle, flex:1 }} />
-          <button onClick={saveFolder} style={{ padding:'9px 18px', background:saved?'var(--green)':'var(--accent)', color:'#fff', border:'none', borderRadius:9, fontSize:13, fontWeight:700, cursor:'pointer', whiteSpace:'nowrap' }}>{saved ? ' Saved' : 'Save'}</button>
+          <button onClick={saveFolder} style={{ padding:'9px 18px', background:saved?'var(--green)':'var(--accent)', color:'#fff', border:'none', borderRadius:9, fontSize:13, fontWeight:700, cursor:'pointer', whiteSpace:'nowrap' }}>{saved ? '✓ Saved' : 'Save'}</button>
         </div>
         <div style={{ fontSize:12, color:'var(--text-muted)', marginTop:6 }}>Files sync to: <strong style={{ color:'var(--accent)' }}>OneDrive / {folderPath} / {new Date().toISOString().split('T')[0]}</strong></div>
       </div>
@@ -1290,19 +1290,19 @@ function OneDriveSync({ userRole }) {
         <div style={{ fontSize:11, fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.5px', marginBottom:10 }}>What gets synced (9 CSV files)</div>
         <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(180px,1fr))', gap:6 }}>
           {['Assets','Maintenance','Work Orders','Downtime','Parts','Prestarts','Service Sheets','Oil Samples','Service Schedules'].map(f => (
-            <div key={f} style={{ display:'flex', alignItems:'center', gap:6, fontSize:12, color:'var(--text-secondary)' }}><span style={{ color:'var(--green)', fontWeight:700 }}></span>{f}</div>
+            <div key={f} style={{ display:'flex', alignItems:'center', gap:6, fontSize:12, color:'var(--text-secondary)' }}><span style={{ color:'var(--green)', fontWeight:700 }}>✓</span>{f}</div>
           ))}
         </div>
         <div style={{ fontSize:11, color:'var(--text-muted)', marginTop:10 }}>Each sync creates a dated subfolder so backups are preserved (e.g. <code>MechIQ/2026-03-21/</code>).</div>
       </div>
       <button onClick={syncNow} disabled={!connected||syncing} style={{ padding:'11px 28px', background:connected&&!syncing?'#0078d4':'var(--surface-2)', color:connected&&!syncing?'#fff':'var(--text-muted)', border:'none', borderRadius:10, fontSize:14, fontWeight:700, cursor:connected&&!syncing?'pointer':'not-allowed', display:'flex', alignItems:'center', gap:10, marginBottom:16 }}>
-        {syncing ? '⏳ Syncing…' : ' Sync to OneDrive Now'}
+        {syncing ? '⏳ Syncing…' : '☁️ Sync to OneDrive Now'}
       </button>
       {syncLog.length > 0 && (
         <div style={{ background:'var(--surface)', border:'1px solid var(--border)', borderRadius:12, padding:14 }}>
           <div style={{ fontSize:11, fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.5px', marginBottom:8 }}>Sync Log</div>
           <div style={{ fontFamily:'var(--font-mono)', fontSize:12, maxHeight:180, overflowY:'auto' }}>
-            {syncLog.map((l, i) => <div key={i} style={{ color:l.includes('')||l.includes('')?'var(--green)':l.includes('')?'var(--red)':'var(--text-secondary)', marginBottom:3 }}>{l}</div>)}
+            {syncLog.map((l, i) => <div key={i} style={{ color:l.includes('✅')||l.includes('✓')?'var(--green)':l.includes('✗')?'var(--red)':'var(--text-secondary)', marginBottom:3 }}>{l}</div>)}
           </div>
         </div>
       )}
@@ -1381,11 +1381,11 @@ function AppModifier({ userRole }) {
   return (
     <div>
       <SectionHeader title="App Requests" desc="Submit feature requests or bug reports. These are reviewed by the MechIQ team." />
-      {saved && <div style={{ background:'rgba(34,197,94,0.1)', border:'1px solid rgba(34,197,94,0.3)', borderRadius:10, padding:'12px 16px', marginTop:16, marginBottom:8, fontSize:13, fontWeight:700, color:'var(--green)' }}> Request submitted! The MechIQ team will review it.</div>}
+      {saved && <div style={{ background:'rgba(34,197,94,0.1)', border:'1px solid rgba(34,197,94,0.3)', borderRadius:10, padding:'12px 16px', marginTop:16, marginBottom:8, fontSize:13, fontWeight:700, color:'var(--green)' }}>✓ Request submitted! The MechIQ team will review it.</div>}
       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginTop:16, marginBottom:16 }}>
         <div style={{ fontSize:13, color:'var(--text-muted)' }}>{requests.length} request{requests.length !== 1 ? 's' : ''} from your company</div>
         <button onClick={() => setShowForm(s => !s)} style={{ padding:'9px 18px', background:showForm?'var(--surface-2)':'var(--accent)', color:showForm?'var(--text-secondary)':'#fff', border:`1px solid ${showForm?'var(--border)':'var(--accent)'}`, borderRadius:9, fontSize:13, fontWeight:700, cursor:'pointer' }}>
-          {showForm ? ' Cancel' : '+ New Request'}
+          {showForm ? '✕ Cancel' : '+ New Request'}
         </button>
       </div>
 
@@ -1396,10 +1396,10 @@ function AppModifier({ userRole }) {
             <div>
               <label style={{ fontSize:11, fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', display:'block', marginBottom:4 }}>Type</label>
               <select value={form.type} onChange={e => setForm(f => ({...f, type:e.target.value}))} style={iStyle}>
-                <option value="feature"> Feature Request</option>
-                <option value="bug"> Bug Report</option>
-                <option value="improvement"> Improvement</option>
-                <option value="question"> Question</option>
+                <option value="feature">✨ Feature Request</option>
+                <option value="bug">🐛 Bug Report</option>
+                <option value="improvement">⚡ Improvement</option>
+                <option value="question">❓ Question</option>
               </select>
             </div>
             <div>
@@ -1415,16 +1415,16 @@ function AppModifier({ userRole }) {
           <textarea value={form.description} onChange={e => setForm(f => ({...f, description:e.target.value}))} placeholder="Describe what you want in detail..." rows={4} style={{ ...iStyle, resize:'vertical' }} />
           {aiDraft && (
             <div style={{ background:'var(--accent-light)', border:'1px solid rgba(14,165,233,0.2)', borderRadius:10, padding:12, marginBottom:10 }}>
-              <div style={{ fontSize:11, fontWeight:700, color:'var(--accent)', marginBottom:6 }}> AI Implementation Note</div>
+              <div style={{ fontSize:11, fontWeight:700, color:'var(--accent)', marginBottom:6 }}>🤖 AI Implementation Note</div>
               <div style={{ fontSize:12, color:'var(--text-secondary)', lineHeight:1.6 }}>{aiDraft}</div>
             </div>
           )}
           <div style={{ display:'flex', gap:8 }}>
             <button onClick={generateAIDraft} disabled={!form.title||aiLoading} style={{ padding:'9px 16px', background:'var(--surface-2)', color:'var(--text-secondary)', border:'1px solid var(--border)', borderRadius:9, fontSize:12, fontWeight:700, cursor:'pointer', opacity:!form.title?0.5:1 }}>
-              {aiLoading ? '⏳ Drafting…' : ' AI Draft'}
+              {aiLoading ? '⏳ Drafting…' : '🤖 AI Draft'}
             </button>
             <button onClick={submitRequest} disabled={!form.title||saving} style={{ flex:1, padding:'10px', background:form.title?'var(--accent)':'var(--surface-2)', color:form.title?'#fff':'var(--text-muted)', border:'none', borderRadius:9, fontSize:13, fontWeight:700, cursor:form.title?'pointer':'not-allowed' }}>
-              {saving ? '⏳ Submitting…' : ' Submit Request'}
+              {saving ? '⏳ Submitting…' : '📤 Submit Request'}
             </button>
           </div>
         </div>
@@ -1447,11 +1447,11 @@ function AppModifier({ userRole }) {
                   <div style={{ fontSize:14, fontWeight:700, color:'var(--text-primary)', marginBottom:4 }}>{r.title}</div>
                   {r.description && <div style={{ fontSize:12, color:'var(--text-secondary)', lineHeight:1.5, marginBottom:6 }}>{r.description}</div>}
                   {r.ai_draft && (
-                    <div style={{ fontSize:11, color:'var(--accent)', background:'var(--accent-light)', borderRadius:8, padding:'6px 10px', marginTop:6 }}> {r.ai_draft}</div>
+                    <div style={{ fontSize:11, color:'var(--accent)', background:'var(--accent-light)', borderRadius:8, padding:'6px 10px', marginTop:6 }}>🤖 {r.ai_draft}</div>
                   )}
                 </div>
                 <button onClick={() => vote(r.id, r.votes)} style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:2, padding:'8px 12px', background:'var(--surface-2)', border:'1px solid var(--border)', borderRadius:10, cursor:'pointer', flexShrink:0 }}>
-                  <span style={{ fontSize:16 }}></span>
+                  <span style={{ fontSize:16 }}>👍</span>
                   <span style={{ fontSize:13, fontWeight:800, color:'var(--accent)' }}>{r.votes || 0}</span>
                 </button>
               </div>
@@ -1486,7 +1486,7 @@ function PasswordReset({ userRole }) {
           A reset link will be sent to: <strong style={{ color: 'var(--text-primary)' }}>{userRole?.email}</strong>
         </div>
         {sent ? (
-          <div style={{ color: 'var(--green)', fontWeight: 600, fontSize: 14 }}> Reset email sent — check your inbox.</div>
+          <div style={{ color: 'var(--green)', fontWeight: 600, fontSize: 14 }}>✓ Reset email sent — check your inbox.</div>
         ) : (
           <button onClick={handleReset} disabled={loading}
             style={{ padding: '9px 20px', background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: 13, fontWeight: 600, opacity: loading ? 0.6 : 1 }}>
@@ -1500,23 +1500,23 @@ function PasswordReset({ userRole }) {
 
 // ─── Main Settings ──────────────────────────────────────────────────────────────────
 const ADMIN_TABS = [
-  { id: 'company',          label: 'Company Details', icon: '' },
-  { id: 'users',            label: 'Users & Roles',   icon: '' },
-  { id: 'notifs',           label: 'Notifications',   icon: '' },
-  { id: 'billing',          label: 'Contact & Plan',  icon: '' },
-  { id: 'data',             label: 'Data & Export',   icon: '' },
-  { id: 'onboarding_admin', label: 'Plant Onboarding',icon: '' },
-  { id: 'labels',           label: 'Labels',           icon: '' },
-  { id: 'daily_reports',    label: 'Daily Reports',    icon: '' },
-  { id: 'error_log',        label: 'Error Log',        icon: '' },
+  { id: 'company',          label: 'Company Details', icon: '🏢' },
+  { id: 'users',            label: 'Users & Roles',   icon: '👥' },
+  { id: 'notifs',           label: 'Notifications',   icon: '🔔' },
+  { id: 'billing',          label: 'Contact & Plan',  icon: '💳' },
+  { id: 'data',             label: 'Data & Export',   icon: '📤' },
+  { id: 'onboarding_admin', label: 'Plant Onboarding',icon: '🏗️' },
+  { id: 'labels',           label: 'Labels',           icon: '🏷' },
+  { id: 'daily_reports',    label: 'Daily Reports',    icon: '📧' },
+  { id: 'error_log',        label: 'Error Log',        icon: '🔍' },
 ];
 
 const PERSONAL_TABS = [
-  { id: 'format',       label: 'Format & Theme', icon: '' },
-  { id: 'datetime',     label: 'Date & Time',    icon: '' },
-  { id: 'sync',         label: 'OneDrive Sync',  icon: '' },
-  { id: 'app_modifier', label: 'App Requests',   icon: '' },
-  { id: 'password',     label: 'Password Reset', icon: '' },
+  { id: 'format',       label: 'Format & Theme', icon: '🎨' },
+  { id: 'datetime',     label: 'Date & Time',    icon: '🕐' },
+  { id: 'sync',         label: 'OneDrive Sync',  icon: '☁️' },
+  { id: 'app_modifier', label: 'App Requests',   icon: '🛠️' },
+  { id: 'password',     label: 'Password Reset', icon: '🔑' },
 ];
 
 
@@ -1578,7 +1578,7 @@ function AssetSettingsRow({ asset, onSaved }) {
     try {
       // Load jsQR first (before opening camera so it's ready)
       const jsQR = await loadJsQR();
-      if (!jsQR) { setLabelMsg(' QR scanner failed to load — type the label code manually'); return; }
+      if (!jsQR) { setLabelMsg('⚠️ QR scanner failed to load — type the label code manually'); return; }
 
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }
@@ -1593,7 +1593,7 @@ function AssetSettingsRow({ asset, onSaved }) {
         await videoRef.current.play().catch(() => {});
       }
 
-      setLabelMsg(' Scanning… point the QR code at the camera');
+      setLabelMsg('📷 Scanning… point the QR code at the camera');
 
       // Poll every 250ms
       scanIntervalRef.current = setInterval(() => {
@@ -1617,7 +1617,7 @@ function AssetSettingsRow({ asset, onSaved }) {
             scanIntervalRef.current = null;
             stopCamera();
             setLabelInput(labelCode);
-            setLabelMsg(' Scanned: ' + labelCode + ' — click Assign to save');
+            setLabelMsg('✅ Scanned: ' + labelCode + ' — click Assign to save');
           }
         } catch(err) {}
       }, 250);
@@ -1625,9 +1625,9 @@ function AssetSettingsRow({ asset, onSaved }) {
     } catch(e) {
       setCameraActive(false);
       if (e.name === 'NotAllowedError') {
-        setLabelMsg(' Camera permission denied — please allow camera access in your browser settings, or type the label code manually');
+        setLabelMsg('⚠️ Camera permission denied — please allow camera access in your browser settings, or type the label code manually');
       } else {
-        setLabelMsg(' Camera unavailable — type the label code manually');
+        setLabelMsg('⚠️ Camera unavailable — type the label code manually');
       }
     }
   };
@@ -1657,7 +1657,7 @@ function AssetSettingsRow({ asset, onSaved }) {
     await supabase.from('generated_labels').update({ asset_id: null, asset_name: null }).eq('asset_id', asset.id);
     // Assign new label
     await supabase.from('generated_labels').update({ asset_id: asset.id, asset_name: asset.name }).eq('id', label.id);
-    setLabelInput(''); setLabelMsg(' Label ' + label.label_code + ' assigned to ' + asset.name);
+    setLabelInput(''); setLabelMsg('✓ Label ' + label.label_code + ' assigned to ' + asset.name);
     setLabelSaving(false);
     loadAssignedLabel();
   };
@@ -1761,8 +1761,8 @@ function AssetSettingsRow({ asset, onSaved }) {
         <div style={{ flex:1, fontSize:12, color:'#6b7a8d' }}>
           {s.next_due_value ? `Due: ${Number(s.next_due_value).toLocaleString()} ${s.interval_type}` : s.next_due_date ? `Due: ${s.next_due_date}` : '—'}
         </div>
-        <button onClick={() => onChange(s)} style={{ padding:'3px 10px', background:'#fff', border:'1px solid #dde2ea', borderRadius:5, fontSize:11, fontWeight:700, color:'#6b7a8d', cursor:'pointer' }}></button>
-        <button onClick={() => deleteSch(s.id)} style={{ padding:'3px 10px', background:'#fff1f2', border:'1px solid #fecdd3', borderRadius:5, fontSize:11, fontWeight:700, color:'#e94560', cursor:'pointer' }}></button>
+        <button onClick={() => onChange(s)} style={{ padding:'3px 10px', background:'#fff', border:'1px solid #dde2ea', borderRadius:5, fontSize:11, fontWeight:700, color:'#6b7a8d', cursor:'pointer' }}>✏️</button>
+        <button onClick={() => deleteSch(s.id)} style={{ padding:'3px 10px', background:'#fff1f2', border:'1px solid #fecdd3', borderRadius:5, fontSize:11, fontWeight:700, color:'#e94560', cursor:'pointer' }}>🗑</button>
       </div>
     );
     return (
@@ -1834,7 +1834,7 @@ function AssetSettingsRow({ asset, onSaved }) {
         <div style={{ padding:'16px', borderTop:'1px solid #dde2ea', background:'#fff' }}>
           {/* Sub-tabs */}
           <div style={{ display:'flex', background:'#f1f5f9', borderRadius:8, padding:3, marginBottom:16, width:'fit-content' }}>
-            {[['info',' Asset Info'],['intervals',' Service Intervals'],['label',' Label']].map(([id,lbl]) => (
+            {[['info','📋 Asset Info'],['intervals','🔧 Service Intervals'],['label','🏷 Label']].map(([id,lbl]) => (
               <button key={id} onClick={() => setTab(id)} style={{ padding:'7px 18px', border:'none', borderRadius:6, background:tab===id?'#fff':'transparent', color:tab===id?'#1a2b3c':'#6b7a8d', fontWeight:tab===id?700:500, fontSize:13, cursor:'pointer', boxShadow:tab===id?'0 1px 4px rgba(0,0,0,0.1)':'none', transition:'all 0.15s' }}>{lbl}</button>
             ))}
           </div>
@@ -1861,7 +1861,7 @@ function AssetSettingsRow({ asset, onSaved }) {
               </div>
               <button onClick={saveInfo} disabled={saving}
                 style={{ padding:'9px 24px', background:saved?'#00c264':'var(--accent)', color:'#fff', border:'none', borderRadius:8, fontSize:13, fontWeight:700, cursor:'pointer', transition:'all 0.2s' }}>
-                {saving ? 'Saving…' : saved ? ' Saved' : 'Save Changes'}
+                {saving ? 'Saving…' : saved ? '✓ Saved' : 'Save Changes'}
               </button>
             </>
           )}
@@ -1908,7 +1908,7 @@ function AssetSettingsRow({ asset, onSaved }) {
               {assignedLabel ? (
                 <div style={{ background:'#f0fdf4', border:'1px solid #bbf7d0', borderRadius:10, padding:'14px 16px', marginBottom:16, display:'flex', alignItems:'center', gap:14 }}>
                   <div style={{ flex:1 }}>
-                    <div style={{ fontSize:11, fontWeight:700, color:'#166534', textTransform:'uppercase', letterSpacing:'0.5px', marginBottom:3 }}> Label Assigned</div>
+                    <div style={{ fontSize:11, fontWeight:700, color:'#166534', textTransform:'uppercase', letterSpacing:'0.5px', marginBottom:3 }}>✓ Label Assigned</div>
                     <div style={{ fontSize:16, fontWeight:800, color:'#1a2b3c', fontFamily:'var(--font-mono)' }}>{assignedLabel.label_code}</div>
                     <div style={{ fontSize:11, color:'#6b7a8d', marginTop:2 }}>
                       {assignedLabel.qr_url}
@@ -1939,12 +1939,12 @@ function AssetSettingsRow({ asset, onSaved }) {
                     <button onClick={startCamera}
                       style={{ display:'flex', alignItems:'center', gap:8, padding:'10px 18px', background:'#1a2b3c', color:'#fff', border:'none', borderRadius:8, fontSize:13, fontWeight:700, cursor:'pointer' }}>
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
-                       Scan QR Code
+                      📷 Scan QR Code
                     </button>
                   ) : (
                     <div>
                       <video ref={videoRef} autoPlay playsInline muted style={{ width:'100%', maxWidth:320, borderRadius:8, border:'2px solid var(--accent)', display:'block', marginBottom:8 }} />
-                      <button onClick={stopCamera} style={{ padding:'6px 14px', background:'#f8fafc', border:'1px solid #dde2ea', borderRadius:6, fontSize:12, fontWeight:600, color:'#6b7a8d', cursor:'pointer' }}> Close Camera</button>
+                      <button onClick={stopCamera} style={{ padding:'6px 14px', background:'#f8fafc', border:'1px solid #dde2ea', borderRadius:6, fontSize:12, fontWeight:600, color:'#6b7a8d', cursor:'pointer' }}>✕ Close Camera</button>
                     </div>
                   )}
                 </div>
@@ -1966,9 +1966,9 @@ function AssetSettingsRow({ asset, onSaved }) {
 
                 {labelMsg && (
                   <div style={{ marginTop:10, padding:'8px 12px', borderRadius:7, fontSize:12, fontWeight:600,
-                    background: labelMsg.startsWith('') ? '#f0fdf4' : '#fff1f2',
-                    color: labelMsg.startsWith('') ? '#166534' : '#e94560',
-                    border: `1px solid ${labelMsg.startsWith('') ? '#bbf7d0' : '#fecdd3'}` }}>
+                    background: labelMsg.startsWith('✓') ? '#f0fdf4' : '#fff1f2',
+                    color: labelMsg.startsWith('✓') ? '#166534' : '#e94560',
+                    border: `1px solid ${labelMsg.startsWith('✓') ? '#bbf7d0' : '#fecdd3'}` }}>
                     {labelMsg}
                   </div>
                 )}
@@ -2046,8 +2046,8 @@ function LabelsSection({ userRole }) {
   return (
     <div>
       <div style={{ display: 'flex', borderBottom: '1px solid var(--border)', marginBottom: 24 }}>
-        <button style={ts('designer')} onClick={() => setTab('designer')}> Label Designer</button>
-        <button style={ts('generator')} onClick={() => { setTab('generator'); setPrintQueue([]); }}> Label Generator</button>
+        <button style={ts('designer')} onClick={() => setTab('designer')}>🎨 Label Designer</button>
+        <button style={ts('generator')} onClick={() => { setTab('generator'); setPrintQueue([]); }}>⚡ Label Generator</button>
       </div>
       {tab === 'designer' && <LabelDesigner userRole={userRole?.role} companyId={userRole?.company_id} />}
       {tab === 'generator' && (
@@ -2181,7 +2181,7 @@ function LabelGenerator({ userRole, printQueue, setPrintQueue }) {
         )}
         <button onClick={generate} disabled={loading || !selectedT}
           style={{ padding: '10px 24px', background: loading||!selectedT ? 'var(--surface-2)' : 'var(--accent)', color: loading||!selectedT ? 'var(--text-muted)' : '#fff', border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: loading||!selectedT ? 'not-allowed' : 'pointer' }}>
-          {loading ? '⏳ Generating…' : saved ? ' Done!' : ` Generate ${count} Label${count!==1?'s':''}`}
+          {loading ? '⏳ Generating…' : saved ? '✓ Done!' : `⚡ Generate ${count} Label${count!==1?'s':''}`}
         </button>
       </div>
 
@@ -2251,12 +2251,12 @@ function LabelGenerator({ userRole, printQueue, setPrintQueue }) {
                     </td>
                     <td style={{ padding: '9px 12px' }}>
                       <span style={{ padding: '2px 8px', borderRadius: 20, fontSize: 11, fontWeight: 700, background: l.printed ? 'var(--accent-light)' : 'var(--surface-2)', color: l.printed ? 'var(--accent)' : 'var(--text-faint)', border: '1px solid ' + (l.printed ? 'rgba(0,194,224,0.3)' : 'var(--border)') }}>
-                        {l.printed ? ' Printed' : 'Not printed'}
+                        {l.printed ? '✓ Printed' : 'Not printed'}
                       </span>
                     </td>
                     <td style={{ padding: '9px 12px', textAlign: 'right' }} onClick={e => e.stopPropagation()}>
                       <button onClick={() => deleteLabel(l.id)}
-                        style={{ padding: '3px 10px', background: 'var(--red-bg)', color: 'var(--red)', border: '1px solid var(--red-border)', borderRadius: 5, fontSize: 11, fontWeight: 700, cursor: 'pointer' }}></button>
+                        style={{ padding: '3px 10px', background: 'var(--red-bg)', color: 'var(--red)', border: '1px solid var(--red-border)', borderRadius: 5, fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>🗑</button>
                     </td>
                   </tr>
                 ))}
@@ -2268,7 +2268,7 @@ function LabelGenerator({ userRole, printQueue, setPrintQueue }) {
         {/* Print selected bar */}
         {selected.size > 0 && (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 16, padding: '12px 16px', background: 'var(--accent-light)', border: '1px solid rgba(0,194,224,0.25)', borderRadius: 9 }}>
-            <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--accent)' }}> {selected.size} label{selected.size!==1?'s':''} selected</div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--accent)' }}>🖨️ {selected.size} label{selected.size!==1?'s':''} selected</div>
             <div style={{ display: 'flex', gap: 8 }}>
               <button onClick={() => setSelected(new Set())} style={{ padding: '7px 14px', background: 'transparent', border: '1px solid rgba(0,194,224,0.3)', borderRadius: 7, fontSize: 12, fontWeight: 600, color: 'var(--accent)', cursor: 'pointer' }}>Clear</button>
               <button onClick={() => setShowPrint(true)} style={{ padding: '7px 20px', background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: 7, fontSize: 13, fontWeight: 700, cursor: 'pointer', boxShadow: '0 2px 10px rgba(0,194,224,0.3)' }}>
@@ -2536,7 +2536,7 @@ function LabelPrint({ userRole, labels, allLabels, onBack, onPrinted }) {
           ← Back to Labels
         </button>
         <div style={{ fontSize:14, fontWeight:700, color:'var(--text-primary)' }}>
-           Print Setup — <span style={{ color:'var(--accent)' }}>{labels.length} label{labels.length!==1?'s':''}</span>
+          🖨️ Print Setup — <span style={{ color:'var(--accent)' }}>{labels.length} label{labels.length!==1?'s':''}</span>
           {firstTmpl?.size && <span style={{ marginLeft:8, fontSize:12, color:'var(--text-muted)' }}>· {firstTmpl.size} label size</span>}
         </div>
       </div>
@@ -2564,7 +2564,7 @@ function LabelPrint({ userRole, labels, allLabels, onBack, onPrinted }) {
           </div>
           <button onClick={handlePrint} disabled={printing}
             style={{ width:'100%', padding:'12px', background:printing?'var(--surface-2)':'var(--accent)', color:printing?'var(--text-muted)':'#fff', border:'none', borderRadius:8, fontSize:13, fontWeight:700, cursor:printing?'not-allowed':'pointer', boxShadow:printing?'none':'0 4px 14px rgba(0,194,224,0.3)' }}>
-            {printing ? '⏳ Preparing…' : ` Print ${labels.length} Label${labels.length!==1?'s':''}`}
+            {printing ? '⏳ Preparing…' : `🖨️ Print ${labels.length} Label${labels.length!==1?'s':''}`}
           </button>
         </div>
 
@@ -2704,7 +2704,7 @@ function DailyReports({ userRole }) {
   };
 
   const sendTest = async () => {
-    if (!cfg.emails.length) { setTestMsg(' Add at least one email address first'); return; }
+    if (!cfg.emails.length) { setTestMsg('⚠️ Add at least one email address first'); return; }
     setTesting(true); setTestMsg('');
     try {
       const res = await fetch('https://mechiq-daily-report.mickfazl.workers.dev/test', {
@@ -2713,8 +2713,8 @@ function DailyReports({ userRole }) {
         body: JSON.stringify({ company_id: userRole.company_id, emails: cfg.emails }),
       });
       const json = await res.json();
-      setTestMsg(res.ok ? ' Test report sent! Check your inbox.' : ' Failed: ' + (json.error || res.statusText));
-    } catch(e) { setTestMsg(' Could not reach report worker: ' + e.message); }
+      setTestMsg(res.ok ? '✅ Test report sent! Check your inbox.' : '❌ Failed: ' + (json.error || res.statusText));
+    } catch(e) { setTestMsg('❌ Could not reach report worker: ' + e.message); }
     setTesting(false);
   };
 
@@ -2784,7 +2784,7 @@ function DailyReports({ userRole }) {
             {cfg.emails.map(e => (
               <div key={e} style={{ display:'flex', alignItems:'center', gap:6, padding:'4px 10px 4px 12px', background:'var(--accent-light)', border:'1px solid rgba(0,194,224,0.25)', borderRadius:20, fontSize:12 }}>
                 <span style={{ color:'var(--text-primary)', fontWeight:500 }}>{e}</span>
-                <button onClick={()=>removeEmail(e)} style={{ background:'none', border:'none', color:'var(--text-muted)', cursor:'pointer', fontSize:14, padding:0, lineHeight:1 }}></button>
+                <button onClick={()=>removeEmail(e)} style={{ background:'none', border:'none', color:'var(--text-muted)', cursor:'pointer', fontSize:14, padding:0, lineHeight:1 }}>✕</button>
               </div>
             ))}
           </div>
@@ -2807,10 +2807,10 @@ function DailyReports({ userRole }) {
         <div style={{ background:'#1a2433', borderRadius:8, padding:16, fontFamily:'Georgia,serif', fontSize:13, lineHeight:1.6, color:'#ccd6f6' }}>
           <div style={{ fontSize:16, fontWeight:700, color:'#fff', marginBottom:4 }}>MechIQ — Daily Fleet Report</div>
           <div style={{ fontSize:11, color:'#8892b0', marginBottom:14 }}>{new Date().toLocaleDateString('en-AU', { weekday:'long', year:'numeric', month:'long', day:'numeric' })}</div>
-          {cfg.include_health && <div style={{ marginBottom:8 }}> <strong>Fleet Health</strong> — Asset status snapshot across your fleet</div>}
-          {cfg.include_services && <div style={{ marginBottom:8 }}> <strong>Upcoming Services</strong> — Predicted service due dates for the next 14 days</div>}
-          {cfg.include_workorders && <div style={{ marginBottom:8 }}> <strong>Open Work Orders</strong> — All unresolved maintenance tasks</div>}
-          {cfg.include_downtime && <div style={{ marginBottom:8 }}> <strong>Downtime</strong> — Assets currently offline</div>}
+          {cfg.include_health && <div style={{ marginBottom:8 }}>📊 <strong>Fleet Health</strong> — Asset status snapshot across your fleet</div>}
+          {cfg.include_services && <div style={{ marginBottom:8 }}>🔧 <strong>Upcoming Services</strong> — Predicted service due dates for the next 14 days</div>}
+          {cfg.include_workorders && <div style={{ marginBottom:8 }}>⚠️ <strong>Open Work Orders</strong> — All unresolved maintenance tasks</div>}
+          {cfg.include_downtime && <div style={{ marginBottom:8 }}>🔴 <strong>Downtime</strong> — Assets currently offline</div>}
           <div style={{ marginTop:12, fontSize:11, color:'#8892b0' }}>Sent by MechIQ · mechiq.com.au · {cfg.emails.length} recipient{cfg.emails.length!==1?'s':''}</div>
         </div>
       </div>
@@ -2819,15 +2819,15 @@ function DailyReports({ userRole }) {
       <div style={{ display:'flex', gap:10, flexWrap:'wrap' }}>
         <button onClick={save} disabled={saving}
           style={{ padding:'11px 28px', background:saving?'var(--surface-2)':'var(--accent)', color:saving?'var(--text-muted)':'#fff', border:'none', borderRadius:8, fontSize:13, fontWeight:700, cursor:saving?'not-allowed':'pointer' }}>
-          {saving ? 'Saving…' : saved ? ' Saved' : 'Save Settings'}
+          {saving ? 'Saving…' : saved ? '✓ Saved' : 'Save Settings'}
         </button>
         <button onClick={sendTest} disabled={testing}
           style={{ padding:'11px 22px', background:'var(--surface-2)', color:'var(--text-secondary)', border:'1px solid var(--border)', borderRadius:8, fontSize:13, fontWeight:600, cursor:testing?'not-allowed':'pointer' }}>
-          {testing ? 'Sending…' : ' Send Test Report'}
+          {testing ? 'Sending…' : '📧 Send Test Report'}
         </button>
       </div>
       {testMsg && (
-        <div style={{ marginTop:12, padding:'10px 14px', background: testMsg.startsWith('') ? 'var(--green-bg)' : 'rgba(239,83,80,0.1)', border:'1px solid ' + (testMsg.startsWith('') ? 'var(--green)' : 'rgba(239,83,80,0.3)'), borderRadius:7, fontSize:13, color: testMsg.startsWith('') ? 'var(--green)' : '#ef5350' }}>
+        <div style={{ marginTop:12, padding:'10px 14px', background: testMsg.startsWith('✅') ? 'var(--green-bg)' : 'rgba(239,83,80,0.1)', border:'1px solid ' + (testMsg.startsWith('✅') ? 'var(--green)' : 'rgba(239,83,80,0.3)'), borderRadius:7, fontSize:13, color: testMsg.startsWith('✅') ? 'var(--green)' : '#ef5350' }}>
           {testMsg}
         </div>
       )}
@@ -2935,13 +2935,13 @@ Be specific and concise. Format with those 4 headings.`;
         </div>
         <div style={{ display:'flex', gap:8 }}>
           <button onClick={analyseAll} style={{ padding:'8px 16px', background:'var(--accent-light)', color:'var(--accent)', border:'1px solid rgba(0,194,224,0.3)', borderRadius:7, fontSize:12, fontWeight:700, cursor:'pointer' }}>
-             Analyse All
+            ✦ Analyse All
           </button>
           <button onClick={load} style={{ padding:'8px 14px', background:'var(--surface-2)', color:'var(--text-secondary)', border:'1px solid var(--border)', borderRadius:7, fontSize:12, cursor:'pointer' }}>
             ↻ Refresh
           </button>
           <button onClick={clearAll} disabled={clearing} style={{ padding:'8px 14px', background:'var(--red-bg)', color:'var(--red)', border:'1px solid var(--red-border)', borderRadius:7, fontSize:12, fontWeight:700, cursor:'pointer' }}>
-             Clear All
+            🗑 Clear All
           </button>
         </div>
       </div>
@@ -2965,7 +2965,7 @@ Be specific and concise. Format with those 4 headings.`;
         <div style={{ color:'var(--text-muted)', fontSize:13, padding:20 }}>Loading error logs…</div>
       ) : filtered.length === 0 ? (
         <div style={{ textAlign:'center', padding:'40px 20px', color:'var(--text-muted)', fontSize:14 }}>
-          <div style={{ fontSize:32, marginBottom:8 }}></div>
+          <div style={{ fontSize:32, marginBottom:8 }}>✅</div>
           No errors recorded{filter !== 'all' ? ' of this type' : ''} — fleet is running clean.
         </div>
       ) : (
@@ -2990,7 +2990,7 @@ Be specific and concise. Format with those 4 headings.`;
                   {!analysis && (
                     <button onClick={() => analyseError(err)} disabled={isAnalysing}
                       style={{ flexShrink:0, padding:'7px 14px', background: isAnalysing ? 'var(--surface-2)' : 'linear-gradient(135deg,#7c3aed,#4f46e5)', color: isAnalysing ? 'var(--text-muted)' : '#fff', border:'none', borderRadius:7, fontSize:12, fontWeight:700, cursor: isAnalysing ? 'not-allowed' : 'pointer', whiteSpace:'nowrap' }}>
-                      {isAnalysing ? ' Analysing…' : ' AI Fix'}
+                      {isAnalysing ? '✦ Analysing…' : '✦ AI Fix'}
                     </button>
                   )}
                 </div>
@@ -3007,7 +3007,7 @@ Be specific and concise. Format with those 4 headings.`;
                 {analysis && (
                   <div style={{ padding:'14px 16px', borderTop:'1px solid var(--border)', background:'rgba(124,58,237,0.04)' }}>
                     <div style={{ fontSize:11, fontWeight:700, color:'#7c3aed', marginBottom:8, display:'flex', alignItems:'center', gap:6 }}>
-                      <span></span> AI DIAGNOSIS & FIX
+                      <span>✦</span> AI DIAGNOSIS & FIX
                     </div>
                     <div style={{ fontSize:13, color:'var(--text-secondary)', lineHeight:1.6, whiteSpace:'pre-wrap' }}>{analysis}</div>
                   </div>
@@ -3076,7 +3076,7 @@ function AssetOnboardingWrapper({ userRole }) {
 
   if (done) return (
     <div style={{ textAlign:'center', padding:'60px 20px', background:'var(--surface)', border:'1px solid var(--border)', borderRadius:12 }}>
-      <div style={{ fontSize:44, marginBottom:14 }}></div>
+      <div style={{ fontSize:44, marginBottom:14 }}>✅</div>
       <div style={{ fontSize:18, fontWeight:800, color:'var(--text-primary)', marginBottom:6 }}>{done} registered successfully</div>
       <div style={{ fontSize:13, color:'var(--text-muted)', marginBottom:28 }}>The asset has been added to your fleet. You can now assign service intervals, labels and forms from the Assets page.</div>
       <div style={{ display:'flex', gap:10, justifyContent:'center', flexWrap:'wrap' }}>
@@ -3094,7 +3094,7 @@ function AssetOnboardingWrapper({ userRole }) {
 
   return (
     <div style={{ background:'var(--surface)', border:'1px solid var(--border)', borderRadius:12, padding:28 }}>
-      <div style={{ fontSize:16, fontWeight:800, color:'var(--text-primary)', marginBottom:4 }}> Register Company-Owned Asset</div>
+      <div style={{ fontSize:16, fontWeight:800, color:'var(--text-primary)', marginBottom:4 }}>🚛 Register Company-Owned Asset</div>
       <div style={{ fontSize:13, color:'var(--text-muted)', marginBottom:24 }}>Add plant and equipment owned by your company to the fleet register.</div>
 
       {/* Section: Identity */}
@@ -3167,7 +3167,7 @@ function AssetOnboardingWrapper({ userRole }) {
       <div style={{ display:'flex', gap:10 }}>
         <button onClick={save} disabled={saving}
           style={{ padding:'11px 28px', background:saving?'var(--surface-2)':'var(--accent)', color:saving?'var(--text-muted)':'#fff', border:'none', borderRadius:8, fontSize:14, fontWeight:700, cursor:saving?'not-allowed':'pointer', transition:'all 0.2s', boxShadow:saving?'none':'0 4px 14px rgba(0,194,224,0.25)' }}>
-          {saving ? 'Registering…' : ' Register Asset'}
+          {saving ? 'Registering…' : '✓ Register Asset'}
         </button>
         <button onClick={()=>setForm(EMPTY)}
           style={{ padding:'11px 18px', background:'var(--surface-2)', color:'var(--text-secondary)', border:'1px solid var(--border)', borderRadius:8, fontSize:13, fontWeight:600, cursor:'pointer' }}>
@@ -3190,11 +3190,11 @@ function PlantOnboardingAdmin({ userRole }) {
   return (
     <div>
       <div style={{ display:'flex', borderBottom:'1px solid var(--border)', marginBottom:24 }}>
-        <button style={ts('register')} onClick={()=>setTab('register')}> Register Asset</button>
-        <button style={ts('assets')} onClick={()=>setTab('assets')}> Asset Settings</button>
-        <button style={ts('submissions')} onClick={()=>setTab('submissions')}> Contractor Submissions</button>
-        <button style={ts('contractors')} onClick={()=>setTab('contractors')}> Contractors</button>
-        <button style={ts('checklists')} onClick={()=>setTab('checklists')}> Compliance Checklists</button>
+        <button style={ts('register')} onClick={()=>setTab('register')}>🚛 Register Asset</button>
+        <button style={ts('assets')} onClick={()=>setTab('assets')}>⚙️ Asset Settings</button>
+        <button style={ts('submissions')} onClick={()=>setTab('submissions')}>📋 Contractor Submissions</button>
+        <button style={ts('contractors')} onClick={()=>setTab('contractors')}>👷 Contractors</button>
+        <button style={ts('checklists')} onClick={()=>setTab('checklists')}>✅ Compliance Checklists</button>
       </div>
       {tab==='register'     && <AssetOnboardingWrapper userRole={userRole} />}
       {tab==='assets'       && <AssetsSettings userRole={userRole} />}
@@ -3355,7 +3355,7 @@ function SubmissionsReview({ userRole }) {
         <div style={{ background:'var(--surface)', border:'1px solid var(--border)', borderRadius:12, padding:20, maxHeight:'80vh', overflowY:'auto' }}>
           <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:16 }}>
             <div style={{ fontSize:16, fontWeight:800, color:'var(--text-primary)' }}>{selected.name}</div>
-            <button onClick={()=>setSelected(null)} style={{ background:'none', border:'none', fontSize:18, cursor:'pointer', color:'var(--text-muted)' }}></button>
+            <button onClick={()=>setSelected(null)} style={{ background:'none', border:'none', fontSize:18, cursor:'pointer', color:'var(--text-muted)' }}>✕</button>
           </div>
 
           {/* Plant info */}
@@ -3388,7 +3388,7 @@ function SubmissionsReview({ userRole }) {
                   <div style={{ display:'flex', gap:8, alignItems:'center' }}>
                     <button onClick={async()=>{await supabase.from('submission_documents').update({verified:!d.verified}).eq('id',d.id);const{data}=await supabase.from('submission_documents').select('*').eq('submission_id',selected.id);setDocs(data||[]);}}
                       style={{ padding:'3px 10px', fontSize:11, fontWeight:700, borderRadius:5, cursor:'pointer', background:d.verified?'var(--green-bg)':'var(--surface)', border:`1px solid ${d.verified?'var(--green-border)':'var(--border)'}`, color:d.verified?'var(--green)':'var(--text-muted)' }}>
-                      {d.verified?' Verified':'Verify'}
+                      {d.verified?'✓ Verified':'Verify'}
                     </button>
                     {d.file_url&&<a href={d.file_url} target="_blank" rel="noreferrer" style={{ fontSize:11, color:'var(--accent)', fontWeight:700 }}>View</a>}
                   </div>
@@ -3436,23 +3436,23 @@ function SubmissionsReview({ userRole }) {
               <>
                 <button onClick={()=>setStatus('approved')} disabled={saving}
                   style={{ flex:1, padding:'10px', background:'var(--green,#16a34a)', color:'#fff', border:'none', borderRadius:8, fontSize:13, fontWeight:700, cursor:'pointer', opacity:saving?0.6:1 }}>
-                   Approve
+                  ✓ Approve
                 </button>
                 <button onClick={()=>{ if(!rejectReason.trim()){alert('Please enter a rejection reason');return;} setStatus('rejected');}} disabled={saving}
                   style={{ flex:1, padding:'10px', background:'var(--red-bg,#fff1f2)', color:'var(--red,#e11d48)', border:'1px solid var(--red-border,#fecdd3)', borderRadius:8, fontSize:13, fontWeight:700, cursor:'pointer', opacity:saving?0.6:1 }}>
-                   Reject
+                  ✕ Reject
                 </button>
               </>
             )}
             {selected.status === 'approved' && !selected.asset_id && (
               <button onClick={addToAssets} disabled={saving}
                 style={{ width:'100%', padding:'10px', background:'var(--accent)', color:'#fff', border:'none', borderRadius:8, fontSize:13, fontWeight:700, cursor:'pointer', opacity:saving?0.6:1 }}>
-                 Add to Assets
+                🚛 Add to Assets
               </button>
             )}
             {selected.asset_id && (
               <div style={{ width:'100%', padding:'10px 14px', background:'var(--green-bg,#f0fdf4)', border:'1px solid var(--green-border,#bbf7d0)', borderRadius:8, fontSize:13, fontWeight:700, color:'var(--green,#16a34a)', textAlign:'center' }}>
-                 Added to Assets
+                ✓ Added to Assets
               </div>
             )}
           </div>
@@ -3499,7 +3499,7 @@ function ContractorManager({ userRole }) {
     <div>
       {newPin && (
         <div style={{ background:'var(--green-bg,#f0fdf4)', border:'1px solid var(--green-border,#bbf7d0)', borderRadius:10, padding:'16px 20px', marginBottom:20 }}>
-          <div style={{ fontSize:14, fontWeight:800, color:'var(--green,#16a34a)', marginBottom:6 }}> Contractor Created</div>
+          <div style={{ fontSize:14, fontWeight:800, color:'var(--green,#16a34a)', marginBottom:6 }}>✓ Contractor Created</div>
           <div style={{ fontSize:13, color:'var(--text-secondary)' }}>Share these login details with the contractor:</div>
           <div style={{ marginTop:10, padding:'10px 14px', background:'#fff', borderRadius:8, border:'1px solid var(--green-border,#bbf7d0)', fontFamily:'monospace', fontSize:14 }}>
             <div>Portal: <strong>mechiq.com.au/contractor</strong></div>
@@ -3531,7 +3531,7 @@ function ContractorManager({ userRole }) {
             ))}
           </div>
           <div style={{ fontSize:12, color:'var(--text-muted)', marginBottom:14, padding:'8px 12px', background:'var(--accent-light)', borderRadius:7, border:'1px solid rgba(0,194,224,0.2)' }}>
-             A 6-digit PIN will be auto-generated. Share it with the contractor so they can log in at <strong>mechiq.com.au/contractor</strong>
+            💡 A 6-digit PIN will be auto-generated. Share it with the contractor so they can log in at <strong>mechiq.com.au/contractor</strong>
           </div>
           <div style={{ display:'flex', gap:8 }}>
             <button onClick={create} disabled={saving} style={{ padding:'9px 20px', background:'var(--accent)', color:'#fff', border:'none', borderRadius:8, fontSize:13, fontWeight:700, cursor:'pointer', opacity:saving?0.6:1 }}>
@@ -3629,7 +3629,7 @@ function ComplianceChecklists({ userRole }) {
               <label style={{ display:'flex', alignItems:'center', gap:5, fontSize:12, color:'var(--text-muted)', flexShrink:0, cursor:'pointer' }}>
                 <input type="checkbox" checked={item.required} onChange={e=>updateItem(i,'required',e.target.checked)} style={{ accentColor:'var(--accent)' }} />Required
               </label>
-              <button onClick={()=>removeItem(i)} style={{ padding:'6px 10px', background:'var(--red-bg)', color:'var(--red)', border:'1px solid var(--red-border)', borderRadius:5, fontSize:11, fontWeight:700, cursor:'pointer', flexShrink:0 }}></button>
+              <button onClick={()=>removeItem(i)} style={{ padding:'6px 10px', background:'var(--red-bg)', color:'var(--red)', border:'1px solid var(--red-border)', borderRadius:5, fontSize:11, fontWeight:700, cursor:'pointer', flexShrink:0 }}>✕</button>
             </div>
           ))}
           <button onClick={addItem} style={{ padding:'6px 16px', background:'transparent', border:'1px dashed var(--border)', borderRadius:6, color:'var(--text-muted)', fontSize:12, fontWeight:600, cursor:'pointer', marginBottom:14 }}>+ Add Item</button>
@@ -3655,9 +3655,9 @@ function ComplianceChecklists({ userRole }) {
             </div>
             <div style={{ display:'flex', gap:6 }}>
               <button onClick={()=>{ setEditing(cl.id); setForm({ name:cl.name, plant_type:cl.plant_type||'', site_name:cl.site_name||'', items:cl.items||[] }); }}
-                style={{ padding:'4px 12px', background:'var(--surface-2)', color:'var(--text-secondary)', border:'1px solid var(--border)', borderRadius:6, fontSize:11, fontWeight:700, cursor:'pointer' }}> Edit</button>
+                style={{ padding:'4px 12px', background:'var(--surface-2)', color:'var(--text-secondary)', border:'1px solid var(--border)', borderRadius:6, fontSize:11, fontWeight:700, cursor:'pointer' }}>✏️ Edit</button>
               <button onClick={()=>del(cl.id)}
-                style={{ padding:'4px 10px', background:'var(--red-bg)', color:'var(--red)', border:'1px solid var(--red-border)', borderRadius:6, fontSize:11, fontWeight:700, cursor:'pointer' }}></button>
+                style={{ padding:'4px 10px', background:'var(--red-bg)', color:'var(--red)', border:'1px solid var(--red-border)', borderRadius:6, fontSize:11, fontWeight:700, cursor:'pointer' }}>🗑</button>
             </div>
           </div>
           <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>

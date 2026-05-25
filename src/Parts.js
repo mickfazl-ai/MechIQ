@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from './supabase';
+import { pythonAIFetch } from './pythonApi';
 import * as XLSX from 'xlsx';
 import QRCode from 'qrcode';
 
@@ -169,7 +170,7 @@ function AIImportModal({ userRole, assets, onClose, onImported }) {
           r.readAsDataURL(f);
         });
 
-        const resp = await fetch('/api/ai-insight', {
+        const resp = await pythonAIFetch({
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
           body: JSON.stringify({
@@ -200,7 +201,7 @@ function AIImportModal({ userRole, assets, onClose, onImported }) {
         setProgress(50);
         setStatus('Mapping columns with AI…');
 
-        const resp = await fetch('/api/ai-insight', {
+        const resp = await pythonAIFetch({
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
           body: JSON.stringify({
@@ -231,7 +232,7 @@ function AIImportModal({ userRole, assets, onClose, onImported }) {
         setProgress(50);
         setStatus('Analysing PDF with AI…');
 
-        const resp = await fetch('/api/ai-insight', {
+        const resp = await pythonAIFetch({
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
           body: JSON.stringify({
@@ -290,8 +291,8 @@ function AIImportModal({ userRole, assets, onClose, onImported }) {
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 20 }}>
       <div style={{ background: 'var(--surface)', borderRadius: 16, padding: 28, width: '100%', maxWidth: 600, maxHeight: '85vh', overflow: 'auto', border: '1px solid var(--border)', boxShadow: '0 20px 60px rgba(0,0,0,0.3)', animation: 'fadeUp 0.2s ease' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-          <div style={{ fontSize: 17, fontWeight: 800, color: 'var(--text-primary)' }}> AI Parts Import</div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 18 }}></button>
+          <div style={{ fontSize: 17, fontWeight: 800, color: 'var(--text-primary)' }}>🤖 AI Parts Import</div>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 18 }}>✕</button>
         </div>
 
         {step === 'upload' && (
@@ -301,13 +302,13 @@ function AIImportModal({ userRole, assets, onClose, onImported }) {
               onDragLeave={() => setDragOver(false)}
               onDrop={e => { e.preventDefault(); setDragOver(false); const f = e.dataTransfer.files[0]; if (f) processFile(f); }}
               onClick={() => fileRef.current?.click()}>
-              <div style={{ fontSize: 36, marginBottom: 10 }}></div>
+              <div style={{ fontSize: 36, marginBottom: 10 }}>📁</div>
               <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 6 }}>Drop file here or tap to browse</div>
               <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>Supports Excel (.xlsx), PDF, or a photo of a parts list / invoice</div>
             </div>
             <input ref={fileRef} type="file" accept=".xlsx,.xls,.pdf,image/*" style={{ display: 'none' }} onChange={e => { const f = e.target.files[0]; if (f) processFile(f); }} />
             <div style={{ marginTop: 14, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              {[' Excel Spreadsheet', ' PDF Parts List', ' Photo / Invoice'].map(t => (
+              {['📊 Excel Spreadsheet', '📄 PDF Parts List', '📷 Photo / Invoice'].map(t => (
                 <span key={t} style={{ padding: '4px 10px', background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 6, fontSize: 12, color: 'var(--text-muted)' }}>{t}</span>
               ))}
             </div>
@@ -339,7 +340,7 @@ function AIImportModal({ userRole, assets, onClose, onImported }) {
                 <div key={i} onClick={() => setSelected(s => s.includes(i) ? s.filter(x => x !== i) : [...s, i])}
                   style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', borderBottom: '1px solid var(--border)', cursor: 'pointer', background: selected.includes(i) ? 'var(--accent-light)' : 'transparent', transition: 'background 0.12s' }}>
                   <div style={{ width: 18, height: 18, borderRadius: 4, border: `2px solid ${selected.includes(i) ? 'var(--accent)' : 'var(--border)'}`, background: selected.includes(i) ? 'var(--accent)' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                    {selected.includes(i) && <span style={{ color: '#fff', fontSize: 11, lineHeight: 1 }}></span>}
+                    {selected.includes(i) && <span style={{ color: '#fff', fontSize: 11, lineHeight: 1 }}>✓</span>}
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>{p.name || '—'}</div>
@@ -401,10 +402,10 @@ function TransactionModal({ part, userRole, assets, workOrders, onClose, onDone 
             <div style={{ fontSize: 15, fontWeight: 800, color: 'var(--text-primary)' }}>Stock Movement</div>
             <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{part.name} · Current: {part.quantity} {part.unit}</div>
           </div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 18 }}></button>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 18 }}>✕</button>
         </div>
         <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
-          {[['out',' Use / Issue'],['in',' Receive'],['adjustment',' Adjust']].map(([v, l]) => (
+          {[['out','📤 Use / Issue'],['in','📥 Receive'],['adjustment','⚙ Adjust']].map(([v, l]) => (
             <button key={v} onClick={() => setType(v)} style={{ flex: 1, padding: '8px', border: `1px solid ${type === v ? 'var(--accent)' : 'var(--border)'}`, borderRadius: 8, background: type === v ? 'var(--accent)' : 'var(--surface-2)', color: type === v ? '#fff' : 'var(--text-secondary)', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>{l}</button>
           ))}
         </div>
@@ -490,7 +491,7 @@ function PartForm({ part, assets, onSave, onCancel, userRole }) {
                       const ids = form.compatible_asset_ids || [];
                       F('compatible_asset_ids', checked ? ids.filter(id => id !== a.id) : [...ids, a.id]);
                     }} />
-                  {checked ? ' ' : ''}{a.asset_number ? `${a.asset_number} · ` : ''}{a.name}
+                  {checked ? '✓ ' : ''}{a.asset_number ? `${a.asset_number} · ` : ''}{a.name}
                 </label>
               );
             })}
@@ -582,7 +583,7 @@ Return a JSON array where each item is:
   "reasoning": "<one sentence explaining why>"
 }`;
 
-      const resp = await fetch('/api/ai-insight', {
+      const resp = await pythonAIFetch({
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ model: 'claude-sonnet-4-5', max_tokens: 4000, messages: [{ role: 'user', content: prompt }] })
@@ -629,10 +630,10 @@ Return a JSON array where each item is:
         {/* Header */}
         <div style={{ padding:'20px 24px 16px', borderBottom:'1px solid var(--border)', display:'flex', justifyContent:'space-between', alignItems:'center', flexShrink:0 }}>
           <div>
-            <div style={{ fontSize:17, fontWeight:800, color:'var(--text-primary)' }}> AI Smart Match</div>
+            <div style={{ fontSize:17, fontWeight:800, color:'var(--text-primary)' }}>✦ AI Smart Match</div>
             <div style={{ fontSize:12, color:'var(--text-muted)', marginTop:2 }}>Automatically assign parts to compatible assets using AI</div>
           </div>
-          {step !== 'running' && <button onClick={onClose} style={{ background:'none', border:'none', fontSize:20, cursor:'pointer', color:'var(--text-muted)' }}></button>}
+          {step !== 'running' && <button onClick={onClose} style={{ background:'none', border:'none', fontSize:20, cursor:'pointer', color:'var(--text-muted)' }}>✕</button>}
         </div>
 
         {/* Body */}
@@ -649,9 +650,9 @@ Return a JSON array where each item is:
               </div>
               <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:12, marginBottom:20 }}>
                 {[
-                  ['', 'Parts to analyse', `${parts.length} parts`],
-                  ['', 'Assets in fleet', `${assets.length} assets`],
-                  ['', 'Already matched', `${(parts||[]).filter(p=>Array.isArray(p.compatible_asset_ids)&&p.compatible_asset_ids.length>0).length} parts`],
+                  ['📦', 'Parts to analyse', `${parts.length} parts`],
+                  ['🚛', 'Assets in fleet', `${assets.length} assets`],
+                  ['🎯', 'Already matched', `${(parts||[]).filter(p=>Array.isArray(p.compatible_asset_ids)&&p.compatible_asset_ids.length>0).length} parts`],
                 ].map(([icon,lbl,val])=>(
                   <div key={lbl} style={{ padding:'14px 16px', background:'var(--surface-2)', borderRadius:9, border:'1px solid var(--border)', textAlign:'center' }}>
                     <div style={{ fontSize:22, marginBottom:4 }}>{icon}</div>
@@ -661,10 +662,10 @@ Return a JSON array where each item is:
                 ))}
               </div>
               <div style={{ fontSize:12, color:'var(--text-muted)', marginBottom:20, padding:'10px 14px', background:'var(--surface-2)', borderRadius:8, border:'1px solid var(--border)' }}>
-                 This will only update parts you approve. Existing assignments are kept unless you change them.
+                ⚠️ This will only update parts you approve. Existing assignments are kept unless you change them.
               </div>
               <button onClick={run} style={{ padding:'12px 28px', background:'linear-gradient(135deg,var(--accent),#0090a8)', color:'#fff', border:'none', borderRadius:9, fontSize:14, fontWeight:700, cursor:'pointer', boxShadow:'0 4px 14px rgba(0,194,224,0.3)' }}>
-                 Run AI Smart Match
+                ✦ Run AI Smart Match
               </button>
             </div>
           )}
@@ -672,7 +673,7 @@ Return a JSON array where each item is:
           {/* Running */}
           {step === 'running' && (
             <div style={{ textAlign:'center', padding:'40px 20px' }}>
-              <div style={{ fontSize:36, marginBottom:16 }}></div>
+              <div style={{ fontSize:36, marginBottom:16 }}>🤖</div>
               <div style={{ fontSize:16, fontWeight:700, color:'var(--text-primary)', marginBottom:8 }}>Analysing your parts inventory…</div>
               <div style={{ fontSize:13, color:'var(--text-muted)', marginBottom:24 }}>{statusMsg}</div>
               <div style={{ height:6, background:'var(--surface-2)', borderRadius:3, overflow:'hidden', maxWidth:320, margin:'0 auto' }}>
@@ -712,7 +713,7 @@ Return a JSON array where each item is:
                       <div style={{ flex:1 }}>
                         <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:4 }}>
                           <div style={{ width:18, height:18, borderRadius:4, border:`2px solid ${acc?'var(--accent)':'var(--border)'}`, background:acc?'var(--accent)':'#fff', display:'flex', alignItems:'center', justifyContent:'center', fontSize:11, color:'#fff', flexShrink:0 }}>
-                            {acc?'':''}
+                            {acc?'✓':''}
                           </div>
                           <div style={{ fontWeight:700, color:'var(--text-primary)', fontSize:13 }}>{m.partName}</div>
                           <span style={{ fontSize:10, fontWeight:700, padding:'2px 7px', borderRadius:20, background:(CONF_COLORS[m.confidence]||'#a0b0b0')+'18', color:CONF_COLORS[m.confidence]||'#a0b0b0', border:`1px solid ${(CONF_COLORS[m.confidence]||'#a0b0b0')}30` }}>
@@ -738,7 +739,7 @@ Return a JSON array where each item is:
           {/* Done */}
           {step === 'done' && (
             <div style={{ textAlign:'center', padding:'40px 20px' }}>
-              <div style={{ fontSize:40, marginBottom:12 }}></div>
+              <div style={{ fontSize:40, marginBottom:12 }}>✅</div>
               <div style={{ fontSize:17, fontWeight:800, color:'var(--text-primary)', marginBottom:6 }}>Matches applied successfully</div>
               <div style={{ fontSize:13, color:'var(--text-muted)', marginBottom:24 }}>
                 {Object.values(accepted).filter(Boolean).length} parts have been updated with compatible asset assignments.
@@ -949,10 +950,10 @@ function Parts({ userRole }) {
         <div style={{ width:180, flexShrink:0, background:'var(--surface)', border:'1px solid var(--border)', borderRadius:12, padding:12, position:'sticky', top:16 }}>
           <div style={{ fontSize:10, fontWeight:800, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.8px', marginBottom:10 }}>Parts Pages</div>
           {[
-            { id:'all', label:' All Parts' },
-            { id:'general', label:' General' },
+            { id:'all', label:'🔩 All Parts' },
+            { id:'general', label:'📦 General' },
             ...assets.map(a => ({ id: String(a.id), label: a.name })),
-            ...customPages.map(cp => ({ id: cp.id, label: ' ' + cp.name, custom: true })),
+            ...customPages.map(cp => ({ id: cp.id, label: '📋 ' + cp.name, custom: true })),
           ].map(pg => (
             <div key={pg.id} style={{ display:'flex', alignItems:'center', gap:4 }}>
               <button onClick={() => setActiveAssetFilter(pg.id)} style={{
@@ -963,7 +964,7 @@ function Parts({ userRole }) {
                 whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis',
               }}>{pg.label}</button>
               {pg.custom && isAdmin && (
-                <button onClick={() => deleteCustomPage(pg.id)} style={{ background:'none', border:'none', cursor:'pointer', color:'var(--text-faint)', fontSize:14, padding:'2px 4px' }}></button>
+                <button onClick={() => deleteCustomPage(pg.id)} style={{ background:'none', border:'none', cursor:'pointer', color:'var(--text-faint)', fontSize:14, padding:'2px 4px' }}>✕</button>
               )}
             </div>
           ))}
@@ -987,7 +988,7 @@ function Parts({ userRole }) {
       {/* Low stock banner */}
       {!loading && lowStockParts.length > 0 && (
         <div className="low-stock-banner">
-          <span style={{ fontSize: 18 }}></span>
+          <span style={{ fontSize: 18 }}>⚠️</span>
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--amber)' }}>{lowStockParts.length} part{lowStockParts.length !== 1 ? 's' : ''} low or out of stock</div>
             <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{lowStockParts.slice(0, 3).map(p => p.name).join(', ')}{lowStockParts.length > 3 ? ` +${lowStockParts.length - 3} more` : ''}</div>
@@ -999,18 +1000,18 @@ function Parts({ userRole }) {
       {/* Action bar */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap', alignItems: 'center' }}>
         <div className="tab-row" style={{ marginBottom: 0 }}>
-          {[['parts',' Parts Register'],['transactions',' Stock Log'],['usage',' Usage History'],['stocktake',' Stocktake'],['reorder',' Reorder List']].map(([v, l]) => (
+          {[['parts','🔩 Parts Register'],['transactions','📋 Stock Log'],['usage','📊 Usage History'],['stocktake','📊 Stocktake'],['reorder','🛒 Reorder List']].map(([v, l]) => (
             <button key={v} className={`tab-btn-p${tab === v ? ' active' : ''}`} onClick={() => setTab(v)}>{l}</button>
           ))}
         </div>
         <div style={{ marginLeft: 'auto', display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          {isAdmin && <button onClick={() => setShowScan(true)} style={{ padding: '9px 16px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: 'pointer', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 6 }}> Scan Part</button>}
-          {isAdmin && <button onClick={() => setShowQR(true)} style={{ padding: '9px 16px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: 'pointer', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 6 }}> QR Stickers</button>}
-          <button onClick={exportParts} style={{ padding: '9px 16px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: 'pointer', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 6 }}> Export</button>
-          {isAdmin && <button onClick={() => setShowAI(true)} style={{ padding: '9px 16px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: 'pointer', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 6 }}> AI Import</button>}
-          {isAdmin && <button onClick={() => setShowSmartMatch(true)} style={{ padding: '9px 16px', background: 'linear-gradient(135deg,var(--accent),#0090a8)', border: 'none', borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: 'pointer', color: '#fff', display: 'flex', alignItems: 'center', gap: 6, boxShadow: '0 2px 10px rgba(0,194,224,0.25)' }}> Smart Match</button>}
+          {isAdmin && <button onClick={() => setShowScan(true)} style={{ padding: '9px 16px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: 'pointer', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 6 }}>📷 Scan Part</button>}
+          {isAdmin && <button onClick={() => setShowQR(true)} style={{ padding: '9px 16px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: 'pointer', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 6 }}>🏷️ QR Stickers</button>}
+          <button onClick={exportParts} style={{ padding: '9px 16px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: 'pointer', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 6 }}>📊 Export</button>
+          {isAdmin && <button onClick={() => setShowAI(true)} style={{ padding: '9px 16px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: 'pointer', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 6 }}>🤖 AI Import</button>}
+          {isAdmin && <button onClick={() => setShowSmartMatch(true)} style={{ padding: '9px 16px', background: 'linear-gradient(135deg,var(--accent),#0090a8)', border: 'none', borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: 'pointer', color: '#fff', display: 'flex', alignItems: 'center', gap: 6, boxShadow: '0 2px 10px rgba(0,194,224,0.25)' }}>✦ Smart Match</button>}
           {isAdmin && <button onClick={() => { setEditPart(null); setShowForm(s => !s); }} style={{ padding: '9px 16px', background: showForm ? 'var(--surface-2)' : 'var(--accent)', color: showForm ? 'var(--text-secondary)' : '#fff', border: '1px solid ' + (showForm ? 'var(--border)' : 'var(--accent)'), borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
-            {showForm ? ' Close' : '+ Add Part'}
+            {showForm ? '✕ Close' : '+ Add Part'}
           </button>}
         </div>
       </div>
@@ -1025,7 +1026,7 @@ function Parts({ userRole }) {
         <>
           {/* Filters */}
           <div className="parts-filters">
-            <input className="parts-filter-input" placeholder=" Search parts…" value={search} onChange={e => setSearch(e.target.value)} style={{ flex: 1, minWidth: 160 }} />
+            <input className="parts-filter-input" placeholder="🔍 Search parts…" value={search} onChange={e => setSearch(e.target.value)} style={{ flex: 1, minWidth: 160 }} />
             <select className="parts-filter-select" value={filterCat} onChange={e => setFilterCat(e.target.value)}>
               <option value="">All Categories</option>
               {categories.map(c => <option key={c}>{c}</option>)}
@@ -1045,7 +1046,7 @@ function Parts({ userRole }) {
               <option value="out">Out of Stock</option>
             </select>
             {(search || filterCat || filterSupplier || filterAsset || filterStock) && (
-              <button onClick={() => { setSearch(''); setFilterCat(''); setFilterSupplier(''); setFilterAsset(''); setFilterStock(''); }} style={{ padding: '6px 12px', background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 7, fontSize: 12, cursor: 'pointer', color: 'var(--text-muted)', fontWeight: 600 }}> Clear</button>
+              <button onClick={() => { setSearch(''); setFilterCat(''); setFilterSupplier(''); setFilterAsset(''); setFilterStock(''); }} style={{ padding: '6px 12px', background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 7, fontSize: 12, cursor: 'pointer', color: 'var(--text-muted)', fontWeight: 600 }}>✕ Clear</button>
             )}
           </div>
 
@@ -1145,7 +1146,7 @@ function Parts({ userRole }) {
                 <thead><tr>{['Part','Type','Qty','Asset','Work Order','By','When','Notes'].map(h => <th key={h}>{h}</th>)}</tr></thead>
                 <tbody>
                   {transactions.map((t, i) => {
-                    const typeMap = { out: [' Used', 'var(--red)', 'var(--red-bg)'], in: [' Received', 'var(--green)', 'var(--green-bg)'], adjustment: [' Adjusted', 'var(--accent)', 'var(--accent-light)'] };
+                    const typeMap = { out: ['📤 Used', 'var(--red)', 'var(--red-bg)'], in: ['📥 Received', 'var(--green)', 'var(--green-bg)'], adjustment: ['⚙ Adjusted', 'var(--accent)', 'var(--accent-light)'] };
                     const [label, color, bg] = typeMap[t.type] || ['—', 'var(--text-muted)', 'var(--surface-2)'];
                     return (
                       <tr key={t.id} style={{ opacity: 0, animation: `fadeUp 0.25s ease ${i * 20}ms forwards` }}>
@@ -1179,11 +1180,11 @@ function Parts({ userRole }) {
               XLSX.utils.book_append_sheet(wb, ws, 'Reorder List');
               XLSX.writeFile(wb, `MechIQ_Reorder_${new Date().toISOString().split('T')[0]}.xlsx`);
             }} style={{ padding: '7px 16px', background: 'var(--green-bg)', color: 'var(--green)', border: '1px solid var(--green-border)', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
-               Export Excel
+              📊 Export Excel
             </button>
           </div>
           {lowStockParts.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-faint)', fontSize: 13 }}> All parts are adequately stocked.</div>
+            <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-faint)', fontSize: 13 }}>✅ All parts are adequately stocked.</div>
           ) : (
             <div className="parts-table-wrap">
               <table className="parts-table">
@@ -1246,8 +1247,8 @@ function Parts({ userRole }) {
                   if (part) await supabase.from('parts_transactions').insert({ company_id: userRole.company_id, part_id: id, type: 'adjustment', quantity: newQty - (part.quantity || 0), notes: 'Stocktake adjustment', performed_by: userRole.name || userRole.email });
                 }
               }
-              setStocktakeCounts({}); load(); alert(' Stocktake submitted!');
-            }} style={{ padding:'8px 18px', background:'var(--accent)', color:'#fff', border:'none', borderRadius:9, fontSize:13, fontWeight:700, cursor:'pointer' }}> Submit Stocktake</button>
+              setStocktakeCounts({}); load(); alert('✓ Stocktake submitted!');
+            }} style={{ padding:'8px 18px', background:'var(--accent)', color:'#fff', border:'none', borderRadius:9, fontSize:13, fontWeight:700, cursor:'pointer' }}>✓ Submit Stocktake</button>
           </div>
           <div style={{ fontSize:12, color:'var(--text-muted)', marginBottom:16 }}>Enter actual counts. Leave blank to keep current. Changes are logged as adjustments.</div>
           <div className="parts-table-wrap">
@@ -1266,7 +1267,7 @@ function Parts({ userRole }) {
                       <td><input type="number" min="0" placeholder={String(p.quantity)} value={stocktakeCounts[p.id] ?? ''} onChange={e => setStocktakeCounts(c => ({ ...c, [p.id]: e.target.value }))}
                         style={{ width:80, padding:'5px 8px', borderRadius:7, border:`1px solid ${variance !== null && variance !== 0 ? (variance < 0 ? 'var(--red)' : 'var(--green)') : 'var(--border)'}`, background:'var(--bg)', color:'var(--text-primary)', fontSize:13, fontWeight:600 }} /></td>
                       <td style={{ fontWeight:700, color: variance === null ? 'var(--text-faint)' : variance === 0 ? 'var(--green)' : variance < 0 ? 'var(--red)' : 'var(--green)' }}>
-                        {variance === null ? '—' : variance === 0 ? ' Match' : (variance > 0 ? '+' : '') + variance}
+                        {variance === null ? '—' : variance === 0 ? '✓ Match' : (variance > 0 ? '+' : '') + variance}
                       </td>
                     </tr>
                   );
@@ -1279,7 +1280,7 @@ function Parts({ userRole }) {
 
       {/* Modals */}
       {txPart && <TransactionModal part={txPart} userRole={userRole} assets={assets} workOrders={workOrders} onClose={() => setTxPart(null)} onDone={() => { setTxPart(null); load(); }} />}
-      {showAI && <AIImportModal userRole={userRole} assets={assets} onClose={() => setShowAI(false)} onImported={(n) => { setShowAI(false); load(); alert(` Imported ${n} parts successfully!`); }} />}
+      {showAI && <AIImportModal userRole={userRole} assets={assets} onClose={() => setShowAI(false)} onImported={(n) => { setShowAI(false); load(); alert(`✓ Imported ${n} parts successfully!`); }} />}
       {showSmartMatch && <AISmartMatchModal parts={parts} assets={assets} userRole={userRole} onClose={() => setShowSmartMatch(false)} onApplied={() => { setShowSmartMatch(false); load(); }} />}
       {showQR && <QRStickerModal parts={filtered} onClose={() => setShowQR(false)} onPrint={printQRStickers} />}
       {showScan && <AIScanModal parts={parts} userRole={userRole} onClose={() => setShowScan(false)} onDone={() => { setShowScan(false); load(); }} onSetTx={(p) => { setShowScan(false); setTxPart(p); }} />}
@@ -1299,8 +1300,8 @@ function QRStickerModal({ parts, onClose, onPrint }) {
     <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:300, display:'flex', alignItems:'center', justifyContent:'center', padding:16 }}>
       <div style={{ background:'var(--bg)', borderRadius:16, width:'100%', maxWidth:520, maxHeight:'85vh', display:'flex', flexDirection:'column', boxShadow:'0 20px 60px rgba(0,0,0,0.3)' }}>
         <div style={{ padding:'18px 20px 14px', borderBottom:'1px solid var(--border)', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-          <div style={{ fontSize:17, fontWeight:800, color:'var(--text-primary)', fontFamily:'var(--font-display)' }}> QR Sticker PDF</div>
-          <button onClick={onClose} style={{ background:'none', border:'none', cursor:'pointer', fontSize:20, color:'var(--text-muted)' }}></button>
+          <div style={{ fontSize:17, fontWeight:800, color:'var(--text-primary)', fontFamily:'var(--font-display)' }}>🏷️ QR Sticker PDF</div>
+          <button onClick={onClose} style={{ background:'none', border:'none', cursor:'pointer', fontSize:20, color:'var(--text-muted)' }}>✕</button>
         </div>
         <div style={{ padding:16, flex:1, overflowY:'auto' }}>
           <div style={{ fontSize:12, color:'var(--text-muted)', marginBottom:12 }}>Select parts to include. Each sticker shows QR code, part name and number. Prints as A4 PDF (3×8 grid).</div>
@@ -1311,7 +1312,7 @@ function QRStickerModal({ parts, onClose, onPrint }) {
           {parts.map(p => (
             <div key={p.id} onClick={() => setSelected(s => { const n = new Set(s); n.has(p.id) ? n.delete(p.id) : n.add(p.id); return n; })}
               style={{ display:'flex', alignItems:'center', gap:10, padding:'8px 12px', borderRadius:9, border:`1px solid ${selected.has(p.id) ? 'var(--accent)' : 'var(--border)'}`, background: selected.has(p.id) ? 'var(--accent-light)' : 'var(--surface)', marginBottom:6, cursor:'pointer' }}>
-              <div style={{ width:18, height:18, borderRadius:4, border:`2px solid ${selected.has(p.id) ? 'var(--accent)' : 'var(--border)'}`, background: selected.has(p.id) ? 'var(--accent)' : 'transparent', display:'flex', alignItems:'center', justifyContent:'center', fontSize:11, color:'#fff', flexShrink:0 }}>{selected.has(p.id) ? '' : ''}</div>
+              <div style={{ width:18, height:18, borderRadius:4, border:`2px solid ${selected.has(p.id) ? 'var(--accent)' : 'var(--border)'}`, background: selected.has(p.id) ? 'var(--accent)' : 'transparent', display:'flex', alignItems:'center', justifyContent:'center', fontSize:11, color:'#fff', flexShrink:0 }}>{selected.has(p.id) ? '✓' : ''}</div>
               <div style={{ flex:1, minWidth:0 }}>
                 <div style={{ fontSize:13, fontWeight:700, color:'var(--text-primary)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{p.name}</div>
                 <div style={{ fontSize:11, color:'var(--text-muted)' }}>{p.part_number || 'No part #'} · {p.category || 'Uncategorised'}</div>
@@ -1323,7 +1324,7 @@ function QRStickerModal({ parts, onClose, onPrint }) {
           <button onClick={onClose} style={{ flex:1, padding:'10px', background:'var(--surface)', border:'1px solid var(--border)', borderRadius:9, cursor:'pointer', fontSize:13, fontWeight:600, color:'var(--text-secondary)' }}>Cancel</button>
           <button disabled={selected.size === 0 || printing} onClick={async () => { setPrinting(true); await onPrint(parts.filter(p => selected.has(p.id))); setPrinting(false); }}
             style={{ flex:2, padding:'10px', background:'var(--accent)', color:'#fff', border:'none', borderRadius:9, cursor:'pointer', fontSize:13, fontWeight:700, opacity: selected.size === 0 || printing ? 0.6 : 1 }}>
-            {printing ? '⏳ Generating PDF…' : ` Download PDF (${selected.size} stickers)`}
+            {printing ? '⏳ Generating PDF…' : `📥 Download PDF (${selected.size} stickers)`}
           </button>
         </div>
       </div>
@@ -1348,7 +1349,7 @@ function AIScanModal({ parts, userRole, onClose, onDone, onSetTx }) {
       const b64 = e.target.result.split(',')[1];
       setImage(e.target.result);
       try {
-        const res = await fetch('/api/ai-insight', {
+        const res = await pythonAIFetch({
           method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ model: 'claude-sonnet-4-5', max_tokens: 500,
             messages: [{ role: 'user', content: [
@@ -1383,18 +1384,18 @@ function AIScanModal({ parts, userRole, onClose, onDone, onSetTx }) {
     <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:300, display:'flex', alignItems:'center', justifyContent:'center', padding:16 }}>
       <div style={{ background:'var(--bg)', borderRadius:16, width:'100%', maxWidth:480, boxShadow:'0 20px 60px rgba(0,0,0,0.3)' }}>
         <div style={{ padding:'18px 20px 14px', borderBottom:'1px solid var(--border)', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-          <div style={{ fontSize:17, fontWeight:800, color:'var(--text-primary)', fontFamily:'var(--font-display)' }}> AI Part Scanner</div>
-          <button onClick={onClose} style={{ background:'none', border:'none', cursor:'pointer', fontSize:20, color:'var(--text-muted)' }}></button>
+          <div style={{ fontSize:17, fontWeight:800, color:'var(--text-primary)', fontFamily:'var(--font-display)' }}>📷 AI Part Scanner</div>
+          <button onClick={onClose} style={{ background:'none', border:'none', cursor:'pointer', fontSize:20, color:'var(--text-muted)' }}>✕</button>
         </div>
         <div style={{ padding:20 }}>
           {step === 'capture' && (
             <div style={{ textAlign:'center' }}>
-              {loading ? <div style={{ padding:'40px 0', color:'var(--text-muted)', fontSize:14 }}> Analysing image…</div> : (
+              {loading ? <div style={{ padding:'40px 0', color:'var(--text-muted)', fontSize:14 }}>🤖 Analysing image…</div> : (
                 <>
                   <div style={{ fontSize:14, color:'var(--text-secondary)', marginBottom:20 }}>Take a photo of the part label, description plate, or box. AI will identify and match it to your inventory.</div>
                   {image && <img src={image} alt="scan" style={{ width:'100%', borderRadius:10, marginBottom:16, maxHeight:200, objectFit:'cover' }} />}
                   <input ref={fileRef} type="file" accept="image/*" capture="environment" style={{ display:'none' }} onChange={e => e.target.files[0] && analyseImage(e.target.files[0])} />
-                  <button onClick={() => fileRef.current.click()} style={{ width:'100%', padding:'14px', background:'var(--accent)', color:'#fff', border:'none', borderRadius:10, fontSize:14, fontWeight:700, cursor:'pointer' }}> Take Photo / Choose Image</button>
+                  <button onClick={() => fileRef.current.click()} style={{ width:'100%', padding:'14px', background:'var(--accent)', color:'#fff', border:'none', borderRadius:10, fontSize:14, fontWeight:700, cursor:'pointer' }}>📷 Take Photo / Choose Image</button>
                 </>
               )}
             </div>
@@ -1412,7 +1413,7 @@ function AIScanModal({ parts, userRole, onClose, onDone, onSetTx }) {
               {matched ? (
                 <div>
                   <div style={{ background:'rgba(34,197,94,0.1)', border:'1px solid rgba(34,197,94,0.3)', borderRadius:10, padding:14, marginBottom:14 }}>
-                    <div style={{ fontSize:11, fontWeight:700, color:'var(--green)', textTransform:'uppercase', marginBottom:4 }}> Matched in Inventory</div>
+                    <div style={{ fontSize:11, fontWeight:700, color:'var(--green)', textTransform:'uppercase', marginBottom:4 }}>✓ Matched in Inventory</div>
                     <div style={{ fontSize:14, fontWeight:700, color:'var(--text-primary)' }}>{matched.name}</div>
                     <div style={{ fontSize:12, color:'var(--text-muted)' }}>Stock: {matched.quantity} {matched.unit} · Location: {matched.location || '—'}</div>
                   </div>
@@ -1424,7 +1425,7 @@ function AIScanModal({ parts, userRole, onClose, onDone, onSetTx }) {
               ) : (
                 <div>
                   <div style={{ background:'rgba(245,158,11,0.1)', border:'1px solid rgba(245,158,11,0.3)', borderRadius:10, padding:14, marginBottom:14 }}>
-                    <div style={{ fontSize:11, fontWeight:700, color:'var(--amber)', textTransform:'uppercase', marginBottom:4 }}> Not found in inventory</div>
+                    <div style={{ fontSize:11, fontWeight:700, color:'var(--amber)', textTransform:'uppercase', marginBottom:4 }}>⚠ Not found in inventory</div>
                     <div style={{ fontSize:13, color:'var(--text-secondary)' }}>Create a new part record?</div>
                   </div>
                   {newPart && ['name','part_number','supplier','category','location'].map(f => (
@@ -1497,7 +1498,7 @@ function UsageHistoryTab({ parts, assets, transactions, userRole }) {
         Object.entries(byAsset).map(([assetName, txs]) => (
           <div key={assetName} style={{ marginBottom:20 }}>
             <div style={{ fontSize:13, fontWeight:800, color:'var(--accent)', marginBottom:8, display:'flex', alignItems:'center', gap:8 }}>
-               {assetName}
+              🔧 {assetName}
               <span style={{ fontSize:11, fontWeight:600, color:'var(--text-muted)', background:'var(--surface-2)', padding:'2px 8px', borderRadius:20 }}>{txs.length} transaction{txs.length !== 1 ? 's' : ''}</span>
             </div>
             <div className="parts-table-wrap">
