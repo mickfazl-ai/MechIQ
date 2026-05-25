@@ -597,7 +597,6 @@ function PrestartTab({ userRole, prestartAsset, prestartAssetId, prestartAssetNu
   const [signatureData, setSignatureData] = useState('');
   const [form, setForm] = useState({ asset: '', operator_name: '', site_area: '', hrs_start: '', date: new Date().toISOString().split('T')[0], notes: '', responses: {} });
   const [builder, setBuilder] = useState({ name: '', description: '', sections: [], asset_ids: [] });
-  const [editingTemplateId, setEditingTemplateId] = useState(null);
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [filters, setFilters] = useState({ search: '', asset: '', dateFrom: '', dateTo: '', status: 'all' });
   const isAdmin = userRole && (userRole.role === 'admin' || userRole.role === 'master');
@@ -741,14 +740,8 @@ function PrestartTab({ userRole, prestartAsset, prestartAssetId, prestartAssetNu
 
   const saveTemplate = async () => {
     if (!builder.name || builder.sections.length === 0) { alert('Please add a name and at least one section'); return; }
-    let error;
-    if (editingTemplateId) {
-      ({ error } = await supabase.from('form_templates').update({ ...builder, company_id: userRole.company_id }).eq('id', editingTemplateId));
-    } else {
-      ({ error } = await supabase.from('form_templates').insert([{ ...builder, company_id: userRole.company_id }]));
-    }
-    if (!error) { fetchTemplates(); setView('list'); setBuilder({ name: '', description: '', sections: [], asset_ids: [] }); setEditingTemplateId(null); setAiPreview(null); }
-    else alert('Save failed: ' + error.message);
+    const { error } = await supabase.from('form_templates').insert([{ ...builder, company_id: userRole.company_id }]);
+    if (!error) { fetchTemplates(); setView('list'); setBuilder({ name: '', description: '', sections: [], asset_ids: [] }); setAiPreview(null); }
   };
 
   const updateItem = (si, ii, v) => setBuilder(prev => ({ ...prev, sections: prev.sections.map((sec, i) => i === si ? { ...sec, items: sec.items.map((item, j) => j === ii ? v : item) } : sec) }));
@@ -818,10 +811,10 @@ function PrestartTab({ userRole, prestartAsset, prestartAssetId, prestartAssetNu
       <div className="prestart">
         {showAI && <AIGeneratorModal mode="prestart" onClose={() => setShowAI(false)} onGenerated={handleAIGenerated} />}
         <div className="page-header">
-          <h2>{aiPreview ? 'AI Generated - Review and Edit' : editingTemplateId ? 'Edit Prestart Template' : 'Form Builder'}</h2>
+          <h2>{aiPreview ? 'AI Generated - Review and Edit' : 'Form Builder'}</h2>
           <div style={{ display: 'flex', gap: '10px' }}>
             <button className="btn-primary" style={{ background: 'linear-gradient(135deg, #00c2e0, #0090a8)', color: '#000' }} onClick={() => setShowAI(true)}>Generate with AI</button>
-            <button className="btn-primary" onClick={() => { setView('list'); setAiPreview(null); setEditingTemplateId(null); setBuilder({ name:'', description:'', sections:[], asset_ids:[] }); }}>Back</button>
+            <button className="btn-primary" onClick={() => { setView('list'); setAiPreview(null); }}>Back</button>
           </div>
         </div>
         {aiPreview && <div style={{ background: 'var(--green-bg)', border: '1px solid #00c264', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}><p style={{ color: 'var(--green)', margin: 0, fontSize: '13px' }}>AI generated - review and edit before saving.</p></div>}
@@ -1162,12 +1155,6 @@ function PrestartTab({ userRole, prestartAsset, prestartAssetId, prestartAssetNu
                               </button>
                             )}
                             {isAdmin && (
-                              <button onClick={() => { setBuilder({ name: t.name, description: t.description||'', sections: t.sections||[], asset_ids: t.asset_ids||[] }); setEditingTemplateId(t.id); setAiPreview(null); setView('builder'); }}
-                                style={{ padding:'5px 12px', background:'var(--surface-2)', color:'var(--text-secondary)', border:'1px solid var(--border)', borderRadius:6, fontSize:11, fontWeight:700, cursor:'pointer', whiteSpace:'nowrap' }}>
-                                ✏️ Edit
-                              </button>
-                            )}
-                            {isAdmin && (
                               <button onClick={e => deleteTemplate(t.id, e)}
                                 style={{ padding:'5px 10px', background:'var(--red-bg)', color:'var(--red)', border:'1px solid var(--red-border)', borderRadius:6, fontSize:11, fontWeight:700, cursor:'pointer' }}>
                                 🗑
@@ -1213,7 +1200,6 @@ function ServiceSheetsTab({ userRole }) {
   const [isSigning, setIsSigning] = useState(false);
   const [signatureData, setSignatureData] = useState('');
   const [builder, setBuilder] = useState({ name: '', description: '', service_type: '', sections: [], parts_template: [], labour_items: [], asset_ids: [] });
-  const [ssEditingTemplateId, setSsEditingTemplateId] = useState(null);
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [filters, setFilters] = useState({ search: '', asset: '', dateFrom: '', dateTo: '', tech: '' });
   const [form, setForm] = useState({ asset: '', technician: '', date: new Date().toISOString().split('T')[0], odometer: '', service_type: '', notes: '', responses: {}, parts: [{ name: '', qty: '', cost: '', part_id: null }], labour: [{ description: '', hours: '' }] });
@@ -1380,13 +1366,8 @@ function ServiceSheetsTab({ userRole }) {
 
   const saveTemplate = async () => {
     if (!builder.name) { alert('Please add a template name'); return; }
-    let error;
-    if (ssEditingTemplateId) {
-      ({ error } = await supabase.from('service_sheet_templates').update({ ...builder, company_id: userRole.company_id }).eq('id', ssEditingTemplateId));
-    } else {
-      ({ error } = await supabase.from('service_sheet_templates').insert([{ ...builder, company_id: userRole.company_id }]));
-    }
-    if (!error) { fetchTemplates(); setView('list'); setBuilder({ name:'', description:'', service_type:'', sections:[], parts_template:[], labour_items:[], asset_ids:[] }); setSsEditingTemplateId(null); setAiPreview(null); }
+    const { error } = await supabase.from('service_sheet_templates').insert([{ ...builder, company_id: userRole.company_id }]);
+    if (!error) { fetchTemplates(); setView('list'); setBuilder({ name: '', description: '', service_type: '', sections: [], parts_template: [], labour_items: [], asset_ids: [] }); setAiPreview(null); }
     else alert('Error: ' + error.message);
   };
 
@@ -1706,10 +1687,10 @@ function ServiceSheetsTab({ userRole }) {
       <div className="prestart">
         {showAI && <AIGeneratorModal mode="service" onClose={() => setShowAI(false)} onGenerated={handleAIGenerated} />}
         <div className="page-header">
-          <h2>{aiPreview ? 'AI Generated - Review and Edit' : ssEditingTemplateId ? 'Edit Service Sheet Template' : 'Service Sheet Builder'}</h2>
+          <h2>{aiPreview ? 'AI Generated - Review and Edit' : 'Service Sheet Builder'}</h2>
           <div style={{ display: 'flex', gap: '10px' }}>
             <button className="btn-primary" style={{ background: 'linear-gradient(135deg, #00c2e0, #0090a8)', color: '#000' }} onClick={() => setShowAI(true)}>Generate with AI</button>
-            <button className="btn-primary" onClick={() => { setView('list'); setAiPreview(null); setSsEditingTemplateId(null); setBuilder({ name:'', description:'', service_type:'', sections:[], parts_template:[], labour_items:[], asset_ids:[] }); }}>Back</button>
+            <button className="btn-primary" onClick={() => { setView('list'); setAiPreview(null); }}>Back</button>
           </div>
         </div>
         {aiPreview && <div style={{ background: 'var(--green-bg)', border: '1px solid #00c264', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}><p style={{ color: 'var(--green)', margin: 0, fontSize: '13px' }}>AI generated - review and edit before saving.</p></div>}
@@ -2061,12 +2042,6 @@ function ServiceSheetsTab({ userRole }) {
                                     </button>
                                   )}
                                   {isAdmin && (
-                                    <button onClick={() => { setBuilder({ name:t.name, description:t.description||'', service_type:t.service_type||'', sections:t.sections||[], parts_template:t.parts_template||[], labour_items:t.labour_items||[], asset_ids:t.asset_ids||[] }); setSsEditingTemplateId(t.id); setAiPreview(null); setView('builder'); }}
-                                      style={{ padding:'5px 12px', background:'var(--surface-2)', color:'var(--text-secondary)', border:'1px solid var(--border)', borderRadius:6, fontSize:11, fontWeight:700, cursor:'pointer', whiteSpace:'nowrap' }}>
-                                      ✏️ Edit
-                                    </button>
-                                  )}
-                                  {isAdmin && (
                                     <button onClick={e => deleteTemplate(t.id, e)}
                                       style={{ padding:'5px 10px', background:'var(--red-bg)', color:'var(--red)', border:'1px solid var(--red-border)', borderRadius:6, fontSize:11, fontWeight:700, cursor:'pointer' }}>
                                       🗑
@@ -2144,77 +2119,59 @@ function AssetFormsTab({ userRole }) {
 
     const isPrestart = type === 'prestart';
 
-    if (isPrestart) {
-      // ── Single prestart checklist ──────────────────────────────────────────
-      const prompt = `Generate a detailed prestart safety checklist for this piece of equipment: ${assetDesc}.
+    const prompt = isPrestart
+      ? `Generate a detailed prestart safety checklist for this piece of equipment: ${assetDesc}.
 Include relevant sections for: engine/fluid checks, safety systems, controls, tyres/undercarriage if applicable, lights, attachments, and any type-specific items.
 Return ONLY valid JSON:
-{"name":"${asset.name} Pre-Start Checklist","description":"Pre-operational safety and functionality inspection for ${asset.name}","sections":[{"title":"Section Name","items":[{"label":"Check item description","type":"check"}]}]}
-Use types: check, photo, number, text. Include 4-8 sections with 4-8 items each. No markdown, no explanation.`;
+{"name":"[Asset Name] Pre-Start Checklist","description":"Pre-operational safety and functionality inspection for ${asset.name}","sections":[{"title":"Section Name","items":[{"label":"Check item description","type":"check"}]}]}
+Use types: check, photo, number, text. Include 4-8 sections with 4-8 items each. No markdown, no explanation.`
+      : `Generate a detailed service sheet template for this piece of equipment: ${assetDesc}.
+Include relevant sections for: fluids & filters, mechanical inspection, electrical systems, safety systems, and any type-specific service items. Include parts and labour sections.
+Return ONLY valid JSON:
+{"name":"${asset.name} Service Sheet","description":"Scheduled maintenance service sheet for ${asset.name}","service_type":"Scheduled Service","sections":[{"title":"Section Name","items":[{"label":"Item description","type":"check"}]}],"parts_template":[{"description":"Part name","part_number":"","quantity":1,"unit":"each"}],"labour_items":[{"description":"Labour task","estimated_hours":1}]}
+No markdown, no explanation.`;
+
+    try {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 1000,
+          messages: [{ role: 'user', content: prompt }],
+        }),
+      });
+      const data = await res.json();
+      const text = (data.content || []).map(c => c.text || '').join('');
+      let parsed;
       try {
-        const text = await callAI([{ role: 'user', content: prompt }], 2000);
-        let parsed;
-        try { parsed = JSON.parse(text.replace(/```json|```/g, '').trim()); }
-        catch { showToast('AI returned invalid JSON — try again', 'error'); setGenerating(g => ({ ...g, [asset.id]: null })); return; }
-        const { error } = await supabase.from('form_templates').insert([{ ...parsed, company_id: userRole.company_id, asset_ids: [asset.id] }]);
-        if (error) showToast('Failed to save: ' + error.message, 'error');
-        else { showToast(`✓ Prestart generated and assigned to ${asset.name}`); await load(); setExpanded(e => ({ ...e, [asset.id]: true })); }
-      } catch (err) { showToast('Generation failed: ' + err.message, 'error'); }
-      setGenerating(g => ({ ...g, [asset.id]: null }));
-      return;
+        parsed = JSON.parse(text.replace(/```json|```/g, '').trim());
+      } catch {
+        showToast('AI returned invalid JSON — try again', 'error');
+        setGenerating(g => ({ ...g, [asset.id]: null }));
+        return;
+      }
+
+      // Save template and assign to this asset
+      const table = isPrestart ? 'form_templates' : 'service_sheet_templates';
+      const payload = {
+        ...parsed,
+        company_id: userRole.company_id,
+        asset_ids: [asset.id],
+      };
+      const { data: saved, error } = await supabase.from(table).insert([payload]).select().single();
+      if (error) {
+        showToast('Failed to save template: ' + error.message, 'error');
+      } else {
+        showToast(`✓ ${isPrestart ? 'Prestart' : 'Service sheet'} generated and assigned to ${asset.name}`);
+        await load();
+        setExpanded(e => ({ ...e, [asset.id]: true }));
+      }
+    } catch (err) {
+      showToast('Generation failed: ' + err.message, 'error');
     }
-
-    // ── Service Sheets: generate multiple (hourly intervals + annual) ─────────
-    const isMobile = /excavat|loader|dozer|grader|truck|vehicle|crane|ewp|scissor|telehandl|forklift|compactor|roller|paver/i.test(asset.type || '');
-    const isStationary = /generator|compressor|pump|welder|screen|crusher|conveyor/i.test(asset.type || '');
-
-    let schedules = [];
-    if (isMobile) {
-      schedules = [
-        { service_type: '250hr Service',   hours: 250,  scope: 'minor service — engine oil & filter, fuel filter check, greasing all points, visual safety inspection' },
-        { service_type: '500hr Service',   hours: 500,  scope: 'intermediate service — oil & all filters, hydraulic check, undercarriage/tyres inspection, safety systems, fluid levels' },
-        { service_type: '1000hr Service',  hours: 1000, scope: 'major service — all 500hr items plus hydraulic oil & filter change, coolant flush, drive belts, full structural inspection, load test' },
-        { service_type: 'Annual Inspection', hours: null, scope: 'annual compliance — all major service items plus load/function testing, certification checks, regulatory compliance inspection' },
-      ];
-    } else if (isStationary) {
-      schedules = [
-        { service_type: '250hr Service',   hours: 250,  scope: 'minor service — engine oil & filter change, air filter inspect, belts check, fuel system, running inspection' },
-        { service_type: '500hr Service',   hours: 500,  scope: 'intermediate service — all filters, coolant level, load test, fuel injectors, vibration check, safety shutdown test' },
-        { service_type: 'Annual Inspection', hours: null, scope: 'annual service — full overhaul inspection, coolant flush, belts & hoses replacement, load bank test, compliance certification' },
-      ];
-    } else {
-      schedules = [
-        { service_type: '500hr Service',   hours: 500,  scope: 'periodic service — fluid & filter change, mechanical inspection, safety systems check, greasing' },
-        { service_type: 'Annual Inspection', hours: null, scope: 'annual compliance inspection — full mechanical check, safety certification, operational test' },
-      ];
-    }
-
-    showToast(`Generating ${schedules.length} service sheets for ${asset.name}…`);
-    let generated = 0;
-
-    for (const sched of schedules) {
-      const prompt = `Generate a detailed service sheet for a ${sched.service_type} on this equipment: ${assetDesc}.
-Service scope: ${sched.scope}.${sched.hours ? ` This service is performed every ${sched.hours} operating hours.` : ' This is an annual calendar-based service.'}
-Include equipment-specific sections relevant to a ${sched.service_type}. Major services should be more comprehensive than minor ones.
-Include realistic parts with part numbers where known, and labour tasks with estimated hours.
-Return ONLY valid JSON — no markdown, no explanation:
-{"name":"${asset.name} — ${sched.service_type}","description":"${sched.service_type} for ${asset.name}","service_type":"${sched.service_type}","sections":[{"title":"Section Title","items":[{"label":"Task description","type":"check"}]}],"parts_template":[{"description":"Part name","part_number":"","quantity":1,"unit":"each"}],"labour_items":[{"description":"Labour task","estimated_hours":0.5}]}`;
-
-      try {
-        const text = await callAI([{ role: 'user', content: prompt }], 2500);
-        let parsed;
-        try { parsed = JSON.parse(text.replace(/```json|```/g, '').trim()); }
-        catch { showToast(`${sched.service_type}: invalid JSON — skipping`, 'error'); continue; }
-        const { error } = await supabase.from('service_sheet_templates').insert([{ ...parsed, company_id: userRole.company_id, asset_ids: [asset.id] }]);
-        if (error) { showToast(`Failed to save ${sched.service_type}: ` + error.message, 'error'); }
-        else { generated++; showToast(`✓ ${generated}/${schedules.length} — ${sched.service_type} created`); }
-      } catch (err) { showToast(`${sched.service_type} failed: ` + err.message, 'error'); }
-    }
-
-    if (generated > 0) { await load(); setExpanded(e => ({ ...e, [asset.id]: true })); }
     setGenerating(g => ({ ...g, [asset.id]: null }));
   };
-
 
   const unassign = async (asset, tmplId, type) => {
     const table = type === 'prestart' ? 'form_templates' : 'service_sheet_templates';

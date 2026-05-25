@@ -1,7 +1,6 @@
 // MechIQ Maintenance v2 - Calendar + Service Schedules
 import React, { useState, useEffect } from 'react';
 import { supabase } from './supabase';
-import Calendar from './Calendar';
 
 // ─── Timezone & date format helpers ───────────────────────────────────────────
 const getUserTz = () => localStorage.getItem('mechiq_timezone') || Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -205,7 +204,6 @@ function Maintenance({ userRole, initialTab, setCurrentPage }) {
   const [schedules, setSchedules] = useState([]);
   const [showScheduleForm, setShowScheduleForm] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
-  const [aiReviewModal, setAiReviewModal] = useState(null); // { suggestions, asset, rows }
   const [serviceTemplates, setServiceTemplates] = useState([]);
   const [newSchedule, setNewSchedule] = useState({ asset_id:'', asset_name:'', service_name:'', interval_type:'hours', interval_value:'', last_service_value:'', last_service_date:'', notes:'' });
   const [newTask, setNewTask] = useState({ asset:'', task:'', frequency:'', next_due:'', assigned_to:'' });
@@ -597,8 +595,10 @@ function Maintenance({ userRole, initialTab, setCurrentPage }) {
                         next_due_value: s.interval_value,
                         notes: s.notes || '',
                       }));
-                      // Show review modal instead of saving directly
-                      setAiReviewModal({ suggestions, asset, rows, assetName: newSchedule.asset_name });
+                      await supabase.from('service_schedules').insert(rows);
+                      fetchSchedules();
+                      setShowScheduleForm(false);
+                      alert(`✓ AI added ${rows.length} service schedules for ${newSchedule.asset_name}`);
                     }
                   }} disabled={aiLoading} style={{ padding:'9px 18px', background:'var(--surface-2)', color:'var(--accent)', border:'1px solid var(--accent)', borderRadius:8, fontSize:13, fontWeight:700, cursor:'pointer', opacity:aiLoading?0.5:1 }}>
                     {aiLoading ? '🤖 Loading…' : '🤖 AI Suggest All Services'}
@@ -670,122 +670,25 @@ function Maintenance({ userRole, initialTab, setCurrentPage }) {
       )}
 
 
-      {/* ── Calendar Tab ── */}
+      {/* ── Calendar Tab → now its own page ── */}
       {activeTab === 'calendar' && (
-        <Calendar userRole={userRole} />
+        <div style={{ padding: '40px 20px', textAlign: 'center' }}>
+          <div style={{ fontSize: 48, marginBottom: 16 }}>📅</div>
+          <div style={{ fontSize: 18, fontWeight: 800, color: 'var(--text-primary)', marginBottom: 8 }}>Calendar has moved</div>
+          <div style={{ fontSize: 14, color: 'var(--text-muted)', marginBottom: 24 }}>The maintenance calendar is now its own page in the sidebar.</div>
+          {setCurrentPage && (
+            <button
+              onClick={() => setCurrentPage('calendar')}
+              style={{ padding: '12px 28px', background: 'linear-gradient(135deg, var(--accent), #0090a8)', color: '#fff', border: 'none', borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: 'pointer' }}
+            >
+              Go to Calendar →
+            </button>
+          )}
+        </div>
       )}
 
     </div>
-
-      {/* ── AI Service Schedule Review Modal ── */}
-      {aiReviewModal && (
-        <AISuggestReviewModal
-          modal={aiReviewModal}
-          onClose={() => setAiReviewModal(null)}
-          onApply={async (approvedRows) => {
-            await supabase.from('service_schedules').insert(approvedRows);
-            fetchSchedules();
-            setShowScheduleForm(false);
-            setAiReviewModal(null);
-          }}
-        />
-      )}
     </>
-  );
-}
-
-// ─── AI Suggest Review Modal ──────────────────────────────────────────────────
-function AISuggestReviewModal({ modal, onClose, onApply }) {
-  const [accepted, setAccepted] = React.useState(() => {
-    const a = {};
-    modal.rows.forEach((_, i) => { a[i] = true; });
-    return a;
-  });
-  const [saving, setSaving] = React.useState(false);
-
-  const INTERVAL_COLORS = { hours:'var(--accent)', km:'#8b5cf6', months:'#16a34a', years:'#d97706' };
-
-  const apply = async () => {
-    setSaving(true);
-    const approved = modal.rows.filter((_, i) => accepted[i]);
-    await onApply(approved);
-    setSaving(false);
-  };
-
-  const approvedCount = Object.values(accepted).filter(Boolean).length;
-
-  return (
-    <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.6)', zIndex:500, display:'flex', alignItems:'center', justifyContent:'center', padding:20, backdropFilter:'blur(4px)' }}>
-      <div style={{ background:'var(--surface)', border:'1px solid var(--border)', borderRadius:16, width:'100%', maxWidth:680, maxHeight:'85vh', display:'flex', flexDirection:'column', boxShadow:'0 24px 60px rgba(0,0,0,0.3)' }}>
-
-        {/* Header */}
-        <div style={{ padding:'20px 24px 16px', borderBottom:'1px solid var(--border)', display:'flex', justifyContent:'space-between', alignItems:'center', flexShrink:0 }}>
-          <div>
-            <div style={{ fontSize:16, fontWeight:800, color:'var(--text-primary)' }}>🤖 AI Suggested Service Schedules</div>
-            <div style={{ fontSize:12, color:'var(--text-muted)', marginTop:3 }}>
-              Review suggested intervals for <strong style={{ color:'var(--accent)' }}>{modal.assetName}</strong> — tick to approve, untick to skip
-            </div>
-          </div>
-          <button onClick={onClose} style={{ background:'none', border:'none', fontSize:20, cursor:'pointer', color:'var(--text-muted)' }}>✕</button>
-        </div>
-
-        {/* Body */}
-        <div style={{ flex:1, overflowY:'auto', padding:20 }}>
-          <div style={{ display:'flex', gap:8, marginBottom:16 }}>
-            <button onClick={() => setAccepted(Object.fromEntries(modal.rows.map((_,i)=>[i,true])))}
-              style={{ padding:'5px 12px', background:'var(--accent-light)', color:'var(--accent)', border:'1px solid rgba(0,194,224,0.3)', borderRadius:6, fontSize:12, fontWeight:700, cursor:'pointer' }}>
-              Select All
-            </button>
-            <button onClick={() => setAccepted(Object.fromEntries(modal.rows.map((_,i)=>[i,false])))}
-              style={{ padding:'5px 12px', background:'var(--surface-2)', color:'var(--text-muted)', border:'1px solid var(--border)', borderRadius:6, fontSize:12, fontWeight:600, cursor:'pointer' }}>
-              Deselect All
-            </button>
-            <div style={{ marginLeft:'auto', fontSize:13, color:'var(--text-muted)', alignSelf:'center' }}>
-              <strong style={{ color:'var(--accent)' }}>{approvedCount}</strong> of {modal.rows.length} selected
-            </div>
-          </div>
-
-          {modal.rows.map((row, i) => {
-            const acc = accepted[i] !== false;
-            const col = INTERVAL_COLORS[row.interval_type] || 'var(--text-muted)';
-            return (
-              <div key={i} onClick={() => setAccepted(p => ({ ...p, [i]: !acc }))}
-                style={{ display:'flex', alignItems:'center', gap:14, padding:'13px 16px', borderRadius:10, border:`1px solid ${acc ? 'rgba(0,194,224,0.3)' : 'var(--border)'}`, background: acc ? 'var(--accent-light)' : 'var(--surface-2)', marginBottom:8, cursor:'pointer', transition:'all 0.15s', userSelect:'none' }}>
-                {/* Checkbox */}
-                <div style={{ width:20, height:20, borderRadius:5, border:`2px solid ${acc ? 'var(--accent)' : 'var(--border)'}`, background: acc ? 'var(--accent)' : '#fff', display:'flex', alignItems:'center', justifyContent:'center', fontSize:12, color:'#fff', flexShrink:0 }}>
-                  {acc ? '✓' : ''}
-                </div>
-                {/* Service name */}
-                <div style={{ flex:1 }}>
-                  <div style={{ fontWeight:700, color:'var(--text-primary)', fontSize:14 }}>{row.service_name}</div>
-                  {row.notes && <div style={{ fontSize:11, color:'var(--text-muted)', marginTop:2 }}>{row.notes}</div>}
-                </div>
-                {/* Interval badge */}
-                <div style={{ textAlign:'right', flexShrink:0 }}>
-                  <span style={{ padding:'4px 12px', borderRadius:20, fontSize:12, fontWeight:700, background:col+'18', color:col, border:`1px solid ${col}30` }}>
-                    Every {row.interval_value} {row.interval_type}
-                  </span>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Footer */}
-        <div style={{ padding:'14px 24px', borderTop:'1px solid var(--border)', display:'flex', justifyContent:'space-between', alignItems:'center', flexShrink:0 }}>
-          <div style={{ fontSize:13, color:'var(--text-muted)' }}>
-            {approvedCount === 0 ? 'Select at least one schedule to add' : `${approvedCount} schedule${approvedCount !== 1 ? 's' : ''} will be added to ${modal.assetName}`}
-          </div>
-          <div style={{ display:'flex', gap:8 }}>
-            <button onClick={onClose} style={{ padding:'9px 18px', background:'var(--surface-2)', color:'var(--text-secondary)', border:'1px solid var(--border)', borderRadius:8, fontSize:13, cursor:'pointer' }}>Cancel</button>
-            <button onClick={apply} disabled={saving || approvedCount === 0}
-              style={{ padding:'9px 22px', background: approvedCount === 0 ? 'var(--surface-2)' : 'var(--accent)', color: approvedCount === 0 ? 'var(--text-muted)' : '#fff', border:'none', borderRadius:8, fontSize:13, fontWeight:700, cursor: approvedCount === 0 ? 'not-allowed' : 'pointer', opacity: saving ? 0.6 : 1 }}>
-              {saving ? 'Adding…' : `✓ Add ${approvedCount} Schedule${approvedCount !== 1 ? 's' : ''}`}
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
   );
 }
 

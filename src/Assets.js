@@ -304,9 +304,6 @@ function UnitsTab({ userRole, onViewAsset, toast }) {
   const [editSaving, setEditSaving] = useState(false);
   const [serviceSheetAsset, setServiceSheetAsset] = useState(null);
   const [serviceTemplates, setServiceTemplates] = useState([]);
-  const [sortCol, setSortCol] = useState('name');
-  const [sortDir, setSortDir] = useState('asc');
-  const [ownerTab, setOwnerTab] = useState('all');
 
   useEffect(() => { if (userRole?.company_id) { fetchAssets(); fetchTemplates(); } }, [userRole]);
 
@@ -415,10 +412,7 @@ function UnitsTab({ userRole, onViewAsset, toast }) {
   const filtered = assets.filter(a => {
     const matchFilter = filter === 'All' || a.status === filter;
     const matchSearch = !search || a.name?.toLowerCase().includes(search.toLowerCase()) || a.asset_number?.toLowerCase().includes(search.toLowerCase()) || a.location?.toLowerCase().includes(search.toLowerCase());
-    const matchOwner = ownerTab === 'all'
-      || (ownerTab === 'owned' && (!a.ownership_type || a.ownership_type === 'owned'))
-      || (ownerTab === 'hired' && (a.ownership_type === 'dry_hire' || a.ownership_type === 'wet_hire'));
-    return matchFilter && matchSearch && matchOwner;
+    return matchFilter && matchSearch;
   });
 
   const counts = { Running: assets.filter(a => a.status === 'Running').length, Down: assets.filter(a => a.status === 'Down').length, Maintenance: assets.filter(a => a.status === 'Maintenance').length };
@@ -490,26 +484,6 @@ function UnitsTab({ userRole, onViewAsset, toast }) {
         />
       )}
 
-      {/* Ownership tabs */}
-      <div style={{ display:'flex', borderBottom:'1px solid var(--border)', marginBottom:20 }}>
-        {[
-          ['all',   'All Assets',    assets.length],
-          ['owned', 'Company Owned', assets.filter(a=>!a.ownership_type||a.ownership_type==='owned').length],
-          ['hired', 'Hired In',      assets.filter(a=>a.ownership_type==='dry_hire'||a.ownership_type==='wet_hire').length],
-        ].map(([id,label,cnt]) => (
-          <button key={id} onClick={()=>setOwnerTab(id)} style={{
-            padding:'9px 20px', border:'none', background:'transparent',
-            borderBottom: ownerTab===id ? '2px solid var(--accent)' : '2px solid transparent',
-            color: ownerTab===id ? 'var(--accent)' : 'var(--text-muted)',
-            fontWeight: ownerTab===id ? 700 : 500, fontSize:13, cursor:'pointer',
-            display:'flex', alignItems:'center', gap:7, fontFamily:'inherit', transition:'all 0.15s',
-          }}>
-            {label}
-            <span style={{ padding:'1px 7px', borderRadius:10, fontSize:11, fontWeight:700, background:ownerTab===id?'var(--accent-light)':'var(--surface-2)', color:ownerTab===id?'var(--accent)':'var(--text-muted)' }}>{cnt}</span>
-          </button>
-        ))}
-      </div>
-
       {/* Header bar */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
@@ -574,121 +548,30 @@ function UnitsTab({ userRole, onViewAsset, toast }) {
         </div>
       )}
 
-      {(() => {
-        const COLS = [
-          { id:'asset_number',   label:'Asset No.'   },
-          { id:'name',           label:'Name'        },
-          { id:'type',           label:'Type'        },
-          { id:'make',           label:'Make / Model'},
-          { id:'location',       label:'Location'    },
-          { id:'ownership_type', label:'Ownership'   },
-          { id:'status',         label:'Status'      },
-          { id:'hours',          label:'Hours'       },
-          { id:'created_at',     label:'Date Added'  },
-        ];
-        const OWN_LABELS = { owned:'Company Owned', dry_hire:'Dry Hire', wet_hire:'Wet Hire' };
-        const OWN_COLORS = { owned:'var(--green)', dry_hire:'var(--amber)', wet_hire:'#8b5cf6' };
-        const TYPE_ICONS = { Generator:'⚡', Compressor:'💨', Excavator:'🏗️', Vehicle:'🚛', Truck:'🚚', Welder:'🔧', Crane:'🏗️', EWP:'🦺', MSV:'🚌', default:'⚙️' };
-        const typeIcon = t => { const k = Object.keys(TYPE_ICONS).find(k => (t||'').toLowerCase().includes(k.toLowerCase())); return TYPE_ICONS[k]||TYPE_ICONS.default; };
-        const SC = { Running:'var(--green)', Down:'var(--red)', Maintenance:'var(--amber)', Active:'var(--green)', Standby:'#8b5cf6' };
-        const sortVal = (a, col) => {
-          if (col==='make') return ([a.make,a.model].filter(Boolean).join(' ')||'').toLowerCase();
-          if (col==='hours') return parseFloat(a.hours)||0;
-          if (col==='created_at') return a.created_at||'';
-          return (a[col]||'').toString().toLowerCase();
-        };
-        const toggleSort = col => { if(sortCol===col) setSortDir(d=>d==='asc'?'desc':'asc'); else { setSortCol(col); setSortDir('asc'); } };
-        const sorted = [...filtered].sort((a,b) => {
-          const av=sortVal(a,sortCol), bv=sortVal(b,sortCol);
-          return av<bv ? (sortDir==='asc'?-1:1) : av>bv ? (sortDir==='asc'?1:-1) : 0;
-        });
-
-        if (loading) return (
-          <div style={{ background:'var(--surface)', border:'1px solid var(--border)', borderRadius:12, overflow:'hidden' }}>
-            {[0,1,2,3,4,5].map(i=>(
-              <div key={i} style={{ display:'flex', gap:16, padding:'14px 18px', borderBottom:'1px solid var(--border)', alignItems:'center' }}>
-                <div style={{ width:36,height:36,borderRadius:8,background:'var(--surface-2)',flexShrink:0 }} />
-                <div style={{ flex:1 }}><div style={{ width:'40%',height:13,background:'var(--surface-2)',borderRadius:4,marginBottom:6 }}/><div style={{ width:'25%',height:10,background:'var(--surface-2)',borderRadius:4 }}/></div>
-                {[1,2,3,4,5].map(j=><div key={j} style={{ width:'9%',height:12,background:'var(--surface-2)',borderRadius:4 }} />)}
-              </div>
-            ))}
+      {/* Cards grid */}
+      {loading ? (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '16px' }}>
+          {[0,1,2,3,4,5].map(i => <AssetCardSkeleton key={i} />)}
+        </div>
+      ) : filtered.length === 0 ? (
+        <div style={{ textAlign: 'center', padding: '64px 20px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '16px' }}>
+          <div style={{ fontSize: '48px', marginBottom: '14px' }}>{search || filter !== 'All' ? '🔍' : '⚙️'}</div>
+          <div style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '6px', fontFamily:'var(--font-display)' }}>
+            {search ? 'No assets match your search' : filter !== 'All' ? `No ${filter} assets` : 'No assets yet'}
           </div>
-        );
-
-        if (filtered.length===0) return (
-          <div style={{ textAlign:'center',padding:'64px 20px',background:'var(--surface)',border:'1px solid var(--border)',borderRadius:16 }}>
-            <div style={{ fontSize:48,marginBottom:14 }}>{search||filter!=='All'?'🔍':'⚙️'}</div>
-            <div style={{ fontSize:16,fontWeight:700,color:'var(--text-primary)',marginBottom:6 }}>{search?'No assets match your search':filter!=='All'?`No ${filter} assets`:'No assets yet'}</div>
-            <div style={{ fontSize:13,color:'var(--text-muted)',maxWidth:280,margin:'0 auto' }}>{search||filter!=='All'?'Try adjusting your filters.':'Add your first asset or use Onboarding.'}</div>
+          <div style={{ fontSize: '13px', color: 'var(--text-muted)', maxWidth: '280px', margin: '0 auto' }}>
+            {search || filter !== 'All' ? 'Try adjusting your filters or search term.' : 'Add your first asset or use Onboarding to register equipment.'}
           </div>
-        );
-
-        return (
-          <div style={{ background:'var(--surface)', border:'1px solid var(--border)', borderRadius:12, overflow:'hidden' }}>
-            <table style={{ width:'100%', borderCollapse:'collapse', fontSize:13 }}>
-              <thead>
-                <tr style={{ background:'var(--surface-2)', borderBottom:'2px solid var(--border)' }}>
-                  {COLS.map(c=>(
-                    <th key={c.id} onClick={()=>toggleSort(c.id)}
-                      style={{ padding:'10px 14px', textAlign:'left', fontSize:10, fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.5px', cursor:'pointer', userSelect:'none', whiteSpace:'nowrap' }}>
-                      {c.label}<span style={{ marginLeft:4, opacity:sortCol===c.id?1:0.3 }}>{sortCol===c.id?(sortDir==='asc'?'↑':'↓'):'↕'}</span>
-                    </th>
-                  ))}
-                  <th style={{ padding:'10px 14px', textAlign:'right', fontSize:10, fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.5px' }}>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {sorted.map((asset,i)=>{
-                  const sc = SC[asset.status]||'var(--text-muted)';
-                  const oc = OWN_COLORS[asset.ownership_type]||OWN_COLORS.owned;
-                  return (
-                    <tr key={asset.id} onClick={()=>onViewAsset&&onViewAsset(asset.id)}
-                      style={{ borderBottom:i<sorted.length-1?'1px solid var(--border)':'none', cursor:'pointer', transition:'background 0.1s' }}
-                      onMouseEnter={e=>e.currentTarget.style.background='var(--surface-2)'}
-                      onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
-                      <td style={{ padding:'12px 14px' }}>
-                        <span style={{ fontFamily:'var(--font-mono)', fontSize:12, fontWeight:700, color:'var(--accent)' }}>{asset.asset_number||'—'}</span>
-                      </td>
-                      <td style={{ padding:'12px 14px' }}>
-                        <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-                          <div style={{ width:32,height:32,borderRadius:8,background:'var(--surface-2)',border:'1px solid var(--border)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:15,flexShrink:0 }}>{typeIcon(asset.type)}</div>
-                          <div>
-                            <div style={{ fontWeight:700,color:'var(--text-primary)',fontSize:13 }}>{asset.name}</div>
-                            {asset.type&&<div style={{ fontSize:11,color:'var(--text-muted)' }}>{asset.type}</div>}
-                          </div>
-                        </div>
-                      </td>
-                      <td style={{ padding:'12px 14px', color:'var(--text-secondary)', fontSize:12 }}>{asset.type||'—'}</td>
-                      <td style={{ padding:'12px 14px', color:'var(--text-secondary)', fontSize:12, maxWidth:160, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{[asset.make,asset.model].filter(Boolean).join(' ')||'—'}</td>
-                      <td style={{ padding:'12px 14px', color:'var(--text-secondary)', fontSize:12 }}>{asset.location||'—'}</td>
-                      <td style={{ padding:'12px 14px' }}>
-                        {asset.ownership_type&&asset.ownership_type!=='owned' ? (
-                          <span style={{ display:'inline-flex',alignItems:'center',gap:4,padding:'2px 9px',borderRadius:20,fontSize:10,fontWeight:700,background:oc+'18',color:oc,border:`1px solid ${oc}30`,whiteSpace:'nowrap' }}>
-                            {OWN_LABELS[asset.ownership_type]||asset.ownership_type}
-                          </span>
-                        ) : <span style={{ fontSize:11,color:'var(--text-faint)' }}>Owned</span>}
-                      </td>
-                      <td style={{ padding:'12px 14px' }}>
-                        <span style={{ display:'inline-flex',alignItems:'center',gap:5,padding:'3px 10px',borderRadius:20,fontSize:11,fontWeight:700,background:sc+'18',color:sc,border:`1px solid ${sc}30` }}>
-                          <span style={{ width:5,height:5,borderRadius:'50%',background:sc }} />{asset.status||'Active'}
-                        </span>
-                      </td>
-                      <td style={{ padding:'12px 14px', color:'var(--accent)', fontWeight:700, fontSize:13 }}>{asset.hours?Number(asset.hours).toLocaleString()+' hrs':'—'}</td>
-                      <td style={{ padding:'12px 14px', color:'var(--text-muted)', fontSize:12, whiteSpace:'nowrap' }}>{asset.created_at?new Date(asset.created_at).toLocaleDateString('en-AU',{day:'2-digit',month:'short',year:'numeric'}):'—'}</td>
-                      <td style={{ padding:'12px 14px', textAlign:'right' }} onClick={e=>e.stopPropagation()}>
-                        <div style={{ display:'flex',gap:6,justifyContent:'flex-end' }}>
-                          <button onClick={()=>onViewAsset&&onViewAsset(asset.id)} style={{ padding:'5px 12px',background:'var(--accent)',color:'#fff',border:'none',borderRadius:6,fontSize:11,fontWeight:700,cursor:'pointer',whiteSpace:'nowrap' }}>View →</button>
-                          <button onClick={()=>setPrintAsset(asset)} style={{ padding:'5px 10px',background:'var(--surface-2)',color:'var(--text-secondary)',border:'1px solid var(--border)',borderRadius:6,fontSize:11,fontWeight:700,cursor:'pointer' }} title="Print QR">📄</button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        );
-      })()}
+        </div>
+      ) : (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '16px' }}>
+          {filtered.map((asset, i) => (
+            <AssetCard key={asset.id} asset={asset} index={i}
+              onView={onViewAsset} onDelete={handleDelete} onQuickLog={handleQuickLog} onEdit={setEditAsset}
+              onQR={setPrintAsset} onServiceSheet={handleServiceSheet} userRole={userRole} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -1577,7 +1460,7 @@ function Assets({ userRole, onViewAsset, initialTab }) {
   const renderTab = () => {
     switch (activeTab) {
       case 'units':        return <UnitsTab userRole={userRole} onViewAsset={onViewAsset} toast={toast} />;
-      case 'onboarding':  window.dispatchEvent(new CustomEvent('mechiq-navigate', { detail: { page: 'onboarding' } })); return null;
+      case 'onboarding':  return <OnboardingTab userRole={userRole} onComplete={() => setActiveTab('units')} toast={toast} />;
       case 'depreciation':return <DepreciationTab userRole={userRole} />;
       case 'tracker':     return <TrackerPlaceholder userRole={userRole} />;
       default:            return <UnitsTab userRole={userRole} onViewAsset={onViewAsset} toast={toast} />;
@@ -1592,6 +1475,7 @@ function Assets({ userRole, onViewAsset, initialTab }) {
 
   const TABS = [
     { id:'units',       label:'Fleet Units',  icon:'🚛' },
+    { id:'onboarding',  label:'Onboarding',   icon:'➕' },
     { id:'depreciation',label:'Depreciation', icon:'📉' },
     { id:'tracker',     label:'Tracker',      icon:'📡' },
   ];
