@@ -764,29 +764,18 @@ function Login({ onAuth }) {
   const [busy,       setBusy]       = useState(false);
   const [policy,     setPolicy]     = useState(false);
   const [stayPrompt, setStayPrompt] = useState(null);
-  const [savedUser,  setSavedUser]  = useState(() => {
-    try {
-      const saved = JSON.parse(localStorage.getItem('mechiq_saved_user') || 'null');
-      if (!saved) return null;
-      // 24hr expiry
-      const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
-      if (Date.now() - (saved.savedAt || 0) > TWENTY_FOUR_HOURS) {
-        localStorage.removeItem('mechiq_saved_user');
-        return null;
+  const [autoRestoring, setAutoRestoring] = useState(true);
+
+  // Auto-restore persisted session on mount — no Welcome Back screen needed
+  React.useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      if (data?.session) {
+        onAuth(data.session); // silently log back in
+      } else {
+        setAutoRestoring(false); // show login form
       }
-      // Device fingerprint check — only show Welcome Back on the same device
-      if (saved.deviceFp) {
-        try {
-          const currentFp = getDeviceFingerprint();
-          if (saved.deviceFp !== currentFp) {
-            localStorage.removeItem('mechiq_saved_user');
-            return null;
-          }
-        } catch {}
-      }
-      return saved;
-    } catch { return null; }
-  });
+    });
+  }, []);
   const loginRef = useRef(null);
   const modulesRef = useRef(null);
 
@@ -824,15 +813,7 @@ function Login({ onAuth }) {
   const handleStayNo = () => {
     clearPersistedSession();
     onAuth(stayPrompt.session); setStayPrompt(null);
-  };
-  const handleContinueAsSaved = async () => {
-    const { data } = await supabase.auth.getSession();
-    if (data?.session) { onAuth(data.session); }
-    else { setEmail(savedUser.email); setSavedUser(null); localStorage.removeItem('mechiq_saved_user'); }
-  };
-  const handleSignInAsOther = () => {
-    clearPersistedSession(); setSavedUser(null); supabase.auth.signOut();
-  };
+  };;;
   const scroll = (ref) => ref.current?.scrollIntoView({ behavior:'smooth', block:'start' });
 
   return (
@@ -873,27 +854,7 @@ function Login({ onAuth }) {
       )}
 
       {/* ── Welcome Back ── */}
-      {savedUser && !stayPrompt && (
-        <div style={{ minHeight:'100vh', background:'linear-gradient(160deg,#060d17 0%,#0a1628 100%)', display:'flex', alignItems:'center', justifyContent:'center', padding:20, position:'relative', overflow:'hidden' }}>
-          <div style={{ position:'absolute', inset:0, backgroundImage:'radial-gradient(rgba(0,194,224,0.1) 1px,transparent 1px)', backgroundSize:'36px 36px', opacity:0.4, pointerEvents:'none' }} />
-          <div style={{ background:'rgba(10,22,40,0.9)', border:'1px solid rgba(0,194,224,0.2)', borderTop:'2px solid #00c2e0', borderRadius:16, padding:'48px 40px', width:'100%', maxWidth:380, textAlign:'center', backdropFilter:'blur(20px)', boxShadow:'0 0 60px rgba(0,194,224,0.08), 0 24px 60px rgba(0,0,0,0.5)', position:'relative', zIndex:1 }}>
-            <div style={{ fontFamily:'Space Grotesk,sans-serif', fontSize:20, fontWeight:700, color:'#fff', letterSpacing:'2px', marginBottom:32 }}>MECH<span style={{ color:'#00c2e0' }}>IQ</span></div>
-            <div style={{ width:72, height:72, borderRadius:'50%', background:'linear-gradient(135deg,#00c2e0,#0090a8)', display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 20px', fontSize:28, fontWeight:700, color:'#fff', boxShadow:'0 0 28px rgba(0,194,224,0.4)', fontFamily:'Space Grotesk,sans-serif' }}>
-              {(savedUser.name||'?')[0].toUpperCase()}
-            </div>
-            <div style={{ fontSize:12, color:'rgba(200,216,232,0.45)', marginBottom:4, letterSpacing:'0.5px' }}>WELCOME BACK</div>
-            <div style={{ fontSize:22, fontWeight:700, color:'#fff', marginBottom:4, fontFamily:'Space Grotesk,sans-serif' }}>{savedUser.name}</div>
-            <div style={{ fontSize:13, color:'rgba(200,216,232,0.4)', marginBottom:36 }}>{savedUser.email}</div>
-            <button onClick={handleContinueAsSaved} style={{ width:'100%', padding:'14px', background:'linear-gradient(135deg,#00c2e0,#0090a8)', border:'none', borderRadius:8, fontSize:14, fontWeight:700, color:'#fff', cursor:'pointer', marginBottom:10, fontFamily:'Inter,sans-serif', boxShadow:'0 0 24px rgba(0,194,224,0.3)' }}>Continue →</button>
-            <button onClick={handleSignInAsOther} style={{ width:'100%', padding:'12px', background:'transparent', border:'1px solid rgba(200,216,232,0.12)', borderRadius:8, fontSize:12, fontWeight:500, color:'rgba(200,216,232,0.5)', cursor:'pointer', fontFamily:'Inter,sans-serif' }}>
-              Sign in as someone else
-            </button>
-            <div style={{ fontSize:10, color:'rgba(200,216,232,0.2)', marginTop:20, lineHeight:1.6 }}>Not your device? Sign in as someone else to protect your account privacy.</div>
-          </div>
-        </div>
-      )}
-
-      {!savedUser && !stayPrompt && <>
+      
 
       {/* ── Nav ── */}
       <nav className="lp-nav">

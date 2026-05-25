@@ -366,7 +366,7 @@ function AccordionCards({ loading, assets, maint, wos, PCOLOR, StatusBadge }) {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 16 }}>
 
       {/* Breakdowns */}
-      <AccordionCard title="Current Breakdowns" count={breakdowns.length} color="var(--red)" bg="var(--red-bg)" border="var(--red-border)" icon="🔴" loading={loading} urgent={breakdowns.length > 0}>
+      <AccordionCard title="Current Breakdowns" count={breakdowns.length} color="var(--red)" bg="var(--red-bg)" border="var(--red-border)"  loading={loading} urgent={breakdowns.length > 0}>
         {breakdowns.length === 0 ? emptyRow('No breakdowns — all assets operational') :
           listTable(breakdowns, ['Asset','Number','Location'], (a, i) => (
             <tr key={a.id} style={{ borderBottom: '1px solid var(--border)' }}>
@@ -379,7 +379,7 @@ function AccordionCards({ loading, assets, maint, wos, PCOLOR, StatusBadge }) {
       </AccordionCard>
 
       {/* Service Due Today */}
-      <AccordionCard title="Service Due Today" count={dueToday.length} color="var(--accent)" bg="var(--accent-light)" border="rgba(14,165,233,0.3)" icon="📅" loading={loading}>
+      <AccordionCard title="Service Due Today" count={dueToday.length} color="var(--accent)" bg="var(--accent-light)" border="rgba(14,165,233,0.3)"  loading={loading}>
         {dueToday.length === 0 ? emptyRow('Nothing due today') :
           listTable(dueToday, ['Asset','Service','Assigned'], (m, i) => (
             <tr key={m.id} style={{ borderBottom: '1px solid var(--border)' }}>
@@ -392,7 +392,7 @@ function AccordionCards({ loading, assets, maint, wos, PCOLOR, StatusBadge }) {
       </AccordionCard>
 
       {/* Overdue Services */}
-      <AccordionCard title="Overdue Services" count={overdue.length} color="var(--amber)" bg="var(--amber-bg)" border="var(--amber-border)" icon="⚠️" loading={loading} urgent={overdue.length > 0}>
+      <AccordionCard title="Overdue Services" count={overdue.length} color="var(--amber)" bg="var(--amber-bg)" border="var(--amber-border)"  loading={loading} urgent={overdue.length > 0}>
         {overdue.length === 0 ? emptyRow('All services on schedule') :
           listTable(overdue, ['Asset','Service','Due'], (m, i) => (
             <tr key={m.id} style={{ borderBottom: '1px solid var(--border)' }}>
@@ -405,7 +405,7 @@ function AccordionCards({ loading, assets, maint, wos, PCOLOR, StatusBadge }) {
       </AccordionCard>
 
       {/* Priority Jobs */}
-      <AccordionCard title="Priority Jobs" count={priority.length} color="var(--red)" bg="var(--red-bg)" border="var(--red-border)" icon="🔥" loading={loading} urgent={priority.length > 0}>
+      <AccordionCard title="Priority Jobs" count={priority.length} color="var(--red)" bg="var(--red-bg)" border="var(--red-border)"  loading={loading} urgent={priority.length > 0}>
         {priority.length === 0 ? emptyRow('No critical or high priority jobs') :
           listTable(priority, ['Job','Asset','Priority','Status'], (w, i) => {
             const pc = PCOLOR[w.priority] || 'var(--text-muted)';
@@ -429,18 +429,19 @@ function AccordionCards({ loading, assets, maint, wos, PCOLOR, StatusBadge }) {
 
 /* ── Widget Definitions ── */
 const WIDGET_DEFS = [
-  { id:'prestart_kpi',   label:'Prestart KPIs',        icon:'📋', defaultSize:'wide', desc:'Daily prestart completion per machine with missing prestart alerts' },
-  { id:'service_kpi',    label:'Service KPIs',         icon:'🔧', defaultSize:'wide', desc:'Service schedule status — overdue, due soon, completed' },
-  { id:'fleet_health',   label:'Fleet Health',         icon:'🚛', defaultSize:'lg',  desc:'Overall fleet status bar' },
-  { id:'breakdowns',     label:'Breakdowns',           icon:'🔴', defaultSize:'md',  desc:'Current down machines' },
-  { id:'overdue',        label:'Overdue Services',     icon:'⚠️', defaultSize:'md',  desc:'Services past due date' },
-  { id:'due_today',      label:'Service Due Today',    icon:'📅', defaultSize:'md',  desc:'Services due today' },
-  { id:'priority_wos',  label:'Priority Work Orders', icon:'🔥', defaultSize:'md',  desc:'Critical and high priority jobs' },
-  { id:'oil_sampling',  label:'Oil Sampling',         icon:'🧪', defaultSize:'md',  desc:'Overdue samples and high alerts' },
-  { id:'parts_stock',   label:'Parts Low Stock',      icon:'🔩', defaultSize:'sm',  desc:'Parts below minimum stock level' },
-  { id:'downtime_summary',label:'Downtime Summary',   icon:'📉', defaultSize:'sm',  desc:'Hours lost this month' },
-  { id:'calendar_preview',label:'Calendar Preview',   icon:'📆', defaultSize:'lg',  desc:'Next 7 days of scheduled services' },
-  { id:'messages',      label:'Messages',             icon:'💬', defaultSize:'sm',  desc:'Unread messages and recent activity' },
+  { id:'kpi_strip',      label:'KPI Strip',            icon:'', defaultSize:'lg',  desc:'Total Fleet, Active, Down, Overdue, Open WOs' },
+  { id:'prestart_kpi',   label:'Prestart KPIs',        icon:defaultSize:'wide', desc:'Daily prestart completion per machine with missing prestart alerts' },
+  { id:'service_kpi',    label:'Service KPIs',         icon:defaultSize:'wide', desc:'Service schedule status — overdue, due soon, completed' },
+  { id:'fleet_health',   label:'Fleet Health',         icon:defaultSize:'lg',  desc:'Overall fleet status bar' },
+  { id:'breakdowns',     label:'Breakdowns',           icon:defaultSize:'md',  desc:'Current down machines' },
+  { id:'overdue',        label:'Overdue Services',     icon:defaultSize:'md',  desc:'Services past due date' },
+  { id:'due_today',      label:'Service Due Today',    icon:defaultSize:'md',  desc:'Services due today' },
+  { id:'priority_wos',  label:'Priority Work Orders', icon:defaultSize:'md',  desc:'Critical and high priority jobs' },
+  { id:'oil_sampling',  label:'Oil Sampling',         icon:defaultSize:'md',  desc:'Overdue samples and high alerts' },
+  { id:'parts_stock',   label:'Parts Low Stock',      icon:defaultSize:'sm',  desc:'Parts below minimum stock level' },
+  { id:'downtime_summary',label:'Downtime Summary',   icon:defaultSize:'sm',  desc:'Hours lost this month' },
+  { id:'calendar_preview',label:'Calendar Preview',   icon:defaultSize:'lg',  desc:'Next 7 days of scheduled services' },
+  { id:'messages',      label:'Messages',             icon:defaultSize:'sm',  desc:'Unread messages and recent activity' },
 ];
 
 const DEFAULT_LAYOUT = WIDGET_DEFS.map(w => ({ id:w.id, enabled:true, size:w.defaultSize }));
@@ -573,7 +574,7 @@ function WidgetFleetHealth({ assets, loading, onRemove }) {
   if (loading) return <div className="widget-card widget-lg"><Sk h="60px" /></div>;
   const total = assets.length, running = assets.filter(a=>a.status==='Running').length, down = assets.filter(a=>a.status==='Down').length, maint = assets.filter(a=>a.status==='Maintenance').length;
   return (
-    <ExpandableWidget sizeClass="widget-lg" title="Fleet Health" onRemove={onRemove} icon="🚛" count={total} countColor="var(--accent)" countSize={16} summary={`${running} running · ${down} down`} defaultOpen={true}>
+    <ExpandableWidget sizeClass="widget-lg" title="Fleet Health" onRemove={onRemove}  count={total} countColor="var(--accent)" countSize={16} summary={`${running} running · ${down} down`} defaultOpen={true}>
       <FleetHealthBar running={running} down={down} maintenance={maint} total={total} />
       <div style={{ marginTop:12, display:'flex', flexDirection:'column', gap:6 }}>
         {assets.map(a => {
@@ -600,7 +601,7 @@ function WidgetFleetHealth({ assets, loading, onRemove }) {
 function WidgetBreakdowns({ assets, loading, size, onRemove }) {
   const breakdowns = assets.filter(a => a.status === 'Down');
   return (
-    <ExpandableWidget sizeClass={`widget-${size}`} title="Breakdowns" onRemove={onRemove} icon="🔴" count={loading?'—':breakdowns.length} countColor="var(--red)" summary={breakdowns[0]?.name}>
+    <ExpandableWidget sizeClass={`widget-${size}`} title="Breakdowns" onRemove={onRemove}  count={loading?'—':breakdowns.length} countColor="var(--red)" summary={breakdowns[0]?.name}>
       {!loading && breakdowns.length === 0 && <div style={{ fontSize:12, color:'var(--green)', fontWeight:600 }}>✓ All machines running</div>}
       {!loading && breakdowns.map(a => (
         <div key={a.id} style={{ padding:'8px 10px', borderRadius:8, background:'var(--red-bg)', border:'1px solid var(--red-border)', marginBottom:6 }}>
@@ -620,7 +621,7 @@ function WidgetBreakdowns({ assets, loading, size, onRemove }) {
 function WidgetOverdue({ maint, loading, size, onRemove, onDrillDown }) {
   const overdue = maint.filter(m => m.status === 'Overdue');
   return (
-    <ExpandableWidget sizeClass={`widget-${size}`} title="Overdue Services" onRemove={onRemove} icon="⚠️" count={loading?'—':overdue.length} countColor="var(--amber)" summary={overdue[0]?.asset}>
+    <ExpandableWidget sizeClass={`widget-${size}`} title="Overdue Services" onRemove={onRemove}  count={loading?'—':overdue.length} countColor="var(--amber)" summary={overdue[0]?.asset}>
       {!loading && overdue.length === 0 && <div style={{ fontSize:12, color:'var(--green)', fontWeight:600 }}>✓ No overdue services</div>}
       {!loading && overdue.map(m => (
         <div key={m.id} style={{ padding:'8px 10px', borderRadius:8, background:'var(--amber-bg)', border:'1px solid var(--amber-border)', marginBottom:6 }}>
@@ -637,7 +638,7 @@ function WidgetDueToday({ maint, loading, size, onRemove, onDrillDown }) {
   const today = new Date().toISOString().split('T')[0];
   const dueToday = maint.filter(m => m.next_due === today || m.status === 'Due Soon');
   return (
-    <ExpandableWidget sizeClass={`widget-${size}`} title="Due Today" onRemove={onRemove} icon="📅" count={loading?'—':dueToday.length} countColor="var(--accent)" summary={dueToday[0]?.asset}>
+    <ExpandableWidget sizeClass={`widget-${size}`} title="Due Today" onRemove={onRemove}  count={loading?'—':dueToday.length} countColor="var(--accent)" summary={dueToday[0]?.asset}>
       {!loading && dueToday.length === 0 && <div style={{ fontSize:12, color:'var(--text-muted)' }}>Nothing due today</div>}
       {!loading && dueToday.map(m => (
         <div key={m.id} style={{ padding:'8px 10px', borderRadius:8, background:'var(--accent-light)', border:'1px solid rgba(14,165,233,0.2)', marginBottom:6 }}>
@@ -653,7 +654,7 @@ function WidgetDueToday({ maint, loading, size, onRemove, onDrillDown }) {
 function WidgetPriorityWOs({ wos, loading, size, onRemove, onDrillDown }) {
   const priority = wos.filter(w => w.priority === 'Critical' || w.priority === 'High');
   return (
-    <ExpandableWidget sizeClass={`widget-${size}`} title="Priority Jobs" onRemove={onRemove} icon="🔥" count={loading?'—':priority.length} countColor="var(--red)" summary={priority[0]?.asset}>
+    <ExpandableWidget sizeClass={`widget-${size}`} title="Priority Jobs" onRemove={onRemove}  count={loading?'—':priority.length} countColor="var(--red)" summary={priority[0]?.asset}>
       {!loading && priority.length === 0 && <div style={{ fontSize:12, color:'var(--green)', fontWeight:600 }}>✓ No critical jobs</div>}
       {!loading && priority.map(w => {
         const c = w.priority==='Critical'?'var(--red)':'var(--amber)';
@@ -682,7 +683,7 @@ function WidgetOilSampling({ companyId, size, onRemove }) {
   }, [companyId]);
   const alerts = samples.filter(s => s.ai_condition === 'CRITICAL' || s.ai_condition === 'WARNING');
   return (
-    <ExpandableWidget sizeClass={`widget-${size}`} title="Oil Sampling" onRemove={onRemove} icon="🧪" count={loading?'—':alerts.length} countColor={alerts.length>0?'var(--red)':'var(--green)'} summary={alerts[0]?.asset_name}>
+    <ExpandableWidget sizeClass={`widget-${size}`} title="Oil Sampling" onRemove={onRemove}  count={loading?'—':alerts.length} countColor={alerts.length>0?'var(--red)':'var(--green)'} summary={alerts[0]?.asset_name}>
       {!loading && alerts.length === 0 && <div style={{ fontSize:12, color:'var(--green)', fontWeight:600 }}>✓ All oil samples normal</div>}
       {!loading && alerts.map(s => {
         const c = s.ai_condition==='CRITICAL'?'var(--red)':'var(--amber)';
@@ -712,7 +713,7 @@ function WidgetPartsStock({ companyId, size, onRemove }) {
       .then(({ data }) => { setParts((data||[]).filter(p => p.quantity <= p.min_quantity)); setLoading(false); });
   }, [companyId]);
   return (
-    <ExpandableWidget sizeClass={`widget-${size}`} title="Low Stock Parts" onRemove={onRemove} icon="🔩" count={loading?'—':parts.length} countColor={parts.length>0?'var(--amber)':'var(--green)'} summary={parts[0]?.name}>
+    <ExpandableWidget sizeClass={`widget-${size}`} title="Low Stock Parts" onRemove={onRemove}  count={loading?'—':parts.length} countColor={parts.length>0?'var(--amber)':'var(--green)'} summary={parts[0]?.name}>
       {!loading && parts.length === 0 && <div style={{ fontSize:12, color:'var(--green)', fontWeight:600 }}>✓ All parts adequately stocked</div>}
       {!loading && parts.map(p => {
         const c = p.quantity===0?'var(--red)':'var(--amber)';
@@ -740,7 +741,7 @@ function WidgetDowntimeSummary({ companyId, size, onRemove }) {
       .then(({ data }) => { setHours((data||[]).reduce((s,d) => s + (parseFloat(d.hours)||0), 0)); setLoading(false); });
   }, [companyId]);
   return (
-    <ExpandableWidget sizeClass={`widget-${size}`} title="Downtime This Month" onRemove={onRemove} icon="📉" summary={loading?'':`${hours?.toFixed(1)} hrs lost`}>
+    <ExpandableWidget sizeClass={`widget-${size}`} title="Downtime This Month" onRemove={onRemove}  summary={loading?'':`${hours?.toFixed(1)} hrs lost`}>
       <div style={{ fontSize:36, fontWeight:900, color:'var(--red)', fontFamily:'var(--font-display)' }}>{loading ? '—' : hours?.toFixed(1)}<span style={{ fontSize:14, fontWeight:600, color:'var(--text-muted)', marginLeft:4 }}>hrs</span></div>
       {!loading && <div style={{ fontSize:12, color:'var(--text-muted)', marginTop:4 }}>Lost to unplanned downtime in {new Date().toLocaleString('default',{month:'long'})}</div>}
     </ExpandableWidget>
@@ -767,7 +768,7 @@ function WidgetCalendarPreview({ companyId, size, onRemove }) {
     });
   }, [companyId]);
   return (
-    <ExpandableWidget sizeClass={`widget-${size}`} title="Next 7 Days" icon="📆" count={loading?'—':events.length} countColor="var(--accent)" countSize={16} summary={events[0]?.label?.slice(0,30)}>
+    <ExpandableWidget sizeClass={`widget-${size}`} title="Next 7 Days"  onRemove={onRemove} count={loading?'—':events.length} countColor="var(--accent)" countSize={16} summary={events[0]?.label?.slice(0,30)}>
       {loading ? <Sk h="80px" /> : events.length === 0 ? <div style={{ fontSize:12, color:'var(--text-muted)' }}>Nothing scheduled in the next 7 days</div> : (
         events.map((ev, i) => (
           <div key={i} style={{ display:'flex', gap:10, padding:'8px 10px', borderRadius:8, background:'var(--surface-2)', border:'1px solid var(--border)', marginBottom:6, alignItems:'center' }}>
@@ -791,7 +792,7 @@ function WidgetMessages({ companyId, size, onRemove }) {
   }, [companyId]);
   const ago = ts => { if(!ts)return''; const m=Math.floor((Date.now()-new Date(ts))/60000); if(m<60)return`${m}m ago`; if(m<1440)return`${Math.floor(m/60)}h ago`; return`${Math.floor(m/1440)}d ago`; };
   return (
-    <ExpandableWidget sizeClass={`widget-${size}`} title="Messages" icon="💬" count={loading?'—':msgs.length} countColor="var(--accent)" countSize={16}>
+    <ExpandableWidget sizeClass={`widget-${size}`} title="Messages" onRemove={onRemove}  count={loading?'—':msgs.length} countColor="var(--accent)" countSize={16}>
       {loading ? <Sk h="60px" /> : msgs.length === 0 ? <div style={{ fontSize:12, color:'var(--text-muted)' }}>No recent messages</div> : (
         msgs.map(m => (
           <div key={m.id} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'8px 10px', borderRadius:8, background:'var(--surface-2)', border:'1px solid var(--border)', marginBottom:6 }}>
@@ -807,7 +808,7 @@ function WidgetMessages({ companyId, size, onRemove }) {
 /* ── Main Dashboard ── */
 
 // ─── KPI: Prestart Summary Widget ────────────────────────────────────────────
-function WidgetPrestartKPI({ companyId, loading }) {
+function WidgetPrestartKPI({ companyId, loading, onRemove, onDrillDown }) {
   const [data,        setData]        = React.useState(null);
   const [viewPrestart,setViewPrestart]= React.useState(null);
   const today = new Date().toISOString().split('T')[0];
@@ -849,7 +850,7 @@ function WidgetPrestartKPI({ companyId, loading }) {
 
   if (loading || !data) return (
     <div className="dash-widget" style={{ gridColumn:'span 2' }}>
-      <div className="dw-header"><div className="dw-title">📋 Prestart KPIs</div></div>
+      <div className="dw-header"><div className="dw-title">Prestart KPIs</div></div>
       <div style={{color:'var(--text-muted)',fontSize:13,padding:'20px 0'}}>Loading…</div>
     </div>
   );
@@ -866,7 +867,7 @@ function WidgetPrestartKPI({ companyId, loading }) {
           className="widget-remove-btn">×</button>
       )}
       <div className="dw-header">
-        <div className="dw-title">📋 Prestart KPIs — Today</div>
+        <div className="dw-title">Prestart KPIs — Today</div>
         <div style={{ fontSize:11, color:'var(--text-muted)' }}>{today}</div>
       </div>
 
@@ -874,9 +875,9 @@ function WidgetPrestartKPI({ companyId, loading }) {
       <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:10, marginBottom:18 }}>
         {[
           { label:'Completed',   val:data.completed, color:'var(--green)',  rows: data.perMachine.filter(m=>m.todayCount>0).map(m=>[m.asset_number?`${m.asset_number} — ${m.name}`:m.name, `${m.todayCount} prestart${m.todayCount>1?'s':''}`, m.hours?.toLocaleString()+' hrs']), cols:['Asset','Prestarts','Hours'], title:'Completed Today', icon:'✓', dd:'var(--green)' },
-          { label:'Total Units', val:data.total,     color:'var(--accent)', rows: data.perMachine.map(m=>[m.asset_number?`${m.asset_number} — ${m.name}`:m.name, m.todayCount>0?`✓ ${m.todayCount} done`:m.missingToday?'⚠ Missing':'—', m.hours?.toLocaleString()+' hrs']), cols:['Asset','Today','Hours'], title:'All Units', icon:'🚛', dd:'var(--accent)' },
+          { label:'Total Units', val:data.total,     color:'var(--accent)', rows: data.perMachine.map(m=>[m.asset_number?`${m.asset_number} — ${m.name}`:m.name, m.todayCount>0?`✓ ${m.todayCount} done`:m.missingToday?'⚠ Missing':'—', m.hours?.toLocaleString()+' hrs']), cols:['Asset','Today','Hours'], title:'All Units', icon:'', dd:'var(--accent)' },
           { label:'Missing',     val:data.missing,   color:data.missing>0?'var(--red)':'var(--green)', rows: data.perMachine.filter(m=>m.missingToday).map(m=>[m.asset_number?`${m.asset_number} — ${m.name}`:m.name, `${Math.round(m.hrsDiff)} hrs since last`, m.hours?.toLocaleString()+' hrs']), cols:['Asset','Time Since Last','Hours'], title:'Missing Prestarts', icon:'⚠', dd:'var(--red)', emptyMsg:'No missing prestarts today ✓' },
-          { label:'Defects',     val:data.defects,   color:data.defects>0?'var(--amber)':'var(--green)', rows: data.perMachine.filter(m=>m.todayPs?.some(p=>p.defects_found)).map(m=>[m.asset_number?`${m.asset_number} — ${m.name}`:m.name, `${m.todayPs.filter(p=>p.defects_found).length} defect${m.todayPs.filter(p=>p.defects_found).length>1?'s':''}`, m.hours?.toLocaleString()+' hrs']), cols:['Asset','Defects','Hours'], title:'Defects Found Today', icon:'🔴', dd:'var(--amber)', emptyMsg:'No defects found today ✓' },
+          { label:'Defects',     val:data.defects,   color:data.defects>0?'var(--amber)':'var(--green)', rows: data.perMachine.filter(m=>m.todayPs?.some(p=>p.defects_found)).map(m=>[m.asset_number?`${m.asset_number} — ${m.name}`:m.name, `${m.todayPs.filter(p=>p.defects_found).length} defect${m.todayPs.filter(p=>p.defects_found).length>1?'s':''}`, m.hours?.toLocaleString()+' hrs']), cols:['Asset','Defects','Hours'], title:'Defects Found Today', icon:'', dd:'var(--amber)', emptyMsg:'No defects found today ✓' },
         ].map(({ label, val, color, rows, cols, title, icon, dd, emptyMsg }) => (
           <div key={label}
             onClick={() => onDrillDown && onDrillDown({ title, icon, color:dd, columns:cols, rows, emptyMsg })}
@@ -988,7 +989,7 @@ function WidgetServiceKPI({ companyId, loading, onRemove, onDrillDown }) {
 
   return (
     <div className="dash-widget" style={{ gridColumn:'span 2' }}>
-      <div className="dw-header"><div className="dw-title">🔧 Service Schedule KPIs</div></div>
+      <div className="dw-header"><div className="dw-title">Service Schedule KPIs</div></div>
 
       <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:10, marginBottom:18 }}>
         {[
@@ -1115,6 +1116,7 @@ function Dashboard({ companyId, userRole }) {
   const A = { cyan:'var(--accent)', red:'var(--red)', amber:'var(--amber)', green:'var(--green)' };
 
   const WIDGET_COMPONENTS = {
+    kpi_strip:        (w) => null, // rendered separately in hero strip
     fleet_health:     (w) => <WidgetFleetHealth key={w.id} assets={assets} loading={loading} onRemove={w.onRemove} />,
     breakdowns:       (w) => <WidgetBreakdowns key={w.id} assets={assets} loading={loading} size={w.size} onRemove={w.onRemove} />,
     overdue:          (w) => <WidgetOverdue key={w.id} maint={maint} loading={loading} size={w.size} onRemove={w.onRemove} onDrillDown={setDrillDown} />,
@@ -1159,7 +1161,7 @@ function Dashboard({ companyId, userRole }) {
               </button>
             )}
             <button onClick={() => setShowCustomise(true)} style={{ padding:'7px 14px', background:'var(--surface)', border:'1px solid var(--border)', borderRadius:8, cursor:'pointer', fontSize:12, fontWeight:600, color:'var(--text-secondary)', display:'flex', alignItems:'center', gap:6 }}>
-              ⚙️ Customise
+              Customise
             </button>
             <button className="refresh-btn" onClick={() => load(true)} disabled={refreshing}>
               <span style={{ display:'inline-block', animation:refreshing?'spin 0.8s linear infinite':'none' }}>↻</span>
@@ -1169,12 +1171,13 @@ function Dashboard({ companyId, userRole }) {
         </div>
 
         {/* ── Hero KPI Strip ── */}
+        {layout.find(w=>w.id==='kpi_strip')?.enabled !== false && (
         <div style={{ display:'grid', gridTemplateColumns:'repeat(5,1fr)', gap:12, marginBottom:20 }}>
           {[
             {
-              label:'Total Fleet', value: assets.length, color:'var(--accent)', icon:'🚛', sub:'registered assets',
+              label:'Total Fleet', value: assets.length, color:'var(--accent)', sub:'registered assets',
               onClick: () => setDrillDown({
-                title:'All Fleet Assets', icon:'🚛', color:'var(--accent)',
+                title:'All Fleet Assets', icon:'', color:'var(--accent)',
                 columns:['Asset','Type','Status','Location','Hours'],
                 rows: assets.map(a => [a.asset_number ? `${a.asset_number} — ${a.name}` : a.name, a.type||'—', a.status||'—', a.location||'—', a.hours ? a.hours.toLocaleString()+' hrs' : '—']),
               }),
@@ -1182,33 +1185,33 @@ function Dashboard({ companyId, userRole }) {
             {
               label:'Active', value: activeCount, color:'var(--green)', icon:'✓', sub:'operational now',
               onClick: () => setDrillDown({
-                title:'Active Assets', icon:'✓', color:'var(--green)',
+                title:'Active Assets', icon:'', color:'var(--green)',
                 columns:['Asset','Type','Location','Hours'],
                 rows: assets.filter(a=>/running|active/i.test(a.status||'')).map(a => [a.asset_number ? `${a.asset_number} — ${a.name}` : a.name, a.type||'—', a.location||'—', a.hours ? a.hours.toLocaleString()+' hrs' : '—']),
               }),
             },
             {
-              label:'Down', value: downCount, color: downCount>0?'var(--red)':'var(--text-muted)', icon:'⬇', sub:'offline / breakdown', urgent: downCount>0,
+              label:'Down', value: downCount, color: downCount>0?'var(--red)':'var(--text-muted)', sub:'offline / breakdown', urgent: downCount>0,
               onClick: () => setDrillDown({
-                title:'Assets Down', icon:'⬇', color:'var(--red)',
+                title:'Assets Down', icon:'', color:'var(--red)',
                 columns:['Asset','Type','Status','Location','Hours'],
                 rows: assets.filter(a=>/down|offline|breakdown/i.test(a.status||'')).map(a => [a.asset_number ? `${a.asset_number} — ${a.name}` : a.name, a.type||'—', a.status||'—', a.location||'—', a.hours ? a.hours.toLocaleString()+' hrs' : '—']),
                 emptyMsg: 'No assets currently down 👍',
               }),
             },
             {
-              label:'Overdue Svc', value: overdueCount, color: overdueCount>0?'var(--red)':'var(--text-muted)', icon:'⚠', sub:'services past due', urgent: overdueCount>0,
+              label:'Overdue Svc', value: overdueCount, color: overdueCount>0?'var(--red)':'var(--text-muted)', sub:'services past due', urgent: overdueCount>0,
               onClick: () => setDrillDown({
-                title:'Overdue Services', icon:'⚠', color:'var(--red)',
+                title:'Overdue Services', icon:'', color:'var(--red)',
                 columns:['Asset','Service','Due','Interval','Status'],
                 rows: maint.filter(m=>/overdue/i.test(m.status||'')).map(m => [m.asset||m.asset_name||'—', m.task||m.service_name||'—', m.next_due||m.due_date||'—', m.interval_value ? `Every ${m.interval_value} ${m.interval_type||'hrs'}` : '—', m.status||'—']),
                 emptyMsg: 'No overdue services ✓',
               }),
             },
             {
-              label:'Open WOs', value: openWOCount, color: openWOCount>0?'var(--amber)':'var(--text-muted)', icon:'🔧', sub:'work orders open', warn: openWOCount>0,
+              label:'Open WOs', value: openWOCount, color: openWOCount>0?'var(--amber)':'var(--text-muted)', sub:'work orders open', warn: openWOCount>0,
               onClick: () => setDrillDown({
-                title:'Open Work Orders', icon:'🔧', color:'var(--amber)',
+                title:'Open Work Orders', icon:'', color:'var(--amber)',
                 columns:['Title','Asset','Priority','Status','Created'],
                 rows: wos.map(w => [w.title||w.defect_description||'—', w.asset||'—', w.priority||'—', w.status||'—', w.created_at ? new Date(w.created_at).toLocaleDateString('en-AU') : '—']),
                 emptyMsg: 'No open work orders ✓',
@@ -1220,13 +1223,14 @@ function Dashboard({ companyId, userRole }) {
               style={{ borderTop:`3px solid ${k.color}`, cursor:'pointer', userSelect:'none' }}>
               <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:10 }}>
                 <div style={{ fontSize:10, fontWeight:800, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.8px' }}>{k.label}</div>
-                <div style={{ fontSize:18, opacity:0.6 }}>{k.icon}</div>
+                
               </div>
               <div style={{ fontSize:32, fontWeight:900, color:k.color, lineHeight:1, marginBottom:4, animation:'countUp 0.4s ease' }}>{loading ? '—' : k.value}</div>
               <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
                 <div style={{ fontSize:11, color:'var(--text-faint)' }}>{k.sub}</div>
                 <div style={{ fontSize:9, color:'var(--text-faint)', fontWeight:600, letterSpacing:'0.5px', opacity:0.6 }}>TAP TO VIEW</div>
               </div>
+        )}
             </div>
           ))}
         </div>
@@ -1363,7 +1367,7 @@ function Dashboard({ companyId, userRole }) {
             <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'14px 20px', borderBottom:'1px solid var(--border)', flexShrink:0 }}>
               <div style={{ display:'flex', alignItems:'center', gap:12 }}>
                 <div style={{ width:36, height:36, borderRadius:10, background:`${drillDown.color}15`, border:`1.5px solid ${drillDown.color}40`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:18 }}>
-                  {drillDown.icon}
+                  
                 </div>
                 <div>
                   <div style={{ fontSize:16, fontWeight:800, color:'var(--text-primary)' }}>{drillDown.title}</div>
