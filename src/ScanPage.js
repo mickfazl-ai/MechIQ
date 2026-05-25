@@ -3,87 +3,75 @@ import { supabase } from './supabase';
 
 const CSS = `
   @import url('https://fonts.googleapis.com/css2?family=Barlow:wght@400;600;700&family=Barlow+Condensed:wght@700;800;900&display=swap');
-  .sp { min-height:100vh; background:#f1f5f9; color:#1e293b; font-family:'Barlow',sans-serif; display:flex; flex-direction:column; align-items:center; padding:20px 14px 60px; }
-  .sp-logo { font-family:'Barlow Condensed',sans-serif; font-size:22px; font-weight:900; letter-spacing:5px; color:#1e293b; margin-bottom:16px; }
-  .sp-logo em { color:#1976D2; font-style:normal; }
-  .sp-card { background:#fff; border:1px solid #e2e8f0; border-top:3px solid #1976D2; border-radius:10px; width:100%; max-width:440px; padding:22px 18px; box-shadow:0 4px 20px rgba(0,0,0,0.08); margin-bottom:14px; }
-  .sp-co-logo { width:64px; height:64px; object-fit:contain; border-radius:8px; display:block; margin:0 auto 12px; }
-  .sp-co-name { font-size:11px; font-weight:600; color:#94a3b8; text-align:center; letter-spacing:1.5px; text-transform:uppercase; margin-bottom:14px; }
-  .sp-asset-name { font-family:'Barlow Condensed',sans-serif; font-size:26px; font-weight:800; text-align:center; margin-bottom:4px; color:#0f172a; }
-  .sp-asset-meta { font-size:12px; color:#94a3b8; text-align:center; margin-bottom:18px; }
-  .sp-divider { width:36px; height:2px; background:#1976D2; margin:0 auto 14px; }
-  .sp-btn { width:100%; padding:15px; border-radius:8px; border:none; cursor:pointer; font-family:'Barlow',sans-serif; font-size:14px; font-weight:700; letter-spacing:0.3px; transition:all 0.15s; display:flex; flex-direction:column; align-items:center; gap:3px; margin-bottom:8px; }
+  .sp { min-height:100vh; background:#09111f; color:#dde3ed; font-family:'Barlow',sans-serif; display:flex; flex-direction:column; align-items:center; padding:24px 16px 60px; }
+  .sp-logo { font-family:'Barlow Condensed',sans-serif; font-size:22px; font-weight:900; letter-spacing:5px; color:#dde3ed; margin-bottom:20px; }
+  .sp-logo em { color:#1e88e5; font-style:normal; }
+  .sp-card { background:#0f1b2d; border:1px solid rgba(255,255,255,0.09); border-top:3px solid #1e88e5; border-radius:6px; width:100%; max-width:440px; padding:24px 20px; box-shadow:0 20px 60px rgba(0,0,0,0.5); margin-bottom:16px; }
+  .sp-co-logo { width:64px; height:64px; object-fit:contain; border-radius:4px; display:block; margin:0 auto 12px; }
+  .sp-co-name { font-size:11px; font-weight:600; color:rgba(221,227,237,0.4); text-align:center; letter-spacing:1.5px; text-transform:uppercase; margin-bottom:16px; }
+  .sp-asset-name { font-family:'Barlow Condensed',sans-serif; font-size:26px; font-weight:800; text-align:center; margin-bottom:4px; }
+  .sp-asset-meta { font-size:12px; color:rgba(221,227,237,0.4); text-align:center; margin-bottom:20px; }
+  .sp-divider { width:36px; height:2px; background:#1e88e5; margin:0 auto 16px; }
+  .sp-btn { width:100%; padding:16px; border-radius:4px; border:none; cursor:pointer; font-family:'Barlow',sans-serif; font-size:14px; font-weight:700; letter-spacing:0.5px; transition:all 0.15s; display:flex; flex-direction:column; align-items:center; gap:3px; margin-bottom:10px; }
   .sp-btn:last-child { margin-bottom:0; }
   .sp-btn-sub { font-size:10px; font-weight:400; opacity:0.7; }
-  .sp-btn-p { background:#1976D2; color:#fff; box-shadow:0 2px 8px rgba(14,165,233,0.3); }
-  .sp-btn-s { background:#f8fafc; color:#334155; border:1px solid #e2e8f0; }
-  .sp-btn-j { background:rgba(245,158,11,0.08); color:#d97706; border:1px solid rgba(245,158,11,0.25); }
+  .sp-btn-p { background:#1e88e5; color:#fff; }
+  .sp-btn-s { background:rgba(255,255,255,0.06); color:#dde3ed; border:1px solid rgba(255,255,255,0.12); }
+  .sp-btn-j { background:rgba(255,165,0,0.12); color:#ffa500; border:1px solid rgba(255,165,0,0.25); }
 
   /* Form styles */
   .sp-form-wrap { width:100%; max-width:440px; }
-  .sp-form-head { display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; padding-bottom:12px; border-bottom:1px solid #e2e8f0; }
-  .sp-form-title { font-family:'Barlow Condensed',sans-serif; font-size:18px; font-weight:800; text-transform:uppercase; letter-spacing:1px; color:#0f172a; }
-  .sp-form-title em { color:#1976D2; font-style:normal; }
-  .sp-back { background:none; border:1px solid #e2e8f0; border-radius:6px; padding:5px 12px; color:#64748b; cursor:pointer; font-size:12px; font-family:'Barlow',sans-serif; }
-  .sp-asset-tag { background:rgba(14,165,233,0.06); border:1px solid rgba(14,165,233,0.2); border-radius:6px; padding:9px 12px; margin-bottom:14px; font-size:13px; color:#334155; }
-  .sp-asset-tag strong { color:#0f172a; font-weight:700; }
-  .sp-fl { margin-bottom:13px; }
-  .sp-lbl { display:block; font-size:10px; font-weight:700; color:#94a3b8; letter-spacing:1.2px; text-transform:uppercase; margin-bottom:4px; }
-  .sp-inp { width:100%; padding:10px 11px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px; color:#1e293b; font-size:14px; font-family:'Barlow',sans-serif; outline:none; box-sizing:border-box; }
-  .sp-inp:focus { border-color:#1976D2; background:#fff; }
-  .sp-inp::placeholder { color:#cbd5e1; }
-  .sp-select { width:100%; padding:10px 11px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px; color:#1e293b; font-size:14px; font-family:'Barlow',sans-serif; outline:none; }
+  .sp-form-head { display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; padding-bottom:12px; border-bottom:1px solid rgba(255,255,255,0.08); }
+  .sp-form-title { font-family:'Barlow Condensed',sans-serif; font-size:18px; font-weight:800; text-transform:uppercase; letter-spacing:1px; }
+  .sp-form-title em { color:#1e88e5; font-style:normal; }
+  .sp-back { background:none; border:1px solid rgba(255,255,255,0.12); border-radius:3px; padding:5px 12px; color:rgba(221,227,237,0.5); cursor:pointer; font-size:12px; font-family:'Barlow',sans-serif; }
+  .sp-asset-tag { background:rgba(30,136,229,0.1); border:1px solid rgba(30,136,229,0.2); border-radius:3px; padding:9px 12px; margin-bottom:16px; font-size:13px; color:rgba(221,227,237,0.7); }
+  .sp-asset-tag strong { color:#dde3ed; }
+  .sp-fl { margin-bottom:14px; }
+  .sp-lbl { display:block; font-size:10px; font-weight:700; color:rgba(221,227,237,0.35); letter-spacing:1.5px; text-transform:uppercase; margin-bottom:5px; }
+  .sp-inp { width:100%; padding:10px 11px; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); border-radius:3px; color:#dde3ed; font-size:14px; font-family:'Barlow',sans-serif; outline:none; box-sizing:border-box; }
+  .sp-inp:focus { border-color:#1e88e5; }
+  .sp-inp::placeholder { color:rgba(255,255,255,0.18); }
+  .sp-select { width:100%; padding:10px 11px; background:#0f1b2d; border:1px solid rgba(255,255,255,0.1); border-radius:3px; color:#dde3ed; font-size:14px; font-family:'Barlow',sans-serif; outline:none; }
 
   /* Section */
-  .sp-section { margin-bottom:16px; }
-  .sp-section-title { font-size:11px; font-weight:800; color:#1976D2; text-transform:uppercase; letter-spacing:1.5px; margin-bottom:8px; padding-bottom:5px; border-bottom:2px solid rgba(14,165,233,0.15); }
+  .sp-section { margin-bottom:18px; }
+  .sp-section-title { font-size:11px; font-weight:700; color:#1e88e5; text-transform:uppercase; letter-spacing:1.5px; margin-bottom:8px; padding-bottom:5px; border-bottom:1px solid rgba(30,136,229,0.2); }
 
   /* Check items */
-  .sp-check { display:flex; align-items:flex-start; gap:10px; padding:11px 12px; background:#f8fafc; border:1.5px solid #e2e8f0; border-radius:8px; cursor:pointer; margin-bottom:6px; transition:all 0.1s; }
-  .sp-check:hover { border-color:#cbd5e1; background:#fff; }
-  .sp-check.ok { border-color:rgba(34,197,94,0.4); background:rgba(34,197,94,0.04); }
-  .sp-check.fail { border-color:rgba(239,68,68,0.4); background:rgba(239,68,68,0.04); border-left:3px solid #ef4444; }
-  .sp-check input[type=checkbox] { width:18px; height:18px; accent-color:#1976D2; flex-shrink:0; margin-top:1px; cursor:pointer; }
-  .sp-check-label { flex:1; font-size:13px; color:#334155; line-height:1.4; font-weight:500; }
-  .sp-check-status { font-size:11px; margin-top:3px; font-weight:600; }
-  .sp-flag-btn { background:none; border:1.5px solid rgba(239,68,68,0.4); border-radius:5px; color:rgba(239,68,68,0.8); padding:3px 9px; font-size:11px; font-weight:700; cursor:pointer; flex-shrink:0; font-family:'Barlow',sans-serif; }
-  .sp-flag-btn.active { background:rgba(239,68,68,0.1); color:#ef4444; border-color:#ef4444; }
-  .sp-defect-comment { width:100%; margin-top:6px; padding:8px 10px; background:#fff; border:1.5px solid rgba(239,68,68,0.3); border-radius:6px; font-size:12px; font-family:'Barlow',sans-serif; color:#1e293b; resize:vertical; outline:none; box-sizing:border-box; }
-  .sp-defect-comment:focus { border-color:#ef4444; }
-  .sp-defect-comment::placeholder { color:#fca5a5; }
-
-  /* Photo capture */
-  .sp-photo-btn { display:flex; align-items:center; justify-content:center; gap:8px; width:100%; padding:12px; background:#f8fafc; border:2px dashed #cbd5e1; border-radius:8px; cursor:pointer; color:#64748b; font-size:13px; font-weight:600; transition:all 0.15s; font-family:'Barlow',sans-serif; }
-  .sp-photo-btn:hover { border-color:#1976D2; color:#1976D2; background:rgba(14,165,233,0.03); }
-  .sp-photo-preview { position:relative; border-radius:8px; overflow:hidden; border:1.5px solid #e2e8f0; }
-  .sp-photo-preview img { width:100%; display:block; max-height:200px; object-fit:cover; }
-  .sp-photo-remove { position:absolute; top:6px; right:6px; background:rgba(0,0,0,0.55); color:#fff; border:none; border-radius:20px; padding:3px 10px; font-size:11px; font-weight:700; cursor:pointer; }
+  .sp-check { display:flex; align-items:flex-start; gap:10px; padding:9px 10px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); border-radius:3px; cursor:pointer; margin-bottom:5px; transition:all 0.1s; }
+  .sp-check.ok { border-color:rgba(30,196,100,0.3); background:rgba(30,196,100,0.05); }
+  .sp-check.fail { border-color:rgba(239,83,80,0.35); background:rgba(239,83,80,0.06); }
+  .sp-check input[type=checkbox] { width:16px; height:16px; accent-color:#1e88e5; flex-shrink:0; margin-top:1px; cursor:pointer; }
+  .sp-check-label { flex:1; font-size:13px; color:#dde3ed; line-height:1.3; }
+  .sp-check-status { font-size:10px; margin-top:2px; }
+  .sp-flag-btn { background:none; border:1px solid rgba(239,83,80,0.35); border-radius:3px; color:rgba(239,83,80,0.7); padding:2px 7px; font-size:10px; cursor:pointer; flex-shrink:0; font-family:'Barlow',sans-serif; margin-top:1px; }
+  .sp-flag-btn.active { background:rgba(239,83,80,0.2); color:#ef5350; border-color:#ef5350; }
 
   /* Number/text inputs inline */
-  .sp-item-inp { padding:8px 10px; background:#f8fafc; border:1.5px solid #e2e8f0; border-radius:6px; color:#1e293b; font-size:13px; font-family:'Barlow',sans-serif; outline:none; width:110px; }
-  .sp-item-inp:focus { border-color:#1976D2; }
+  .sp-item-inp { padding:5px 8px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.1); border-radius:3px; color:#dde3ed; font-size:13px; font-family:'Barlow',sans-serif; outline:none; width:100px; }
 
   /* Parts table */
   .sp-parts { width:100%; border-collapse:collapse; font-size:12px; margin-top:8px; }
-  .sp-parts th { padding:5px 8px; text-align:left; color:#94a3b8; font-size:10px; text-transform:uppercase; letter-spacing:0.5px; border-bottom:1px solid #e2e8f0; }
-  .sp-parts td { padding:7px 8px; border-bottom:1px solid #f1f5f9; color:#334155; }
+  .sp-parts th { padding:5px 8px; text-align:left; color:rgba(221,227,237,0.4); font-size:10px; text-transform:uppercase; letter-spacing:0.5px; border-bottom:1px solid rgba(255,255,255,0.08); }
+  .sp-parts td { padding:7px 8px; border-bottom:1px solid rgba(255,255,255,0.05); color:#dde3ed; }
 
-  .sp-sig { width:100%; height:72px; background:#f8fafc; border:1.5px dashed #cbd5e1; border-radius:8px; display:flex; align-items:center; justify-content:center; color:#94a3b8; font-size:13px; cursor:pointer; }
-  .sp-sig.done { background:rgba(14,165,233,0.05); border-color:rgba(14,165,233,0.4); border-style:solid; color:#1976D2; font-weight:600; }
-  .sp-submit { width:100%; padding:14px; background:#1976D2; border:none; border-radius:8px; color:#fff; font-size:15px; font-weight:800; letter-spacing:0.5px; cursor:pointer; font-family:'Barlow',sans-serif; margin-top:14px; box-shadow:0 2px 10px rgba(14,165,233,0.3); transition:all 0.15s; }
-  .sp-submit:hover { background:#0284c7; }
-  .sp-submit:disabled { opacity:0.4; cursor:not-allowed; }
+  .sp-sig { width:100%; height:72px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.1); border-radius:3px; display:flex; align-items:center; justify-content:center; color:rgba(221,227,237,0.3); font-size:13px; cursor:pointer; }
+  .sp-sig.done { background:rgba(30,136,229,0.07); border-color:rgba(30,136,229,0.3); color:#64b5f6; }
+  .sp-submit { width:100%; padding:14px; background:#1e88e5; border:none; border-radius:3px; color:#fff; font-size:14px; font-weight:700; letter-spacing:0.5px; cursor:pointer; font-family:'Barlow',sans-serif; margin-top:16px; transition:background 0.15s; }
+  .sp-submit:hover { background:#1565c0; }
+  .sp-submit:disabled { opacity:0.35; cursor:not-allowed; }
   .sp-ok { text-align:center; padding:24px 0; }
   .sp-ok-icon { font-size:44px; margin-bottom:12px; }
-  .sp-ok-msg { font-size:17px; font-weight:700; margin-bottom:5px; color:#0f172a; }
-  .sp-ok-sub { font-size:12px; color:#94a3b8; }
-  .sp-err { text-align:center; color:#94a3b8; font-size:14px; padding:20px 0; }
+  .sp-ok-msg { font-size:17px; font-weight:700; margin-bottom:5px; }
+  .sp-ok-sub { font-size:12px; color:rgba(221,227,237,0.4); }
+  .sp-err { text-align:center; color:rgba(221,227,237,0.4); font-size:14px; padding:20px 0; }
 
   .sp-tmpl-pick { display:flex; flex-direction:column; gap:8px; margin-bottom:16px; }
-  .sp-tmpl-item { padding:13px 14px; background:#f8fafc; border:1.5px solid #e2e8f0; border-radius:8px; cursor:pointer; transition:all 0.1s; }
-  .sp-tmpl-item:hover { background:#fff; border-color:#1976D2; box-shadow:0 2px 8px rgba(14,165,233,0.1); }
-  .sp-tmpl-name { font-size:14px; font-weight:700; color:#0f172a; margin-bottom:2px; }
-  .sp-tmpl-meta { font-size:11px; color:#94a3b8; }
+  .sp-tmpl-item { padding:12px 14px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.09); border-radius:4px; cursor:pointer; transition:all 0.1s; }
+  .sp-tmpl-item:hover { background:rgba(30,136,229,0.08); border-color:rgba(30,136,229,0.3); }
+  .sp-tmpl-name { font-size:14px; font-weight:700; color:#dde3ed; margin-bottom:2px; }
+  .sp-tmpl-meta { font-size:11px; color:rgba(221,227,237,0.4); }
 `;
 
 // ─── Prestart Form ─────────────────────────────────────────────────────────────
@@ -115,7 +103,6 @@ function PrestartForm({ asset, company, template, onClose, accentColor }) {
       notes,
       responses,
       defects_found:      failedItems.length > 0,
-        defect_comments:    defectComments,
       operator_signature: null,
       site_area:          asset.location || '',
     };
@@ -185,34 +172,15 @@ function PrestartForm({ asset, company, template, onClose, accentColor }) {
               const isChecked = !!resp;
               const isFail = !!issues[key];
               if ((item.type||'check') === 'check') return (
-                <div key={ii}>
-                  <div className={`sp-check${isChecked && !isFail ? ' ok' : isFail ? ' fail' : ''}`}
-                    onClick={() => setResp(key, isChecked ? undefined : 'ok')}>
-                    <input type="checkbox" checked={isChecked} onChange={()=>{}} />
-                    <div style={{flex:1}}>
-                      <div className="sp-check-label">{item.label}</div>
-                      {isChecked && !isFail && <div className="sp-check-status" style={{color:'#16a34a'}}>✓ Satisfactory</div>}
-                      {isFail && <div className="sp-check-status" style={{color:'#ef4444'}}>Defect — add comment below</div>}
-                    </div>
-                    {isChecked && (
-                      <button className={`sp-flag-btn${isFail?' active':''}`}
-                        onClick={e=>{e.stopPropagation();toggleIssue(key);}}
-                        title={isFail ? 'Clear defect' : 'Mark as defective'}>
-                        {isFail ? 'Defect' : 'Flag'}
-                      </button>
-                    )}
+                <div key={ii} className={`sp-check${isChecked && !isFail ? ' ok' : isFail ? ' fail' : ''}`}
+                  onClick={() => setResp(key, isChecked ? undefined : 'ok')}>
+                  <input type="checkbox" checked={isChecked} onChange={()=>{}} />
+                  <div style={{flex:1}}>
+                    <div className="sp-check-label">{item.label}</div>
+                    {isChecked && !isFail && <div className="sp-check-status" style={{color:'#4caf50'}}>✓ Satisfactory</div>}
+                    {isFail && <div className="sp-check-status" style={{color:'#ef5350'}}>⚠ Issue noted</div>}
                   </div>
-                  {isFail && (
-                    <textarea
-                      className="sp-defect-comment"
-                      rows={2}
-                      placeholder="Describe the defect — what, where, severity..."
-                      value={defectComments[key] || ''}
-                      onChange={e => { e.stopPropagation(); setDefectComment(key, e.target.value); }}
-                      onClick={e => e.stopPropagation()}
-                      autoFocus
-                    />
-                  )}
+                  {isChecked && <button className={`sp-flag-btn${isFail?' active':''}`} onClick={e=>{e.stopPropagation();toggleIssue(key);}}>⚠</button>}
                 </div>
               );
               if (item.type === 'number') return (
@@ -229,34 +197,8 @@ function PrestartForm({ asset, company, template, onClose, accentColor }) {
               );
               if (item.type === 'photo') return (
                 <div key={ii} className="sp-fl">
-                  <label className="sp-lbl">{item.label}{item.required ? ' *' : ''}</label>
-                  {resp ? (
-                    <div className="sp-photo-preview">
-                      <img src={resp} alt={item.label} />
-                      <button className="sp-photo-remove"
-                        onClick={e=>{e.stopPropagation();setResp(key,undefined);}}>
-                        Remove
-                      </button>
-                    </div>
-                  ) : (
-                    <label className="sp-photo-btn" onClick={e=>e.stopPropagation()}>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        capture="environment"
-                        style={{display:'none'}}
-                        onChange={e=>{
-                          const file = e.target.files?.[0];
-                          if (!file) return;
-                          const reader = new FileReader();
-                          reader.onload = ev => setResp(key, ev.target.result);
-                          reader.readAsDataURL(file);
-                        }}
-                      />
-                      <span style={{fontSize:18}}>&#128247;</span>
-                      <span>Take Photo</span>
-                    </label>
-                  )}
+                  <label className="sp-lbl">{item.label}</label>
+                  <div style={{fontSize:12,color:'rgba(221,227,237,0.35)',padding:'8px 0'}}>📷 Photo upload available in app</div>
                 </div>
               );
               return null;

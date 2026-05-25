@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import FormEditorTab from './FormEditor';
 import { supabase } from './supabase';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -49,7 +50,7 @@ const INPUT_TYPES = [
 ];
 
 const CamIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1976D2" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#00c2e0" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
     <circle cx="12" cy="13" r="4"/>
   </svg>
@@ -127,7 +128,7 @@ function ItemInput({ item, value, onChange, companyId }) {
     <select
       value={(value && value.status) || ''}
       onChange={e => onChange({ ...value, status: e.target.value })}
-      style={{ ...base, backgroundColor: (value && value.status) === 'OK' ? '#0a2a1a' : (value && value.status) === 'Defect' ? '#2a0a0a' : '#0a0f0f', color: (value && value.status) === 'OK' ? '#15803D' : (value && value.status) === 'Defect' ? '#e94560' : 'white' }}
+      style={{ ...base, backgroundColor: (value && value.status) === 'OK' ? '#0a2a1a' : (value && value.status) === 'Defect' ? '#2a0a0a' : '#0a0f0f', color: (value && value.status) === 'OK' ? '#00c264' : (value && value.status) === 'Defect' ? '#e94560' : 'white' }}
     >
       <option value="">Select</option>
       <option value="OK">OK</option>
@@ -155,7 +156,7 @@ function ItemInput({ item, value, onChange, companyId }) {
             <button onClick={() => onChange({ ...value, photo_url: null })} style={{ ...base, padding: '3px 8px', color: 'var(--red)', cursor: 'pointer' }}>X</button>
           </div>
         ) : (
-          <label style={{ background: 'var(--accent-light)', border: '1px solid #1976D240', color: 'var(--accent)', padding: '5px 12px', borderRadius: '4px', cursor: 'pointer', fontSize: '12px' }}>
+          <label style={{ background: 'var(--accent-light)', border: '1px solid #00c2e040', color: 'var(--accent)', padding: '5px 12px', borderRadius: '4px', cursor: 'pointer', fontSize: '12px' }}>
             {uploading ? 'Uploading...' : 'Take/Upload Photo'}
             <input type="file" accept="image/*" capture="environment" onChange={handlePhoto} style={{ display: 'none' }} />
           </label>
@@ -257,7 +258,7 @@ function FormRow({ item, formKey, responses, onResponse, companyId }) {
       <td style={{ verticalAlign: 'middle', textAlign: 'center' }}>
         <label style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
           {value.row_photo_url
-            ? <img src={value.row_photo_url} alt="" style={{ width: '36px', height: '28px', objectFit: 'cover', borderRadius: '3px', border: '1px solid #1976D2' }} />
+            ? <img src={value.row_photo_url} alt="" style={{ width: '36px', height: '28px', objectFit: 'cover', borderRadius: '3px', border: '1px solid #00c2e0' }} />
             : <CamIcon />
           }
           <input type="file" accept="image/*" capture="environment" style={{ display: 'none' }} onChange={handleRowPhoto} />
@@ -381,10 +382,10 @@ function AIGeneratorModal({ mode, onClose, onGenerated }) {
           ].map(t => (
             <button key={t.id} onClick={() => { setInputType(t.id); setFile(null); setError(''); }} style={{
               padding: '10px 6px', background: inputType === t.id ? 'var(--accent-light)' : 'var(--surface-2)',
-              border: '1px solid ' + (inputType === t.id ? '#1976D2' : '#1a2f2f'),
+              border: '1px solid ' + (inputType === t.id ? '#00c2e0' : '#1a2f2f'),
               borderRadius: '8px', cursor: 'pointer', transition: 'all 0.15s',
             }}>
-              <div style={{ color: inputType === t.id ? '#1976D2' : '#a0b0b0', fontSize: '13px', fontWeight: 700 }}>{t.label}</div>
+              <div style={{ color: inputType === t.id ? '#00c2e0' : '#a0b0b0', fontSize: '13px', fontWeight: 700 }}>{t.label}</div>
               <div style={{ color: inputType === t.id ? '#4aa8b8' : '#4a6a6a', fontSize: '10px', marginTop: '2px' }}>{t.desc}</div>
             </button>
           ))}
@@ -407,7 +408,7 @@ function AIGeneratorModal({ mode, onClose, onGenerated }) {
 
         <div style={{ display: 'flex', gap: '10px' }}>
           <button onClick={onClose} style={{ flex: 1, padding: '12px', background: 'transparent', border: '1px solid var(--border)', color: '#a0b0b0', borderRadius: '6px', cursor: 'pointer' }}>Cancel</button>
-          <button onClick={handleGenerate} disabled={loading} style={{ flex: 2, padding: '12px', background: loading ? '#1a2f2f' : 'linear-gradient(135deg, #1976D2, #0090a8)', border: 'none', color: loading ? '#a0b0b0' : '#000', borderRadius: '6px', cursor: loading ? 'not-allowed' : 'pointer', fontWeight: 700 }}>
+          <button onClick={handleGenerate} disabled={loading} style={{ flex: 2, padding: '12px', background: loading ? '#1a2f2f' : 'linear-gradient(135deg, #00c2e0, #0090a8)', border: 'none', color: loading ? '#a0b0b0' : '#000', borderRadius: '6px', cursor: loading ? 'not-allowed' : 'pointer', fontWeight: 700 }}>
             {loading ? (loadingMsg || 'Generating...') : 'Generate with AI'}
           </button>
         </div>
@@ -467,7 +468,7 @@ function AssetPicker({ assets, value = [], onChange }) {
           <span key={a.id} style={{
             display: 'inline-flex', alignItems: 'center', gap: '4px',
             background: '#e0f7fb', color: '#00a8c4',
-            border: '1px solid rgba(25,118,210,0.35)', borderRadius: '20px',
+            border: '1px solid rgba(0,194,224,0.35)', borderRadius: '20px',
             padding: '2px 8px 2px 10px', fontSize: '12px', fontWeight: 600,
           }}>
             {a.name}
@@ -500,8 +501,8 @@ function AssetPicker({ assets, value = [], onChange }) {
               >
                 <span style={{
                   width: '16px', height: '16px', borderRadius: '4px', flexShrink: 0,
-                  background: checked ? '#1976D2' : '#fff',
-                  border: '1.5px solid ' + (checked ? '#1976D2' : '#c8d4e0'),
+                  background: checked ? '#00c2e0' : '#fff',
+                  border: '1.5px solid ' + (checked ? '#00c2e0' : '#c8d4e0'),
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   color: '#fff', fontSize: '10px', fontWeight: 700,
                 }}>
@@ -558,7 +559,7 @@ function SignaturePad({ sigCanvas, isSigning, setIsSigning, setSignatureData }) 
       const canvas = sigCanvas.current;
       if (!canvas) return;
       const ctx = canvas.getContext('2d');
-      ctx.strokeStyle = '#1976D2';
+      ctx.strokeStyle = '#00c2e0';
       ctx.lineWidth = 2;
       let drawing = false;
       canvas.onmousedown = (e) => { drawing = true; ctx.beginPath(); ctx.moveTo(e.offsetX, e.offsetY); };
@@ -714,27 +715,88 @@ function PrestartTab({ userRole, prestartAsset, prestartAssetId, prestartAssetNu
 
   const exportPDF = (submission) => {
     const doc = new jsPDF();
-    doc.setFillColor(13, 21, 21); doc.rect(0, 0, 210, 297, 'F');
-    doc.setTextColor(0, 194, 224); doc.setFontSize(20); doc.setFont('helvetica', 'bold');
-    doc.text('MECH IQ - PRESTART CHECKLIST', 14, 20);
-    doc.setTextColor(160, 176, 176); doc.setFontSize(9); doc.setFont('helvetica', 'normal');
-    doc.text('Asset: ' + submission.asset + '   Operator: ' + submission.operator_name + '   Date: ' + submission.date, 14, 30);
-    doc.text('Site: ' + (submission.site_area || '-') + '   Hrs: ' + (submission.hrs_start || '-'), 14, 36);
+    const W = 210, blue = [14, 165, 233], navy = [15, 30, 55], grey = [100, 116, 139], lightgrey = [241, 245, 249], midgrey = [226, 232, 240], white = [255, 255, 255], green = [34, 197, 94], red = [239, 68, 68];
+
+    // ── Header accent bar ──
+    doc.setFillColor(...blue); doc.rect(0, 0, W, 10, 'F');
+
+    // ── Logo / title block ──
+    doc.setFillColor(...navy); doc.rect(0, 10, W, 32, 'F');
+    doc.setTextColor(255, 255, 255); doc.setFontSize(18); doc.setFont('helvetica', 'bold');
+    doc.text('MechIQ', 14, 26);
+    doc.setFontSize(9); doc.setFont('helvetica', 'normal');
+    doc.setTextColor(160, 200, 220);
+    doc.text('PRESTART CHECKLIST', 14, 34);
+    // Status badge
+    const hasDefects = submission.defects_found;
+    doc.setFillColor(...(hasDefects ? red : green));
+    doc.roundedRect(W - 52, 16, 38, 14, 3, 3, 'F');
+    doc.setTextColor(255, 255, 255); doc.setFontSize(8); doc.setFont('helvetica', 'bold');
+    doc.text(hasDefects ? '⚠ DEFECTS' : '✓ CLEAR', W - 33, 24.5, { align: 'center' });
+
+    // ── Metadata block ──
+    let y = 52;
+    doc.setFillColor(...lightgrey); doc.rect(0, 42, W, 28, 'F');
+    doc.setFontSize(8); doc.setFont('helvetica', 'bold'); doc.setTextColor(...grey);
+    const meta = [
+      ['ASSET', submission.asset || '—'], ['DATE', submission.date || '—'],
+      ['OPERATOR', submission.operator_name || '—'], ['SITE', submission.site_area || '—'],
+      ['HOURS', String(submission.hrs_start || '—')], ['TEMPLATE', (templates.find(t => t.id === submission.template_id)?.name) || '—'],
+    ];
+    meta.forEach(([k, v], i) => {
+      const x = 14 + (i % 3) * 62, my = 50 + Math.floor(i / 3) * 12;
+      doc.setFont('helvetica', 'bold'); doc.setTextColor(...grey); doc.text(k, x, my);
+      doc.setFont('helvetica', 'normal'); doc.setTextColor(...navy); doc.text(v, x, my + 5);
+    });
+
+    y = 76;
     const template = templates.find(t => t.id === submission.template_id);
-    let y = 45;
     if (template) {
       template.sections.forEach((section, si) => {
-        doc.setTextColor(0, 194, 224); doc.setFontSize(11); doc.setFont('helvetica', 'bold');
-        doc.text(section.title.toUpperCase(), 14, y); y += 6;
+        if (y > 260) { doc.addPage(); doc.setFillColor(...blue); doc.rect(0, 0, W, 3, 'F'); y = 14; }
+        // Section header
+        doc.setFillColor(...midgrey); doc.rect(0, y - 4, W, 12, 'F');
+        doc.setFillColor(...blue); doc.rect(0, y - 4, 3, 12, 'F');
+        doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor(...navy);
+        doc.text(section.title.toUpperCase(), 8, y + 3.5); y += 12;
         const rows = section.items.map(item => {
-          const label = item.label || item;
+          const label = typeof item === 'string' ? item : (item.label || '');
           const key = si + '_' + label;
-          const v = submission.responses && submission.responses[key];
-          return [label, formatValue(item.type || 'check', v), (v && v.comment) || ''];
+          const v = submission.responses?.[key];
+          const val = formatValue((item.type || 'check'), v);
+          const comment = (v && v.comment) || '';
+          return [label, val, comment];
         });
-        autoTable(doc, { startY: y, head: [['Item', 'Value', 'Comment']], body: rows, theme: 'plain', headStyles: { fillColor: [26, 47, 47], textColor: [160, 176, 176], fontSize: 8 }, bodyStyles: { fillColor: [13, 21, 21], textColor: [255, 255, 255], fontSize: 8 }, styles: { lineColor: [26, 47, 47], lineWidth: 0.1 } });
+        autoTable(doc, {
+          startY: y,
+          head: [['Item', 'Result', 'Comment']],
+          body: rows,
+          theme: 'grid',
+          headStyles: { fillColor: navy, textColor: white, fontSize: 8, fontStyle: 'bold', cellPadding: 4 },
+          bodyStyles: { fillColor: white, textColor: navy, fontSize: 8, cellPadding: 3.5 },
+          alternateRowStyles: { fillColor: lightgrey },
+          columnStyles: { 0: { cellWidth: 90 }, 1: { cellWidth: 30, halign: 'center' }, 2: { cellWidth: 'auto' } },
+          styles: { lineColor: midgrey, lineWidth: 0.3, overflow: 'linebreak' },
+          didDrawCell: (data) => {
+            if (data.section === 'body' && data.column.index === 1) {
+              const val = (data.cell.text[0] || '').toLowerCase();
+              if (val === '✓' || val === 'pass' || val === 'ok') { doc.setTextColor(...green); }
+              else if (val === '✗' || val === 'fail') { doc.setTextColor(...red); }
+              else { doc.setTextColor(...navy); }
+            }
+          },
+        });
         y = doc.lastAutoTable.finalY + 8;
       });
+    }
+    // ── Footer ──
+    const pages = doc.internal.getNumberOfPages();
+    for (let p = 1; p <= pages; p++) {
+      doc.setPage(p);
+      doc.setFillColor(...lightgrey); doc.rect(0, 285, W, 12, 'F');
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(7); doc.setTextColor(...grey);
+      doc.text('Generated by MechIQ · mechiq.com.au · ' + new Date().toLocaleDateString('en-AU'), 14, 292);
+      doc.text('Page ' + p + ' of ' + pages, W - 14, 292, { align: 'right' });
     }
     doc.save('MechIQ-Prestart-' + submission.asset + '-' + submission.date + '.pdf');
   };
@@ -770,14 +832,14 @@ function PrestartTab({ userRole, prestartAsset, prestartAssetId, prestartAssetNu
           <div className="form-grid">
             <div>
               <label style={{ color: '#a0b0b0', fontSize: '12px', display: 'block', marginBottom: '4px' }}>
-                Asset {assetLocked && <span style={{ color: 'var(--accent)', fontSize: '10px', fontWeight: 700, marginLeft: '6px', padding: '1px 6px', background: 'var(--accent-light)', borderRadius: '4px', border: '1px solid rgba(25,118,210,0.3)' }}>PRE-FILLED</span>}
+                Asset {assetLocked && <span style={{ color: 'var(--accent)', fontSize: '10px', fontWeight: 700, marginLeft: '6px', padding: '1px 6px', background: 'var(--accent-light)', borderRadius: '4px', border: '1px solid rgba(0,194,224,0.3)' }}>PRE-FILLED</span>}
                 {assetLocked && prestartAssetNumber && <span style={{ color: '#6b7a8d', fontSize: '10px', fontWeight: 700, marginLeft: '6px', padding: '1px 6px', background: '#f1f5f9', borderRadius: '4px', border: '1px solid #dde2ea' }}>#{prestartAssetNumber}</span>}
               </label>
               <select
                 value={form.asset}
                 onChange={e => !assetLocked && setForm({ ...form, asset: e.target.value })}
                 disabled={assetLocked}
-                style={{ width: '100%', padding: '10px', background: assetLocked ? '#f0f8ff' : 'var(--surface-2)', color: 'var(--text-primary)', border: '1px solid ' + (assetLocked ? 'rgba(25,118,210,0.4)' : 'var(--border)'), borderRadius: '4px', cursor: assetLocked ? 'not-allowed' : 'auto' }}
+                style={{ width: '100%', padding: '10px', background: assetLocked ? '#f0f8ff' : 'var(--surface-2)', color: 'var(--text-primary)', border: '1px solid ' + (assetLocked ? 'rgba(0,194,224,0.4)' : 'var(--border)'), borderRadius: '4px', cursor: assetLocked ? 'not-allowed' : 'auto' }}
               >
                 <option value="">Select Asset</option>
                 {assets.map(a => <option key={a.id} value={a.name}>{a.name}</option>)}
@@ -820,11 +882,11 @@ function PrestartTab({ userRole, prestartAsset, prestartAssetId, prestartAssetNu
         <div className="page-header">
           <h2>{aiPreview ? 'AI Generated - Review and Edit' : editingTemplateId ? 'Edit Prestart Template' : 'Form Builder'}</h2>
           <div style={{ display: 'flex', gap: '10px' }}>
-            <button className="btn-primary" style={{ background: 'linear-gradient(135deg, #1976D2, #0090a8)', color: '#000' }} onClick={() => setShowAI(true)}>Generate with AI</button>
+            <button className="btn-primary" style={{ background: 'linear-gradient(135deg, #00c2e0, #0090a8)', color: '#000' }} onClick={() => setShowAI(true)}>Generate with AI</button>
             <button className="btn-primary" onClick={() => { setView('list'); setAiPreview(null); setEditingTemplateId(null); setBuilder({ name:'', description:'', sections:[], asset_ids:[] }); }}>Back</button>
           </div>
         </div>
-        {aiPreview && <div style={{ background: 'var(--green-bg)', border: '1px solid #15803D', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}><p style={{ color: 'var(--green)', margin: 0, fontSize: '13px' }}>AI generated - review and edit before saving.</p></div>}
+        {aiPreview && <div style={{ background: 'var(--green-bg)', border: '1px solid #00c264', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}><p style={{ color: 'var(--green)', margin: 0, fontSize: '13px' }}>AI generated - review and edit before saving.</p></div>}
         <div className="form-card">
           <input placeholder="Form Name" value={builder.name} onChange={e => setBuilder({ ...builder, name: e.target.value })} style={{ width: '100%', marginBottom: '10px', padding: '10px', background: 'var(--surface-2)', color: 'var(--text-primary)', border: '1px solid var(--border)', borderRadius: '4px' }} />
           <input placeholder="Description (optional)" value={builder.description} onChange={e => setBuilder({ ...builder, description: e.target.value })} style={{ width: '100%', marginBottom: '10px', padding: '10px', background: 'var(--surface-2)', color: 'var(--text-primary)', border: '1px solid var(--border)', borderRadius: '4px' }} />
@@ -838,10 +900,10 @@ function PrestartTab({ userRole, prestartAsset, prestartAssetId, prestartAssetNu
               <button onClick={() => setBuilder(prev => ({ ...prev, sections: prev.sections.filter((_, i) => i !== si) }))} className="btn-delete">Remove</button>
             </div>
             {section.items.map((item, ii) => <BuilderItem key={ii} item={item} si={si} ii={ii} onUpdate={updateItem} onRemove={removeItem} />)}
-            <button onClick={() => addItem(si)} style={{ backgroundColor: 'transparent', color: 'var(--accent)', border: '1px dashed #1976D2', padding: '6px 14px', borderRadius: '4px', cursor: 'pointer', marginTop: '5px', width: '100%' }}>+ Add Item</button>
+            <button onClick={() => addItem(si)} style={{ backgroundColor: 'transparent', color: 'var(--accent)', border: '1px dashed #00c2e0', padding: '6px 14px', borderRadius: '4px', cursor: 'pointer', marginTop: '5px', width: '100%' }}>+ Add Item</button>
           </div>
         ))}
-        <button onClick={() => setBuilder(prev => ({ ...prev, sections: [...prev.sections, { title: '', items: [] }] }))} style={{ marginTop: '15px', backgroundColor: 'transparent', color: 'var(--accent)', border: '1px dashed #1976D2', padding: '10px 20px', borderRadius: '4px', cursor: 'pointer', width: '100%' }}>+ Add Section</button>
+        <button onClick={() => setBuilder(prev => ({ ...prev, sections: [...prev.sections, { title: '', items: [] }] }))} style={{ marginTop: '15px', backgroundColor: 'transparent', color: 'var(--accent)', border: '1px dashed #00c2e0', padding: '10px 20px', borderRadius: '4px', cursor: 'pointer', width: '100%' }}>+ Add Section</button>
         <button className="btn-primary" style={{ marginTop: '15px', width: '100%', padding: '14px' }} onClick={saveTemplate}>Save Template</button>
       </div>
     );
@@ -904,7 +966,7 @@ function PrestartTab({ userRole, prestartAsset, prestartAssetId, prestartAssetNu
         <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 20 }}>
           {statBox(submissions.length, 'Total', '#2d8cf0')}
           {statBox(defectCount, 'Defects', '#e94560')}
-          {statBox(submissions.length - defectCount, 'Clear', '#15803D')}
+          {statBox(submissions.length - defectCount, 'Clear', '#00c264')}
           {statBox(thisMonth, 'This Month', '#f59e0b')}
         </div>
 
@@ -986,7 +1048,7 @@ function PrestartTab({ userRole, prestartAsset, prestartAssetId, prestartAssetNu
                         display: 'inline-flex', alignItems: 'center', gap: 4,
                         padding: '3px 10px', borderRadius: 20, fontSize: 11, fontWeight: 700,
                         background: s.defects_found ? '#fff1f2' : '#f0fdf4',
-                        color: s.defects_found ? '#e94560' : '#15803D',
+                        color: s.defects_found ? '#e94560' : '#00c264',
                         border: '1px solid ' + (s.defects_found ? '#fecdd3' : '#bbf7d0'),
                       }}>
                         {s.defects_found ? '⚠ Defects' : '✓ Clear'}
@@ -1017,14 +1079,14 @@ function PrestartTab({ userRole, prestartAsset, prestartAssetId, prestartAssetNu
           <button className="btn-primary" onClick={() => { setView('history'); setSelectedIds(new Set()); setFilters({ search: '', asset: '', dateFrom: '', dateTo: '', status: 'all' }); }}>📋 Records</button>
           {userRole && userRole.role !== 'technician' && (
             <>
-              <button className="btn-primary" style={{ background: 'linear-gradient(135deg, #1976D2, #0090a8)', color: '#000' }} onClick={() => setShowAI(true)}>Generate with AI</button>
+              <button className="btn-primary" style={{ background: 'linear-gradient(135deg, #00c2e0, #0090a8)', color: '#000' }} onClick={() => setShowAI(true)}>Generate with AI</button>
               <button className="btn-primary" onClick={() => setView('builder')}>+ Build Form</button>
             </>
           )}
         </div>
       </div>
       {assetLocked && (
-        <div style={{ background: 'var(--accent-light)', border: '1px solid rgba(25,118,210,0.3)', borderRadius: 10, padding: '12px 16px', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div style={{ background: 'var(--accent-light)', border: '1px solid rgba(0,194,224,0.3)', borderRadius: 10, padding: '12px 16px', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 10 }}>
           <span style={{ fontSize: 16 }}>📋</span>
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--accent)' }}>Starting prestart for: {prestartAsset}</div>
@@ -1052,7 +1114,7 @@ function PrestartTab({ userRole, prestartAsset, prestartAssetId, prestartAssetNu
       {displayTemplates.length === 0 && templates.length === 0 ? (
         <div className="form-card" style={{ textAlign: 'center', padding: '40px' }}>
           <p style={{ color: '#a0b0b0', marginBottom: '20px' }}>No prestart templates yet.</p>
-          {userRole && userRole.role !== 'technician' && <button className="btn-primary" style={{ background: 'linear-gradient(135deg, #1976D2, #0090a8)', color: '#000', padding: '12px 24px' }} onClick={() => setShowAI(true)}>Generate with AI</button>}
+          {userRole && userRole.role !== 'technician' && <button className="btn-primary" style={{ background: 'linear-gradient(135deg, #00c2e0, #0090a8)', color: '#000', padding: '12px 24px' }} onClick={() => setShowAI(true)}>Generate with AI</button>}
         </div>
       ) : (
         <>
@@ -1131,7 +1193,7 @@ function PrestartTab({ userRole, prestartAsset, prestartAssetId, prestartAssetNu
                           {assignedAssets.length > 0 ? (
                             <div style={{ display:'flex', flexWrap:'wrap', gap:4 }}>
                               {assignedAssets.map(a => (
-                                <span key={a.id} style={{ fontSize:11, fontWeight:600, padding:'2px 8px', borderRadius:20, background:'var(--accent-light)', color:'var(--accent)', border:'1px solid rgba(25,118,210,0.3)', whiteSpace:'nowrap' }}>
+                                <span key={a.id} style={{ fontSize:11, fontWeight:600, padding:'2px 8px', borderRadius:20, background:'var(--accent-light)', color:'var(--accent)', border:'1px solid rgba(0,194,224,0.3)', whiteSpace:'nowrap' }}>
                                   {a.asset_number ? `${a.asset_number} · ` : ''}{a.name}
                                 </span>
                               ))}
@@ -1157,7 +1219,7 @@ function PrestartTab({ userRole, prestartAsset, prestartAssetId, prestartAssetNu
                             </button>
                             {isAdmin && (
                               <button onClick={() => setAssignModal({ ...t })}
-                                style={{ padding:'5px 12px', background:'var(--accent-light)', color:'var(--accent)', border:'1px solid rgba(25,118,210,0.3)', borderRadius:6, fontSize:11, fontWeight:700, cursor:'pointer', whiteSpace:'nowrap' }}>
+                                style={{ padding:'5px 12px', background:'var(--accent-light)', color:'var(--accent)', border:'1px solid rgba(0,194,224,0.3)', borderRadius:6, fontSize:11, fontWeight:700, cursor:'pointer', whiteSpace:'nowrap' }}>
                                 📌 Assign
                               </button>
                             )}
@@ -1340,41 +1402,119 @@ function ServiceSheetsTab({ userRole }) {
 
   const exportServicePDF = (submission) => {
     const doc = new jsPDF();
-    doc.setFillColor(13, 21, 21); doc.rect(0, 0, 210, 297, 'F');
-    doc.setTextColor(0, 194, 224); doc.setFontSize(20); doc.setFont('helvetica', 'bold');
-    doc.text('MECH IQ - SERVICE SHEET', 14, 20);
-    doc.setTextColor(160, 176, 176); doc.setFontSize(9); doc.setFont('helvetica', 'normal');
-    doc.text('Asset: ' + submission.asset + '   Technician: ' + submission.technician + '   Date: ' + submission.date, 14, 30);
-    doc.text('Service: ' + (submission.service_type || '-') + '   Odometer/Hrs: ' + (submission.odometer || '-'), 14, 36);
+    const W = 210, blue = [14, 165, 233], navy = [15, 30, 55], grey = [100, 116, 139], lightgrey = [241, 245, 249], midgrey = [226, 232, 240], white = [255, 255, 255], green = [34, 197, 94], amber = [245, 158, 11];
+
+    // ── Header accent bar ──
+    doc.setFillColor(...blue); doc.rect(0, 0, W, 10, 'F');
+
+    // ── Logo / title block ──
+    doc.setFillColor(...navy); doc.rect(0, 10, W, 32, 'F');
+    doc.setTextColor(255, 255, 255); doc.setFontSize(18); doc.setFont('helvetica', 'bold');
+    doc.text('MechIQ', 14, 26);
+    doc.setFontSize(9); doc.setFont('helvetica', 'normal'); doc.setTextColor(160, 200, 220);
+    doc.text('SERVICE SHEET', 14, 34);
+    // Service type badge
+    if (submission.service_type) {
+      doc.setFillColor(...amber);
+      doc.roundedRect(W - 66, 16, 52, 14, 3, 3, 'F');
+      doc.setTextColor(255, 255, 255); doc.setFontSize(8); doc.setFont('helvetica', 'bold');
+      doc.text(submission.service_type.toUpperCase(), W - 40, 24.5, { align: 'center' });
+    }
+
+    // ── Metadata block ──
+    doc.setFillColor(...lightgrey); doc.rect(0, 42, W, 28, 'F');
+    const meta = [
+      ['ASSET', submission.asset || '—'], ['DATE', submission.date || '—'],
+      ['TECHNICIAN', submission.technician || '—'], ['SERVICE TYPE', submission.service_type || '—'],
+      ['HOURS / ODO', String(submission.odometer || '—')], ['TEMPLATE', (templates.find(t => t.id === submission.template_id)?.name) || '—'],
+    ];
+    meta.forEach(([k, v], i) => {
+      const x = 14 + (i % 3) * 62, my = 50 + Math.floor(i / 3) * 12;
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(8); doc.setTextColor(...grey); doc.text(k, x, my);
+      doc.setFont('helvetica', 'normal'); doc.setTextColor(...navy); doc.text(String(v), x, my + 5);
+    });
+
+    let y = 76;
     const template = templates.find(t => t.id === submission.template_id);
-    let y = 45;
-    if (template && template.sections) {
+    if (template?.sections) {
       template.sections.forEach((section, si) => {
-        doc.setTextColor(0, 194, 224); doc.setFontSize(11); doc.setFont('helvetica', 'bold');
-        doc.text(section.title.toUpperCase(), 14, y); y += 6;
+        if (y > 255) { doc.addPage(); doc.setFillColor(...blue); doc.rect(0, 0, W, 3, 'F'); y = 14; }
+        doc.setFillColor(...midgrey); doc.rect(0, y - 4, W, 12, 'F');
+        doc.setFillColor(...blue); doc.rect(0, y - 4, 3, 12, 'F');
+        doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor(...navy);
+        doc.text(section.title.toUpperCase(), 8, y + 3.5); y += 12;
         const rows = section.items.map(item => {
-          const label = item.label || item;
+          const label = typeof item === 'string' ? item : (item.label || '');
           const key = si + '_' + label;
-          const v = submission.responses && submission.responses[key];
-          return [label, formatValue(item.type || 'check', v), (v && v.comment) || ''];
+          const v = submission.responses?.[key];
+          return [label, formatValue((item.type || 'check'), v), (v && v.comment) || ''];
         });
-        autoTable(doc, { startY: y, head: [['Item', 'Value', 'Comment']], body: rows, theme: 'plain', headStyles: { fillColor: [26, 47, 47], textColor: [160, 176, 176], fontSize: 8 }, bodyStyles: { fillColor: [13, 21, 21], textColor: [255, 255, 255], fontSize: 8 }, styles: { lineColor: [26, 47, 47], lineWidth: 0.1 } });
+        autoTable(doc, {
+          startY: y, head: [['Item', 'Result', 'Comment']], body: rows, theme: 'grid',
+          headStyles: { fillColor: navy, textColor: white, fontSize: 8, fontStyle: 'bold', cellPadding: 4 },
+          bodyStyles: { fillColor: white, textColor: navy, fontSize: 8, cellPadding: 3.5 },
+          alternateRowStyles: { fillColor: lightgrey },
+          columnStyles: { 0: { cellWidth: 90 }, 1: { cellWidth: 30, halign: 'center' }, 2: { cellWidth: 'auto' } },
+          styles: { lineColor: midgrey, lineWidth: 0.3, overflow: 'linebreak' },
+        });
         y = doc.lastAutoTable.finalY + 8;
       });
     }
-    if (submission.parts && submission.parts.filter(p => p.name).length > 0) {
-      doc.setTextColor(0, 194, 224); doc.setFontSize(11); doc.setFont('helvetica', 'bold');
-      doc.text('PARTS USED', 14, y); y += 6;
-      autoTable(doc, { startY: y, head: [['Part', 'Qty', 'Unit Cost', 'Total']], body: submission.parts.filter(p => p.name).map(p => [p.name, p.qty, '$' + p.cost, '$' + (parseFloat(p.qty || 0) * parseFloat(p.cost || 0)).toFixed(2)]), theme: 'plain', headStyles: { fillColor: [26, 47, 47], textColor: [160, 176, 176], fontSize: 8 }, bodyStyles: { fillColor: [13, 21, 21], textColor: [255, 255, 255], fontSize: 8 }, styles: { lineColor: [26, 47, 47], lineWidth: 0.1 } });
+
+    // ── Parts used ──
+    const usedParts = (submission.parts || []).filter(p => p.name);
+    if (usedParts.length > 0) {
+      if (y > 250) { doc.addPage(); doc.setFillColor(...blue); doc.rect(0, 0, W, 3, 'F'); y = 14; }
+      doc.setFillColor(...midgrey); doc.rect(0, y - 4, W, 12, 'F');
+      doc.setFillColor(245, 158, 11); doc.rect(0, y - 4, 3, 12, 'F');
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor(...navy);
+      doc.text('PARTS USED', 8, y + 3.5); y += 12;
+      const partTotal = usedParts.reduce((s, p) => s + (parseFloat(p.qty||0) * parseFloat(p.cost||0)), 0);
+      autoTable(doc, {
+        startY: y, head: [['Part / Description', 'Qty', 'Unit Cost', 'Total']],
+        body: [...usedParts.map(p => [p.name, String(p.qty||'—'), p.cost ? '$' + p.cost : '—', p.cost ? '$' + (parseFloat(p.qty||0)*parseFloat(p.cost||0)).toFixed(2) : '—']),
+               ['', '', 'TOTAL', '$' + partTotal.toFixed(2)]],
+        theme: 'grid',
+        headStyles: { fillColor: navy, textColor: white, fontSize: 8, fontStyle: 'bold', cellPadding: 4 },
+        bodyStyles: { fillColor: white, textColor: navy, fontSize: 8, cellPadding: 3.5 },
+        alternateRowStyles: { fillColor: lightgrey },
+        columnStyles: { 0: { cellWidth: 'auto' }, 1: { cellWidth: 22, halign: 'center' }, 2: { cellWidth: 30, halign: 'right' }, 3: { cellWidth: 30, halign: 'right' } },
+        styles: { lineColor: midgrey, lineWidth: 0.3 },
+      });
       y = doc.lastAutoTable.finalY + 8;
     }
-    if (submission.labour && submission.labour.filter(l => l.description).length > 0) {
-      doc.setTextColor(0, 194, 224); doc.setFontSize(11); doc.setFont('helvetica', 'bold');
-      doc.text('LABOUR', 14, y); y += 6;
-      autoTable(doc, { startY: y, head: [['Task', 'Hours']], body: submission.labour.filter(l => l.description).map(l => [l.description, l.hours + 'h']), theme: 'plain', headStyles: { fillColor: [26, 47, 47], textColor: [160, 176, 176], fontSize: 8 }, bodyStyles: { fillColor: [13, 21, 21], textColor: [255, 255, 255], fontSize: 8 }, styles: { lineColor: [26, 47, 47], lineWidth: 0.1 } });
+
+    // ── Labour ──
+    const usedLabour = (submission.labour || []).filter(l => l.description);
+    if (usedLabour.length > 0) {
+      if (y > 250) { doc.addPage(); doc.setFillColor(...blue); doc.rect(0, 0, W, 3, 'F'); y = 14; }
+      doc.setFillColor(...midgrey); doc.rect(0, y - 4, W, 12, 'F');
+      doc.setFillColor(...green); doc.rect(0, y - 4, 3, 12, 'F');
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor(...navy);
+      doc.text('LABOUR', 8, y + 3.5); y += 12;
+      const labourTotal = usedLabour.reduce((s, l) => s + parseFloat(l.hours||0), 0);
+      autoTable(doc, {
+        startY: y, head: [['Task / Description', 'Hours']],
+        body: [...usedLabour.map(l => [l.description, l.hours + 'h']),
+               ['TOTAL', labourTotal.toFixed(1) + 'h']],
+        theme: 'grid',
+        headStyles: { fillColor: navy, textColor: white, fontSize: 8, fontStyle: 'bold', cellPadding: 4 },
+        bodyStyles: { fillColor: white, textColor: navy, fontSize: 8, cellPadding: 3.5 },
+        alternateRowStyles: { fillColor: lightgrey },
+        columnStyles: { 0: { cellWidth: 'auto' }, 1: { cellWidth: 30, halign: 'center' } },
+        styles: { lineColor: midgrey, lineWidth: 0.3 },
+      });
     }
-    doc.setTextColor(160, 176, 176); doc.setFontSize(8);
-    doc.text('Generated by Mech IQ - mechiq.coastlinemm.com.au', 14, 285);
+
+    // ── Footer ──
+    const pages = doc.internal.getNumberOfPages();
+    for (let p = 1; p <= pages; p++) {
+      doc.setPage(p);
+      doc.setFillColor(...lightgrey); doc.rect(0, 285, W, 12, 'F');
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(7); doc.setTextColor(...grey);
+      doc.text('Generated by MechIQ · mechiq.com.au · ' + new Date().toLocaleDateString('en-AU'), 14, 292);
+      doc.text('Page ' + p + ' of ' + pages, W - 14, 292, { align: 'right' });
+    }
     doc.save('MechIQ-ServiceSheet-' + submission.asset + '-' + submission.date + '.pdf');
   };
 
@@ -1411,14 +1551,14 @@ function ServiceSheetsTab({ userRole }) {
           <div className="form-grid">
             <div>
               <label style={{ color: '#a0b0b0', fontSize: '12px', display: 'block', marginBottom: '4px' }}>
-                Asset {form.asset && form._assetLocked && <span style={{ color: 'var(--accent)', fontSize: '10px', fontWeight: 700, marginLeft: '6px', padding: '1px 6px', background: 'var(--accent-light)', borderRadius: '4px', border: '1px solid rgba(25,118,210,0.3)' }}>PRE-FILLED</span>}
+                Asset {form.asset && form._assetLocked && <span style={{ color: 'var(--accent)', fontSize: '10px', fontWeight: 700, marginLeft: '6px', padding: '1px 6px', background: 'var(--accent-light)', borderRadius: '4px', border: '1px solid rgba(0,194,224,0.3)' }}>PRE-FILLED</span>}
                 {form._assetLocked && form._assetNumber && <span style={{ color: '#6b7a8d', fontSize: '10px', fontWeight: 700, marginLeft: '6px', padding: '1px 6px', background: '#f1f5f9', borderRadius: '4px', border: '1px solid #dde2ea' }}>#{form._assetNumber}</span>}
               </label>
               <select
                 value={form.asset}
                 onChange={e => !form._assetLocked && setForm({ ...form, asset: e.target.value })}
                 disabled={!!form._assetLocked}
-                style={{ ...iStyle, background: form._assetLocked ? '#f0f8ff' : undefined, border: form._assetLocked ? '1px solid rgba(25,118,210,0.4)' : undefined, cursor: form._assetLocked ? 'not-allowed' : 'auto' }}
+                style={{ ...iStyle, background: form._assetLocked ? '#f0f8ff' : undefined, border: form._assetLocked ? '1px solid rgba(0,194,224,0.4)' : undefined, cursor: form._assetLocked ? 'not-allowed' : 'auto' }}
               >
                 <option value="">Select Asset</option>
                 {assets.map(a => <option key={a.id} value={a.name}>{a.name}</option>)}
@@ -1491,7 +1631,7 @@ function ServiceSheetsTab({ userRole }) {
               ))}
             </tbody>
           </table>
-          <button onClick={() => setForm({ ...form, parts: [...form.parts, { name: '', qty: '', cost: '', part_id: null }] })} style={{ marginTop: '10px', backgroundColor: 'transparent', color: 'var(--accent)', border: '1px dashed #1976D2', padding: '6px 14px', borderRadius: '4px', cursor: 'pointer' }}>+ Add Part</button>
+          <button onClick={() => setForm({ ...form, parts: [...form.parts, { name: '', qty: '', cost: '', part_id: null }] })} style={{ marginTop: '10px', backgroundColor: 'transparent', color: 'var(--accent)', border: '1px dashed #00c2e0', padding: '6px 14px', borderRadius: '4px', cursor: 'pointer' }}>+ Add Part</button>
 
           {/* QR Scanner Modal */}
           {showPartQR && (
@@ -1681,7 +1821,7 @@ function ServiceSheetsTab({ userRole }) {
               ))}
             </tbody>
           </table>
-          <button onClick={() => setForm({ ...form, labour: [...form.labour, { description: '', hours: '' }] })} style={{ marginTop: '10px', backgroundColor: 'transparent', color: 'var(--accent)', border: '1px dashed #1976D2', padding: '6px 14px', borderRadius: '4px', cursor: 'pointer' }}>+ Add Labour</button>
+          <button onClick={() => setForm({ ...form, labour: [...form.labour, { description: '', hours: '' }] })} style={{ marginTop: '10px', backgroundColor: 'transparent', color: 'var(--accent)', border: '1px dashed #00c2e0', padding: '6px 14px', borderRadius: '4px', cursor: 'pointer' }}>+ Add Labour</button>
         </div>
         <div className="form-card" style={{ marginTop: '15px' }}>
           <h3 style={{ marginBottom: '10px' }}>Notes</h3>
@@ -1689,7 +1829,7 @@ function ServiceSheetsTab({ userRole }) {
           <h3 style={{ marginBottom: '10px' }}>Technician Signature</h3>
           <SignaturePad sigCanvas={sigCanvas} isSigning={isSigning} setIsSigning={setIsSigning} setSignatureData={setSignatureData} />
         </div>
-        <div className="form-card" style={{ marginTop: '15px', backgroundColor: '#0a1a1a', border: '1px solid #1976D230' }}>
+        <div className="form-card" style={{ marginTop: '15px', backgroundColor: '#0a1a1a', border: '1px solid #00c2e030' }}>
           <h3 style={{ color: 'var(--accent)', marginBottom: '12px' }}>Summary</h3>
           <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
             <div><span style={{ color: '#a0b0b0', fontSize: '12px' }}>PARTS TOTAL</span><div style={{ color: '#ff6b00', fontWeight: 700, fontSize: '20px' }}>${totalPartsValue.toFixed(2)}</div></div>
@@ -1708,11 +1848,11 @@ function ServiceSheetsTab({ userRole }) {
         <div className="page-header">
           <h2>{aiPreview ? 'AI Generated - Review and Edit' : ssEditingTemplateId ? 'Edit Service Sheet Template' : 'Service Sheet Builder'}</h2>
           <div style={{ display: 'flex', gap: '10px' }}>
-            <button className="btn-primary" style={{ background: 'linear-gradient(135deg, #1976D2, #0090a8)', color: '#000' }} onClick={() => setShowAI(true)}>Generate with AI</button>
+            <button className="btn-primary" style={{ background: 'linear-gradient(135deg, #00c2e0, #0090a8)', color: '#000' }} onClick={() => setShowAI(true)}>Generate with AI</button>
             <button className="btn-primary" onClick={() => { setView('list'); setAiPreview(null); setSsEditingTemplateId(null); setBuilder({ name:'', description:'', service_type:'', sections:[], parts_template:[], labour_items:[], asset_ids:[] }); }}>Back</button>
           </div>
         </div>
-        {aiPreview && <div style={{ background: 'var(--green-bg)', border: '1px solid #15803D', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}><p style={{ color: 'var(--green)', margin: 0, fontSize: '13px' }}>AI generated - review and edit before saving.</p></div>}
+        {aiPreview && <div style={{ background: 'var(--green-bg)', border: '1px solid #00c264', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px' }}><p style={{ color: 'var(--green)', margin: 0, fontSize: '13px' }}>AI generated - review and edit before saving.</p></div>}
         <div className="form-card">
           <input placeholder="Template Name" value={builder.name} onChange={e => setBuilder({ ...builder, name: e.target.value })} style={{ width: '100%', marginBottom: '10px', padding: '10px', background: 'var(--surface-2)', color: 'var(--text-primary)', border: '1px solid var(--border)', borderRadius: '4px' }} />
           <input placeholder="Description" value={builder.description} onChange={e => setBuilder({ ...builder, description: e.target.value })} style={{ width: '100%', marginBottom: '10px', padding: '10px', background: 'var(--surface-2)', color: 'var(--text-primary)', border: '1px solid var(--border)', borderRadius: '4px' }} />
@@ -1727,10 +1867,10 @@ function ServiceSheetsTab({ userRole }) {
               <button onClick={() => setBuilder(prev => ({ ...prev, sections: prev.sections.filter((_, i) => i !== si) }))} className="btn-delete">Remove</button>
             </div>
             {section.items.map((item, ii) => <BuilderItem key={ii} item={item} si={si} ii={ii} onUpdate={updateItem} onRemove={removeItem} />)}
-            <button onClick={() => addItem(si)} style={{ backgroundColor: 'transparent', color: 'var(--accent)', border: '1px dashed #1976D2', padding: '6px 14px', borderRadius: '4px', cursor: 'pointer', marginTop: '5px', width: '100%' }}>+ Add Item</button>
+            <button onClick={() => addItem(si)} style={{ backgroundColor: 'transparent', color: 'var(--accent)', border: '1px dashed #00c2e0', padding: '6px 14px', borderRadius: '4px', cursor: 'pointer', marginTop: '5px', width: '100%' }}>+ Add Item</button>
           </div>
         ))}
-        <button onClick={() => setBuilder(prev => ({ ...prev, sections: [...prev.sections, { title: '', items: [] }] }))} style={{ marginTop: '15px', backgroundColor: 'transparent', color: 'var(--accent)', border: '1px dashed #1976D2', padding: '10px 20px', borderRadius: '4px', cursor: 'pointer', width: '100%' }}>+ Add Section</button>
+        <button onClick={() => setBuilder(prev => ({ ...prev, sections: [...prev.sections, { title: '', items: [] }] }))} style={{ marginTop: '15px', backgroundColor: 'transparent', color: 'var(--accent)', border: '1px dashed #00c2e0', padding: '10px 20px', borderRadius: '4px', cursor: 'pointer', width: '100%' }}>+ Add Section</button>
         <button className="btn-primary" style={{ marginTop: '15px', width: '100%', padding: '14px' }} onClick={saveTemplate}>Save Template</button>
       </div>
     );
@@ -1795,7 +1935,7 @@ function ServiceSheetsTab({ userRole }) {
         <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 20 }}>
           {statBox(submissions.length, 'Total', '#2d8cf0')}
           {statBox('$' + totalParts.toFixed(0), 'Parts Cost', '#ff6b00')}
-          {statBox(totalLabour.toFixed(1) + 'h', 'Labour Hrs', '#1976D2')}
+          {statBox(totalLabour.toFixed(1) + 'h', 'Labour Hrs', '#00c2e0')}
           {statBox(thisMonth, 'This Month', '#f59e0b')}
         </div>
 
@@ -1867,7 +2007,7 @@ function ServiceSheetsTab({ userRole }) {
                     <td>{s.technician}</td>
                     <td style={{ color: '#6b7a8d' }}>{s.service_type || '—'}</td>
                     <td style={{ color: '#ff6b00', fontWeight: 600 }}>${parseFloat(s.total_parts_cost || 0).toFixed(2)}</td>
-                    <td style={{ color: '#1976D2', fontWeight: 600 }}>{parseFloat(s.total_labour_hours || 0).toFixed(1)}h</td>
+                    <td style={{ color: '#00c2e0', fontWeight: 600 }}>{parseFloat(s.total_labour_hours || 0).toFixed(1)}h</td>
                     <td>
                       <div style={{ display: 'flex', gap: 6 }}>
                         <button className="btn-primary" style={{ padding: '4px 10px', fontSize: '12px' }} onClick={() => exportServicePDF(s)}>PDF</button>
@@ -1893,7 +2033,7 @@ function ServiceSheetsTab({ userRole }) {
           <button className="btn-primary" onClick={() => { setView('history'); setSelectedIds(new Set()); setFilters({ search: '', asset: '', dateFrom: '', dateTo: '', tech: '' }); }}>📋 Records</button>
           {userRole && userRole.role !== 'technician' && (
             <>
-              <button className="btn-primary" style={{ background: 'linear-gradient(135deg, #1976D2, #0090a8)', color: '#000' }} onClick={() => setShowAI(true)}>Generate with AI</button>
+              <button className="btn-primary" style={{ background: 'linear-gradient(135deg, #00c2e0, #0090a8)', color: '#000' }} onClick={() => setShowAI(true)}>Generate with AI</button>
               <button className="btn-primary" onClick={() => setView('builder')}>+ Build Form</button>
             </>
           )}
@@ -1913,7 +2053,7 @@ function ServiceSheetsTab({ userRole }) {
           <>
             {/* Context banner */}
             {contextAssetName && (
-              <div style={{ background:'var(--accent-light)', border:'1px solid rgba(25,118,210,0.3)', borderRadius:10, padding:'12px 16px', marginBottom:16, display:'flex', alignItems:'center', gap:10 }}>
+              <div style={{ background:'var(--accent-light)', border:'1px solid rgba(0,194,224,0.3)', borderRadius:10, padding:'12px 16px', marginBottom:16, display:'flex', alignItems:'center', gap:10 }}>
                 <span style={{ fontSize:16 }}>🔧</span>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize:13, fontWeight:700, color:'var(--accent)' }}>
@@ -1931,7 +2071,7 @@ function ServiceSheetsTab({ userRole }) {
             {templates.length === 0 ? (
               <div className="form-card" style={{ textAlign: 'center', padding: '40px' }}>
                 <p style={{ color: '#a0b0b0', marginBottom: '20px' }}>No service sheet templates yet.</p>
-                {userRole && userRole.role !== 'technician' && <button className="btn-primary" style={{ background: 'linear-gradient(135deg, #1976D2, #0090a8)', color: '#000', padding: '12px 24px' }} onClick={() => setShowAI(true)}>Generate with AI</button>}
+                {userRole && userRole.role !== 'technician' && <button className="btn-primary" style={{ background: 'linear-gradient(135deg, #00c2e0, #0090a8)', color: '#000', padding: '12px 24px' }} onClick={() => setShowAI(true)}>Generate with AI</button>}
               </div>
             ) : (
               <>
@@ -2023,7 +2163,7 @@ function ServiceSheetsTab({ userRole }) {
                                 {assignedAssets.length > 0 ? (
                                   <div style={{ display:'flex', flexWrap:'wrap', gap:4 }}>
                                     {assignedAssets.map(a => (
-                                      <span key={a.id} style={{ fontSize:11, fontWeight:600, padding:'2px 8px', borderRadius:20, background:'var(--accent-light)', color:'var(--accent)', border:'1px solid rgba(25,118,210,0.3)', whiteSpace:'nowrap' }}>
+                                      <span key={a.id} style={{ fontSize:11, fontWeight:600, padding:'2px 8px', borderRadius:20, background:'var(--accent-light)', color:'var(--accent)', border:'1px solid rgba(0,194,224,0.3)', whiteSpace:'nowrap' }}>
                                         {a.asset_number ? `${a.asset_number} · ` : ''}{a.name}
                                       </span>
                                     ))}
@@ -2056,7 +2196,7 @@ function ServiceSheetsTab({ userRole }) {
                                   </button>
                                   {isAdmin && (
                                     <button onClick={() => setSsAssignModal({ ...t })}
-                                      style={{ padding:'5px 12px', background:'var(--accent-light)', color:'var(--accent)', border:'1px solid rgba(25,118,210,0.3)', borderRadius:6, fontSize:11, fontWeight:700, cursor:'pointer', whiteSpace:'nowrap' }}>
+                                      style={{ padding:'5px 12px', background:'var(--accent-light)', color:'var(--accent)', border:'1px solid rgba(0,194,224,0.3)', borderRadius:6, fontSize:11, fontWeight:700, cursor:'pointer', whiteSpace:'nowrap' }}>
                                       📌 Assign
                                     </button>
                                   )}
@@ -2233,7 +2373,7 @@ Return ONLY valid JSON — no markdown, no explanation:
     <div>
       {/* Toast */}
       {toast && (
-        <div style={{ position:'fixed', bottom:24, right:24, zIndex:3000, padding:'12px 20px', borderRadius:10, background: toast.type==='error'?'var(--red)':'#15803D', color:'#fff', fontSize:13, fontWeight:700, boxShadow:'0 8px 32px rgba(0,0,0,0.2)', animation:'fadeUp 0.2s ease' }}>
+        <div style={{ position:'fixed', bottom:24, right:24, zIndex:3000, padding:'12px 20px', borderRadius:10, background: toast.type==='error'?'var(--red)':'#00c264', color:'#fff', fontSize:13, fontWeight:700, boxShadow:'0 8px 32px rgba(0,0,0,0.2)', animation:'fadeUp 0.2s ease' }}>
           {toast.msg}
         </div>
       )}
@@ -2352,11 +2492,13 @@ function Forms({ userRole, initialTab, prestartAsset, prestartAssetId, prestartA
   const [activeTab, setActiveTab] = useState(initialTab || 'prestarts');
   useEffect(() => { if (initialTab) setActiveTab(initialTab); }, [initialTab]);
 
+  const isAdmin = ['admin', 'master', 'supervisor'].includes(userRole?.role);
   const TABS = [
     { id: 'prestarts',     label: 'Prestarts'        },
     { id: 'service-sheets',label: 'Service Sheets'   },
     { id: 'assets',        label: '🚛 Assets'         },
     { id: 'paper_scan',    label: 'Scan Paper Form'  },
+    ...(isAdmin ? [{ id: 'form_editor', label: '✏️ Form Editor' }] : []),
   ];
 
   const tabStyle = (id) => ({
@@ -2385,6 +2527,7 @@ function Forms({ userRole, initialTab, prestartAsset, prestartAssetId, prestartA
       {activeTab === 'service-sheets'&& <ServiceSheetsTab userRole={userRole} />}
       {activeTab === 'assets'        && <AssetFormsTab userRole={userRole} />}
       {activeTab === 'paper_scan'    && <PaperScan userRole={userRole} />}
+      {activeTab === 'form_editor'    && <FormEditorTab userRole={userRole} />}
     </div>
   );
 }

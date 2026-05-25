@@ -10,7 +10,7 @@ import {
 
 // ─── Colour palette ───────────────────────────────────────────────────────────
 const PALETTE = [
-  '#1976D2','#22c55e','#f59e0b','#ef4444','#8b5cf6',
+  '#0ea5e9','#22c55e','#f59e0b','#ef4444','#8b5cf6',
   '#06b6d4','#84cc16','#f97316','#ec4899','#14b8a6',
 ];
 
@@ -497,7 +497,7 @@ export function WidgetCustom({ config, companyId, onEdit, onDelete, isAdmin }) {
 
 // ─── Widget Builder Modal ─────────────────────────────────────────────────────
 export function WidgetBuilderModal({ onSave, onClose, editConfig, companyId }) {
-  const blankConfig = { label: '', icon: '📊', displayType: 'kpi', dataSource: 'assets', metrics: ['total'], color: '#1976D2', size: 'md', timeRange: '30d' };
+  const blankConfig = { label: '', icon: '📊', displayType: 'kpi', dataSource: 'assets', metrics: ['total'], color: '#0ea5e9', size: 'md', timeRange: '30d' };
   const [step, setStep] = useState(1); // 1=type, 2=source+metric, 3=style
   const [config, setConfig] = useState(editConfig ? { ...blankConfig, ...editConfig } : blankConfig);
   const [saving, setSaving] = useState(false);

@@ -18,7 +18,7 @@ const CSS = `
   .lp * { box-sizing:border-box; margin:0; padding:0; }
   .lp {
     min-height:100vh;
-    background:#F3F4F6;
+    background:#060d17;
     color:#c8d8e8;
     font-family:'Inter', sans-serif;
     font-size:15px;
@@ -33,7 +33,7 @@ const CSS = `
     display:flex; align-items:center; justify-content:space-between;
     padding:0 5vw;
     background:rgba(6,13,23,0.92);
-    border-bottom:1px solid rgba(25,118,210,0.12);
+    border-bottom:1px solid rgba(0,194,224,0.12);
     backdrop-filter:blur(16px);
     -webkit-backdrop-filter:blur(16px);
   }
@@ -42,8 +42,8 @@ const CSS = `
     font-family:'Space Grotesk',sans-serif;
     font-size:22px; font-weight:700; letter-spacing:3px; color:#fff;
   }
-  .lp-nav-logo span { color:#1976D2; }
-  .lp-nav-sep { width:1px; height:22px; background:rgba(25,118,210,0.2); }
+  .lp-nav-logo span { color:#00c2e0; }
+  .lp-nav-sep { width:1px; height:22px; background:rgba(0,194,224,0.2); }
   .lp-nav-tag { font-size:10px; font-weight:500; color:rgba(200,216,232,0.45); letter-spacing:2.5px; text-transform:uppercase; }
   .lp-nav-right { display:flex; gap:8px; align-items:center; }
   .lp-nav-link {
@@ -53,26 +53,26 @@ const CSS = `
     cursor:pointer; font-family:'Inter',sans-serif; transition:all 0.18s;
     text-decoration:none; display:inline-flex; align-items:center; letter-spacing:0.3px;
   }
-  .lp-nav-link:hover { border-color:#1976D2; color:#1976D2; }
+  .lp-nav-link:hover { border-color:#00c2e0; color:#00c2e0; }
   .lp-nav-btn {
-    padding:8px 22px; background:linear-gradient(135deg,#1976D2,#0090a8); border:none; border-radius:6px;
+    padding:8px 22px; background:linear-gradient(135deg,#00c2e0,#0090a8); border:none; border-radius:6px;
     color:#fff; font-size:12px; font-weight:700; cursor:pointer;
     font-family:'Inter',sans-serif; transition:all 0.18s; letter-spacing:0.6px;
-    text-transform:uppercase; box-shadow:0 0 16px rgba(25,118,210,0.25);
+    text-transform:uppercase; box-shadow:0 0 16px rgba(0,194,224,0.25);
   }
-  .lp-nav-btn:hover { transform:translateY(-1px); box-shadow:0 0 28px rgba(25,118,210,0.45); }
+  .lp-nav-btn:hover { transform:translateY(-1px); box-shadow:0 0 28px rgba(0,194,224,0.45); }
 
   /* ─── Hero ─── */
   .lp-hero-section {
     position:relative; overflow:hidden;
-    background:linear-gradient(160deg,#F3F4F6 0%,#FFFFFF 50%,#F3F4F6 100%);
+    background:linear-gradient(160deg,#060d17 0%,#0a1628 50%,#060d17 100%);
     min-height:100vh;
   }
   /* Grid dot pattern */
   .lp-hero-section::before {
     content:'';
     position:absolute; inset:0;
-    background-image: radial-gradient(rgba(25,118,210,0.15) 1px, transparent 1px);
+    background-image: radial-gradient(rgba(0,194,224,0.15) 1px, transparent 1px);
     background-size: 36px 36px;
     opacity:0.5;
     pointer-events:none;
@@ -82,9 +82,9 @@ const CSS = `
     content:'';
     position:absolute; inset:0;
     background:
-      radial-gradient(ellipse 70% 60% at 75% 40%, rgba(25,118,210,0.08) 0%, transparent 60%),
+      radial-gradient(ellipse 70% 60% at 75% 40%, rgba(0,194,224,0.08) 0%, transparent 60%),
       radial-gradient(ellipse 50% 40% at 20% 70%, rgba(45,140,240,0.07) 0%, transparent 55%),
-      radial-gradient(ellipse 30% 30% at 50% 10%, rgba(25,118,210,0.05) 0%, transparent 50%);
+      radial-gradient(ellipse 30% 30% at 50% 10%, rgba(0,194,224,0.05) 0%, transparent 50%);
     pointer-events:none;
   }
   .lp-hero {
@@ -103,11 +103,11 @@ const CSS = `
   .lp-hero-eyebrow {
     display:inline-flex; align-items:center; gap:8px;
     padding:5px 14px; border-radius:20px;
-    background:rgba(25,118,210,0.08); border:1px solid rgba(25,118,210,0.2);
-    color:#1976D2; font-size:10px; font-weight:700; letter-spacing:2.5px; text-transform:uppercase;
+    background:rgba(0,194,224,0.08); border:1px solid rgba(0,194,224,0.2);
+    color:#00c2e0; font-size:10px; font-weight:700; letter-spacing:2.5px; text-transform:uppercase;
     margin-bottom:24px; animation:lp-up 0.5s ease both;
   }
-  .lp-hero-eyebrow::before { content:''; width:6px; height:6px; border-radius:50%; background:#1976D2; animation:lp-dot 2s infinite; }
+  .lp-hero-eyebrow::before { content:''; width:6px; height:6px; border-radius:50%; background:#00c2e0; animation:lp-dot 2s infinite; }
 
   .lp-hero-h1 {
     font-family:'Space Grotesk',sans-serif;
@@ -118,7 +118,7 @@ const CSS = `
   }
   .lp-hero-h1 em {
     font-style:normal;
-    background:linear-gradient(135deg,#1976D2,#2d8cf0);
+    background:linear-gradient(135deg,#00c2e0,#2d8cf0);
     -webkit-background-clip:text; -webkit-text-fill-color:transparent;
     background-clip:text;
   }
@@ -140,16 +140,16 @@ const CSS = `
     font-size:11px; font-weight:600; color:rgba(200,216,232,0.7);
     letter-spacing:0.3px;
   }
-  .lp-hero-badge-dot { width:5px; height:5px; border-radius:50%; background:#1976D2; }
+  .lp-hero-badge-dot { width:5px; height:5px; border-radius:50%; background:#00c2e0; }
 
   .lp-btn-primary {
-    padding:13px 28px; background:linear-gradient(135deg,#1976D2,#0096b8); border:none; border-radius:7px;
+    padding:13px 28px; background:linear-gradient(135deg,#00c2e0,#0096b8); border:none; border-radius:7px;
     color:#fff; font-size:13px; font-weight:700; cursor:pointer;
     font-family:'Inter',sans-serif; letter-spacing:0.5px; text-transform:uppercase;
     transition:all 0.18s; text-decoration:none; display:inline-flex; align-items:center; gap:8px;
-    box-shadow:0 0 24px rgba(25,118,210,0.3);
+    box-shadow:0 0 24px rgba(0,194,224,0.3);
   }
-  .lp-btn-primary:hover { transform:translateY(-2px); box-shadow:0 0 40px rgba(25,118,210,0.5); }
+  .lp-btn-primary:hover { transform:translateY(-2px); box-shadow:0 0 40px rgba(0,194,224,0.5); }
 
   .lp-btn-secondary {
     padding:13px 24px; background:rgba(255,255,255,0.04);
@@ -158,32 +158,32 @@ const CSS = `
     font-family:'Inter',sans-serif; letter-spacing:0.3px; transition:all 0.18s;
     display:inline-flex; align-items:center; gap:8px;
   }
-  .lp-btn-secondary:hover { border-color:#1976D2; color:#1976D2; background:rgba(25,118,210,0.05); }
+  .lp-btn-secondary:hover { border-color:#00c2e0; color:#00c2e0; background:rgba(0,194,224,0.05); }
 
   /* ─── Login card ─── */
   .lp-card {
     background:rgba(10,22,40,0.9);
-    border:1px solid rgba(25,118,210,0.2);
-    border-top:2px solid #1976D2;
+    border:1px solid rgba(0,194,224,0.2);
+    border-top:2px solid #00c2e0;
     border-radius:12px;
     padding:32px 28px;
     backdrop-filter:blur(20px);
-    box-shadow:0 0 60px rgba(25,118,210,0.08), 0 24px 60px rgba(0,0,0,0.4);
+    box-shadow:0 0 60px rgba(0,194,224,0.08), 0 24px 60px rgba(0,0,0,0.4);
     animation:lp-up 0.6s 0.12s cubic-bezier(0.16,1,0.3,1) both;
   }
-  .lp-card-logo { text-align:center; padding-bottom:20px; margin-bottom:20px; border-bottom:1px solid rgba(25,118,210,0.12); }
+  .lp-card-logo { text-align:center; padding-bottom:20px; margin-bottom:20px; border-bottom:1px solid rgba(0,194,224,0.12); }
   .lp-card-logo .wm { font-family:'Space Grotesk',sans-serif; font-size:22px; font-weight:700; letter-spacing:3px; color:#fff; }
-  .lp-card-logo .wm span { color:#1976D2; }
+  .lp-card-logo .wm span { color:#00c2e0; }
   .lp-card-logo .tg { font-size:9px; color:rgba(200,216,232,0.35); letter-spacing:2.5px; text-transform:uppercase; margin-top:4px; }
 
-  .lp-tabs { display:flex; border-bottom:1px solid rgba(25,118,210,0.1); margin-bottom:22px; }
+  .lp-tabs { display:flex; border-bottom:1px solid rgba(0,194,224,0.1); margin-bottom:22px; }
   .lp-tab {
     flex:1; padding:8px 4px; background:none; border:none;
     border-bottom:2px solid transparent; color:rgba(200,216,232,0.4);
     font-size:12px; font-weight:600; cursor:pointer; font-family:'Inter',sans-serif;
     transition:all 0.15s; text-transform:uppercase; letter-spacing:1px;
   }
-  .lp-tab.on { border-bottom-color:#1976D2; color:#1976D2; }
+  .lp-tab.on { border-bottom-color:#00c2e0; color:#00c2e0; }
 
   .lp-field { margin-bottom:14px; }
   .lp-lbl { display:block; font-size:10px; font-weight:600; color:rgba(200,216,232,0.45); margin-bottom:5px; letter-spacing:1.5px; text-transform:uppercase; }
@@ -191,44 +191,44 @@ const CSS = `
     width:100%; padding:10px 12px; box-sizing:border-box;
     background:rgba(255,255,255,0.04) !important;
     color:#fff !important;
-    border:1px solid rgba(25,118,210,0.2) !important;
+    border:1px solid rgba(0,194,224,0.2) !important;
     border-radius:6px !important; font-size:13px; font-family:'Inter',sans-serif;
     outline:none; transition:border-color 0.15s;
   }
-  .lp-inp:focus { border-color:#1976D2 !important; background:rgba(25,118,210,0.06) !important; box-shadow:0 0 0 3px rgba(25,118,210,0.1) !important; }
+  .lp-inp:focus { border-color:#00c2e0 !important; background:rgba(0,194,224,0.06) !important; box-shadow:0 0 0 3px rgba(0,194,224,0.1) !important; }
   .lp-inp::placeholder { color:rgba(200,216,232,0.25) !important; }
   .lp-go {
-    width:100%; padding:12px; background:linear-gradient(135deg,#1976D2,#0090a8); border:none; border-radius:6px;
+    width:100%; padding:12px; background:linear-gradient(135deg,#00c2e0,#0090a8); border:none; border-radius:6px;
     color:#fff; font-size:13px; font-weight:700; cursor:pointer; font-family:'Inter',sans-serif;
     letter-spacing:0.6px; text-transform:uppercase; transition:all 0.18s;
-    box-shadow:0 0 20px rgba(25,118,210,0.25);
+    box-shadow:0 0 20px rgba(0,194,224,0.25);
   }
-  .lp-go:hover { box-shadow:0 0 32px rgba(25,118,210,0.45); transform:translateY(-1px); }
+  .lp-go:hover { box-shadow:0 0 32px rgba(0,194,224,0.45); transform:translateY(-1px); }
   .lp-go:disabled { opacity:0.6; cursor:not-allowed; transform:none; }
   .lp-err { padding:8px 12px; background:rgba(220,38,38,0.1); border:1px solid rgba(220,38,38,0.3); border-radius:5px; color:#f87171; font-size:12px; margin-bottom:10px; }
   .lp-ok  { padding:8px 12px; background:rgba(0,194,100,0.1); border:1px solid rgba(0,194,100,0.3); border-radius:5px; color:#4ade80; font-size:12px; margin-bottom:10px; }
-  .lp-card-foot { margin-top:16px; padding-top:14px; border-top:1px solid rgba(25,118,210,0.1); }
+  .lp-card-foot { margin-top:16px; padding-top:14px; border-top:1px solid rgba(0,194,224,0.1); }
   .lp-card-foot-line { font-size:10px; color:rgba(200,216,232,0.35); text-align:center; line-height:1.7; }
-  .lp-card-foot-link { color:#1976D2; background:none; border:none; cursor:pointer; font-size:10px; font-family:'Inter',sans-serif; padding:0; text-decoration:underline; }
+  .lp-card-foot-link { color:#00c2e0; background:none; border:none; cursor:pointer; font-size:10px; font-family:'Inter',sans-serif; padding:0; text-decoration:underline; }
 
   /* ─── Stats bar ─── */
   .lp-stats {
     display:flex; justify-content:center; gap:0;
-    border-top:1px solid rgba(25,118,210,0.08);
-    border-bottom:1px solid rgba(25,118,210,0.08);
-    background:rgba(25,118,210,0.03);
+    border-top:1px solid rgba(0,194,224,0.08);
+    border-bottom:1px solid rgba(0,194,224,0.08);
+    background:rgba(0,194,224,0.03);
     padding:0;
   }
   .lp-stat {
     flex:1; padding:28px 20px; text-align:center;
-    border-right:1px solid rgba(25,118,210,0.08);
+    border-right:1px solid rgba(0,194,224,0.08);
     transition:background 0.2s;
   }
   .lp-stat:last-child { border-right:none; }
-  .lp-stat:hover { background:rgba(25,118,210,0.05); }
+  .lp-stat:hover { background:rgba(0,194,224,0.05); }
   .lp-stat-n {
     font-family:'Space Grotesk',sans-serif; font-size:34px; font-weight:700;
-    background:linear-gradient(135deg,#1976D2,#2d8cf0);
+    background:linear-gradient(135deg,#00c2e0,#2d8cf0);
     -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
     letter-spacing:-1px; line-height:1;
   }
@@ -237,28 +237,28 @@ const CSS = `
   /* ─── Modules grid ─── */
   .lp-modules {
     padding:100px 5vw;
-    background:linear-gradient(180deg,#F3F4F6 0%,#080f1c 100%);
+    background:linear-gradient(180deg,#060d17 0%,#080f1c 100%);
     position:relative;
   }
   .lp-modules::before {
     content:'';
     position:absolute; inset:0;
-    background:radial-gradient(ellipse 80% 50% at 50% 0%, rgba(25,118,210,0.04) 0%, transparent 60%);
+    background:radial-gradient(ellipse 80% 50% at 50% 0%, rgba(0,194,224,0.04) 0%, transparent 60%);
     pointer-events:none;
   }
   .lp-modules-inner { max-width:1280px; margin:0 auto; position:relative; z-index:1; }
   .lp-section-label {
-    font-size:10px; font-weight:700; color:#1976D2; letter-spacing:3px; text-transform:uppercase;
+    font-size:10px; font-weight:700; color:#00c2e0; letter-spacing:3px; text-transform:uppercase;
     margin-bottom:16px; display:flex; align-items:center; gap:10px;
   }
-  .lp-section-label::before { content:''; width:20px; height:1.5px; background:linear-gradient(90deg,#1976D2,transparent); }
+  .lp-section-label::before { content:''; width:20px; height:1.5px; background:linear-gradient(90deg,#00c2e0,transparent); }
   .lp-section-h {
     font-family:'Space Grotesk',sans-serif; font-size:clamp(28px,3vw,44px); font-weight:700;
     color:#fff; line-height:1.1; letter-spacing:-0.5px; margin-bottom:14px;
   }
   .lp-section-h em {
     font-style:normal;
-    background:linear-gradient(135deg,#1976D2,#2d8cf0);
+    background:linear-gradient(135deg,#00c2e0,#2d8cf0);
     -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
   }
   .lp-section-sub { font-size:15px; color:rgba(200,216,232,0.55); line-height:1.8; max-width:560px; margin-bottom:60px; }
@@ -280,15 +280,15 @@ const CSS = `
   }
   .lp-module-card::before {
     content:''; position:absolute; top:0; left:0; right:0; height:1px;
-    background:linear-gradient(90deg,transparent,rgba(25,118,210,0.4),transparent);
+    background:linear-gradient(90deg,transparent,rgba(0,194,224,0.4),transparent);
     opacity:0; transition:opacity 0.25s;
   }
-  .lp-module-card:hover { border-color:rgba(25,118,210,0.2); background:rgba(25,118,210,0.04); transform:translateY(-3px); box-shadow:0 12px 40px rgba(0,0,0,0.3), 0 0 30px rgba(25,118,210,0.06); }
+  .lp-module-card:hover { border-color:rgba(0,194,224,0.2); background:rgba(0,194,224,0.04); transform:translateY(-3px); box-shadow:0 12px 40px rgba(0,0,0,0.3), 0 0 30px rgba(0,194,224,0.06); }
   .lp-module-card:hover::before { opacity:1; }
 
   .lp-module-icon {
     width:44px; height:44px; border-radius:10px;
-    background:rgba(25,118,210,0.1); border:1px solid rgba(25,118,210,0.2);
+    background:rgba(0,194,224,0.1); border:1px solid rgba(0,194,224,0.2);
     display:flex; align-items:center; justify-content:center;
     margin-bottom:18px; font-size:20px;
   }
@@ -300,8 +300,8 @@ const CSS = `
   .lp-module-tags { display:flex; flex-wrap:wrap; gap:6px; }
   .lp-module-tag {
     font-size:10px; font-weight:600; padding:3px 9px; border-radius:4px;
-    background:rgba(25,118,210,0.07); border:1px solid rgba(25,118,210,0.15);
-    color:rgba(25,118,210,0.8); letter-spacing:0.3px;
+    background:rgba(0,194,224,0.07); border:1px solid rgba(0,194,224,0.15);
+    color:rgba(0,194,224,0.8); letter-spacing:0.3px;
   }
   .lp-module-tag.green { background:rgba(0,194,100,0.07); border-color:rgba(0,194,100,0.2); color:rgba(0,194,130,0.9); }
   .lp-module-tag.purple { background:rgba(139,92,246,0.07); border-color:rgba(139,92,246,0.2); color:rgba(167,139,250,0.9); }
@@ -311,14 +311,14 @@ const CSS = `
   .lp-about {
     color:#c8d8e8;
     padding:100px 5vw;
-    background:linear-gradient(135deg,#FFFFFF 0%,#080f1c 100%);
+    background:linear-gradient(135deg,#0a1628 0%,#080f1c 100%);
     display:grid; grid-template-columns:1fr 1fr; gap:80px; align-items:center;
     max-width:none; position:relative; overflow:hidden;
   }
   .lp-about::before {
     content:''; position:absolute; right:-200px; top:-100px;
     width:600px; height:600px; border-radius:50%;
-    background:radial-gradient(circle,rgba(25,118,210,0.06) 0%,transparent 70%);
+    background:radial-gradient(circle,rgba(0,194,224,0.06) 0%,transparent 70%);
     pointer-events:none;
   }
   .lp-about-inner { max-width:1280px; margin:0 auto; display:contents; }
@@ -328,7 +328,7 @@ const CSS = `
     font-family:'Space Grotesk',sans-serif; font-size:clamp(26px,2.8vw,42px);
     font-weight:700; text-transform:uppercase; color:#fff; line-height:1.1; letter-spacing:-0.3px;
   }
-  .lp-about-h em { font-style:normal; background:linear-gradient(135deg,#1976D2,#2d8cf0); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+  .lp-about-h em { font-style:normal; background:linear-gradient(135deg,#00c2e0,#2d8cf0); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
   .lp-about-body { font-size:15px; color:rgba(200,216,232,0.65); line-height:1.9; }
   .lp-about-body p + p { margin-top:18px; }
 
@@ -336,7 +336,7 @@ const CSS = `
   .lp-about-point {
     display:flex; gap:12px; align-items:flex-start;
     padding:14px 16px; border-radius:9px;
-    background:rgba(25,118,210,0.04); border:1px solid rgba(25,118,210,0.1);
+    background:rgba(0,194,224,0.04); border:1px solid rgba(0,194,224,0.1);
   }
   .lp-about-point-icon { font-size:18px; flex-shrink:0; margin-top:1px; }
   .lp-about-point-text { font-size:13px; color:rgba(200,216,232,0.7); line-height:1.6; }
@@ -344,9 +344,9 @@ const CSS = `
 
   /* ─── Features accordion ─── */
   .lp-feats {
-    background:linear-gradient(180deg,#080f1c 0%,#F3F4F6 100%);
-    border-top:1px solid rgba(25,118,210,0.06);
-    border-bottom:1px solid rgba(25,118,210,0.06);
+    background:linear-gradient(180deg,#080f1c 0%,#060d17 100%);
+    border-top:1px solid rgba(0,194,224,0.06);
+    border-bottom:1px solid rgba(0,194,224,0.06);
     padding:100px 0;
   }
   .lp-feats-inner { max-width:1280px; margin:0 auto; padding:0 5vw; }
@@ -354,22 +354,22 @@ const CSS = `
   @media(max-width:768px) { .lp-feats-head { grid-template-columns:1fr; gap:20px; } }
   .lp-feats-intro { font-size:14px; color:rgba(200,216,232,0.55); line-height:1.85; }
 
-  .lp-acc { border:1px solid rgba(25,118,210,0.1); border-radius:10px; overflow:hidden; }
-  .lp-acc-row { border-bottom:1px solid rgba(25,118,210,0.08); }
+  .lp-acc { border:1px solid rgba(0,194,224,0.1); border-radius:10px; overflow:hidden; }
+  .lp-acc-row { border-bottom:1px solid rgba(0,194,224,0.08); }
   .lp-acc-row:last-child { border-bottom:none; }
   .lp-acc-head {
     display:grid; grid-template-columns:60px 1fr 28px;
     align-items:center; padding:0; cursor:pointer; transition:background 0.15s;
   }
-  .lp-acc-head:hover { background:rgba(25,118,210,0.04); }
-  .lp-acc-row.open .lp-acc-head { background:rgba(25,118,210,0.06); }
+  .lp-acc-head:hover { background:rgba(0,194,224,0.04); }
+  .lp-acc-row.open .lp-acc-head { background:rgba(0,194,224,0.06); }
   .lp-acc-num {
     padding:22px 0 22px 24px;
     font-family:'Space Grotesk',sans-serif; font-size:24px; font-weight:700;
-    color:rgba(25,118,210,0.15); line-height:1; transition:color 0.2s;
+    color:rgba(0,194,224,0.15); line-height:1; transition:color 0.2s;
     align-self:stretch; display:flex; align-items:center;
   }
-  .lp-acc-row.open .lp-acc-num { color:#1976D2; }
+  .lp-acc-row.open .lp-acc-num { color:#00c2e0; }
   .lp-acc-meta { padding:22px 16px; }
   .lp-acc-title { font-size:14px; font-weight:600; color:#e0eaf6; letter-spacing:0.1px; margin-bottom:3px; }
   .lp-acc-hint { font-size:12px; color:rgba(200,216,232,0.45); }
@@ -378,13 +378,13 @@ const CSS = `
     color:rgba(200,216,232,0.35); transition:transform 0.22s, color 0.15s;
     display:flex; align-items:center; justify-content:center;
   }
-  .lp-acc-row.open .lp-acc-chev { transform:rotate(180deg); color:#1976D2; }
+  .lp-acc-row.open .lp-acc-chev { transform:rotate(180deg); color:#00c2e0; }
   .lp-acc-body { overflow:hidden; max-height:0; opacity:0; transition:max-height 0.4s cubic-bezier(0.4,0,0.2,1), opacity 0.25s; }
   .lp-acc-body.open { max-height:900px; opacity:1; }
   .lp-acc-inner {
     padding:0 24px 28px 88px;
-    border-top:1px solid rgba(25,118,210,0.08);
-    background:rgba(25,118,210,0.02);
+    border-top:1px solid rgba(0,194,224,0.08);
+    background:rgba(0,194,224,0.02);
     animation:acc-open 0.3s ease;
   }
   @media(max-width:640px) { .lp-acc-inner { padding:0 16px 24px 16px; } }
@@ -394,30 +394,30 @@ const CSS = `
   .lp-acc-pt {
     display:flex; gap:10px; align-items:baseline;
     font-size:13px; color:rgba(200,216,232,0.55); line-height:1.55;
-    padding:5px 0; border-bottom:1px solid rgba(25,118,210,0.05);
+    padding:5px 0; border-bottom:1px solid rgba(0,194,224,0.05);
   }
-  .lp-acc-pt::before { content:'—'; color:#1976D2; flex-shrink:0; font-size:11px; }
+  .lp-acc-pt::before { content:'—'; color:#00c2e0; flex-shrink:0; font-size:11px; }
   .lp-acc-links { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:20px; }
   .lp-acc-link-tag {
     font-size:10px; font-weight:600; letter-spacing:1px; text-transform:uppercase;
     padding:4px 12px; border-radius:4px;
-    border:1px solid rgba(25,118,210,0.25); color:rgba(25,118,210,0.75); background:rgba(25,118,210,0.06);
+    border:1px solid rgba(0,194,224,0.25); color:rgba(0,194,224,0.75); background:rgba(0,194,224,0.06);
   }
   .lp-acc-connects {
-    border-left:2px solid rgba(25,118,210,0.3); padding:12px 16px; margin-top:4px;
-    background:rgba(25,118,210,0.04); border-radius:0 6px 6px 0;
+    border-left:2px solid rgba(0,194,224,0.3); padding:12px 16px; margin-top:4px;
+    background:rgba(0,194,224,0.04); border-radius:0 6px 6px 0;
   }
-  .lp-acc-connects-label { font-size:9px; font-weight:700; color:#1976D2; letter-spacing:2px; text-transform:uppercase; margin-bottom:8px; }
+  .lp-acc-connects-label { font-size:9px; font-weight:700; color:#00c2e0; letter-spacing:2px; text-transform:uppercase; margin-bottom:8px; }
   .lp-acc-connects-text { font-size:12px; color:rgba(200,216,232,0.55); line-height:1.75; }
 
   /* ─── CTA ─── */
   .lp-cta-wrap {
-    background:linear-gradient(135deg,#F3F4F6 0%,#FFFFFF 50%,#F3F4F6 100%);
+    background:linear-gradient(135deg,#060d17 0%,#0a1628 50%,#060d17 100%);
     padding:120px 5vw; text-align:center; position:relative; overflow:hidden;
   }
   .lp-cta-wrap::before {
     content:''; position:absolute; inset:0;
-    background:radial-gradient(ellipse 60% 60% at 50% 50%, rgba(25,118,210,0.06) 0%, transparent 65%);
+    background:radial-gradient(ellipse 60% 60% at 50% 50%, rgba(0,194,224,0.06) 0%, transparent 65%);
     pointer-events:none;
   }
   .lp-cta { max-width:680px; margin:0 auto; position:relative; z-index:1; }
@@ -425,41 +425,41 @@ const CSS = `
     font-family:'Space Grotesk',sans-serif; font-size:clamp(32px,4vw,52px); font-weight:700;
     text-transform:uppercase; color:#fff; letter-spacing:-0.5px; margin-bottom:18px; line-height:1.1;
   }
-  .lp-cta-h em { font-style:normal; background:linear-gradient(135deg,#1976D2,#2d8cf0); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+  .lp-cta-h em { font-style:normal; background:linear-gradient(135deg,#00c2e0,#2d8cf0); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
   .lp-cta-sub { font-size:16px; color:rgba(200,216,232,0.55); max-width:480px; margin:0 auto 40px; line-height:1.8; }
   .lp-cta-acts { display:flex; gap:14px; justify-content:center; flex-wrap:wrap; }
   .lp-cta-note { margin-top:24px; font-size:12px; color:rgba(200,216,232,0.3); }
-  .lp-cta-note a { color:#1976D2; text-decoration:none; }
+  .lp-cta-note a { color:#00c2e0; text-decoration:none; }
 
   /* ─── Footer ─── */
   .lp-footer {
     color:#c8d8e8;
-    border-top:1px solid rgba(25,118,210,0.08);
+    border-top:1px solid rgba(0,194,224,0.08);
     padding:28px 5vw;
     display:flex; justify-content:space-between; align-items:center;
     flex-wrap:wrap; gap:12px; background:#040a12;
   }
   .lp-footer-logo { font-family:'Space Grotesk',sans-serif; font-size:16px; font-weight:700; letter-spacing:2px; color:rgba(200,216,232,0.6); }
-  .lp-footer-logo span { color:#1976D2; }
+  .lp-footer-logo span { color:#00c2e0; }
   .lp-footer-links { display:flex; gap:20px; align-items:center; }
   .lp-footer-link { font-size:12px; color:rgba(200,216,232,0.4); text-decoration:none; background:none; border:none; cursor:pointer; font-family:'Inter',sans-serif; transition:color 0.15s; }
-  .lp-footer-link:hover { color:#1976D2; }
+  .lp-footer-link:hover { color:#00c2e0; }
   .lp-footer-copy { font-size:11px; color:rgba(200,216,232,0.25); }
 
   /* ─── Privacy Modal ─── */
   .lp-modal-bg { position:fixed; inset:0; background:rgba(0,0,0,0.8); z-index:1000; display:flex; align-items:center; justify-content:center; padding:20px; backdrop-filter:blur(4px); }
-  .lp-modal { background:#FFFFFF; border:1px solid rgba(25,118,210,0.2); border-radius:12px; max-width:560px; width:100%; max-height:80vh; display:flex; flex-direction:column; box-shadow:0 0 60px rgba(0,0,0,0.6); }
-  .lp-modal-head { padding:20px 24px 16px; border-bottom:1px solid rgba(25,118,210,0.1); display:flex; justify-content:space-between; align-items:center; flex-shrink:0; }
+  .lp-modal { background:#0a1628; border:1px solid rgba(0,194,224,0.2); border-radius:12px; max-width:560px; width:100%; max-height:80vh; display:flex; flex-direction:column; box-shadow:0 0 60px rgba(0,0,0,0.6); }
+  .lp-modal-head { padding:20px 24px 16px; border-bottom:1px solid rgba(0,194,224,0.1); display:flex; justify-content:space-between; align-items:center; flex-shrink:0; }
   .lp-modal-title { font-size:16px; font-weight:700; color:#fff; }
   .lp-modal-sub { font-size:11px; color:rgba(200,216,232,0.4); margin-top:3px; }
   .lp-modal-close { background:none; border:none; color:rgba(200,216,232,0.5); cursor:pointer; font-size:18px; line-height:1; transition:color 0.15s; }
-  .lp-modal-close:hover { color:#1976D2; }
+  .lp-modal-close:hover { color:#00c2e0; }
   .lp-modal-body { overflow-y:auto; flex:1; padding:20px 24px; }
   .lp-modal-sec { margin-bottom:20px; }
-  .lp-modal-sec-h { font-size:12px; font-weight:700; color:#1976D2; text-transform:uppercase; letter-spacing:1px; margin-bottom:6px; }
+  .lp-modal-sec-h { font-size:12px; font-weight:700; color:#00c2e0; text-transform:uppercase; letter-spacing:1px; margin-bottom:6px; }
   .lp-modal-sec p { font-size:13px; color:rgba(200,216,232,0.6); line-height:1.7; }
-  .lp-modal-note { font-size:12px; color:rgba(200,216,232,0.4); border-top:1px solid rgba(25,118,210,0.1); padding-top:16px; margin-top:8px; }
-  .lp-modal-foot { padding:16px 24px; border-top:1px solid rgba(25,118,210,0.1); flex-shrink:0; }
+  .lp-modal-note { font-size:12px; color:rgba(200,216,232,0.4); border-top:1px solid rgba(0,194,224,0.1); padding-top:16px; margin-top:8px; }
+  .lp-modal-foot { padding:16px 24px; border-top:1px solid rgba(0,194,224,0.1); flex-shrink:0; }
 
   /* ─── Responsive ─── */
   @media(max-width:640px) {
@@ -841,11 +841,11 @@ function Login({ onAuth }) {
       {/* ── Stay Signed In ── */}
       {stayPrompt && (
         <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.75)', zIndex:2000, display:'flex', alignItems:'center', justifyContent:'center', padding:20, backdropFilter:'blur(8px)' }}>
-          <div style={{ background:'#FFFFFF', border:'1px solid rgba(25,118,210,0.25)', borderRadius:16, padding:'36px 32px', width:'100%', maxWidth:400, textAlign:'center', boxShadow:'0 0 60px rgba(25,118,210,0.1), 0 32px 80px rgba(0,0,0,0.5)' }}>
+          <div style={{ background:'#0a1628', border:'1px solid rgba(0,194,224,0.25)', borderRadius:16, padding:'36px 32px', width:'100%', maxWidth:400, textAlign:'center', boxShadow:'0 0 60px rgba(0,194,224,0.1), 0 32px 80px rgba(0,0,0,0.5)' }}>
             <div style={{ fontSize:36, marginBottom:12 }}>🔐</div>
             <div style={{ fontSize:20, fontWeight:700, color:'#fff', marginBottom:8, fontFamily:'Space Grotesk,sans-serif' }}>Stay signed in?</div>
             <div style={{ fontSize:13, color:'rgba(200,216,232,0.5)', marginBottom:6 }}>Signed in as</div>
-            <div style={{ fontSize:15, fontWeight:700, color:'#1976D2', marginBottom:6 }}>{stayPrompt.name}</div>
+            <div style={{ fontSize:15, fontWeight:700, color:'#00c2e0', marginBottom:6 }}>{stayPrompt.name}</div>
             <div style={{ fontSize:12, color:'rgba(200,216,232,0.35)', marginBottom:24 }}>{stayPrompt.email}</div>
             {(() => {
               const ua = navigator.userAgent;
@@ -864,7 +864,7 @@ function Login({ onAuth }) {
               <button onClick={handleStayNo} style={{ flex:1, padding:'12px', background:'rgba(255,255,255,0.04)', border:'1px solid rgba(200,216,232,0.15)', borderRadius:8, fontSize:13, fontWeight:600, color:'rgba(200,216,232,0.7)', cursor:'pointer', fontFamily:'Inter,sans-serif' }}>
                 No, sign out<br/>when I close
               </button>
-              <button onClick={handleStayYes} style={{ flex:1, padding:'12px', background:'linear-gradient(135deg,#1976D2,#0090a8)', border:'none', borderRadius:8, fontSize:13, fontWeight:700, color:'#fff', cursor:'pointer', fontFamily:'Inter,sans-serif', boxShadow:'0 0 20px rgba(25,118,210,0.3)' }}>
+              <button onClick={handleStayYes} style={{ flex:1, padding:'12px', background:'linear-gradient(135deg,#00c2e0,#0090a8)', border:'none', borderRadius:8, fontSize:13, fontWeight:700, color:'#fff', cursor:'pointer', fontFamily:'Inter,sans-serif', boxShadow:'0 0 20px rgba(0,194,224,0.3)' }}>
                 Yes, stay signed in<br/>for 24 hours
               </button>
             </div>
@@ -874,17 +874,17 @@ function Login({ onAuth }) {
 
       {/* ── Welcome Back ── */}
       {savedUser && !stayPrompt && (
-        <div style={{ minHeight:'100vh', background:'linear-gradient(160deg,#F3F4F6 0%,#FFFFFF 100%)', display:'flex', alignItems:'center', justifyContent:'center', padding:20, position:'relative', overflow:'hidden' }}>
-          <div style={{ position:'absolute', inset:0, backgroundImage:'radial-gradient(rgba(25,118,210,0.1) 1px,transparent 1px)', backgroundSize:'36px 36px', opacity:0.4, pointerEvents:'none' }} />
-          <div style={{ background:'rgba(10,22,40,0.9)', border:'1px solid rgba(25,118,210,0.2)', borderTop:'2px solid #1976D2', borderRadius:16, padding:'48px 40px', width:'100%', maxWidth:380, textAlign:'center', backdropFilter:'blur(20px)', boxShadow:'0 0 60px rgba(25,118,210,0.08), 0 24px 60px rgba(0,0,0,0.5)', position:'relative', zIndex:1 }}>
-            <div style={{ fontFamily:'Space Grotesk,sans-serif', fontSize:20, fontWeight:700, color:'#fff', letterSpacing:'2px', marginBottom:32 }}>MECH<span style={{ color:'#1976D2' }}>IQ</span></div>
-            <div style={{ width:72, height:72, borderRadius:'50%', background:'linear-gradient(135deg,#1976D2,#0090a8)', display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 20px', fontSize:28, fontWeight:700, color:'#fff', boxShadow:'0 0 28px rgba(25,118,210,0.4)', fontFamily:'Space Grotesk,sans-serif' }}>
+        <div style={{ minHeight:'100vh', background:'linear-gradient(160deg,#060d17 0%,#0a1628 100%)', display:'flex', alignItems:'center', justifyContent:'center', padding:20, position:'relative', overflow:'hidden' }}>
+          <div style={{ position:'absolute', inset:0, backgroundImage:'radial-gradient(rgba(0,194,224,0.1) 1px,transparent 1px)', backgroundSize:'36px 36px', opacity:0.4, pointerEvents:'none' }} />
+          <div style={{ background:'rgba(10,22,40,0.9)', border:'1px solid rgba(0,194,224,0.2)', borderTop:'2px solid #00c2e0', borderRadius:16, padding:'48px 40px', width:'100%', maxWidth:380, textAlign:'center', backdropFilter:'blur(20px)', boxShadow:'0 0 60px rgba(0,194,224,0.08), 0 24px 60px rgba(0,0,0,0.5)', position:'relative', zIndex:1 }}>
+            <div style={{ fontFamily:'Space Grotesk,sans-serif', fontSize:20, fontWeight:700, color:'#fff', letterSpacing:'2px', marginBottom:32 }}>MECH<span style={{ color:'#00c2e0' }}>IQ</span></div>
+            <div style={{ width:72, height:72, borderRadius:'50%', background:'linear-gradient(135deg,#00c2e0,#0090a8)', display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 20px', fontSize:28, fontWeight:700, color:'#fff', boxShadow:'0 0 28px rgba(0,194,224,0.4)', fontFamily:'Space Grotesk,sans-serif' }}>
               {(savedUser.name||'?')[0].toUpperCase()}
             </div>
             <div style={{ fontSize:12, color:'rgba(200,216,232,0.45)', marginBottom:4, letterSpacing:'0.5px' }}>WELCOME BACK</div>
             <div style={{ fontSize:22, fontWeight:700, color:'#fff', marginBottom:4, fontFamily:'Space Grotesk,sans-serif' }}>{savedUser.name}</div>
             <div style={{ fontSize:13, color:'rgba(200,216,232,0.4)', marginBottom:36 }}>{savedUser.email}</div>
-            <button onClick={handleContinueAsSaved} style={{ width:'100%', padding:'14px', background:'linear-gradient(135deg,#1976D2,#0090a8)', border:'none', borderRadius:8, fontSize:14, fontWeight:700, color:'#fff', cursor:'pointer', marginBottom:10, fontFamily:'Inter,sans-serif', boxShadow:'0 0 24px rgba(25,118,210,0.3)' }}>Continue →</button>
+            <button onClick={handleContinueAsSaved} style={{ width:'100%', padding:'14px', background:'linear-gradient(135deg,#00c2e0,#0090a8)', border:'none', borderRadius:8, fontSize:14, fontWeight:700, color:'#fff', cursor:'pointer', marginBottom:10, fontFamily:'Inter,sans-serif', boxShadow:'0 0 24px rgba(0,194,224,0.3)' }}>Continue →</button>
             <button onClick={handleSignInAsOther} style={{ width:'100%', padding:'12px', background:'transparent', border:'1px solid rgba(200,216,232,0.12)', borderRadius:8, fontSize:12, fontWeight:500, color:'rgba(200,216,232,0.5)', cursor:'pointer', fontFamily:'Inter,sans-serif' }}>
               Sign in as someone else
             </button>
@@ -966,7 +966,7 @@ function Login({ onAuth }) {
               {busy ? 'Authenticating…' : tab==='login' ? 'Sign In' : 'Send Reset Email'}
             </button>
             <div className="lp-card-foot">
-              <div className="lp-card-foot-line">Need access? <a href="mailto:info@mechiq.com.au" style={{ color:'#1976D2', textDecoration:'none' }}>Contact us</a> to establish your company account.</div>
+              <div className="lp-card-foot-line">Need access? <a href="mailto:info@mechiq.com.au" style={{ color:'#00c2e0', textDecoration:'none' }}>Contact us</a> to establish your company account.</div>
               <div className="lp-card-foot-line" style={{ marginTop:6 }}>
                 By signing in you agree to our <button className="lp-card-foot-link" onClick={() => setPolicy(true)}>Privacy Policy</button>
               </div>
@@ -1030,7 +1030,7 @@ function Login({ onAuth }) {
           </div>
         </div>
         <div style={{ position:'relative', zIndex:1 }}>
-          <div style={{ background:'rgba(25,118,210,0.04)', border:'1px solid rgba(25,118,210,0.15)', borderRadius:14, padding:'32px 28px' }}>
+          <div style={{ background:'rgba(0,194,224,0.04)', border:'1px solid rgba(0,194,224,0.15)', borderRadius:14, padding:'32px 28px' }}>
             <div className="lp-section-label" style={{ marginBottom:20 }}>Designed for these industries</div>
             {[
               ['🏗️','Tunnelling & Underground','TBMs, MSVs, roadheaders, conveyor systems and associated plant equipment.'],
@@ -1038,7 +1038,7 @@ function Login({ onAuth }) {
               ['🏛️','Civil Infrastructure','Earthmoving, cranes, piling equipment and civil construction plant.'],
               ['🔩','Heavy Industrial','Manufacturing plant, generators, compressors and specialist equipment.'],
             ].map(([icon, title, desc]) => (
-              <div key={title} style={{ display:'flex', gap:14, padding:'16px 0', borderBottom:'1px solid rgba(25,118,210,0.08)' }}>
+              <div key={title} style={{ display:'flex', gap:14, padding:'16px 0', borderBottom:'1px solid rgba(0,194,224,0.08)' }}>
                 <div style={{ fontSize:22, flexShrink:0 }}>{icon}</div>
                 <div>
                   <div style={{ fontFamily:'Space Grotesk,sans-serif', fontWeight:600, color:'#fff', fontSize:14, marginBottom:3 }}>{title}</div>
@@ -1103,7 +1103,7 @@ function Login({ onAuth }) {
           <div className="lp-modal">
             <div className="lp-modal-head">
               <div>
-                <div className="lp-modal-title">MECH<span style={{ color:'#1976D2' }}>IQ</span> — Privacy Policy</div>
+                <div className="lp-modal-title">MECH<span style={{ color:'#00c2e0' }}>IQ</span> — Privacy Policy</div>
                 <div className="lp-modal-sub">Effective 24 March 2026 · Version 1.0</div>
               </div>
               <button className="lp-modal-close" onClick={() => setPolicy(false)}>✕</button>
@@ -1115,7 +1115,7 @@ function Login({ onAuth }) {
                   <p>{s.b}</p>
                 </div>
               ))}
-              <div className="lp-modal-note">Full legal document available on request at <a href="mailto:info@mechiq.com.au" style={{ color:'#1976D2' }}>info@mechiq.com.au</a>.</div>
+              <div className="lp-modal-note">Full legal document available on request at <a href="mailto:info@mechiq.com.au" style={{ color:'#00c2e0' }}>info@mechiq.com.au</a>.</div>
             </div>
             <div className="lp-modal-foot">
               <button className="lp-nav-btn" onClick={() => setPolicy(false)}>Close</button>

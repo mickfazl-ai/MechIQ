@@ -74,7 +74,7 @@ function Scanner({ userRole, onAssetFound }) {
     <div style={{ maxWidth: '500px', margin: '0 auto', padding: '20px' }}>
       <div style={{ textAlign: 'center', marginBottom: '30px' }}>
         <div style={{ fontSize: '28px', fontWeight: 'bold', marginBottom: '6px' }}>
-          <span style={{ color: 'white' }}>MAINTAIN</span><span style={{ color: '#1976D2' }}>IQ</span>
+          <span style={{ color: 'white' }}>MAINTAIN</span><span style={{ color: '#00c2e0' }}>IQ</span>
         </div>
         <p style={{ color: '#a0b0b0', margin: '0' }}>Scan a machine QR code to begin</p>
       </div>
@@ -82,7 +82,7 @@ function Scanner({ userRole, onAssetFound }) {
       {!scanning ? (
         <button
           onClick={() => { setScanning(true); setError(''); }}
-          style={{ width: '100%', padding: '20px', backgroundColor: '#1976D2', color: '#0a0f0f', border: 'none', borderRadius: '8px', fontSize: '18px', fontWeight: 'bold', cursor: 'pointer', marginBottom: '20px' }}
+          style={{ width: '100%', padding: '20px', backgroundColor: '#00c2e0', color: '#0a0f0f', border: 'none', borderRadius: '8px', fontSize: '18px', fontWeight: 'bold', cursor: 'pointer', marginBottom: '20px' }}
         >
           📷 Scan QR Code
         </button>
@@ -123,11 +123,11 @@ function Scanner({ userRole, onAssetFound }) {
           <div key={a.id} onClick={() => onAssetFound(a.id)}
             style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px', backgroundColor: '#0d1515', borderRadius: '6px', marginBottom: '8px', border: '1px solid #1a2f2f', cursor: 'pointer' }}>
             <div>
-              <div style={{ color: '#1976D2', fontSize: '12px' }}>{a.asset_number}</div>
+              <div style={{ color: '#00c2e0', fontSize: '12px' }}>{a.asset_number}</div>
               <div style={{ color: 'white', fontWeight: 'bold' }}>{a.name}</div>
               <div style={{ color: '#a0b0b0', fontSize: '12px' }}>{a.type} · {a.location}</div>
             </div>
-            <span style={{ color: '#1976D2', fontSize: '20px' }}>→</span>
+            <span style={{ color: '#00c2e0', fontSize: '20px' }}>→</span>
           </div>
         ))}
       </div>

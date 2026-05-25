@@ -1,6 +1,7 @@
 // MechIQ Maintenance v2 - Calendar + Service Schedules
 import React, { useState, useEffect } from 'react';
 import { supabase } from './supabase';
+import { pythonAIFetch } from './pythonApi';
 import Calendar from './Calendar';
 
 // ─── Timezone & date format helpers ───────────────────────────────────────────
@@ -35,7 +36,7 @@ const C = {
   textMuted: 'var(--text-muted)', accent: 'var(--accent)',
   red: 'var(--red, #ff3366)', redBg: 'var(--red-glow, rgba(255,51,102,0.12))',
   amber: 'var(--amber, #ffaa00)', amberBg: 'var(--amber-glow, rgba(255,170,0,0.12))',
-  green: 'var(--green, #15803D)', greenBg: 'var(--green-glow, rgba(0,255,136,0.12))',
+  green: 'var(--green, #00ff88)', greenBg: 'var(--green-glow, rgba(0,255,136,0.12))',
   purple: 'var(--purple, #aa55ff)', purpleBg: 'var(--purple-glow, rgba(170,85,255,0.12))',
 };
 
@@ -250,7 +251,7 @@ function Maintenance({ userRole, initialTab, setCurrentPage }) {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       const token = session?.access_token;
-      const resp = await fetch('/api/ai-insight', {
+      const resp = await pythonAIFetch({
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({
@@ -733,7 +734,7 @@ function AISuggestReviewModal({ modal, onClose, onApply }) {
         <div style={{ flex:1, overflowY:'auto', padding:20 }}>
           <div style={{ display:'flex', gap:8, marginBottom:16 }}>
             <button onClick={() => setAccepted(Object.fromEntries(modal.rows.map((_,i)=>[i,true])))}
-              style={{ padding:'5px 12px', background:'var(--accent-light)', color:'var(--accent)', border:'1px solid rgba(25,118,210,0.3)', borderRadius:6, fontSize:12, fontWeight:700, cursor:'pointer' }}>
+              style={{ padding:'5px 12px', background:'var(--accent-light)', color:'var(--accent)', border:'1px solid rgba(0,194,224,0.3)', borderRadius:6, fontSize:12, fontWeight:700, cursor:'pointer' }}>
               Select All
             </button>
             <button onClick={() => setAccepted(Object.fromEntries(modal.rows.map((_,i)=>[i,false])))}
@@ -750,7 +751,7 @@ function AISuggestReviewModal({ modal, onClose, onApply }) {
             const col = INTERVAL_COLORS[row.interval_type] || 'var(--text-muted)';
             return (
               <div key={i} onClick={() => setAccepted(p => ({ ...p, [i]: !acc }))}
-                style={{ display:'flex', alignItems:'center', gap:14, padding:'13px 16px', borderRadius:10, border:`1px solid ${acc ? 'rgba(25,118,210,0.3)' : 'var(--border)'}`, background: acc ? 'var(--accent-light)' : 'var(--surface-2)', marginBottom:8, cursor:'pointer', transition:'all 0.15s', userSelect:'none' }}>
+                style={{ display:'flex', alignItems:'center', gap:14, padding:'13px 16px', borderRadius:10, border:`1px solid ${acc ? 'rgba(0,194,224,0.3)' : 'var(--border)'}`, background: acc ? 'var(--accent-light)' : 'var(--surface-2)', marginBottom:8, cursor:'pointer', transition:'all 0.15s', userSelect:'none' }}>
                 {/* Checkbox */}
                 <div style={{ width:20, height:20, borderRadius:5, border:`2px solid ${acc ? 'var(--accent)' : 'var(--border)'}`, background: acc ? 'var(--accent)' : '#fff', display:'flex', alignItems:'center', justifyContent:'center', fontSize:12, color:'#fff', flexShrink:0 }}>
                   {acc ? '✓' : ''}

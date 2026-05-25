@@ -7,7 +7,7 @@ function formatCurrency(val) {
   return "$" + Number(val).toLocaleString("en-AU", { maximumFractionDigits: 0 });
 }
 
-const CYAN = "#1976D2";
+const CYAN = "#00ABE4";
 const GREEN = "#166534";
 const RED = "#dc2626";
 const ORANGE = "#e67700";
@@ -280,12 +280,12 @@ Respond ONLY with a valid JSON object, no markdown, no explanation:
 
       }));
       if (parsed.marketNote) {
-        let insight = " " + parsed.marketNote;
-        if (parsed.purchasePriceNote) insight = " " + parsed.purchasePriceNote + "\n\n" + insight;
+        let insight = "📊 " + parsed.marketNote;
+        if (parsed.purchasePriceNote) insight = "💰 " + parsed.purchasePriceNote + "\n\n" + insight;
         if (parsed.currentMarketValue) {
           const diff = parsed.currentMarketValue - Number(inputs.purchasePrice);
           const diffStr = diff >= 0 ? `+$${Math.abs(diff).toLocaleString()}` : `-$${Math.abs(diff).toLocaleString()}`;
-          insight = ` Current market value: $${parsed.currentMarketValue.toLocaleString()} AUD (${diffStr} vs purchase price)\n\n` + insight;
+          insight = `📈 Current market value: $${parsed.currentMarketValue.toLocaleString()} AUD (${diffStr} vs purchase price)\n\n` + insight;
         }
         setAiInsight(insight);
       }
@@ -395,18 +395,18 @@ Be specific with dollar amounts where possible. Max 200 words.`;
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body { font-family: Arial, sans-serif; background: #fff; color: #1a1a1a; padding: 32px; font-size: 13px; }
-  .header { border-bottom: 3px solid #1976D2; padding-bottom: 16px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: flex-end; }
+  .header { border-bottom: 3px solid #00c2e0; padding-bottom: 16px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: flex-end; }
   .brand { font-size: 28px; font-weight: 900; letter-spacing: 2px; }
-  .brand span { color: #1976D2; }
+  .brand span { color: #00c2e0; }
   .header-right { text-align: right; color: #666; font-size: 11px; }
-  h2 { font-size: 18px; color: #1976D2; margin-bottom: 16px; text-transform: uppercase; letter-spacing: 0.05em; }
+  h2 { font-size: 18px; color: #00c2e0; margin-bottom: 16px; text-transform: uppercase; letter-spacing: 0.05em; }
   h3 { font-size: 13px; color: #444; text-transform: uppercase; letter-spacing: 0.05em; margin: 20px 0 10px; border-bottom: 1px solid #eee; padding-bottom: 6px; }
   .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 24px; }
   .stat { background: #f8f9fa; border: 1px solid #e0e0e0; border-radius: 8px; padding: 12px 16px; }
   .stat-label { font-size: 10px; color: #888; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px; }
   .stat-value { font-size: 18px; font-weight: 700; color: #1a1a1a; }
-  .stat-value.cyan { color: #1976D2; }
-  .stat-value.green { color: #15803D; }
+  .stat-value.cyan { color: #00c2e0; }
+  .stat-value.green { color: #00c264; }
   .stat-value.red { color: #e94560; }
   .stat-value.orange { color: #ff6b00; }
   .info-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 20px; }
@@ -414,11 +414,11 @@ Be specific with dollar amounts where possible. Max 200 words.`;
   .info-label { color: #888; font-size: 11px; width: 160px; flex-shrink: 0; }
   .info-value { font-weight: 600; }
   table { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 12px; }
-  th { background: #0d1515; color: #1976D2; padding: 8px 10px; text-align: left; font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; }
+  th { background: #0d1515; color: #00c2e0; padding: 8px 10px; text-align: left; font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; }
   td { padding: 7px 10px; border-bottom: 1px solid #f0f0f0; }
   tr:nth-child(even) td { background: #fafafa; }
   .rec { display: inline-block; padding: 4px 14px; border-radius: 20px; font-weight: 700; font-size: 12px; }
-  .rec.Keep { background: #e6f9ef; color: #15803D; }
+  .rec.Keep { background: #e6f9ef; color: #00c264; }
   .rec.Monitor { background: #fff3e0; color: #ff6b00; }
   .rec.Replace { background: #fdecea; color: #e94560; }
   .footer { margin-top: 32px; padding-top: 12px; border-top: 1px solid #eee; font-size: 10px; color: #aaa; text-align: center; }
@@ -493,7 +493,7 @@ Be specific with dollar amounts where possible. Max 200 words.`;
       <style>{`
         .dep-input { color: #1a2b3c !important; }
         .dep-input::placeholder { color: #b0c4d4 !important; }
-        .dep-input:focus { border-color: #1976D2 !important; outline: none; box-shadow: 0 0 0 3px rgba(25,118,210,0.1); }
+        .dep-input:focus { border-color: #00ABE4 !important; outline: none; box-shadow: 0 0 0 3px rgba(0,171,228,0.1); }
         .dep-select { color: #1a2b3c !important; }
       `}</style>
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
@@ -506,19 +506,19 @@ Be specific with dollar amounts where possible. Max 200 words.`;
       {/* ASSET DETAILS */}
       <div style={cardStyle}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
-          <h3 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: "#1976D2", letterSpacing: "0.04em" }}>ASSET DETAILS</h3>
+          <h3 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: "#00ABE4", letterSpacing: "0.04em" }}>ASSET DETAILS</h3>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             {aiPredictError && <span style={{ color: "#dc2626", fontSize: 12 }}>{aiPredictError}</span>}
             <button
               onClick={fetchAiPredict}
               disabled={aiPredicting || !inputs.assetName}
-              style={{ padding: "9px 20px", fontSize: 13, fontWeight: 700, borderRadius: 8, border: aiPredicting || !inputs.assetName ? "1px solid #d6e6f2" : "1px solid #1976D2", background: aiPredicting || !inputs.assetName ? "#f8fafc" : "#ffffff", color: aiPredicting || !inputs.assetName ? "#b0c4d4" : "#1976D2", cursor: aiPredicting || !inputs.assetName ? "not-allowed" : "pointer", display: "flex", alignItems: "center", gap: 8, fontFamily: "Barlow, sans-serif", transition: "all 0.15s" }}
-              onMouseEnter={e => { if (!aiPredicting && inputs.assetName) { e.currentTarget.style.background = "#1976D2"; e.currentTarget.style.color = "#ffffff"; }}}
-              onMouseLeave={e => { if (!aiPredicting && inputs.assetName) { e.currentTarget.style.background = "#ffffff"; e.currentTarget.style.color = "#1976D2"; }}}
+              style={{ padding: "9px 20px", fontSize: 13, fontWeight: 700, borderRadius: 8, border: aiPredicting || !inputs.assetName ? "1px solid #d6e6f2" : "1px solid #00ABE4", background: aiPredicting || !inputs.assetName ? "#f8fafc" : "#ffffff", color: aiPredicting || !inputs.assetName ? "#b0c4d4" : "#00ABE4", cursor: aiPredicting || !inputs.assetName ? "not-allowed" : "pointer", display: "flex", alignItems: "center", gap: 8, fontFamily: "Barlow, sans-serif", transition: "all 0.15s" }}
+              onMouseEnter={e => { if (!aiPredicting && inputs.assetName) { e.currentTarget.style.background = "#00ABE4"; e.currentTarget.style.color = "#ffffff"; }}}
+              onMouseLeave={e => { if (!aiPredicting && inputs.assetName) { e.currentTarget.style.background = "#ffffff"; e.currentTarget.style.color = "#00ABE4"; }}}
             >
               {aiPredicting
                 ? <><span style={{ display: "inline-block", width: 10, height: 10, border: "2px solid #4a6a6a", borderTopColor: CYAN, borderRadius: "50%", animation: "spin 0.8s linear infinite" }} /> Predicting...</>
-                : " AI Predict"}
+                : "✦ AI Predict"}
             </button>
           </div>
         </div>
@@ -547,7 +547,7 @@ Be specific with dollar amounts where possible. Max 200 words.`;
             <label style={labelStyle}>New or Used</label>
             <div style={{ display: "flex", gap: 8 }}>
               {["new", "used"].map(t => (
-                <button key={t} onClick={() => handleChange("assetConditionType", t)} style={{ flex: 1, padding: "9px 0", borderRadius: 8, border: `1px solid ${inputs.assetConditionType === t ? CYAN : BORDER}`, background: inputs.assetConditionType === t ? "#e6f4ff" : "#f8fafc", color: inputs.assetConditionType === t ? "#0077cc" : "#7a92a8", border: `1px solid ${inputs.assetConditionType === t ? "#1976D2" : "#d6e6f2"}`, fontFamily: "Barlow, sans-serif", fontSize: 13, fontWeight: inputs.assetConditionType === t ? 700 : 400, cursor: "pointer", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                <button key={t} onClick={() => handleChange("assetConditionType", t)} style={{ flex: 1, padding: "9px 0", borderRadius: 8, border: `1px solid ${inputs.assetConditionType === t ? CYAN : BORDER}`, background: inputs.assetConditionType === t ? "#e6f4ff" : "#f8fafc", color: inputs.assetConditionType === t ? "#0077cc" : "#7a92a8", border: `1px solid ${inputs.assetConditionType === t ? "#00ABE4" : "#d6e6f2"}`, fontFamily: "Barlow, sans-serif", fontSize: 13, fontWeight: inputs.assetConditionType === t ? 700 : 400, cursor: "pointer", textTransform: "uppercase", letterSpacing: "0.05em" }}>
                   {t}
                 </button>
               ))}
@@ -565,7 +565,7 @@ Be specific with dollar amounts where possible. Max 200 words.`;
             <label style={labelStyle}>Usage Unit</label>
             <div style={{ display: "flex", gap: 8 }}>
               {["hrs", "kms"].map(u => (
-                <button key={u} onClick={() => handleChange("usageUnit", u)} style={{ flex: 1, padding: "9px 0", borderRadius: 8, border: `1px solid ${inputs.usageUnit === u ? CYAN : BORDER}`, background: inputs.usageUnit === u ? "#e6f4ff" : "#f8fafc", color: inputs.usageUnit === u ? "#0077cc" : "#7a92a8", border: `1px solid ${inputs.usageUnit === u ? "#1976D2" : "#d6e6f2"}`, fontFamily: "Barlow, sans-serif", fontSize: 13, fontWeight: inputs.usageUnit === u ? 700 : 400, cursor: "pointer", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                <button key={u} onClick={() => handleChange("usageUnit", u)} style={{ flex: 1, padding: "9px 0", borderRadius: 8, border: `1px solid ${inputs.usageUnit === u ? CYAN : BORDER}`, background: inputs.usageUnit === u ? "#e6f4ff" : "#f8fafc", color: inputs.usageUnit === u ? "#0077cc" : "#7a92a8", border: `1px solid ${inputs.usageUnit === u ? "#00ABE4" : "#d6e6f2"}`, fontFamily: "Barlow, sans-serif", fontSize: 13, fontWeight: inputs.usageUnit === u ? 700 : 400, cursor: "pointer", textTransform: "uppercase", letterSpacing: "0.05em" }}>
                   {u}
                 </button>
               ))}
@@ -589,7 +589,7 @@ Be specific with dollar amounts where possible. Max 200 words.`;
             <label style={labelStyle}>Condition</label>
             <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
               {CONDITIONS.map(c => (
-                <button key={c} onClick={() => handleChange("condition", c)} style={{ padding: "7px 12px", borderRadius: 6, border: `1px solid ${inputs.condition === c ? CYAN : BORDER}`, background: inputs.condition === c ? "#e6f4ff" : "#f8fafc", color: inputs.condition === c ? "#0077cc" : "#7a92a8", border: `1px solid ${inputs.condition === c ? "#1976D2" : "#d6e6f2"}`, fontFamily: "Barlow, sans-serif", fontSize: 12, fontWeight: inputs.condition === c ? 700 : 400, cursor: "pointer" }}>
+                <button key={c} onClick={() => handleChange("condition", c)} style={{ padding: "7px 12px", borderRadius: 6, border: `1px solid ${inputs.condition === c ? CYAN : BORDER}`, background: inputs.condition === c ? "#e6f4ff" : "#f8fafc", color: inputs.condition === c ? "#0077cc" : "#7a92a8", border: `1px solid ${inputs.condition === c ? "#00ABE4" : "#d6e6f2"}`, fontFamily: "Barlow, sans-serif", fontSize: 12, fontWeight: inputs.condition === c ? 700 : 400, cursor: "pointer" }}>
                   {c}
                 </button>
               ))}
@@ -630,9 +630,9 @@ Be specific with dollar amounts where possible. Max 200 words.`;
         <button
           onClick={calculate}
           disabled={!inputs.purchasePrice || !inputs.currentUsage || !inputs.expectedLifeUsage}
-          style={{ padding: "13px 32px", fontSize: 14, fontWeight: 700, fontFamily: "Barlow, sans-serif", background: !inputs.purchasePrice || !inputs.currentUsage || !inputs.expectedLifeUsage ? "#f8fafc" : "#ffffff", color: !inputs.purchasePrice || !inputs.currentUsage || !inputs.expectedLifeUsage ? "#b0c4d4" : "#1976D2", border: !inputs.purchasePrice || !inputs.currentUsage || !inputs.expectedLifeUsage ? "1px solid #d6e6f2" : "1px solid #1976D2", borderRadius: 8, cursor: !inputs.purchasePrice || !inputs.currentUsage || !inputs.expectedLifeUsage ? "not-allowed" : "pointer", letterSpacing: "0.05em", textTransform: "uppercase", transition: "all 0.15s" }}
-          onMouseEnter={e => { if (inputs.purchasePrice && inputs.currentUsage && inputs.expectedLifeUsage) { e.currentTarget.style.background = "#1976D2"; e.currentTarget.style.color = "#ffffff"; }}}
-          onMouseLeave={e => { if (inputs.purchasePrice && inputs.currentUsage && inputs.expectedLifeUsage) { e.currentTarget.style.background = "#ffffff"; e.currentTarget.style.color = "#1976D2"; }}}
+          style={{ padding: "13px 32px", fontSize: 14, fontWeight: 700, fontFamily: "Barlow, sans-serif", background: !inputs.purchasePrice || !inputs.currentUsage || !inputs.expectedLifeUsage ? "#f8fafc" : "#ffffff", color: !inputs.purchasePrice || !inputs.currentUsage || !inputs.expectedLifeUsage ? "#b0c4d4" : "#00ABE4", border: !inputs.purchasePrice || !inputs.currentUsage || !inputs.expectedLifeUsage ? "1px solid #d6e6f2" : "1px solid #00ABE4", borderRadius: 8, cursor: !inputs.purchasePrice || !inputs.currentUsage || !inputs.expectedLifeUsage ? "not-allowed" : "pointer", letterSpacing: "0.05em", textTransform: "uppercase", transition: "all 0.15s" }}
+          onMouseEnter={e => { if (inputs.purchasePrice && inputs.currentUsage && inputs.expectedLifeUsage) { e.currentTarget.style.background = "#00ABE4"; e.currentTarget.style.color = "#ffffff"; }}}
+          onMouseLeave={e => { if (inputs.purchasePrice && inputs.currentUsage && inputs.expectedLifeUsage) { e.currentTarget.style.background = "#ffffff"; e.currentTarget.style.color = "#00ABE4"; }}}
         >
           Calculate Depreciation
         </button>
@@ -641,7 +641,7 @@ Be specific with dollar amounts where possible. Max 200 words.`;
           onClick={() => setShowHistory(h => !h)}
           style={{ padding: "13px 20px", fontSize: 13, fontWeight: 700, fontFamily: "Barlow, sans-serif", background: "transparent", color: history.length > 0 ? CYAN : "#4a6a6a", border: `1px solid ${history.length > 0 ? CYAN : BORDER}`, borderRadius: 8, cursor: "pointer", letterSpacing: "0.05em" }}
         >
-          {showHistory ? "Hide History" : ` History (${history.length})`}
+          {showHistory ? "Hide History" : `📋 History (${history.length})`}
         </button>
         {calculated && results && (
           <button
@@ -666,7 +666,7 @@ Be specific with dollar amounts where possible. Max 200 words.`;
             }}
             style={{ padding: "13px 20px", fontSize: 13, fontWeight: 700, fontFamily: "Barlow, sans-serif", background: GREEN, color: "#fff", border: `1px solid ${GREEN}`, borderRadius: 8, cursor: "pointer", letterSpacing: "0.05em" }}
           >
-             Save PDF
+            💾 Save PDF
           </button>
         )}
       </div>
@@ -689,9 +689,9 @@ Be specific with dollar amounts where possible. Max 200 words.`;
                     <div style={{ color: "#7a92a8", fontSize: 11, marginTop: 2 }}>{entry.date}</div>
                   </div>
                   <div style={{ display: "flex", gap: 8, marginLeft: 16 }}>
-                    <button onClick={() => loadFromHistory(entry)} style={{ padding: "6px 12px", fontSize: 11, fontWeight: 700, background: "#e6f4ff", border: "1px solid #1976D2", color: CYAN, borderRadius: 6, cursor: "pointer", fontFamily: "Barlow, sans-serif" }}>Load</button>
+                    <button onClick={() => loadFromHistory(entry)} style={{ padding: "6px 12px", fontSize: 11, fontWeight: 700, background: "#e6f4ff", border: "1px solid #00ABE4", color: CYAN, borderRadius: 6, cursor: "pointer", fontFamily: "Barlow, sans-serif" }}>Load</button>
                     <button onClick={() => exportPDF(entry)} style={{ padding: "6px 12px", fontSize: 11, fontWeight: 700, background: "#f0faf5", border: "1px solid #16a34a", color: GREEN, borderRadius: 6, cursor: "pointer", fontFamily: "Barlow, sans-serif" }}>PDF</button>
-                    <button onClick={() => deleteHistoryEntry(entry.id)} style={{ padding: "6px 12px", fontSize: 11, fontWeight: 700, background: "#fff1f1", border: "1px solid #fca5a5", color: RED, borderRadius: 6, cursor: "pointer", fontFamily: "Barlow, sans-serif" }}></button>
+                    <button onClick={() => deleteHistoryEntry(entry.id)} style={{ padding: "6px 12px", fontSize: 11, fontWeight: 700, background: "#fff1f1", border: "1px solid #fca5a5", color: RED, borderRadius: 6, cursor: "pointer", fontFamily: "Barlow, sans-serif" }}>✕</button>
                   </div>
                 </div>
               ))}
@@ -749,7 +749,7 @@ Be specific with dollar amounts where possible. Max 200 words.`;
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
               <h3 style={{ margin: 0, fontSize: 14, fontWeight: 700, color: "#1a2b3c" }}>ANNUAL DEPRECIATION SCHEDULE</h3>
               <div style={{ display: "flex", gap: 16, fontSize: 11, color: "#8fa8a8" }}>
-                <span><span style={{ display: "inline-block", width: 10, height: 10, background: "#f0f7ff", border: "1px solid #1976D2", borderRadius: 2, marginRight: 5 }} />Historical (actual avg)</span>
+                <span><span style={{ display: "inline-block", width: 10, height: 10, background: "#f0f7ff", border: "1px solid #00ABE4", borderRadius: 2, marginRight: 5 }} />Historical (actual avg)</span>
                 <span><span style={{ display: "inline-block", width: 10, height: 10, background: "#f8fafc", border: "1px solid #d6e6f2", borderRadius: 2, marginRight: 5 }} />Projected</span>
               </div>
             </div>
@@ -762,7 +762,7 @@ Be specific with dollar amounts where possible. Max 200 words.`;
                 </thead>
                 <tbody>
                   {results.annualTable.map((row, i) => (
-                    <tr key={i} style={{ background: row.isPast ? "#f0f7ff" : (i % 2 === 0 ? "#ffffff" : "#f8fafc"), borderLeft: row.year === new Date().getFullYear() ? `3px solid #1976D2` : "3px solid transparent" }}>
+                    <tr key={i} style={{ background: row.isPast ? "#f0f7ff" : (i % 2 === 0 ? "#ffffff" : "#f8fafc"), borderLeft: row.year === new Date().getFullYear() ? `3px solid #00ABE4` : "3px solid transparent" }}>
                       <td style={{ padding: "7px 12px", color: "#1a2b3c", fontWeight: row.year === new Date().getFullYear() ? 700 : 400 }}>
                         {row.year}{row.year === new Date().getFullYear() ? <span style={{ color: CYAN, fontSize: 9, marginLeft: 4 }}>NOW</span> : ""}
                       </td>

@@ -81,9 +81,9 @@ class ErrorBoundary extends React.Component {
   render() {
     if (this.state.hasError) {
       return (
-        <div style={{ minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center', background:'#F3F4F6', flexDirection:'column', gap:16, padding:24, fontFamily:'sans-serif' }}>
+        <div style={{ minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center', background:'#09111f', flexDirection:'column', gap:16, padding:24, fontFamily:'sans-serif' }}>
           <div style={{ fontSize:22, fontWeight:900, letterSpacing:4, color:'#dde3ed' }}>MECH<span style={{color:'#1e88e5'}}>IQ</span></div>
-          <div style={{ background:'#FFFFFF', border:'1px solid rgba(239,83,80,0.3)', borderTop:'3px solid #ef5350', borderRadius:6, padding:'28px 24px', maxWidth:420, width:'100%', textAlign:'center' }}>
+          <div style={{ background:'#0f1b2d', border:'1px solid rgba(239,83,80,0.3)', borderTop:'3px solid #ef5350', borderRadius:6, padding:'28px 24px', maxWidth:420, width:'100%', textAlign:'center' }}>
             <div style={{fontSize:32, marginBottom:12}}>⚠️</div>
             <div style={{fontSize:16, fontWeight:700, color:'#dde3ed', marginBottom:8}}>Something went wrong</div>
             <div style={{fontSize:13, color:'rgba(221,227,237,0.5)', marginBottom:20, lineHeight:1.5}}>
@@ -125,8 +125,8 @@ function LabelScanRouter({ labelCode }) {
     })();
   }, [labelCode]);
 
-  const W = { minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center', background:'#F3F4F6', flexDirection:'column', gap:16, padding:24, fontFamily:'Barlow,sans-serif' };
-  const C = { background:'#FFFFFF', border:'1px solid rgba(255,255,255,0.09)', borderTop:'2px solid #1e88e5', borderRadius:4, padding:'32px 28px', width:'100%', maxWidth:380, textAlign:'center', color:'#dde3ed' };
+  const W = { minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center', background:'#09111f', flexDirection:'column', gap:16, padding:24, fontFamily:'Barlow,sans-serif' };
+  const C = { background:'#0f1b2d', border:'1px solid rgba(255,255,255,0.09)', borderTop:'2px solid #1e88e5', borderRadius:4, padding:'32px 28px', width:'100%', maxWidth:380, textAlign:'center', color:'#dde3ed' };
 
   if (state === 'loading') return (
     <div style={W}>
@@ -224,12 +224,10 @@ function App() {
       else setLoading(false);
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      // Only handle sign-out here — Login.js handles sign-in via the onAuth callback
-      // This prevents onAuthStateChange from bypassing the "Stay signed in?" prompt
-      if (event === 'SIGNED_OUT' || !session) {
-        setSession(null); setUserRole(null); setLoading(false);
-      }
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      if (session) fetchUserRole(session.user.email);
+      else { setUserRole(null); setLoading(false); }
     });
 
     // Global navigation event (fired from deep components like MachineProfile service tabs)
@@ -459,7 +457,7 @@ function App() {
   );
 
   if (!session) {
-    return <Login onAuth={(s) => { setSession(s); fetchUserRole(s.user.email); }} />;
+    return <Login onAuth={(session) => { /* handled by onAuthStateChange */ }} />;
   }
 
   // First login — force password change for new company admins
@@ -483,7 +481,7 @@ function App() {
       {isDemo && (
         <div style={{
           position: 'fixed', top: 56, left: 0, right: 0, zIndex: 199,
-          background: 'linear-gradient(90deg, #1976D2, #0284c7)',
+          background: 'linear-gradient(90deg, #0ea5e9, #0284c7)',
           padding: '9px 20px', display: 'flex', alignItems: 'center',
           justifyContent: 'space-between', gap: 12, flexWrap: 'wrap',
         }}>
@@ -499,7 +497,7 @@ function App() {
             <button onClick={() => setShowTour(true)} style={{ padding: '5px 14px', background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.3)', color: '#fff', borderRadius: 7, fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
               ▶ Guided Tour
             </button>
-            <a href="mailto:info@mechiq.com.au?subject=MechIQ Demo Enquiry" style={{ padding: '5px 14px', background: '#fff', color: '#1976D2', borderRadius: 7, fontSize: 12, fontWeight: 800, textDecoration: 'none', display: 'flex', alignItems: 'center' }}>
+            <a href="mailto:info@mechiq.com.au?subject=MechIQ Demo Enquiry" style={{ padding: '5px 14px', background: '#fff', color: '#0ea5e9', borderRadius: 7, fontSize: 12, fontWeight: 800, textDecoration: 'none', display: 'flex', alignItems: 'center' }}>
               Get Started →
             </a>
           </div>

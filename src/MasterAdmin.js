@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from './supabase';
+import { pythonAIFetch } from './pythonApi';
 
 const MASTER_PIN = '4900';
 const FEATURES = [
@@ -39,7 +40,7 @@ const CSS = `
     font-size:10px; font-weight:700; letter-spacing:0.8px; text-transform:uppercase;
     transition:all 0.15s; font-family:var(--font-display);
   }
-  .feat-on  { background:rgba(0,255,136,0.12); color:#15803D; border:1px solid rgba(0,204,106,0.4); }
+  .feat-on  { background:rgba(0,255,136,0.12); color:#00ff88; border:1px solid rgba(0,204,106,0.4); }
   .feat-off { background:rgba(255,51,102,0.08); color:#ff3366; border:1px solid rgba(204,34,68,0.3); }
   .feat-on:hover  { background:rgba(0,255,136,0.2); box-shadow:0 0 10px rgba(0,255,136,0.2); }
   .feat-off:hover { background:rgba(255,51,102,0.15); box-shadow:0 0 10px rgba(255,51,102,0.15); }
@@ -49,7 +50,7 @@ const CSS = `
     font-size:10px; font-weight:700; letter-spacing:0.8px; text-transform:uppercase;
     font-family:var(--font-display);
   }
-  .pill-active    { background:rgba(0,255,136,0.1);  color:#15803D; border:1px solid rgba(0,204,106,0.4); }
+  .pill-active    { background:rgba(0,255,136,0.1);  color:#00ff88; border:1px solid rgba(0,204,106,0.4); }
   .pill-pending   { background:rgba(255,170,0,0.1);  color:#ffaa00; border:1px solid rgba(204,136,0,0.4); }
   .pill-suspended { background:rgba(255,51,102,0.1); color:#ff3366; border:1px solid rgba(204,34,68,0.4); }
   .tab-btn {
@@ -65,10 +66,10 @@ const CSS = `
     font-size:11px; font-weight:700; letter-spacing:0.8px; text-transform:uppercase;
     transition:all 0.15s; font-family:var(--font-display);
   }
-  .ma-action.approve  { background:rgba(0,255,136,0.12); color:#15803D; border:1px solid rgba(0,204,106,0.4); }
+  .ma-action.approve  { background:rgba(0,255,136,0.12); color:#00ff88; border:1px solid rgba(0,204,106,0.4); }
   .ma-action.reject   { background:rgba(255,51,102,0.1); color:#ff3366; border:1px solid rgba(204,34,68,0.3); }
   .ma-action.suspend  { background:rgba(255,51,102,0.1); color:#ff3366; border:1px solid rgba(204,34,68,0.3); }
-  .ma-action.activate { background:rgba(0,255,136,0.12); color:#15803D; border:1px solid rgba(0,204,106,0.4); }
+  .ma-action.activate { background:rgba(0,255,136,0.12); color:#00ff88; border:1px solid rgba(0,204,106,0.4); }
   .ma-action.pending  { background:rgba(255,170,0,0.1);  color:#ffaa00; border:1px solid rgba(204,136,0,0.3); }
   .ma-action.export   { background:rgba(0,212,255,0.08); color:var(--accent); border:1px solid var(--accent-dark); }
   .ma-action.danger   { background:rgba(255,51,102,0.08); color:#ff3366; border:1px solid rgba(204,34,68,0.3); }
@@ -287,7 +288,7 @@ function AppRequestsKanban({ requests, loading, onStatusChange, onAddNote, compa
   const generateAIResponse = async (req) => {
     setAiLoading(true);
     try {
-      const res = await fetch('/api/ai-insight', {
+      const res = await pythonAIFetch({
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ model: 'claude-sonnet-4-5', max_tokens: 400,
           messages: [{ role: 'user', content: `You are a senior React developer reviewing a feature request for a fleet maintenance app called MechIQ. Write a brief admin response (2-3 sentences) acknowledging the request and explaining the implementation approach or timeline. Be helpful and specific.\n\nRequest: "${req.title}"\nDescription: ${req.description || 'None'}\nAI Draft: ${req.ai_draft || 'None'}` }]
@@ -791,7 +792,7 @@ function MasterAdmin({ initialTab }) {
   const counts = { all:companies.length, pending:companies.filter(c=>c.status==='pending').length, active:companies.filter(c=>c.status==='active').length, suspended:companies.filter(c=>c.status==='suspended').length };
 
   const pillClass = (s) => `status-pill pill-${s||'pending'}`;
-  const statusDot = (s) => ({ active:'#15803D', pending:'#ffaa00', suspended:'#ff3366' }[s]||'#7ab8e8');
+  const statusDot = (s) => ({ active:'#00ff88', pending:'#ffaa00', suspended:'#ff3366' }[s]||'#7ab8e8');
 
   return (
     <div style={{ maxWidth:1200, margin:'0 auto' }}>

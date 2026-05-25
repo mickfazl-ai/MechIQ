@@ -106,7 +106,7 @@ function useToast() {
   return { toasts, add };
 }
 function Toasts({ toasts }) {
-  const P = { success: ['#15803D','rgba(0,255,136,0.08)','✓'], error: ['#ff3366','rgba(255,51,102,0.08)','✕'], warning: ['#ffaa00','rgba(255,170,0,0.08)','⚠'], info: ['#00d4ff','rgba(0,212,255,0.08)','ℹ'] };
+  const P = { success: ['#00ff88','rgba(0,255,136,0.08)','✓'], error: ['#ff3366','rgba(255,51,102,0.08)','✕'], warning: ['#ffaa00','rgba(255,170,0,0.08)','⚠'], info: ['#00d4ff','rgba(0,212,255,0.08)','ℹ'] };
   return (
     <div style={{ position: 'fixed', bottom: '28px', right: '28px', zIndex: 9999, display: 'flex', flexDirection: 'column', gap: '10px', pointerEvents: 'none' }}>
       {toasts.map(t => {
@@ -169,7 +169,7 @@ function QRModal({ asset, onClose }) {
           <button onClick={onClose} style={{ background: 'transparent', border: '1px solid var(--border)', color: 'var(--text-muted)', width: '30px', height: '30px', borderRadius: '8px', cursor: 'pointer', fontSize: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s' }}>✕</button>
         </div>
         <div ref={ref} style={{ position: 'absolute', left: '-9999px' }}><QRCodeCanvas value={qrVal} size={300} level="H" /></div>
-        <div style={{ background: '#F9FAFB', borderRadius: '12px', padding: '16px', display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '20px' }}>
+        <div style={{ background: '#0d1117', borderRadius: '12px', padding: '16px', display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '20px' }}>
           <div style={{ background: 'var(--surface)', borderRadius: '8px', padding: '6px', flexShrink: 0 }}><QRCodeCanvas value={qrVal} size={80} level="H" /></div>
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: '9px', color: '#555', letterSpacing: '0.5px', marginBottom: '2px' }}>MECH IQ · ASSET TAG</div>
@@ -1309,7 +1309,7 @@ function TrackerPlaceholder({ userRole }) {
     if (withGPS.length === 0) return;
     withGPS.forEach(a => {
       const SC = { Running:'#16a34a', Down:'#dc2626', Maintenance:'#d97706', Active:'#16a34a' };
-      const c = SC[a.status] || '#1976D2';
+      const c = SC[a.status] || '#0ea5e9';
       const num = (a.asset_number||'').replace('AST-','');
       const icon = L.divIcon({
         html: `<div style="position:relative;width:36px;height:42px">
@@ -1343,7 +1343,7 @@ function TrackerPlaceholder({ userRole }) {
         if (mapInst.current && window.L) {
           if (userMarker.current) { try { userMarker.current.remove(); } catch(e){} }
           const icon = window.L.divIcon({
-            html: `<div style="width:18px;height:18px;border-radius:50%;background:#1976D2;border:3px solid #fff;box-shadow:0 0 0 6px rgba(14,165,233,0.25)"></div>`,
+            html: `<div style="width:18px;height:18px;border-radius:50%;background:#0ea5e9;border:3px solid #fff;box-shadow:0 0 0 6px rgba(14,165,233,0.25)"></div>`,
             iconSize:[18,18], iconAnchor:[9,9], className:'',
           });
           userMarker.current = window.L.marker([lat,lng],{icon}).addTo(mapInst.current)
@@ -1501,7 +1501,7 @@ function TrackerPlaceholder({ userRole }) {
               </div>
             ))}
             <div style={{ display:'flex', alignItems:'center', gap:4 }}>
-              <div style={{ width:10, height:10, borderRadius:'50%', background:'#1976D2', border:'2px solid #fff' }} />
+              <div style={{ width:10, height:10, borderRadius:'50%', background:'#0ea5e9', border:'2px solid #fff' }} />
               <span style={{ color:'var(--text-secondary)' }}>You</span>
             </div>
           </div>
