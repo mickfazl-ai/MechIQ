@@ -282,7 +282,6 @@ const NAV_STRUCTURE = [
       { id: 'assets', subPage: 'tracker',      label: 'Tracker',      roles: ['admin','supervisor'] },
     ],
   },
-  { id: 'admin', subPage: 'onboarding_admin', label: 'Onboarding', ik: 'assets', roles: ['admin','supervisor'], feature: 'assets' },
   { id: 'maintenance',  label: 'Maintenance',  ik: 'maintenance',  roles: ['admin','supervisor','technician'], feature: 'maintenance',
     children: [
       { id: 'maintenance', subPage: 'scheduled',   label: 'Planned Maintenance', roles: ['admin','supervisor','technician'] },
@@ -316,7 +315,8 @@ const NAV_STRUCTURE = [
       { id: 'admin', subPage: 'billing',  label: 'Billing & Plan',  roles: ['admin'] },
       { id: 'admin', subPage: 'data',             label: 'Data & Export',   roles: ['admin'] },
       { id: 'admin', subPage: 'assets_settings',  label: 'Assets',          roles: ['admin'] },
-      { id: 'admin', subPage: 'labels',           label: 'Labels',          roles: ['admin'] },
+      { id: 'forms', subPage: null,               label: 'Form Builder',    roles: ['admin'] },
+      { id: 'admin', subPage: 'label_designer',   label: 'Label Designer',  roles: ['admin'] },
     ],
   },
   { id: 'settings',     label: 'Settings',     ik: 'settings',     roles: ['admin','supervisor'], feature: null,
