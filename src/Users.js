@@ -33,15 +33,15 @@ const CSS = `
     outline: none; box-sizing: border-box; font-family: inherit;
     transition: border-color 0.15s, box-shadow 0.15s;
   }
-  .u-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(25,118,210,0.12); }
+  .u-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(0,171,228,0.12); }
   .u-input::placeholder { color: #b0c4d4; }
   .u-btn-primary {
     padding: 9px 20px; background: var(--accent); color: #fff;
     border: none; border-radius: 8px; font-size: 12px; font-weight: 700;
     cursor: pointer; font-family: inherit; letter-spacing: 0.4px;
-    box-shadow: 0 3px 10px rgba(25,118,210,0.35); transition: all 0.15s;
+    box-shadow: 0 3px 10px rgba(0,171,228,0.35); transition: all 0.15s;
   }
-  .u-btn-primary:hover:not(:disabled) { background: #0096cc; transform: translateY(-1px); box-shadow: 0 5px 14px rgba(25,118,210,0.4); }
+  .u-btn-primary:hover:not(:disabled) { background: #0096cc; transform: translateY(-1px); box-shadow: 0 5px 14px rgba(0,171,228,0.4); }
   .u-btn-primary:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
   .u-btn-ghost {
     padding: 9px 18px; background: var(--surface); color: var(--text-secondary);

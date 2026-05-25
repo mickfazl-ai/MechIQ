@@ -36,7 +36,7 @@ const CSS = `
     font-family: inherit; letter-spacing: 0.4px;
     box-shadow: 0 3px 10px rgba(0,171,228,0.3); transition: all 0.15s;
   }
-  .ps-btn:hover { background: #1565C0; transform: translateY(-1px); }
+  .ps-btn:hover { background: #0096cc; transform: translateY(-1px); }
   .ps-btn-ghost {
     padding: 9px 18px; background: var(--surface); color: var(--text-secondary);
     border: 1px solid var(--border); border-radius: 8px; font-size: 12px;

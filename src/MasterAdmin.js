@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from './supabase';
-import { pythonAIFetch } from './pythonApi';
 
 const MASTER_PIN = '4900';
 const FEATURES = [
@@ -40,7 +39,7 @@ const CSS = `
     font-size:10px; font-weight:700; letter-spacing:0.8px; text-transform:uppercase;
     transition:all 0.15s; font-family:var(--font-display);
   }
-  .feat-on  { background:var(--green-bg); color:var(--green); border:1px solid var(--green-border); }
+  .feat-on  { background:rgba(0,255,136,0.12); color:#00ff88; border:1px solid rgba(0,204,106,0.4); }
   .feat-off { background:rgba(255,51,102,0.08); color:#ff3366; border:1px solid rgba(204,34,68,0.3); }
   .feat-on:hover  { background:rgba(0,255,136,0.2); box-shadow:0 0 10px rgba(0,255,136,0.2); }
   .feat-off:hover { background:rgba(255,51,102,0.15); box-shadow:0 0 10px rgba(255,51,102,0.15); }
@@ -50,7 +49,7 @@ const CSS = `
     font-size:10px; font-weight:700; letter-spacing:0.8px; text-transform:uppercase;
     font-family:var(--font-display);
   }
-  .pill-active    { background:var(--green-bg);  color:var(--green); border:1px solid var(--green-border); }
+  .pill-active    { background:rgba(0,255,136,0.1);  color:#00ff88; border:1px solid rgba(0,204,106,0.4); }
   .pill-pending   { background:rgba(255,170,0,0.1);  color:#ffaa00; border:1px solid rgba(204,136,0,0.4); }
   .pill-suspended { background:rgba(255,51,102,0.1); color:#ff3366; border:1px solid rgba(204,34,68,0.4); }
   .tab-btn {
@@ -66,10 +65,10 @@ const CSS = `
     font-size:11px; font-weight:700; letter-spacing:0.8px; text-transform:uppercase;
     transition:all 0.15s; font-family:var(--font-display);
   }
-  .ma-action.approve  { background:var(--green-bg); color:var(--green); border:1px solid var(--green-border); }
+  .ma-action.approve  { background:rgba(0,255,136,0.12); color:#00ff88; border:1px solid rgba(0,204,106,0.4); }
   .ma-action.reject   { background:rgba(255,51,102,0.1); color:#ff3366; border:1px solid rgba(204,34,68,0.3); }
   .ma-action.suspend  { background:rgba(255,51,102,0.1); color:#ff3366; border:1px solid rgba(204,34,68,0.3); }
-  .ma-action.activate { background:var(--green-bg); color:var(--green); border:1px solid var(--green-border); }
+  .ma-action.activate { background:rgba(0,255,136,0.12); color:#00ff88; border:1px solid rgba(0,204,106,0.4); }
   .ma-action.pending  { background:rgba(255,170,0,0.1);  color:#ffaa00; border:1px solid rgba(204,136,0,0.3); }
   .ma-action.export   { background:rgba(0,212,255,0.08); color:var(--accent); border:1px solid var(--accent-dark); }
   .ma-action.danger   { background:rgba(255,51,102,0.08); color:#ff3366; border:1px solid rgba(204,34,68,0.3); }
@@ -250,7 +249,7 @@ function UsageWidget() {
         {/* Warning if getting close */}
         {(pct(usage.dbBytes, DB_LIMIT) > 70 || pct(usage.storageBytes, STORE_LIMIT) > 70) && (
           <div style={{ background:'var(--amber-bg)', border:'1px solid var(--amber-border)', borderRadius:8, padding:'10px 14px', display:'flex', alignItems:'center', gap:8 }}>
-            <span style={{ fontSize:16 }}></span>
+            <span style={{ fontSize:16 }}>⚠️</span>
             <div style={{ fontSize:12, color:'var(--amber)', fontWeight:600 }}>Approaching free tier limit — consider upgrading Supabase plan</div>
           </div>
         )}
@@ -269,10 +268,10 @@ function AppRequestsKanban({ requests, loading, onStatusChange, onAddNote, compa
 
   const COLUMNS = [
     { id: 'Pending',     label: '⏳ Pending',     color: 'var(--amber)' },
-    { id: 'Approved',    label: ' Approved',     color: 'var(--accent)' },
-    { id: 'In Progress', label: ' In Progress',  color: 'var(--purple)' },
-    { id: 'Complete',    label: ' Complete',     color: 'var(--green)' },
-    { id: 'Rejected',    label: ' Rejected',     color: 'var(--red)' },
+    { id: 'Approved',    label: '✓ Approved',     color: 'var(--accent)' },
+    { id: 'In Progress', label: '⚡ In Progress',  color: 'var(--purple)' },
+    { id: 'Complete',    label: '✅ Complete',     color: 'var(--green)' },
+    { id: 'Rejected',    label: '✗ Rejected',     color: 'var(--red)' },
   ];
 
   const PRIORITY_COLOR = { Low:'var(--green)', Medium:'var(--amber)', High:'var(--red)', Critical:'#ff0040' };
@@ -288,7 +287,7 @@ function AppRequestsKanban({ requests, loading, onStatusChange, onAddNote, compa
   const generateAIResponse = async (req) => {
     setAiLoading(true);
     try {
-      const res = await pythonAIFetch({
+      const res = await fetch('/api/ai-insight', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ model: 'claude-sonnet-4-5', max_tokens: 400,
           messages: [{ role: 'user', content: `You are a senior React developer reviewing a feature request for a fleet maintenance app called MechIQ. Write a brief admin response (2-3 sentences) acknowledging the request and explaining the implementation approach or timeline. Be helpful and specific.\n\nRequest: "${req.title}"\nDescription: ${req.description || 'None'}\nAI Draft: ${req.ai_draft || 'None'}` }]
@@ -341,10 +340,10 @@ function AppRequestsKanban({ requests, loading, onStatusChange, onAddNote, compa
                       <div style={{ display:'flex', gap:4, marginBottom:8, flexWrap:'wrap' }}>
                         <span style={{ fontSize:10, fontWeight:600, padding:'1px 6px', borderRadius:4, background:PRIORITY_COLOR[r.priority]+'20', color:PRIORITY_COLOR[r.priority] }}>{r.priority}</span>
                         <span style={{ fontSize:10, color:'var(--text-muted)', padding:'1px 6px', borderRadius:4, background:'var(--surface)', border:'1px solid var(--border)' }}>{r.type}</span>
-                        <span style={{ fontSize:10, color:'var(--accent)', fontWeight:700 }}> {r.votes || 0}</span>
+                        <span style={{ fontSize:10, color:'var(--accent)', fontWeight:700 }}>👍 {r.votes || 0}</span>
                       </div>
                       {r.admin_notes && (
-                        <div style={{ fontSize:10, color:'var(--accent)', background:'var(--accent-light)', borderRadius:6, padding:'4px 8px', marginBottom:8, lineHeight:1.4 }}> {r.admin_notes.slice(0,80)}{r.admin_notes.length > 80 ? '…' : ''}</div>
+                        <div style={{ fontSize:10, color:'var(--accent)', background:'var(--accent-light)', borderRadius:6, padding:'4px 8px', marginBottom:8, lineHeight:1.4 }}>📝 {r.admin_notes.slice(0,80)}{r.admin_notes.length > 80 ? '…' : ''}</div>
                       )}
                       {/* Move to status buttons */}
                       <div style={{ display:'flex', gap:4, flexWrap:'wrap' }}>
@@ -356,7 +355,7 @@ function AppRequestsKanban({ requests, loading, onStatusChange, onAddNote, compa
                         ))}
                         <button onClick={() => { setNoteModal(r); setNoteText(r.admin_notes || ''); }}
                           style={{ fontSize:9, padding:'3px 7px', borderRadius:5, border:'1px solid var(--border)', background:'transparent', color:'var(--text-muted)', cursor:'pointer' }}>
-                           Note
+                          📝 Note
                         </button>
                       </div>
                     </div>
@@ -373,8 +372,8 @@ function AppRequestsKanban({ requests, loading, onStatusChange, onAddNote, compa
         <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.6)', zIndex:400, display:'flex', alignItems:'center', justifyContent:'center', padding:16 }}>
           <div style={{ background:'var(--bg)', borderRadius:16, width:'100%', maxWidth:520, boxShadow:'0 20px 60px rgba(0,0,0,0.4)' }}>
             <div style={{ padding:'18px 20px 14px', borderBottom:'1px solid var(--border)', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-              <div style={{ fontSize:15, fontWeight:800, color:'var(--text-primary)' }}> Admin Note — {noteModal.title}</div>
-              <button onClick={() => setNoteModal(null)} style={{ background:'none', border:'none', cursor:'pointer', fontSize:20, color:'var(--text-muted)' }}></button>
+              <div style={{ fontSize:15, fontWeight:800, color:'var(--text-primary)' }}>📝 Admin Note — {noteModal.title}</div>
+              <button onClick={() => setNoteModal(null)} style={{ background:'none', border:'none', cursor:'pointer', fontSize:20, color:'var(--text-muted)' }}>✕</button>
             </div>
             <div style={{ padding:20 }}>
               <div style={{ background:'var(--surface)', borderRadius:10, padding:'10px 14px', marginBottom:14, fontSize:12, color:'var(--text-secondary)' }}>
@@ -386,7 +385,7 @@ function AppRequestsKanban({ requests, loading, onStatusChange, onAddNote, compa
               <div style={{ display:'flex', gap:8 }}>
                 <button onClick={() => generateAIResponse(noteModal)} disabled={aiLoading}
                   style={{ padding:'9px 14px', background:'var(--surface-2)', border:'1px solid var(--border)', borderRadius:9, fontSize:12, fontWeight:700, cursor:'pointer', color:'var(--text-secondary)' }}>
-                  {aiLoading ? '⏳…' : ' AI Response'}
+                  {aiLoading ? '⏳…' : '🤖 AI Response'}
                 </button>
                 <button onClick={async () => { await onAddNote(noteModal.id, noteText); setNoteModal(null); }}
                   style={{ flex:1, padding:'10px', background:'var(--accent)', color:'#fff', border:'none', borderRadius:9, fontSize:13, fontWeight:700, cursor:'pointer' }}>
@@ -505,17 +504,17 @@ function NewCompanyForm({ onCreated }) {
     <div className="nc-wrap">
       <div className="nc-card">
         <div className="nc-success">
-          <div className="nc-success-icon"></div>
+          <div className="nc-success-icon">✓</div>
           <div className="nc-success-title">{result.company.name} is live</div>
           <div className="nc-success-sub">
             Company account created and admin access provisioned.<br />
             Share the credentials below with the company admin.
           </div>
           <div className="nc-success-items">
-            <div className="nc-success-item"> Company record created</div>
-            <div className="nc-success-item"> Admin user account created</div>
-            <div className="nc-success-item"> Role assigned: Company Admin</div>
-            <div className="nc-success-item"> Welcome email sent to {result.email}</div>
+            <div className="nc-success-item">✓ Company record created</div>
+            <div className="nc-success-item">✓ Admin user account created</div>
+            <div className="nc-success-item">✓ Role assigned: Company Admin</div>
+            <div className="nc-success-item">✓ Welcome email sent to {result.email}</div>
           </div>
 
           {/* Credentials card */}
@@ -792,7 +791,7 @@ function MasterAdmin({ initialTab }) {
   const counts = { all:companies.length, pending:companies.filter(c=>c.status==='pending').length, active:companies.filter(c=>c.status==='active').length, suspended:companies.filter(c=>c.status==='suspended').length };
 
   const pillClass = (s) => `status-pill pill-${s||'pending'}`;
-  const statusDot = (s) => ({ active:'var(--green)', pending:'var(--amber)', suspended:'var(--red)' }[s]||'#60A5FA');
+  const statusDot = (s) => ({ active:'#00ff88', pending:'#ffaa00', suspended:'#ff3366' }[s]||'#7ab8e8');
 
   return (
     <div style={{ maxWidth:1200, margin:'0 auto' }}>
@@ -891,8 +890,8 @@ function MasterAdmin({ initialTab }) {
                   </div>
                   <div style={{ display:'flex', gap:6, flexShrink:0 }} onClick={e => e.stopPropagation()}>
                     {c.status==='pending' && (<>
-                      <button className="ma-action approve" onClick={() => setStatus(c.id,'active')}> Approve</button>
-                      <button className="ma-action reject"  onClick={() => setStatus(c.id,'suspended')}> Reject</button>
+                      <button className="ma-action approve" onClick={() => setStatus(c.id,'active')}>✓ Approve</button>
+                      <button className="ma-action reject"  onClick={() => setStatus(c.id,'suspended')}>✕ Reject</button>
                     </>)}
                     {c.status==='active'    && <button className="ma-action suspend"  onClick={() => setStatus(c.id,'suspended')}>Suspend</button>}
                     {c.status==='suspended' && <button className="ma-action activate" onClick={() => setStatus(c.id,'active')}>Reactivate</button>}
@@ -924,7 +923,7 @@ function MasterAdmin({ initialTab }) {
                   <div style={{ fontSize:10, color:'var(--accent)', letterSpacing:'2px', textTransform:'uppercase', fontFamily:'var(--font-display)', fontWeight:700, marginBottom:4 }}>Company Detail</div>
                   <div style={{ fontFamily:"var(--font-display)", fontSize:22, fontWeight:800, color:'var(--text-primary)', letterSpacing:'1px' }}>{selected.name}</div>
                 </div>
-                <button onClick={() => setSelected(null)} style={{ background:'transparent', border:'1px solid var(--border)', color:'var(--text-muted)', width:32, height:32, borderRadius:6, cursor:'pointer', fontSize:14, transition:'all 0.15s' }}></button>
+                <button onClick={() => setSelected(null)} style={{ background:'transparent', border:'1px solid var(--border)', color:'var(--text-muted)', width:32, height:32, borderRadius:6, cursor:'pointer', fontSize:14, transition:'all 0.15s' }}>✕</button>
               </div>
             </div>
 
@@ -968,7 +967,7 @@ function MasterAdmin({ initialTab }) {
                     <div key={f.key} style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
                       <span style={{ color:'var(--text-secondary)', fontSize:13, fontFamily:'var(--font-display)' }}>{f.label}</span>
                       <button className={`feat-toggle feat-${on?'on':'off'}`} onClick={() => toggleFeature(selected, f.key)}>
-                        {on?' Active':' Locked'}
+                        {on?'✓ Active':'✕ Locked'}
                       </button>
                     </div>
                   );

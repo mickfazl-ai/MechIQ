@@ -32,7 +32,7 @@ const CSS = `
   }
   .r-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(0,171,228,0.12); }
   .r-btn {
-    padding: 9px 18px; background: #1976D2; color: #fff; border: none;
+    padding: 9px 18px; background: #00ABE4; color: #fff; border: none;
     border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer;
     font-family: inherit; letter-spacing: 0.4px; box-shadow: 0 3px 10px rgba(0,171,228,0.3);
     transition: all 0.15s; white-space: nowrap;
@@ -416,7 +416,7 @@ function Reports({ companyId, userRole, initialTab }) {
                   <span style={{ fontFamily:"var(--font-display)", fontSize:20, fontWeight:800, color:'#ea580c' }}>
                     ${totalDownCost.toLocaleString('en-AU',{minimumFractionDigits:0})} total cost
                   </span>
-                  <button className="r-btn" onClick={() => setShowForm(s=>!s)}>{showForm ? ' Cancel' : '+ Log Downtime'}</button>
+                  <button className="r-btn" onClick={() => setShowForm(s=>!s)}>{showForm ? '✕ Cancel' : '+ Log Downtime'}</button>
                 </div>
               }
             />
@@ -452,7 +452,7 @@ function Reports({ companyId, userRole, initialTab }) {
                 {[0,1,2,3].map(i => <div key={i} style={{ display:'grid', gridTemplateColumns:'2fr 1fr 1fr 1fr 3fr', gap:12, padding:'12px 0', borderBottom:'1px solid #eaf3fb' }}>{[0,1,2,3,4].map(j => <Sk key={j} h="13px" w={['75%','55%','50%','40%','80%'][j]} />)}</div>)}
               </div>
             ) : downtimeData.length === 0 ? (
-              <Empty icon="" title="No downtime recorded" desc="Log downtime events to track cost and identify patterns across your fleet." />
+              <Empty icon="📋" title="No downtime recorded" desc="Log downtime events to track cost and identify patterns across your fleet." />
             ) : (
               <div style={{ overflowX:'auto' }}>
                 <table style={{ width:'100%', borderCollapse:'collapse' }}>
@@ -501,13 +501,13 @@ function Reports({ companyId, userRole, initialTab }) {
           <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16, marginBottom:20 }}>
             <div className="r-card">
               <SectionHead title="By Fault Category" />
-              {catTotals.length === 0 ? <Empty icon="" title="No data" desc="No downtime data for this period." /> : (
+              {catTotals.length === 0 ? <Empty icon="📊" title="No data" desc="No downtime data for this period." /> : (
                 <BarChart items={catTotals} maxVal={maxCatHours} valueKey="hours" labelKey="category" colors={CHART_COLORS} />
               )}
             </div>
             <div className="r-card">
               <SectionHead title="By Asset (hours)" />
-              {assetTotals.length === 0 ? <Empty icon="" title="No data" desc="No downtime data for this period." /> : (
+              {assetTotals.length === 0 ? <Empty icon="📊" title="No data" desc="No downtime data for this period." /> : (
                 <BarChart items={assetTotals} maxVal={maxAssetHours} valueKey="hours" labelKey="asset" colors={CHART_COLORS} />
               )}
             </div>
@@ -517,7 +517,7 @@ function Reports({ companyId, userRole, initialTab }) {
           <div className="r-card">
             <SectionHead title="Events in Period" count={filteredData.length} />
             {filteredData.length === 0 ? (
-              <Empty icon="" title="No events" desc="No downtime events recorded in this date range." />
+              <Empty icon="✅" title="No events" desc="No downtime events recorded in this date range." />
             ) : (
               <div style={{ overflowX:'auto' }}>
                 <table style={{ width:'100%', borderCollapse:'collapse' }}>
@@ -596,7 +596,7 @@ function Reports({ companyId, userRole, initialTab }) {
           <div className="r-card">
             <SectionHead title="Utilisation Detail" count={availabilityData.length} />
             {availabilityData.length === 0 ? (
-              <Empty icon="" title="No assets" desc="Register assets to see utilisation data." />
+              <Empty icon="⚙️" title="No assets" desc="Register assets to see utilisation data." />
             ) : (
               <div style={{ overflowX:'auto' }}>
                 <table style={{ width:'100%', borderCollapse:'collapse' }}>
@@ -608,7 +608,7 @@ function Reports({ companyId, userRole, initialTab }) {
                       return (
                         <tr key={a.asset} className="r-row" style={{ borderBottom:'1px solid #eaf3fb', opacity:0, animation:`fadeUp 0.3s ease ${i*35}ms forwards` }}>
                           <Td style={{ fontWeight:700, color:'var(--text-primary)' }}>{a.asset}</Td>
-                          <Td><Chip text={`${a.totalRunHours}h`} color="#1976D2" bg="#e0f4ff" /></Td>
+                          <Td><Chip text={`${a.totalRunHours}h`} color="#00ABE4" bg="#e0f4ff" /></Td>
                           <Td style={{ color:'var(--text-muted)' }}>{a.targetHours}h</Td>
                           <Td>
                             <div style={{ display:'flex', alignItems:'center', gap:10 }}>

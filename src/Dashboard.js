@@ -1,186 +1,110 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from './supabase';
-import { WidgetCustom, WidgetBuilderModal } from './CustomWidget';
-import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
 const CSS = `
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
-@keyframes shimmer  { 0%{background-position:-200% 0}100%{background-position:200% 0} }
-@keyframes countUp  { from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)} }
-@keyframes fadeUp   { from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)} }
-@keyframes toast-in { from{opacity:0;transform:translateX(20px) scale(0.96)}to{opacity:1;transform:translateX(0) scale(1)} }
-@keyframes toast-out{ from{opacity:1;max-height:80px;margin-bottom:10px}to{opacity:0;max-height:0;margin-bottom:0} }
-@keyframes pulse-red   { 0%,100%{box-shadow:0 0 0 0 rgba(185,28,28,.18)}  50%{box-shadow:0 0 0 6px transparent} }
-@keyframes pulse-amber { 0%,100%{box-shadow:0 0 0 0 rgba(180,83,9,.15)} 50%{box-shadow:0 0 0 6px transparent} }
-@keyframes spin     { to{transform:rotate(360deg)} }
-@keyframes aiScan   { 0%{background-position:200% 0}100%{background-position:-200% 0} }
-@keyframes lrnAnim  { from{width:20%}to{width:90%} }
-@keyframes slideUp  { from{transform:translateY(100%)}to{transform:translateY(0)} }
-@keyframes slideIn  { from{transform:translateX(100%)}to{transform:translateX(0)} }
+  @keyframes shimmer { 0%{background-position:-200% 0} 100%{background-position:200% 0} }
+  @keyframes countUp { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+  @keyframes pulse-red   { 0%,100%{box-shadow:0 0 0 0 rgba(220,38,38,0.25)}  50%{box-shadow:0 0 0 6px transparent} }
+  @keyframes pulse-amber { 0%,100%{box-shadow:0 0 0 0 rgba(217,119,6,0.25)} 50%{box-shadow:0 0 0 6px transparent} }
+  @keyframes toast-in  { from{opacity:0;transform:translateX(20px) scale(0.96)} to{opacity:1;transform:translateX(0) scale(1)} }
+  @keyframes toast-out { from{opacity:1;max-height:80px;margin-bottom:10px} to{opacity:0;max-height:0;margin-bottom:0} }
 
-/* ── KPI Card ── */
-.kpi-card {
-  background:#fff;
-  border:1px solid #E4E8EE;
-  border-radius:0;
-  padding:16px 18px;
-  position:relative; overflow:hidden;
-  transition:box-shadow 0.2s, border-color 0.2s;
-  cursor:default;
-  box-shadow:0 1px 3px rgba(0,0,0,.06);
-}
-.kpi-card:hover { box-shadow:0 4px 16px rgba(0,0,0,.08); border-color:#CDD3DC; }
-.kpi-card.urgent { animation:pulse-red 2.5s ease-in-out infinite; }
-.kpi-card.warn   { animation:pulse-amber 2.5s ease-in-out infinite; }
+  .kpi-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 22px;
+    position: relative;
+    overflow: hidden;
+    transition: box-shadow 0.2s ease, transform 0.2s ease, border-color 0.2s ease;
+    cursor: default;
+  }
+  .kpi-card:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); border-color: var(--border-strong); }
+  .kpi-card.urgent { animation: pulse-red 2.5s ease-in-out infinite; }
+  .kpi-card.warn   { animation: pulse-amber 2.5s ease-in-out infinite; }
 
-/* ── Panel ── */
-.panel {
-  background:#fff;
-  border:1px solid #E4E8EE;
-  border-radius:0;
-  padding:20px 22px;
-  transition:box-shadow 0.2s, border-color 0.2s;
-  box-shadow:0 1px 3px rgba(0,0,0,.06);
-}
-.panel:hover { box-shadow:0 4px 16px rgba(0,0,0,.08); border-color:#CDD3DC; }
-.panel-title {
-  font-family:var(--font-body,'Inter',system-ui,sans-serif);
-  font-size:11px; font-weight:700; letter-spacing:.6px;
-  text-transform:uppercase; color:#6B7280;
-  margin-bottom:16px; display:flex; align-items:center; gap:8px;
-}
-.panel-title::before {
-  content:''; width:3px; height:13px;
-  background:#1976D2; flex-shrink:0;
-}
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 22px 24px;
+    transition: box-shadow 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+  }
+  .panel:hover { box-shadow: var(--shadow-md); border-color: var(--border-strong); transform: translateY(-1px); }
 
-/* ── Progress ── */
-.progress-track { height:5px; background:#F0F2F5; border-radius:0; overflow:hidden; }
-.progress-fill  { height:100%; border-radius:0; transition:width 0.9s cubic-bezier(0.16,1,0.3,1); }
-.health-seg     { transition:width 1.1s cubic-bezier(0.16,1,0.3,1); }
+  .panel-title {
+    font-family: var(--font-display);
+    font-size: 12px; font-weight: 800; letter-spacing: 1.2px;
+    text-transform: uppercase; color: var(--text-muted);
+    margin-bottom: 18px; display: flex; align-items: center; gap: 8px;
+  }
+  .panel-title::before {
+    content: ''; width: 3px; height: 14px; border-radius: 2px;
+    background: var(--accent); flex-shrink: 0;
+  }
 
-/* ── Activity ── */
-.activity-row { display:flex; gap:12px; align-items:flex-start; padding:10px 0; border-bottom:1px solid #E4E8EE; }
-.activity-row:last-child { border-bottom:none; }
+  .wo-row:hover td { background: var(--surface-2) !important; }
 
-/* ── Refresh button ── */
-.refresh-btn {
-  display:inline-flex; align-items:center; gap:6px;
-  padding:7px 14px; background:#fff; color:#374151;
-  border:1px solid #CDD3DC;
-  border-radius:0; font-size:12px; font-weight:600; cursor:pointer;
-  transition:all 0.15s; font-family:var(--font-body,'Inter',system-ui,sans-serif);
-}
-.refresh-btn:hover { border-color:#1976D2; color:#1976D2; background:#EBF3FC; }
+  .progress-track {
+    height: 6px; background: var(--surface-3); border-radius: 99px; overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%; border-radius: 99px;
+    transition: width 0.9s cubic-bezier(0.16,1,0.3,1);
+  }
 
-/* ── Skeleton ── */
-.sk {
-  background:linear-gradient(90deg,#F8FAFB 25%,#E4E8EE 50%,#F8FAFB 75%);
-  background-size:200% 100%; animation:shimmer 1.4s infinite linear; border-radius:0;
-}
+  .health-seg { transition: width 1.1s cubic-bezier(0.16,1,0.3,1); }
 
-/* ── Widget system ── */
-.dash-grid { display:grid; grid-template-columns:repeat(12,1fr); gap:12px; }
-.widget-sm   { grid-column:span 4; }
-.widget-md   { grid-column:span 6; }
-.widget-lg   { grid-column:span 12; }
-.widget-wide { grid-column:span 6; }
-@media(max-width:900px)  { .widget-sm,.widget-md,.widget-lg,.widget-wide { grid-column:span 12; } }
-@media(min-width:901px) and (max-width:1200px) { .widget-sm { grid-column:span 6; } .widget-wide { grid-column:span 12; } }
+  .activity-row {
+    display: flex; gap: 12px; align-items: flex-start;
+    padding: 10px 0; border-bottom: 1px solid var(--border);
+  }
+  .activity-row:last-child { border-bottom: none; }
 
-.widget-card {
-  background:#fff; border:1px solid #E4E8EE;
-  border-radius:0; padding:16px;
-  transition:box-shadow 0.2s;
-  box-shadow:0 1px 3px rgba(0,0,0,.05);
-}
-.widget-card.dragging  { opacity:0.4; }
-.widget-card.drag-over { border-color:#1976D2; box-shadow:0 0 0 2px rgba(25,118,210,0.2); }
-.widget-card:hover     { box-shadow:0 4px 16px rgba(0,0,0,.07); }
-.widget-card:hover .widget-remove-btn { opacity:1 !important; }
-.dash-widget:hover .widget-remove-btn { opacity:1 !important; }
+  .refresh-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 7px 14px; background: var(--surface); color: var(--text-secondary);
+    border: 1px solid var(--border); border-radius: 8px;
+    font-size: 12px; font-weight: 600; cursor: pointer;
+    transition: all 0.15s; font-family: var(--font-body);
+  }
+  .refresh-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-light); }
 
-.widget-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; }
-.widget-title  { font-size:10px; font-weight:700; color:#6B7280; text-transform:uppercase; letter-spacing:.6px; }
-.widget-chevron { font-size:12px; color:#9CA3AF; transition:transform 0.2s; cursor:pointer; }
-.widget-chevron.open { transform:rotate(180deg); }
-.widget-expand-btn { display:flex; align-items:center; gap:6px; background:none; border:none; cursor:pointer; padding:0; }
-.widget-body { overflow:hidden; transition:max-height 0.3s ease, opacity 0.2s; }
-.widget-body.closed { max-height:0; opacity:0; }
-.widget-body.opened { max-height:2000px; opacity:1; }
+  .sk { background: linear-gradient(90deg, var(--surface-2) 25%, var(--surface-3) 50%, var(--surface-2) 75%); background-size: 200% 100%; animation: shimmer 1.4s infinite linear; border-radius: 6px; }
+  /* ── Widget system ── */
+  .dash-grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 16px; }
+  .widget-sm   { grid-column: span 4; }
+  .widget-md   { grid-column: span 6; }
+  .widget-lg   { grid-column: span 12; }
+  .widget-wide { grid-column: span 6; }
+  @media(max-width:900px) { .widget-sm,.widget-md,.widget-lg,.widget-wide { grid-column: span 12; } }
+  @media(min-width:901px) and (max-width:1200px) { .widget-sm { grid-column: span 6; } .widget-wide { grid-column: span 12; } }
+  .widget-card { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:18px; transition:box-shadow 0.2s; }
+  .widget-card.dragging { opacity:0.4; }
+  .widget-card.drag-over { border-color:var(--accent); box-shadow:0 0 0 2px rgba(14,165,233,0.3); }
+  .widget-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; }
+  .widget-title { font-size:11px; font-weight:800; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.8px; }
+  .widget-chevron { font-size:12px; color:var(--text-muted); transition:transform 0.2s; cursor:pointer; }
+  .widget-chevron.open { transform:rotate(180deg); }
+  .widget-expand-btn { display:flex; align-items:center; gap:6px; background:none; border:none; cursor:pointer; padding:0; }
+  .widget-body { overflow:hidden; transition:max-height 0.3s ease, opacity 0.2s; }
+  .widget-body.closed { max-height:0; opacity:0; }
+  .widget-body.opened { max-height:2000px; opacity:1; }
+  .widget-card:hover { box-shadow:0 4px 16px rgba(0,0,0,0.08); }
+  .custom-panel { position:fixed; top:0; right:0; bottom:0; width:360px; max-width:90vw; background:var(--bg); border-left:1px solid var(--border); box-shadow:-8px 0 40px rgba(0,0,0,0.2); z-index:300; display:flex; flex-direction:column; animation:slideIn 0.25s cubic-bezier(0.16,1,0.3,1); }
+  @keyframes slideIn { from{transform:translateX(100%)} to{transform:translateX(0)} }
+  .custom-item { display:flex; align-items:center; gap:10px; padding:12px 16px; border-bottom:1px solid var(--border); cursor:grab; user-select:none; transition:background 0.1s; }
+  .custom-item:hover { background:var(--surface); }
+  .size-btn { padding:3px 8px; border-radius:5px; border:1px solid var(--border); background:var(--surface-2); color:var(--text-muted); font-size:10px; font-weight:700; cursor:pointer; font-family:inherit; }
+  .size-btn.active { background:var(--accent); color:#fff; border-color:var(--accent); }
+  .toggle-btn { width:36px; height:20px; border-radius:10px; border:none; cursor:pointer; position:relative; transition:background 0.2s; flex-shrink:0; }
+  .toggle-btn::after { content:''; position:absolute; top:2px; width:16px; height:16px; border-radius:50%; background:#fff; transition:left 0.2s; }
+  .toggle-btn.on { background:var(--accent); }
+  .toggle-btn.on::after { left:18px; }
+  .toggle-btn.off { background:var(--border); }
+  .toggle-btn.off::after { left:2px; }
 
-/* ── Customise panel ── */
-.custom-panel {
-  position:fixed; top:0; right:0; bottom:0; width:340px; max-width:90vw;
-  background:#F0F2F5; border-left:1px solid #E4E8EE;
-  box-shadow:-8px 0 40px rgba(0,0,0,.1); z-index:300;
-  display:flex; flex-direction:column;
-  animation:slideIn 0.25s cubic-bezier(0.16,1,0.3,1);
-}
-.custom-item {
-  display:flex; align-items:center; gap:10px;
-  padding:12px 16px; border-bottom:1px solid #E4E8EE;
-  cursor:grab; user-select:none; transition:background 0.1s;
-}
-.custom-item.dragging  { opacity:0.4; background:#F0F2F5; }
-.custom-item.drag-over { background:#EBF3FC; border-color:#1976D2; }
-.custom-item:hover { background:#fff; }
-.size-btn {
-  padding:3px 8px; border:1px solid #E4E8EE; background:#F8FAFB;
-  color:#6B7280; font-size:10px; font-weight:700; cursor:pointer;
-  font-family:inherit;
-}
-.size-btn.active { background:#1976D2; color:#fff; border-color:#1976D2; }
-.toggle-btn {
-  width:36px; height:20px; border:none;
-  cursor:pointer; position:relative; transition:background 0.2s; flex-shrink:0;
-}
-.toggle-btn::after {
-  content:''; position:absolute; top:2px;
-  width:16px; height:16px; border-radius:50%; background:#fff; transition:left 0.2s;
-}
-.toggle-btn.on  { background:#1976D2; }
-.toggle-btn.on::after  { left:18px; }
-.toggle-btn.off { background:#D1D5DB; }
-.toggle-btn.off::after { left:2px; }
-
-/* ── WO table row hover ── */
-.wo-row:hover td { background:#F8FAFB !important; }
-
-/* ── AI Command Bar ── */
-.ai-cmd-bar {
-  background:#fff; border:1px solid #C4B5FD;
-  box-shadow:0 0 0 3px rgba(124,58,237,.04);
-  position:relative; overflow:hidden; margin-bottom:12px;
-}
-.ai-cmd-bar::before {
-  content:''; position:absolute; top:0; left:0; right:0; height:2px;
-  background:linear-gradient(90deg,#1976D2,#7C3AED,#1976D2);
-  background-size:200% 100%; animation:aiScan 3s linear infinite;
-}
-.ai-cmd-inner { display:flex; align-items:center; gap:10px; padding:11px 14px; }
-.ai-cmd-icon  { width:28px; height:28px; background:#F5F3FF; border:1px solid #C4B5FD; display:flex; align-items:center; justify-content:center; color:#7C3AED; flex-shrink:0; }
-.ai-cmd-input { flex:1; background:transparent; border:none; outline:none; font-family:var(--font-body,'Inter',system-ui,sans-serif); font-size:13px; color:#0D1117; }
-.ai-cmd-input::placeholder { color:#9CA3AF; }
-.ai-quick-tag {
-  font-size:10px; font-weight:700; padding:4px 9px; border:1px solid; cursor:pointer;
-  font-family:var(--font-body,'Inter',system-ui,sans-serif); transition:opacity .15s;
-}
-.ai-quick-tag:hover { opacity:.75; }
-.ai-sug-row { border-top:1px solid #E4E8EE; padding:7px 14px; display:flex; gap:7px; align-items:center; overflow:hidden; }
-.ai-sug-lbl { font-size:10px; font-weight:700; color:#9CA3AF; text-transform:uppercase; letter-spacing:.5px; flex-shrink:0; }
-.ai-sug { font-size:11px; font-weight:500; color:#374151; background:#F8FAFB; border:1px solid #E4E8EE; padding:3px 9px; cursor:pointer; transition:all .15s; white-space:nowrap; }
-.ai-sug:hover { border-color:#C4B5FD; color:#7C3AED; background:#F5F3FF; }
-
-/* ── AI Response ── */
-.ai-resp-card {
-  background:#F5F3FF; border:1px solid #C4B5FD; border-left:3px solid #7C3AED;
-  padding:12px 14px; margin-bottom:12px;
-  animation:fadeUp .25s ease;
-}
-.ai-resp-label { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.8px; color:#7C3AED; margin-bottom:6px; display:flex; align-items:center; gap:5px; }
-.ai-resp-text  { font-size:13px; color:#374151; line-height:1.65; white-space:pre-line; }
-`
+`;
 
 /* ── Toast ── */
 function useToast() {
@@ -437,7 +361,7 @@ function AccordionCards({ loading, assets, maint, wos, PCOLOR, StatusBadge }) {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 16 }}>
 
       {/* Breakdowns */}
-      <AccordionCard title="Current Breakdowns" count={breakdowns.length} color="var(--red)" bg="var(--red-bg)" border="var(--red-border)"  loading={loading} urgent={breakdowns.length > 0}>
+      <AccordionCard title="Current Breakdowns" count={breakdowns.length} color="var(--red)" bg="var(--red-bg)" border="var(--red-border)" icon="🔴" loading={loading} urgent={breakdowns.length > 0}>
         {breakdowns.length === 0 ? emptyRow('No breakdowns — all assets operational') :
           listTable(breakdowns, ['Asset','Number','Location'], (a, i) => (
             <tr key={a.id} style={{ borderBottom: '1px solid var(--border)' }}>
@@ -450,7 +374,7 @@ function AccordionCards({ loading, assets, maint, wos, PCOLOR, StatusBadge }) {
       </AccordionCard>
 
       {/* Service Due Today */}
-      <AccordionCard title="Service Due Today" count={dueToday.length} color="var(--accent)" bg="var(--accent-light)" border="rgba(14,165,233,0.3)"  loading={loading}>
+      <AccordionCard title="Service Due Today" count={dueToday.length} color="var(--accent)" bg="var(--accent-light)" border="rgba(14,165,233,0.3)" icon="📅" loading={loading}>
         {dueToday.length === 0 ? emptyRow('Nothing due today') :
           listTable(dueToday, ['Asset','Service','Assigned'], (m, i) => (
             <tr key={m.id} style={{ borderBottom: '1px solid var(--border)' }}>
@@ -463,7 +387,7 @@ function AccordionCards({ loading, assets, maint, wos, PCOLOR, StatusBadge }) {
       </AccordionCard>
 
       {/* Overdue Services */}
-      <AccordionCard title="Overdue Services" count={overdue.length} color="var(--amber)" bg="var(--amber-bg)" border="var(--amber-border)"  loading={loading} urgent={overdue.length > 0}>
+      <AccordionCard title="Overdue Services" count={overdue.length} color="var(--amber)" bg="var(--amber-bg)" border="var(--amber-border)" icon="⚠️" loading={loading} urgent={overdue.length > 0}>
         {overdue.length === 0 ? emptyRow('All services on schedule') :
           listTable(overdue, ['Asset','Service','Due'], (m, i) => (
             <tr key={m.id} style={{ borderBottom: '1px solid var(--border)' }}>
@@ -476,7 +400,7 @@ function AccordionCards({ loading, assets, maint, wos, PCOLOR, StatusBadge }) {
       </AccordionCard>
 
       {/* Priority Jobs */}
-      <AccordionCard title="Priority Jobs" count={priority.length} color="var(--red)" bg="var(--red-bg)" border="var(--red-border)"  loading={loading} urgent={priority.length > 0}>
+      <AccordionCard title="Priority Jobs" count={priority.length} color="var(--red)" bg="var(--red-bg)" border="var(--red-border)" icon="🔥" loading={loading} urgent={priority.length > 0}>
         {priority.length === 0 ? emptyRow('No critical or high priority jobs') :
           listTable(priority, ['Job','Asset','Priority','Status'], (w, i) => {
             const pc = PCOLOR[w.priority] || 'var(--text-muted)';
@@ -500,19 +424,18 @@ function AccordionCards({ loading, assets, maint, wos, PCOLOR, StatusBadge }) {
 
 /* ── Widget Definitions ── */
 const WIDGET_DEFS = [
-  { id:'kpi_strip',      label:'KPI Strip',            icon:'', defaultSize:'lg',  desc:'Total Fleet, Active, Down, Overdue, Open WOs' },
-  { id:'prestart_kpi',   label:'Prestart KPIs',        icon:'', defaultSize:'wide', desc:'Daily prestart completion per machine with missing prestart alerts' },
-  { id:'service_kpi',    label:'Service KPIs',         icon:'', defaultSize:'wide', desc:'Service schedule status — overdue, due soon, completed' },
-  { id:'fleet_health',   label:'Fleet Health',         icon:'', defaultSize:'lg',  desc:'Overall fleet status bar' },
-  { id:'breakdowns',     label:'Breakdowns',           icon:'', defaultSize:'md',  desc:'Current down machines' },
-  { id:'overdue',        label:'Overdue Services',     icon:'', defaultSize:'md',  desc:'Services past due date' },
-  { id:'due_today',      label:'Service Due Today',    icon:'', defaultSize:'md',  desc:'Services due today' },
-  { id:'priority_wos',  label:'Priority Work Orders', icon:'', defaultSize:'md',  desc:'Critical and high priority jobs' },
-  { id:'oil_sampling',  label:'Oil Sampling',         icon:'', defaultSize:'md',  desc:'Overdue samples and high alerts' },
-  { id:'parts_stock',   label:'Parts Low Stock',      icon:'', defaultSize:'sm',  desc:'Parts below minimum stock level' },
-  { id:'downtime_summary',label:'Downtime Summary',   icon:'', defaultSize:'sm',  desc:'Hours lost this month' },
-  { id:'calendar_preview',label:'Calendar Preview',   icon:'', defaultSize:'lg',  desc:'Next 7 days of scheduled services' },
-  { id:'messages',      label:'Messages',             icon:'', defaultSize:'sm',  desc:'Unread messages and recent activity' },
+  { id:'prestart_kpi',   label:'Prestart KPIs',        icon:'📋', defaultSize:'wide', desc:'Daily prestart completion per machine with missing prestart alerts' },
+  { id:'service_kpi',    label:'Service KPIs',         icon:'🔧', defaultSize:'wide', desc:'Service schedule status — overdue, due soon, completed' },
+  { id:'fleet_health',   label:'Fleet Health',         icon:'🚛', defaultSize:'lg',  desc:'Overall fleet status bar' },
+  { id:'breakdowns',     label:'Breakdowns',           icon:'🔴', defaultSize:'md',  desc:'Current down machines' },
+  { id:'overdue',        label:'Overdue Services',     icon:'⚠️', defaultSize:'md',  desc:'Services past due date' },
+  { id:'due_today',      label:'Service Due Today',    icon:'📅', defaultSize:'md',  desc:'Services due today' },
+  { id:'priority_wos',  label:'Priority Work Orders', icon:'🔥', defaultSize:'md',  desc:'Critical and high priority jobs' },
+  { id:'oil_sampling',  label:'Oil Sampling',         icon:'🧪', defaultSize:'md',  desc:'Overdue samples and high alerts' },
+  { id:'parts_stock',   label:'Parts Low Stock',      icon:'🔩', defaultSize:'sm',  desc:'Parts below minimum stock level' },
+  { id:'downtime_summary',label:'Downtime Summary',   icon:'📉', defaultSize:'sm',  desc:'Hours lost this month' },
+  { id:'calendar_preview',label:'Calendar Preview',   icon:'📆', defaultSize:'lg',  desc:'Next 7 days of scheduled services' },
+  { id:'messages',      label:'Messages',             icon:'💬', defaultSize:'sm',  desc:'Unread messages and recent activity' },
 ];
 
 const DEFAULT_LAYOUT = WIDGET_DEFS.map(w => ({ id:w.id, enabled:true, size:w.defaultSize }));
@@ -617,16 +540,11 @@ function CustomisePanel({ layout, onLayoutChange, onClose, onSaveDefault, isAdmi
 /* ── Individual Widgets ── */
 
 /* ── Expandable Widget Wrapper ── */
-function ExpandableWidget({ sizeClass, title, icon, count, countColor, countSize, summary, children, defaultOpen=false, onRemove }) {
+function ExpandableWidget({ sizeClass, title, icon, count, countColor, countSize, summary, children, defaultOpen=false }) {
   const [open, setOpen] = React.useState(defaultOpen);
   return (
-    <div className={`widget-card ${sizeClass}`} style={{ cursor:'default', position:'relative' }}>
-      {onRemove && (
-        <button onClick={e=>{e.stopPropagation();onRemove();}} title="Remove widget"
-          style={{ position:'absolute', top:10, right:10, zIndex:10, background:'none', border:'none', cursor:'pointer', color:'var(--text-faint)', fontSize:16, lineHeight:1, padding:'2px 5px', borderRadius:4, opacity:0, transition:'opacity 0.15s' }}
-          className="widget-remove-btn">×</button>
-      )}
-      <div className="widget-header" style={{ cursor:'pointer', userSelect:'none', paddingRight: onRemove ? 24 : 0 }} onClick={() => setOpen(o => !o)}>
+    <div className={`widget-card ${sizeClass}`} style={{ cursor:'default' }}>
+      <div className="widget-header" style={{ cursor:'pointer', userSelect:'none' }} onClick={() => setOpen(o => !o)}>
         <span className="widget-title">{icon} {title}</span>
         <div style={{ display:'flex', alignItems:'center', gap:10 }}>
           {count !== undefined && <span style={{ fontSize: countSize||20, fontWeight:900, color:countColor||'var(--text-primary)', fontFamily:'var(--font-display)' }}>{count}</span>}
@@ -641,11 +559,11 @@ function ExpandableWidget({ sizeClass, title, icon, count, countColor, countSize
   );
 }
 
-function WidgetFleetHealth({ assets, loading, onRemove }) {
+function WidgetFleetHealth({ assets, loading }) {
   if (loading) return <div className="widget-card widget-lg"><Sk h="60px" /></div>;
   const total = assets.length, running = assets.filter(a=>a.status==='Running').length, down = assets.filter(a=>a.status==='Down').length, maint = assets.filter(a=>a.status==='Maintenance').length;
   return (
-    <ExpandableWidget sizeClass="widget-lg" title="Fleet Health" onRemove={onRemove}  count={total} countColor="var(--accent)" countSize={16} summary={`${running} running · ${down} down`} defaultOpen={true}>
+    <ExpandableWidget sizeClass="widget-lg" title="Fleet Health" icon="🚛" count={total} countColor="var(--accent)" countSize={16} summary={`${running} running · ${down} down`} defaultOpen={true}>
       <FleetHealthBar running={running} down={down} maintenance={maint} total={total} />
       <div style={{ marginTop:12, display:'flex', flexDirection:'column', gap:6 }}>
         {assets.map(a => {
@@ -669,10 +587,10 @@ function WidgetFleetHealth({ assets, loading, onRemove }) {
   );
 }
 
-function WidgetBreakdowns({ assets, loading, size, onRemove }) {
+function WidgetBreakdowns({ assets, loading, size }) {
   const breakdowns = assets.filter(a => a.status === 'Down');
   return (
-    <ExpandableWidget sizeClass={`widget-${size}`} title="Breakdowns" onRemove={onRemove}  count={loading?'—':breakdowns.length} countColor="var(--red)" summary={breakdowns[0]?.name}>
+    <ExpandableWidget sizeClass={`widget-${size}`} title="Breakdowns" icon="🔴" count={loading?'—':breakdowns.length} countColor="var(--red)" summary={breakdowns[0]?.name}>
       {!loading && breakdowns.length === 0 && <div style={{ fontSize:12, color:'var(--green)', fontWeight:600 }}>✓ All machines running</div>}
       {!loading && breakdowns.map(a => (
         <div key={a.id} style={{ padding:'8px 10px', borderRadius:8, background:'var(--red-bg)', border:'1px solid var(--red-border)', marginBottom:6 }}>
@@ -689,10 +607,10 @@ function WidgetBreakdowns({ assets, loading, size, onRemove }) {
   );
 }
 
-function WidgetOverdue({ maint, loading, size, onRemove, onDrillDown }) {
+function WidgetOverdue({ maint, loading, size }) {
   const overdue = maint.filter(m => m.status === 'Overdue');
   return (
-    <ExpandableWidget sizeClass={`widget-${size}`} title="Overdue Services" onRemove={onRemove}  count={loading?'—':overdue.length} countColor="var(--amber)" summary={overdue[0]?.asset}>
+    <ExpandableWidget sizeClass={`widget-${size}`} title="Overdue Services" icon="⚠️" count={loading?'—':overdue.length} countColor="var(--amber)" summary={overdue[0]?.asset}>
       {!loading && overdue.length === 0 && <div style={{ fontSize:12, color:'var(--green)', fontWeight:600 }}>✓ No overdue services</div>}
       {!loading && overdue.map(m => (
         <div key={m.id} style={{ padding:'8px 10px', borderRadius:8, background:'var(--amber-bg)', border:'1px solid var(--amber-border)', marginBottom:6 }}>
@@ -705,11 +623,11 @@ function WidgetOverdue({ maint, loading, size, onRemove, onDrillDown }) {
   );
 }
 
-function WidgetDueToday({ maint, loading, size, onRemove, onDrillDown }) {
+function WidgetDueToday({ maint, loading, size }) {
   const today = new Date().toISOString().split('T')[0];
   const dueToday = maint.filter(m => m.next_due === today || m.status === 'Due Soon');
   return (
-    <ExpandableWidget sizeClass={`widget-${size}`} title="Due Today" onRemove={onRemove}  count={loading?'—':dueToday.length} countColor="var(--accent)" summary={dueToday[0]?.asset}>
+    <ExpandableWidget sizeClass={`widget-${size}`} title="Due Today" icon="📅" count={loading?'—':dueToday.length} countColor="var(--accent)" summary={dueToday[0]?.asset}>
       {!loading && dueToday.length === 0 && <div style={{ fontSize:12, color:'var(--text-muted)' }}>Nothing due today</div>}
       {!loading && dueToday.map(m => (
         <div key={m.id} style={{ padding:'8px 10px', borderRadius:8, background:'var(--accent-light)', border:'1px solid rgba(14,165,233,0.2)', marginBottom:6 }}>
@@ -722,10 +640,10 @@ function WidgetDueToday({ maint, loading, size, onRemove, onDrillDown }) {
   );
 }
 
-function WidgetPriorityWOs({ wos, loading, size, onRemove, onDrillDown }) {
+function WidgetPriorityWOs({ wos, loading, size }) {
   const priority = wos.filter(w => w.priority === 'Critical' || w.priority === 'High');
   return (
-    <ExpandableWidget sizeClass={`widget-${size}`} title="Priority Jobs" onRemove={onRemove}  count={loading?'—':priority.length} countColor="var(--red)" summary={priority[0]?.asset}>
+    <ExpandableWidget sizeClass={`widget-${size}`} title="Priority Jobs" icon="🔥" count={loading?'—':priority.length} countColor="var(--red)" summary={priority[0]?.asset}>
       {!loading && priority.length === 0 && <div style={{ fontSize:12, color:'var(--green)', fontWeight:600 }}>✓ No critical jobs</div>}
       {!loading && priority.map(w => {
         const c = w.priority==='Critical'?'var(--red)':'var(--amber)';
@@ -744,7 +662,7 @@ function WidgetPriorityWOs({ wos, loading, size, onRemove, onDrillDown }) {
   );
 }
 
-function WidgetOilSampling({ companyId, size, onRemove }) {
+function WidgetOilSampling({ companyId, size }) {
   const [samples, setSamples] = useState([]);
   const [loading, setLoading] = useState(true);
   useEffect(() => {
@@ -754,7 +672,7 @@ function WidgetOilSampling({ companyId, size, onRemove }) {
   }, [companyId]);
   const alerts = samples.filter(s => s.ai_condition === 'CRITICAL' || s.ai_condition === 'WARNING');
   return (
-    <ExpandableWidget sizeClass={`widget-${size}`} title="Oil Sampling" onRemove={onRemove}  count={loading?'—':alerts.length} countColor={alerts.length>0?'var(--red)':'var(--green)'} summary={alerts[0]?.asset_name}>
+    <ExpandableWidget sizeClass={`widget-${size}`} title="Oil Sampling" icon="🧪" count={loading?'—':alerts.length} countColor={alerts.length>0?'var(--red)':'var(--green)'} summary={alerts[0]?.asset_name}>
       {!loading && alerts.length === 0 && <div style={{ fontSize:12, color:'var(--green)', fontWeight:600 }}>✓ All oil samples normal</div>}
       {!loading && alerts.map(s => {
         const c = s.ai_condition==='CRITICAL'?'var(--red)':'var(--amber)';
@@ -775,7 +693,7 @@ function WidgetOilSampling({ companyId, size, onRemove }) {
   );
 }
 
-function WidgetPartsStock({ companyId, size, onRemove }) {
+function WidgetPartsStock({ companyId, size }) {
   const [parts, setParts] = useState([]);
   const [loading, setLoading] = useState(true);
   useEffect(() => {
@@ -784,7 +702,7 @@ function WidgetPartsStock({ companyId, size, onRemove }) {
       .then(({ data }) => { setParts((data||[]).filter(p => p.quantity <= p.min_quantity)); setLoading(false); });
   }, [companyId]);
   return (
-    <ExpandableWidget sizeClass={`widget-${size}`} title="Low Stock Parts" onRemove={onRemove}  count={loading?'—':parts.length} countColor={parts.length>0?'var(--amber)':'var(--green)'} summary={parts[0]?.name}>
+    <ExpandableWidget sizeClass={`widget-${size}`} title="Low Stock Parts" icon="🔩" count={loading?'—':parts.length} countColor={parts.length>0?'var(--amber)':'var(--green)'} summary={parts[0]?.name}>
       {!loading && parts.length === 0 && <div style={{ fontSize:12, color:'var(--green)', fontWeight:600 }}>✓ All parts adequately stocked</div>}
       {!loading && parts.map(p => {
         const c = p.quantity===0?'var(--red)':'var(--amber)';
@@ -802,7 +720,7 @@ function WidgetPartsStock({ companyId, size, onRemove }) {
   );
 }
 
-function WidgetDowntimeSummary({ companyId, size, onRemove }) {
+function WidgetDowntimeSummary({ companyId, size }) {
   const [hours, setHours] = useState(null);
   const [loading, setLoading] = useState(true);
   useEffect(() => {
@@ -812,14 +730,14 @@ function WidgetDowntimeSummary({ companyId, size, onRemove }) {
       .then(({ data }) => { setHours((data||[]).reduce((s,d) => s + (parseFloat(d.hours)||0), 0)); setLoading(false); });
   }, [companyId]);
   return (
-    <ExpandableWidget sizeClass={`widget-${size}`} title="Downtime This Month" onRemove={onRemove}  summary={loading?'':`${hours?.toFixed(1)} hrs lost`}>
+    <ExpandableWidget sizeClass={`widget-${size}`} title="Downtime This Month" icon="📉" summary={loading?'':`${hours?.toFixed(1)} hrs lost`}>
       <div style={{ fontSize:36, fontWeight:900, color:'var(--red)', fontFamily:'var(--font-display)' }}>{loading ? '—' : hours?.toFixed(1)}<span style={{ fontSize:14, fontWeight:600, color:'var(--text-muted)', marginLeft:4 }}>hrs</span></div>
       {!loading && <div style={{ fontSize:12, color:'var(--text-muted)', marginTop:4 }}>Lost to unplanned downtime in {new Date().toLocaleString('default',{month:'long'})}</div>}
     </ExpandableWidget>
   );
 }
 
-function WidgetCalendarPreview({ companyId, size, onRemove }) {
+function WidgetCalendarPreview({ companyId, size }) {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   useEffect(() => {
@@ -839,7 +757,7 @@ function WidgetCalendarPreview({ companyId, size, onRemove }) {
     });
   }, [companyId]);
   return (
-    <ExpandableWidget sizeClass={`widget-${size}`} title="Next 7 Days"  onRemove={onRemove} count={loading?'—':events.length} countColor="var(--accent)" countSize={16} summary={events[0]?.label?.slice(0,30)}>
+    <ExpandableWidget sizeClass={`widget-${size}`} title="Next 7 Days" icon="📆" count={loading?'—':events.length} countColor="var(--accent)" countSize={16} summary={events[0]?.label?.slice(0,30)}>
       {loading ? <Sk h="80px" /> : events.length === 0 ? <div style={{ fontSize:12, color:'var(--text-muted)' }}>Nothing scheduled in the next 7 days</div> : (
         events.map((ev, i) => (
           <div key={i} style={{ display:'flex', gap:10, padding:'8px 10px', borderRadius:8, background:'var(--surface-2)', border:'1px solid var(--border)', marginBottom:6, alignItems:'center' }}>
@@ -853,7 +771,7 @@ function WidgetCalendarPreview({ companyId, size, onRemove }) {
   );
 }
 
-function WidgetMessages({ companyId, size, onRemove }) {
+function WidgetMessages({ companyId, size }) {
   const [msgs, setMsgs] = useState([]);
   const [loading, setLoading] = useState(true);
   useEffect(() => {
@@ -863,7 +781,7 @@ function WidgetMessages({ companyId, size, onRemove }) {
   }, [companyId]);
   const ago = ts => { if(!ts)return''; const m=Math.floor((Date.now()-new Date(ts))/60000); if(m<60)return`${m}m ago`; if(m<1440)return`${Math.floor(m/60)}h ago`; return`${Math.floor(m/1440)}d ago`; };
   return (
-    <ExpandableWidget sizeClass={`widget-${size}`} title="Messages" onRemove={onRemove}  count={loading?'—':msgs.length} countColor="var(--accent)" countSize={16}>
+    <ExpandableWidget sizeClass={`widget-${size}`} title="Messages" icon="💬" count={loading?'—':msgs.length} countColor="var(--accent)" countSize={16}>
       {loading ? <Sk h="60px" /> : msgs.length === 0 ? <div style={{ fontSize:12, color:'var(--text-muted)' }}>No recent messages</div> : (
         msgs.map(m => (
           <div key={m.id} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'8px 10px', borderRadius:8, background:'var(--surface-2)', border:'1px solid var(--border)', marginBottom:6 }}>
@@ -879,7 +797,7 @@ function WidgetMessages({ companyId, size, onRemove }) {
 /* ── Main Dashboard ── */
 
 // ─── KPI: Prestart Summary Widget ────────────────────────────────────────────
-function WidgetPrestartKPI({ companyId, loading, onRemove, onDrillDown }) {
+function WidgetPrestartKPI({ companyId, loading }) {
   const [data,        setData]        = React.useState(null);
   const [viewPrestart,setViewPrestart]= React.useState(null);
   const today = new Date().toISOString().split('T')[0];
@@ -921,7 +839,7 @@ function WidgetPrestartKPI({ companyId, loading, onRemove, onDrillDown }) {
 
   if (loading || !data) return (
     <div className="dash-widget" style={{ gridColumn:'span 2' }}>
-      <div className="dw-header"><div className="dw-title">Prestart KPIs</div></div>
+      <div className="dw-header"><div className="dw-title">📋 Prestart KPIs</div></div>
       <div style={{color:'var(--text-muted)',fontSize:13,padding:'20px 0'}}>Loading…</div>
     </div>
   );
@@ -931,33 +849,23 @@ function WidgetPrestartKPI({ companyId, loading, onRemove, onDrillDown }) {
 
   return (
     <>
-    <div className="dash-widget" style={{ gridColumn:'span 2', position:'relative' }}>
-      {onRemove && (
-        <button onClick={onRemove} title="Remove widget"
-          style={{ position:'absolute', top:10, right:10, zIndex:10, background:'none', border:'none', cursor:'pointer', color:'var(--text-faint)', fontSize:18, lineHeight:1, padding:'2px 6px', borderRadius:4, opacity:0, transition:'opacity 0.15s' }}
-          className="widget-remove-btn">×</button>
-      )}
+    <div className="dash-widget" style={{ gridColumn:'span 2' }}>
       <div className="dw-header">
-        <div className="dw-title">Prestart KPIs — Today</div>
+        <div className="dw-title">📋 Prestart KPIs — Today</div>
         <div style={{ fontSize:11, color:'var(--text-muted)' }}>{today}</div>
       </div>
 
-      {/* KPI row — clickable */}
+      {/* KPI row */}
       <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:10, marginBottom:18 }}>
         {[
-          { label:'Completed',   val:data.completed, color:'var(--green)',  rows: data.perMachine.filter(m=>m.todayCount>0).map(m=>[m.asset_number?`${m.asset_number} — ${m.name}`:m.name, `${m.todayCount} prestart${m.todayCount>1?'s':''}`, m.hours?.toLocaleString()+' hrs']), cols:['Asset','Prestarts','Hours'], title:'Completed Today', icon:'✓', dd:'var(--green)' },
-          { label:'Total Units', val:data.total,     color:'var(--accent)', rows: data.perMachine.map(m=>[m.asset_number?`${m.asset_number} — ${m.name}`:m.name, m.todayCount>0?`✓ ${m.todayCount} done`:m.missingToday?'⚠ Missing':'—', m.hours?.toLocaleString()+' hrs']), cols:['Asset','Today','Hours'], title:'All Units', icon:'', dd:'var(--accent)' },
-          { label:'Missing',     val:data.missing,   color:data.missing>0?'var(--red)':'var(--green)', rows: data.perMachine.filter(m=>m.missingToday).map(m=>[m.asset_number?`${m.asset_number} — ${m.name}`:m.name, `${Math.round(m.hrsDiff)} hrs since last`, m.hours?.toLocaleString()+' hrs']), cols:['Asset','Time Since Last','Hours'], title:'Missing Prestarts', icon:'⚠', dd:'var(--red)', emptyMsg:'No missing prestarts today ✓' },
-          { label:'Defects',     val:data.defects,   color:data.defects>0?'var(--amber)':'var(--green)', rows: data.perMachine.filter(m=>m.todayPs?.some(p=>p.defects_found)).map(m=>[m.asset_number?`${m.asset_number} — ${m.name}`:m.name, `${m.todayPs.filter(p=>p.defects_found).length} defect${m.todayPs.filter(p=>p.defects_found).length>1?'s':''}`, m.hours?.toLocaleString()+' hrs']), cols:['Asset','Defects','Hours'], title:'Defects Found Today', icon:'', dd:'var(--amber)', emptyMsg:'No defects found today ✓' },
-        ].map(({ label, val, color, rows, cols, title, icon, dd, emptyMsg }) => (
-          <div key={label}
-            onClick={() => onDrillDown && onDrillDown({ title, icon, color:dd, columns:cols, rows, emptyMsg })}
-            style={{ background:'var(--surface-2)', borderRadius:8, padding:'12px 10px', textAlign:'center', border:`1px solid ${color}22`, cursor: onDrillDown ? 'pointer' : 'default', transition:'all 0.15s' }}
-            onMouseEnter={e=>{ if(onDrillDown){ e.currentTarget.style.background='var(--surface)'; e.currentTarget.style.borderColor=color; }}}
-            onMouseLeave={e=>{ e.currentTarget.style.background='var(--surface-2)'; e.currentTarget.style.borderColor=`${color}22`; }}>
+          ['Completed', data.completed, 'var(--green)',   '✓'],
+          ['Total Units', data.total,   'var(--accent)',  '🚛'],
+          ['Missing',    data.missing,  data.missing>0?'var(--red)':'var(--green)',  '⚠'],
+          ['Defects',    data.defects,  data.defects>0?'var(--amber)':'var(--green)','🔴'],
+        ].map(([label, val, color, icon]) => (
+          <div key={label} style={{ background:'var(--surface-2)', borderRadius:8, padding:'12px 10px', textAlign:'center', border:`1px solid ${color}22` }}>
             <div style={{ fontSize:22, fontWeight:900, color }}>{val}</div>
             <div style={{ fontSize:10, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.5px', marginTop:2 }}>{label}</div>
-            {onDrillDown && <div style={{ fontSize:8, color:'var(--text-faint)', marginTop:3, letterSpacing:'0.5px' }}>TAP</div>}
           </div>
         ))}
       </div>
@@ -1044,7 +952,7 @@ function WidgetPrestartKPI({ companyId, loading, onRemove, onDrillDown }) {
 }
 
 // ─── KPI: Service Schedule Widget ────────────────────────────────────────────
-function WidgetServiceKPI({ companyId, loading, onRemove, onDrillDown }) {
+function WidgetServiceKPI({ companyId, loading }) {
   const [schedules, setSchedules] = React.useState([]);
 
   React.useEffect(() => {
@@ -1060,7 +968,7 @@ function WidgetServiceKPI({ companyId, loading, onRemove, onDrillDown }) {
 
   return (
     <div className="dash-widget" style={{ gridColumn:'span 2' }}>
-      <div className="dw-header"><div className="dw-title">Service Schedule KPIs</div></div>
+      <div className="dw-header"><div className="dw-title">🔧 Service Schedule KPIs</div></div>
 
       <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:10, marginBottom:18 }}>
         {[
@@ -1107,10 +1015,6 @@ function Dashboard({ companyId, userRole }) {
   const [hVis, setHVis]     = useState(false);
   const [showCustomise, setShowCustomise] = useState(false);
   const [layout, setLayout] = useState(() => getLayout(companyId, userRole?.email || ''));
-  const [customWidgets, setCustomWidgets] = useState([]);
-  const [drillDown, setDrillDown] = useState(null); // { title, icon, color, rows, columns }
-  const [showBuilder, setShowBuilder] = useState(false);
-  const [editingWidget, setEditingWidget] = useState(null);
   const { toasts, add: toast } = useToast();
   const isAdmin = ['admin','supervisor'].includes(userRole?.role);
 
@@ -1119,38 +1023,8 @@ function Dashboard({ companyId, userRole }) {
       const s = document.createElement('style'); s.id='dash-css'; s.textContent=CSS; document.head.appendChild(s);
     }
     setTimeout(() => setHVis(true), 60);
-    if (companyId) { load(); loadCustomWidgets(); }
+    if (companyId) load();
   }, [companyId]);
-
-  const hideWidget = (id) => {
-    const next = layout.map(w => w.id === id ? { ...w, enabled: false } : w);
-    setLayout(next);
-    saveLayout(next, companyId, userRole?.email || '');
-    toast('Widget hidden — restore it from Customise', 'info');
-  };
-
-  const loadCustomWidgets = async () => {
-    const { data } = await supabase.from('custom_widgets').select('*').eq('company_id', companyId).order('created_at');
-    // Unwrap jsonb config column → flat widget object
-    const widgets = (data || []).map(row => ({ ...row.config, id: row.id }));
-    setCustomWidgets(widgets);
-  };
-
-  const handleWidgetSaved = (cfg) => {
-    setCustomWidgets(prev => {
-      const exists = prev.find(w => w.id === cfg.id);
-      return exists ? prev.map(w => w.id === cfg.id ? cfg : w) : [...prev, cfg];
-    });
-    setShowBuilder(false); setEditingWidget(null);
-    toast('Widget saved', 'success');
-  };
-
-  const deleteCustomWidget = async (id) => {
-    if (!window.confirm('Remove this widget from the dashboard?')) return;
-    await supabase.from('custom_widgets').delete().eq('id', id);
-    setCustomWidgets(prev => prev.filter(w => w.id !== id));
-    toast('Widget removed', 'success');
-  };
 
   const load = async (isRefresh=false) => {
     if (isRefresh) setRef(true); else setLoad(true);
@@ -1187,19 +1061,18 @@ function Dashboard({ companyId, userRole }) {
   const A = { cyan:'var(--accent)', red:'var(--red)', amber:'var(--amber)', green:'var(--green)' };
 
   const WIDGET_COMPONENTS = {
-    kpi_strip:        (w) => null, // rendered separately in hero strip
-    fleet_health:     (w) => <WidgetFleetHealth key={w.id} assets={assets} loading={loading} onRemove={w.onRemove} />,
-    breakdowns:       (w) => <WidgetBreakdowns key={w.id} assets={assets} loading={loading} size={w.size} onRemove={w.onRemove} />,
-    overdue:          (w) => <WidgetOverdue key={w.id} maint={maint} loading={loading} size={w.size} onRemove={w.onRemove} onDrillDown={setDrillDown} />,
-    due_today:        (w) => <WidgetDueToday key={w.id} maint={maint} loading={loading} size={w.size} onRemove={w.onRemove} onDrillDown={setDrillDown} />,
-    priority_wos:     (w) => <WidgetPriorityWOs key={w.id} wos={wos} loading={loading} size={w.size} onRemove={w.onRemove} onDrillDown={setDrillDown} />,
-    oil_sampling:     (w) => <WidgetOilSampling key={w.id} companyId={companyId} size={w.size} onRemove={w.onRemove} />,
-    parts_stock:      (w) => <WidgetPartsStock key={w.id} companyId={companyId} size={w.size} onRemove={w.onRemove} />,
-    downtime_summary: (w) => <WidgetDowntimeSummary key={w.id} companyId={companyId} size={w.size} onRemove={w.onRemove} />,
-    calendar_preview:  (w) => <WidgetCalendarPreview key={w.id} companyId={companyId} size={w.size} onRemove={w.onRemove} />,
-    prestart_kpi:      (w) => <WidgetPrestartKPI key={w.id} companyId={companyId} loading={loading} onRemove={w.onRemove} onDrillDown={setDrillDown} />,
-    service_kpi:       (w) => <WidgetServiceKPI  key={w.id} companyId={companyId} loading={loading} onRemove={w.onRemove} onDrillDown={setDrillDown} />,
-    messages:         (w) => <WidgetMessages key={w.id} companyId={companyId} size={w.size} onRemove={w.onRemove} />,
+    fleet_health:     (w) => <WidgetFleetHealth key={w.id} assets={assets} loading={loading} />,
+    breakdowns:       (w) => <WidgetBreakdowns key={w.id} assets={assets} loading={loading} size={w.size} />,
+    overdue:          (w) => <WidgetOverdue key={w.id} maint={maint} loading={loading} size={w.size} />,
+    due_today:        (w) => <WidgetDueToday key={w.id} maint={maint} loading={loading} size={w.size} />,
+    priority_wos:     (w) => <WidgetPriorityWOs key={w.id} wos={wos} loading={loading} size={w.size} />,
+    oil_sampling:     (w) => <WidgetOilSampling key={w.id} companyId={companyId} size={w.size} />,
+    parts_stock:      (w) => <WidgetPartsStock key={w.id} companyId={companyId} size={w.size} />,
+    downtime_summary: (w) => <WidgetDowntimeSummary key={w.id} companyId={companyId} size={w.size} />,
+    calendar_preview:  (w) => <WidgetCalendarPreview key={w.id} companyId={companyId} size={w.size} />,
+    prestart_kpi:      (w) => <WidgetPrestartKPI key={w.id} companyId={companyId} loading={loading} />,
+    service_kpi:       (w) => <WidgetServiceKPI  key={w.id} companyId={companyId} loading={loading} />,
+    messages:         (w) => <WidgetMessages key={w.id} companyId={companyId} size={w.size} />,
   };
 
   // ── Fleet health bar stats ──
@@ -1225,14 +1098,8 @@ function Dashboard({ companyId, userRole }) {
             </div>
           </div>
           <div style={{ display:'flex', gap:8 }}>
-            {isAdmin && (
-              <button onClick={() => { setEditingWidget(null); setShowBuilder(true); }}
-                style={{ padding:'7px 14px', background:'linear-gradient(135deg,var(--accent),#0090a8)', color:'#fff', border:'none', borderRadius:8, cursor:'pointer', fontSize:12, fontWeight:700, display:'flex', alignItems:'center', gap:6 }}>
-                + Widget
-              </button>
-            )}
             <button onClick={() => setShowCustomise(true)} style={{ padding:'7px 14px', background:'var(--surface)', border:'1px solid var(--border)', borderRadius:8, cursor:'pointer', fontSize:12, fontWeight:600, color:'var(--text-secondary)', display:'flex', alignItems:'center', gap:6 }}>
-              Customise
+              ⚙️ Customise
             </button>
             <button className="refresh-btn" onClick={() => load(true)} disabled={refreshing}>
               <span style={{ display:'inline-block', animation:refreshing?'spin 0.8s linear infinite':'none' }}>↻</span>
@@ -1242,69 +1109,25 @@ function Dashboard({ companyId, userRole }) {
         </div>
 
         {/* ── Hero KPI Strip ── */}
-        {layout.find(w=>w.id==='kpi_strip')?.enabled !== false && (
         <div style={{ display:'grid', gridTemplateColumns:'repeat(5,1fr)', gap:12, marginBottom:20 }}>
           {[
-            {
-              label:'Total Fleet', value: assets.length, color:'var(--accent)', sub:'registered assets',
-              onClick: () => setDrillDown({
-                title:'All Fleet Assets', icon:'', color:'var(--accent)',
-                columns:['Asset','Type','Status','Location','Hours'],
-                rows: assets.map(a => [a.asset_number ? `${a.asset_number} — ${a.name}` : a.name, a.type||'—', a.status||'—', a.location||'—', a.hours ? a.hours.toLocaleString()+' hrs' : '—']),
-              }),
-            },
-            {
-              label:'Active', value: activeCount, color:'var(--green)', icon:'✓', sub:'operational now',
-              onClick: () => setDrillDown({
-                title:'Active Assets', icon:'', color:'var(--green)',
-                columns:['Asset','Type','Location','Hours'],
-                rows: assets.filter(a=>/running|active/i.test(a.status||'')).map(a => [a.asset_number ? `${a.asset_number} — ${a.name}` : a.name, a.type||'—', a.location||'—', a.hours ? a.hours.toLocaleString()+' hrs' : '—']),
-              }),
-            },
-            {
-              label:'Down', value: downCount, color: downCount>0?'var(--red)':'var(--text-muted)', sub:'offline / breakdown', urgent: downCount>0,
-              onClick: () => setDrillDown({
-                title:'Assets Down', icon:'', color:'var(--red)',
-                columns:['Asset','Type','Status','Location','Hours'],
-                rows: assets.filter(a=>/down|offline|breakdown/i.test(a.status||'')).map(a => [a.asset_number ? `${a.asset_number} — ${a.name}` : a.name, a.type||'—', a.status||'—', a.location||'—', a.hours ? a.hours.toLocaleString()+' hrs' : '—']),
-                emptyMsg: 'No assets currently down 👍',
-              }),
-            },
-            {
-              label:'Overdue Svc', value: overdueCount, color: overdueCount>0?'var(--red)':'var(--text-muted)', sub:'services past due', urgent: overdueCount>0,
-              onClick: () => setDrillDown({
-                title:'Overdue Services', icon:'', color:'var(--red)',
-                columns:['Asset','Service','Due','Interval','Status'],
-                rows: maint.filter(m=>/overdue/i.test(m.status||'')).map(m => [m.asset||m.asset_name||'—', m.task||m.service_name||'—', m.next_due||m.due_date||'—', m.interval_value ? `Every ${m.interval_value} ${m.interval_type||'hrs'}` : '—', m.status||'—']),
-                emptyMsg: 'No overdue services ✓',
-              }),
-            },
-            {
-              label:'Open WOs', value: openWOCount, color: openWOCount>0?'var(--amber)':'var(--text-muted)', sub:'work orders open', warn: openWOCount>0,
-              onClick: () => setDrillDown({
-                title:'Open Work Orders', icon:'', color:'var(--amber)',
-                columns:['Title','Asset','Priority','Status','Created'],
-                rows: wos.map(w => [w.title||w.defect_description||'—', w.asset||'—', w.priority||'—', w.status||'—', w.created_at ? new Date(w.created_at).toLocaleDateString('en-AU') : '—']),
-                emptyMsg: 'No open work orders ✓',
-              }),
-            },
+            { label:'Total Fleet',   value: assets.length,  color:'var(--accent)',  icon:'🚛', sub:'registered assets' },
+            { label:'Active',        value: activeCount,    color:'var(--green)',   icon:'✓',  sub:'operational now' },
+            { label:'Down',          value: downCount,      color: downCount>0?'var(--red)':'var(--text-muted)', icon:'⬇', sub:'offline / breakdown', urgent: downCount>0 },
+            { label:'Overdue Svc',   value: overdueCount,   color: overdueCount>0?'var(--red)':'var(--text-muted)', icon:'⚠', sub:'services past due', urgent: overdueCount>0 },
+            { label:'Open WOs',      value: openWOCount,    color: openWOCount>0?'var(--amber)':'var(--text-muted)', icon:'🔧', sub:'work orders open', warn: openWOCount>0 },
           ].map(k => (
             <div key={k.label} className={`kpi-card${k.urgent?' urgent':k.warn?' warn':''}`}
-              onClick={k.onClick}
-              style={{ borderTop:`3px solid ${k.color}`, cursor:'pointer', userSelect:'none' }}>
+              style={{ borderTop:`3px solid ${k.color}` }}>
               <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:10 }}>
                 <div style={{ fontSize:10, fontWeight:800, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.8px' }}>{k.label}</div>
-                
+                <div style={{ fontSize:18, opacity:0.6 }}>{k.icon}</div>
               </div>
               <div style={{ fontSize:32, fontWeight:900, color:k.color, lineHeight:1, marginBottom:4, animation:'countUp 0.4s ease' }}>{loading ? '—' : k.value}</div>
-              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-                <div style={{ fontSize:11, color:'var(--text-faint)' }}>{k.sub}</div>
-                <div style={{ fontSize:9, color:'var(--text-faint)', fontWeight:600, letterSpacing:'0.5px', opacity:0.6 }}>TAP TO VIEW</div>
-              </div>
+              <div style={{ fontSize:11, color:'var(--text-faint)' }}>{k.sub}</div>
             </div>
           ))}
         </div>
-        )}
 
         {/* ── Fleet health bar ── */}
         {!loading && assets.length > 0 && (
@@ -1335,14 +1158,8 @@ function Dashboard({ companyId, userRole }) {
 
         {/* ── Main KPI widgets: Prestarts + Services side by side ── */}
         <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16, marginBottom:20 }}>
-          {layout.find(w=>w.id==='prestart_kpi')?.enabled !== false &&
-            <WidgetPrestartKPI companyId={companyId} loading={loading}
-              onRemove={isAdmin ? () => hideWidget('prestart_kpi') : undefined}
-              onDrillDown={setDrillDown} />}
-          {layout.find(w=>w.id==='service_kpi')?.enabled !== false &&
-            <WidgetServiceKPI companyId={companyId} loading={loading}
-              onRemove={isAdmin ? () => hideWidget('service_kpi') : undefined}
-              onDrillDown={setDrillDown} />}
+          <WidgetPrestartKPI companyId={companyId} loading={loading} />
+          <WidgetServiceKPI  companyId={companyId} loading={loading} />
         </div>
 
         {/* ── Widget Grid (customisable widgets below) ── */}
@@ -1353,55 +1170,11 @@ function Dashboard({ companyId, userRole }) {
             const sizeClass = w.size==='lg'?'widget-lg':w.size==='sm'?'widget-sm':w.size==='wide'?'widget-wide':'widget-md';
             return (
               <div key={w.id} className={sizeClass}>
-                {renderer({ ...w, onRemove: isAdmin ? () => hideWidget(w.id) : undefined })}
+                {renderer(w)}
               </div>
             );
           })}
         </div>
-
-        {/* ── Custom Widgets ── */}
-        {customWidgets.length > 0 && (
-          <div style={{ marginBottom: 16 }}>
-            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:12 }}>
-              <div style={{ fontSize:11, fontWeight:800, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.8px' }}>
-                Custom Widgets
-              </div>
-              {isAdmin && (
-                <button onClick={() => { setEditingWidget(null); setShowBuilder(true); }}
-                  style={{ padding:'5px 12px', background:'var(--surface-2)', border:'1px dashed var(--border)', borderRadius:7, fontSize:11, fontWeight:700, color:'var(--accent)', cursor:'pointer' }}>
-                  + Add Widget
-                </button>
-              )}
-            </div>
-            <div className="dash-grid">
-              {customWidgets.map(w => {
-                const sizeClass = w.size==='lg' ? 'widget-lg' : w.size==='sm' ? 'widget-sm' : 'widget-md';
-                return (
-                  <div key={w.id} className={sizeClass}>
-                    <WidgetCustom
-                      config={w}
-                      companyId={companyId}
-                      isAdmin={isAdmin}
-                      onEdit={() => { setEditingWidget(w); setShowBuilder(true); }}
-                      onDelete={() => deleteCustomWidget(w.id)}
-                    />
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* ── Empty custom widgets state (admin only) ── */}
-        {customWidgets.length === 0 && isAdmin && (
-          <div style={{ border:'1.5px dashed var(--border)', borderRadius:12, padding:'24px', textAlign:'center', marginBottom:16, cursor:'pointer' }}
-            onClick={() => { setEditingWidget(null); setShowBuilder(true); }}>
-            <div style={{ fontSize:28, marginBottom:8 }}>📊</div>
-            <div style={{ fontSize:13, fontWeight:700, color:'var(--text-secondary)', marginBottom:4 }}>No custom widgets yet</div>
-            <div style={{ fontSize:12, color:'var(--text-faint)', marginBottom:12 }}>Build widgets from your fleet data — KPIs, charts, lists — anything you want to track.</div>
-            <div style={{ display:'inline-block', padding:'8px 18px', background:'var(--accent)', color:'#fff', borderRadius:8, fontSize:12, fontWeight:700 }}>+ Create First Widget</div>
-          </div>
-        )}
 
         {/* ── Service Intervals ── */}
         {progressAssets.length > 0 && (
@@ -1416,86 +1189,6 @@ function Dashboard({ companyId, userRole }) {
         )}
 
       </div>
-
-      {/* ── KPI Drill-Down Panel ── */}
-      {drillDown && (
-        <>
-          <div onClick={() => setDrillDown(null)} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.35)', zIndex:399, backdropFilter:'blur(2px)' }} />
-          <div style={{
-            position:'fixed', bottom:0, left:0, right:0,
-            maxHeight:'70vh', background:'var(--bg)',
-            borderTop:'1px solid var(--border)',
-            borderRadius:'16px 16px 0 0',
-            boxShadow:'0 -8px 40px rgba(0,0,0,0.25)',
-            zIndex:400, display:'flex', flexDirection:'column',
-            animation:'slideUp 0.25s cubic-bezier(0.16,1,0.3,1)',
-          }}>
-            {/* Handle */}
-            <div style={{ display:'flex', justifyContent:'center', padding:'10px 0 0' }}>
-              <div style={{ width:36, height:4, borderRadius:2, background:'var(--border)' }} />
-            </div>
-            {/* Header */}
-            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'14px 20px', borderBottom:'1px solid var(--border)', flexShrink:0 }}>
-              <div style={{ display:'flex', alignItems:'center', gap:12 }}>
-                <div style={{ width:36, height:36, borderRadius:10, background:`${drillDown.color}15`, border:`1.5px solid ${drillDown.color}40`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:18 }}>
-                  
-                </div>
-                <div>
-                  <div style={{ fontSize:16, fontWeight:800, color:'var(--text-primary)' }}>{drillDown.title}</div>
-                  <div style={{ fontSize:11, color:'var(--text-muted)', marginTop:1 }}>{drillDown.rows.length} record{drillDown.rows.length !== 1 ? 's' : ''}</div>
-                </div>
-              </div>
-              <button onClick={() => setDrillDown(null)} style={{ background:'none', border:'none', cursor:'pointer', fontSize:20, color:'var(--text-muted)', padding:'4px 8px' }}>✕</button>
-            </div>
-            {/* Table */}
-            <div style={{ overflowY:'auto', flex:1, padding:'0 20px 20px' }}>
-              {drillDown.rows.length === 0 ? (
-                <div style={{ padding:'40px 0', textAlign:'center', color:'var(--text-muted)', fontSize:14 }}>
-                  {drillDown.emptyMsg || 'No records found'}
-                </div>
-              ) : (
-                <table style={{ width:'100%', borderCollapse:'collapse', marginTop:4 }}>
-                  <thead>
-                    <tr>
-                      {drillDown.columns.map(col => (
-                        <th key={col} style={{ padding:'10px 12px', textAlign:'left', fontSize:10, fontWeight:800, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.8px', borderBottom:'2px solid var(--border)', whiteSpace:'nowrap' }}>{col}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {drillDown.rows.map((row, i) => (
-                      <tr key={i} style={{ borderBottom:'1px solid var(--border)', transition:'background 0.1s' }}
-                        onMouseEnter={e => e.currentTarget.style.background='var(--surface-2)'}
-                        onMouseLeave={e => e.currentTarget.style.background='transparent'}>
-                        {row.map((cell, j) => (
-                          <td key={j} style={{ padding:'11px 12px', fontSize:13, color: j===0 ? 'var(--text-primary)' : 'var(--text-secondary)', fontWeight: j===0 ? 600 : 400, whiteSpace: j===0 ? 'nowrap' : 'normal' }}>
-                            {j === 2 && drillDown.title.includes('Down') ? (
-                              <span style={{ padding:'2px 8px', borderRadius:20, fontSize:11, fontWeight:700, background:'rgba(239,68,68,0.1)', color:'var(--red)' }}>{cell}</span>
-                            ) : j === 2 && drillDown.title.includes('Overdue') ? (
-                              <span style={{ padding:'2px 8px', borderRadius:20, fontSize:11, fontWeight:700, background:'rgba(239,68,68,0.1)', color:'var(--red)' }}>{cell}</span>
-                            ) : j === 2 && drillDown.title.includes('Work') ? (
-                              <span style={{ padding:'2px 8px', borderRadius:20, fontSize:11, fontWeight:700, background: /critical/i.test(cell) ? 'rgba(239,68,68,0.1)' : /high/i.test(cell) ? 'rgba(245,158,11,0.1)' : 'var(--surface-2)', color: /critical/i.test(cell) ? 'var(--red)' : /high/i.test(cell) ? 'var(--amber)' : 'var(--text-muted)' }}>{cell}</span>
-                            ) : cell}
-                          </td>
-                        ))}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              )}
-            </div>
-          </div>
-        </>
-      )}
-
-      {showBuilder && isAdmin && (
-        <WidgetBuilderModal
-          companyId={companyId}
-          editConfig={editingWidget}
-          onSave={handleWidgetSaved}
-          onClose={() => { setShowBuilder(false); setEditingWidget(null); }}
-        />
-      )}
 
       {showCustomise && (
         <CustomisePanel

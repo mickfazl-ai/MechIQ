@@ -94,8 +94,8 @@ function Signup({ onBackToLogin }) {
   };
 
   const inputStyle = {
-    width: '100%', padding: '11px 14px', backgroundColor: '#FFFFFF',
-    color: 'white', border: '1px solid #E5E7EB', borderRadius: '6px',
+    width: '100%', padding: '11px 14px', backgroundColor: '#0d1515',
+    color: 'white', border: '1px solid #1a2f2f', borderRadius: '6px',
     fontSize: '14px', fontFamily: 'Barlow, sans-serif', boxSizing: 'border-box'
   };
 
@@ -108,7 +108,7 @@ function Signup({ onBackToLogin }) {
       <div className="login-card" style={{ textAlign: 'center' }}>
         <h1 className="login-title">MAINTAIN<span>IQ</span></h1>
         <div style={{ fontSize: '48px', margin: '20px 0' }}>⏳</div>
-        <h2 style={{ color: '#1976D2', marginBottom: '12px' }}>Registration Submitted</h2>
+        <h2 style={{ color: '#00c2e0', marginBottom: '12px' }}>Registration Submitted</h2>
         <p style={{ color: '#a0b0b0', marginBottom: '8px', fontSize: '14px' }}>
           Thanks <strong style={{ color: 'white' }}>{form.contactName}</strong>! Your account for <strong style={{ color: 'white' }}>{form.companyName}</strong> is pending approval.
         </p>
@@ -133,7 +133,7 @@ function Signup({ onBackToLogin }) {
           {[1, 2].map(s => (
             <div key={s} style={{
               width: '32px', height: '4px', borderRadius: '2px',
-              backgroundColor: s <= step ? '#1976D2' : '#E5E7EB'
+              backgroundColor: s <= step ? '#00c2e0' : '#1a2f2f'
             }} />
           ))}
         </div>
@@ -174,8 +174,8 @@ function Signup({ onBackToLogin }) {
 
         {step === 2 && (
           <div>
-            <div style={{ padding: '12px', backgroundColor: '#FFFFFF', borderRadius: '6px', marginBottom: '18px', border: '1px solid #E5E7EB' }}>
-              <div style={{ color: '#1976D2', fontWeight: 700, marginBottom: '4px' }}>{form.companyName}</div>
+            <div style={{ padding: '12px', backgroundColor: '#0d1515', borderRadius: '6px', marginBottom: '18px', border: '1px solid #1a2f2f' }}>
+              <div style={{ color: '#00c2e0', fontWeight: 700, marginBottom: '4px' }}>{form.companyName}</div>
               <div style={{ color: '#a0b0b0', fontSize: '12px' }}>{form.industry} · {form.contactName}</div>
             </div>
             <div style={fieldStyle}>
@@ -196,14 +196,14 @@ function Signup({ onBackToLogin }) {
             </button>
             <button onClick={() => { setStep(1); setError(''); }} style={{
               width: '100%', marginTop: '10px', padding: '11px', background: 'transparent',
-              border: '1px solid #E5E7EB', color: '#a0b0b0', borderRadius: '6px', cursor: 'pointer'
+              border: '1px solid #1a2f2f', color: '#a0b0b0', borderRadius: '6px', cursor: 'pointer'
             }}>← Back</button>
           </div>
         )}
 
         <p style={{ textAlign: 'center', marginTop: '20px', color: '#a0b0b0', fontSize: '14px' }}>
           Already have an account?{' '}
-          <span style={{ color: '#1976D2', cursor: 'pointer' }} onClick={onBackToLogin}>Log in</span>
+          <span style={{ color: '#00c2e0', cursor: 'pointer' }} onClick={onBackToLogin}>Log in</span>
         </p>
       </div>
     </div>

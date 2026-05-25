@@ -163,7 +163,7 @@ export default function LabelDesigner({ userRole, companyId }) {
       const W=200, H=100;
       const id = (type) => Math.random().toString(36).slice(2,9);
       setElements([
-        { id:id(), type:'rect',        x:0,      y:0,      w:W,      h:H*0.28, fill:'#1D3557', stroke:'transparent', strokeW:0, radius:0 },
+        { id:id(), type:'rect',        x:0,      y:0,      w:W,      h:H*0.28, fill:'#0d1826', stroke:'transparent', strokeW:0, radius:0 },
         { id:id(), type:'mechiq_logo', x:3,      y:2,      w:W*0.4,  h:H*0.22, colorMain:'#ffffff', colorAccent:'#2d8cf0' },
         { id:id(), type:'text',        x:2,      y:H*0.30, w:W-4,    h:12,     text: assetName||'Asset Name', fontSize:9, fontFamily:'Barlow', color:'#1a2433', bold:true, italic:false, align:'left' },
         { id:id(), type:'qr',          x:2,      y:H*0.46, w:H*0.5,  h:H*0.5,  assetUrl: qrUrl||'https://mechiq.com.au/scan/'+assetId, assetId, assetLabel:assetName },
@@ -461,9 +461,9 @@ export default function LabelDesigner({ userRole, companyId }) {
     const { x, y } = toLabelCoords(cx,cy);
     let el;
     if (tool==='text')        el = { id:newId(), type:'text',        x, y, w:80,  h:16, text:'Label text', fontSize:10, fontFamily:'Barlow', color:'#000000', bold:false, italic:false, align:'left' };
-    if (tool==='rect')        el = { id:newId(), type:'rect',        x, y, w:60,  h:20, fill:'#1976D2', stroke:'#000000', strokeW:0, radius:0 };
-    if (tool==='circle')      el = { id:newId(), type:'circle',      x, y, w:30,  h:30, fill:'#1976D2', stroke:'#000000', strokeW:0 };
-    if (tool==='triangle')    el = { id:newId(), type:'triangle',    x, y, w:40,  h:34, fill:'#1976D2', stroke:'#000000', strokeW:0 };
+    if (tool==='rect')        el = { id:newId(), type:'rect',        x, y, w:60,  h:20, fill:'#1e88e5', stroke:'#000000', strokeW:0, radius:0 };
+    if (tool==='circle')      el = { id:newId(), type:'circle',      x, y, w:30,  h:30, fill:'#1e88e5', stroke:'#000000', strokeW:0 };
+    if (tool==='triangle')    el = { id:newId(), type:'triangle',    x, y, w:40,  h:34, fill:'#1e88e5', stroke:'#000000', strokeW:0 };
     if (tool==='line')        el = { id:newId(), type:'line',        x, y, w:60,  h:4,  fill:'#1a2433', strokeW:2 };
     if (tool==='star')        el = { id:newId(), type:'star',        x, y, w:30,  h:30, fill:'#f59e0b', stroke:'#000000', strokeW:0 };
     if (tool==='arrow')       el = { id:newId(), type:'arrow',       x, y, w:50,  h:20, fill:'#1a2433', stroke:'#000000', strokeW:0 };
@@ -550,7 +550,7 @@ export default function LabelDesigner({ userRole, companyId }) {
   const applyPreset = (preset) => {
     const W = size.w, H = size.h;
     if (preset==='asset') setElements([
-      { id:newId(), type:'rect',        x:0,      y:0,      w:W,      h:H*0.28, fill:'#1D3557', stroke:'transparent', strokeW:0, radius:0 },
+      { id:newId(), type:'rect',        x:0,      y:0,      w:W,      h:H*0.28, fill:'#0d1826', stroke:'transparent', strokeW:0, radius:0 },
       { id:newId(), type:'mechiq_logo', x:3,      y:2,      w:W*0.4,  h:H*0.22, colorMain:'#ffffff', colorAccent:'#2d8cf0' },
       { id:newId(), type:'text',        x:2,      y:H*0.30, w:W-4,    h:12,     text:'ASSET NAME', fontSize:9, fontFamily:'Barlow', color:'#1a2433', bold:true, italic:false, align:'left' },
       { id:newId(), type:'qr',          x:2,      y:H*0.46, w:H*0.5,  h:H*0.5,  assetUrl:'https://mechiq.com.au/scan/', assetId:null },
@@ -566,7 +566,7 @@ export default function LabelDesigner({ userRole, companyId }) {
     if (preset==='machine') setElements([
       { id:newId(), type:'rect',  x:0, y:0, w:W, h:H, fill:'#000000', stroke:'transparent', strokeW:0, radius:0 },
       { id:newId(), type:'text',  x:2, y:3, w:W-4, h:12, text:'MACHINE ID', fontSize:8, fontFamily:'Barlow', color:'#1e88e5', bold:true, italic:false, align:'center' },
-      { id:newId(), type:'rect',  x:W*0.1, y:H*0.18, w:W*0.8, h:1, fill:'#1976D2', stroke:'transparent', strokeW:0, radius:0 },
+      { id:newId(), type:'rect',  x:W*0.1, y:H*0.18, w:W*0.8, h:1, fill:'#1e88e5', stroke:'transparent', strokeW:0, radius:0 },
       { id:newId(), type:'qr',    x:W*0.3, y:H*0.22, w:W*0.4, h:W*0.4, assetUrl:'https://mechiq.com.au', assetId:null },
       { id:newId(), type:'text',  x:2, y:H*0.72, w:W-4, h:12, text:'UNIT-001', fontSize:11, fontFamily:'Barlow', color:'#ffffff', bold:true, italic:false, align:'center' },
     ]);

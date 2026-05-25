@@ -7,7 +7,7 @@ const CSS = `
   .cp { min-height:100vh; background:#f4f7fa; font-family:'Inter',system-ui,sans-serif; }
   .cp-nav { background:#fff; border-bottom:1px solid #e5eaf0; padding:0 24px; height:56px; display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:100; }
   .cp-logo { font-size:18px; font-weight:800; letter-spacing:2px; color:#1a2b3c; }
-  .cp-logo span { color:#1976D2; }
+  .cp-logo span { color:#00c2e0; }
   .cp-badge { font-size:10px; fontweight:700; padding:3px 10px; borderRadius:20px; background:#f0fdf4; color:#16a34a; border:1px solid #bbf7d0; }
   .cp-inner { max-width:960px; margin:0 auto; padding:32px 20px; }
   .cp-card { background:#fff; border:1px solid #e5eaf0; border-radius:14px; padding:28px; margin-bottom:20px; box-shadow:0 1px 4px rgba(0,0,0,0.05); animation:cp-up 0.3s ease; }
@@ -15,12 +15,12 @@ const CSS = `
   .cp-sub { font-size:14px; color:#6b7a8d; margin-bottom:24px; }
   .cp-label { display:block; font-size:10px; font-weight:700; color:#6b7a8d; text-transform:uppercase; letter-spacing:0.8px; margin-bottom:5px; }
   .cp-inp { width:100%; padding:10px 13px; border:1px solid #dde2ea; border-radius:8px; font-size:14px; font-family:inherit; color:#1a2b3c; background:#f8fafc; outline:none; box-sizing:border-box; transition:border-color 0.15s; }
-  .cp-inp:focus { border-color:#1976D2; background:#fff; box-shadow:0 0 0 3px rgba(25,118,210,0.1); }
-  .cp-btn { padding:11px 24px; background:linear-gradient(135deg,#1976D2,#1565C0); color:#fff; border:none; border-radius:8px; font-size:14px; font-weight:700; cursor:pointer; font-family:inherit; transition:all 0.18s; }
-  .cp-btn:hover { transform:translateY(-1px); box-shadow:0 4px 14px rgba(25,118,210,0.3); }
+  .cp-inp:focus { border-color:#00c2e0; background:#fff; box-shadow:0 0 0 3px rgba(0,194,224,0.1); }
+  .cp-btn { padding:11px 24px; background:linear-gradient(135deg,#00c2e0,#0096b8); color:#fff; border:none; border-radius:8px; font-size:14px; font-weight:700; cursor:pointer; font-family:inherit; transition:all 0.18s; }
+  .cp-btn:hover { transform:translateY(-1px); box-shadow:0 4px 14px rgba(0,194,224,0.3); }
   .cp-btn:disabled { opacity:0.5; cursor:not-allowed; transform:none; box-shadow:none; }
   .cp-btn-ghost { padding:10px 20px; background:transparent; color:#6b7a8d; border:1px solid #dde2ea; border-radius:8px; font-size:13px; font-weight:600; cursor:pointer; font-family:inherit; transition:all 0.15s; }
-  .cp-btn-ghost:hover { border-color:#1976D2; color:#1976D2; }
+  .cp-btn-ghost:hover { border-color:#00c2e0; color:#00c2e0; }
   .cp-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:14px; }
   .cp-err { padding:10px 14px; background:#fff1f2; border:1px solid #fecdd3; border-radius:8px; font-size:13px; color:#e11d48; margin-bottom:14px; }
   .cp-ok  { padding:10px 14px; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:8px; font-size:13px; color:#16a34a; margin-bottom:14px; }
@@ -31,7 +31,7 @@ const CSS = `
   .cp-status.compliant{ background:#f0f7ff; color:#2d8cf0; border:1px solid #93c5fd; }
   .cp-pin { display:flex; gap:10px; }
   .cp-pin input { width:44px; height:52px; text-align:center; font-size:22px; font-weight:800; border:2px solid #dde2ea; border-radius:10px; font-family:inherit; color:#1a2b3c; background:#f8fafc; outline:none; transition:all 0.15s; }
-  .cp-pin input:focus { border-color:#1976D2; background:#fff; box-shadow:0 0 0 3px rgba(25,118,210,0.1); }
+  .cp-pin input:focus { border-color:#00c2e0; background:#fff; box-shadow:0 0 0 3px rgba(0,194,224,0.1); }
 `;
 
 const STATUS_LABELS = { pending:'Pending Review', approved:'Approved', rejected:'Rejected', compliant:'Compliant & On Site' };
@@ -85,22 +85,22 @@ function LoginScreen({ onLogin }) {
   };
 
   return (
-    <div style={{ minHeight:'100vh', background:'#F3F4F6', display:'flex', alignItems:'center', justifyContent:'center', padding:20 }}>
-      <div style={{ background:'rgba(255,255,255,0.03)', border:'1px solid rgba(25,118,210,0.2)', borderTop:'2px solid #1976D2', borderRadius:16, padding:'40px 36px', width:'100%', maxWidth:420, backdropFilter:'blur(20px)', boxShadow:'0 0 60px rgba(25,118,210,0.08)' }}>
+    <div style={{ minHeight:'100vh', background:'linear-gradient(160deg,#060d17,#0a1628)', display:'flex', alignItems:'center', justifyContent:'center', padding:20 }}>
+      <div style={{ background:'rgba(255,255,255,0.03)', border:'1px solid rgba(0,194,224,0.2)', borderTop:'2px solid #00c2e0', borderRadius:16, padding:'40px 36px', width:'100%', maxWidth:420, backdropFilter:'blur(20px)', boxShadow:'0 0 60px rgba(0,194,224,0.08)' }}>
         <div style={{ textAlign:'center', marginBottom:32 }}>
-          <div style={{ fontFamily:'system-ui', fontSize:22, fontWeight:800, letterSpacing:3, color:'#fff', marginBottom:6 }}>MECH<span style={{color:'#1976D2'}}>IQ</span></div>
+          <div style={{ fontFamily:'system-ui', fontSize:22, fontWeight:800, letterSpacing:3, color:'#fff', marginBottom:6 }}>MECH<span style={{color:'#00c2e0'}}>IQ</span></div>
           <div style={{ fontSize:13, color:'rgba(200,216,232,0.55)', letterSpacing:1 }}>CONTRACTOR PORTAL</div>
         </div>
         <div style={{ marginBottom:18 }}>
           <label style={{ display:'block', fontSize:10, fontWeight:700, color:'rgba(200,216,232,0.55)', textTransform:'uppercase', letterSpacing:1, marginBottom:6 }}>Email Address</label>
-          <input style={{ width:'100%', padding:'11px 14px', background:'rgba(255,255,255,0.05)', border:'1px solid rgba(25,118,210,0.2)', borderRadius:8, color:'#fff', fontSize:14, fontFamily:'inherit', outline:'none', boxSizing:'border-box' }}
+          <input style={{ width:'100%', padding:'11px 14px', background:'rgba(255,255,255,0.05)', border:'1px solid rgba(0,194,224,0.2)', borderRadius:8, color:'#fff', fontSize:14, fontFamily:'inherit', outline:'none', boxSizing:'border-box' }}
             type="email" placeholder="you@company.com" value={email} onChange={e=>setEmail(e.target.value)} onKeyDown={e=>e.key==='Enter'&&handle()} autoFocus />
         </div>
         <div style={{ marginBottom:24 }}>
           <label style={{ display:'block', fontSize:10, fontWeight:700, color:'rgba(200,216,232,0.55)', textTransform:'uppercase', letterSpacing:1, marginBottom:10 }}>6-Digit PIN</label>
           <div style={{ display:'flex', gap:8 }}>
             {Array.from({length:6}).map((_,i) => (
-              <input key={i} maxLength={1} style={{ flex:1, height:50, textAlign:'center', fontSize:20, fontWeight:800, background:'rgba(255,255,255,0.05)', border:'1px solid rgba(25,118,210,0.2)', borderRadius:8, color:'#fff', fontFamily:'inherit', outline:'none' }}
+              <input key={i} maxLength={1} style={{ flex:1, height:50, textAlign:'center', fontSize:20, fontWeight:800, background:'rgba(255,255,255,0.05)', border:'1px solid rgba(0,194,224,0.2)', borderRadius:8, color:'#fff', fontFamily:'inherit', outline:'none' }}
                 value={pin[i]||''} onChange={e => {
                   const v = e.target.value.replace(/\D/,'');
                   const arr = pin.split('');
@@ -113,7 +113,7 @@ function LoginScreen({ onLogin }) {
           </div>
         </div>
         {err && <div style={{ padding:'10px 14px', background:'rgba(225,29,72,0.1)', border:'1px solid rgba(225,29,72,0.3)', borderRadius:8, fontSize:13, color:'#fb7185', marginBottom:14 }}>{err}</div>}
-        <button onClick={handle} disabled={busy} style={{ width:'100%', padding:'13px', background:busy?'rgba(25,118,210,0.4)':'linear-gradient(135deg,#1976D2,#1565C0)', color:'#fff', border:'none', borderRadius:8, fontSize:14, fontWeight:700, cursor:busy?'not-allowed':'pointer', fontFamily:'inherit', transition:'all 0.2s', boxShadow:'0 0 24px rgba(25,118,210,0.25)' }}>
+        <button onClick={handle} disabled={busy} style={{ width:'100%', padding:'13px', background:busy?'rgba(0,194,224,0.4)':'linear-gradient(135deg,#00c2e0,#0096b8)', color:'#fff', border:'none', borderRadius:8, fontSize:14, fontWeight:700, cursor:busy?'not-allowed':'pointer', fontFamily:'inherit', transition:'all 0.2s', boxShadow:'0 0 24px rgba(0,194,224,0.25)' }}>
           {busy ? 'Signing in…' : 'Sign In'}
         </button>
         <div style={{ textAlign:'center', marginTop:20, fontSize:12, color:'rgba(200,216,232,0.3)' }}>
@@ -174,7 +174,7 @@ function SubmitPlantForm({ contractor, onSubmitted, onCancel }) {
       <div style={{ display:'flex', gap:10, marginBottom:20 }}>
         {[['dry','Dry Hire'],['wet','Wet Hire']].map(([v,l]) => (
           <button key={v} onClick={()=>setForm(f=>({...f,hire_type:v}))}
-            style={{ flex:1, padding:'10px', border:`2px solid ${form.hire_type===v?'#1976D2':'#dde2ea'}`, borderRadius:9, background:form.hire_type===v?'#f0fdff':'#f8fafc', color:form.hire_type===v?'#1976D2':'#6b7a8d', fontWeight:700, fontSize:13, cursor:'pointer', transition:'all 0.15s', fontFamily:'inherit' }}>
+            style={{ flex:1, padding:'10px', border:`2px solid ${form.hire_type===v?'#00c2e0':'#dde2ea'}`, borderRadius:9, background:form.hire_type===v?'#f0fdff':'#f8fafc', color:form.hire_type===v?'#00c2e0':'#6b7a8d', fontWeight:700, fontSize:13, cursor:'pointer', transition:'all 0.15s', fontFamily:'inherit' }}>
             {v === 'dry' ? '🔧 ' : '👷 '}{l}
           </button>
         ))}
@@ -221,7 +221,7 @@ function PlantCard({ sub, onViewDocs }) {
   const sc = { pending:'pending', approved:'approved', rejected:'rejected', compliant:'compliant' };
   const hrs = sub.hours ? Number(sub.hours).toLocaleString() + ' hrs' : '—';
   return (
-    <div className="cp-card" style={{ borderLeft:`4px solid ${sub.status==='approved'||sub.status==='compliant'?'#1976D2':sub.status==='rejected'?'#e11d48':'#f59e0b'}` }}>
+    <div className="cp-card" style={{ borderLeft:`4px solid ${sub.status==='approved'||sub.status==='compliant'?'#00c2e0':sub.status==='rejected'?'#e11d48':'#f59e0b'}` }}>
       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:12 }}>
         <div>
           <div style={{ fontSize:16, fontWeight:800, color:'#1a2b3c' }}>{sub.name}</div>
@@ -231,8 +231,8 @@ function PlantCard({ sub, onViewDocs }) {
       </div>
       {sub.serial_number && <div style={{ fontSize:12, color:'#a0b0b0', marginBottom:8 }}>Serial: {sub.serial_number}</div>}
       {(sub.status==='approved'||sub.status==='compliant') && (
-        <div style={{ display:'flex', gap:20, padding:'10px 14px', background:'#f0fdff', border:'1px solid rgba(25,118,210,0.2)', borderRadius:8, marginBottom:12 }}>
-          <div><div style={{ fontSize:10, fontWeight:700, color:'#6b7a8d', textTransform:'uppercase', letterSpacing:'0.5px' }}>Current Hours</div><div style={{ fontSize:18, fontWeight:800, color:'#1976D2', marginTop:2 }}>{hrs}</div></div>
+        <div style={{ display:'flex', gap:20, padding:'10px 14px', background:'#f0fdff', border:'1px solid rgba(0,194,224,0.2)', borderRadius:8, marginBottom:12 }}>
+          <div><div style={{ fontSize:10, fontWeight:700, color:'#6b7a8d', textTransform:'uppercase', letterSpacing:'0.5px' }}>Current Hours</div><div style={{ fontSize:18, fontWeight:800, color:'#00c2e0', marginTop:2 }}>{hrs}</div></div>
           {sub.label_code && <div><div style={{ fontSize:10, fontWeight:700, color:'#6b7a8d', textTransform:'uppercase', letterSpacing:'0.5px' }}>Site Label</div><div style={{ fontSize:14, fontWeight:800, color:'#1a2b3c', fontFamily:'monospace', marginTop:2 }}>{sub.label_code}</div></div>}
           {sub.approved_at && <div><div style={{ fontSize:10, fontWeight:700, color:'#6b7a8d', textTransform:'uppercase', letterSpacing:'0.5px' }}>Approved</div><div style={{ fontSize:12, fontWeight:600, color:'#16a34a', marginTop:2 }}>{new Date(sub.approved_at).toLocaleDateString('en-AU',{day:'2-digit',month:'short',year:'numeric'})}</div></div>}
         </div>
@@ -273,7 +273,7 @@ function DocsModal({ sub, onClose }) {
             </div>
             <div style={{ display:'flex', alignItems:'center', gap:10 }}>
               {d.verified && <span style={{ fontSize:11, fontWeight:700, color:'#16a34a', background:'#f0fdf4', border:'1px solid #bbf7d0', padding:'2px 8px', borderRadius:20 }}>✓ Verified</span>}
-              {d.file_url && <a href={d.file_url} target="_blank" rel="noreferrer" style={{ fontSize:11, color:'#1976D2', fontWeight:700 }}>View →</a>}
+              {d.file_url && <a href={d.file_url} target="_blank" rel="noreferrer" style={{ fontSize:11, color:'#00c2e0', fontWeight:700 }}>View →</a>}
             </div>
           </div>
         ))}

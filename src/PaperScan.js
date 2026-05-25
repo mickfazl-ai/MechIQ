@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { supabase } from './supabase';
-import { pythonAIFetch } from './pythonApi';
 
 const S = `
   .ps { font-family:'Barlow',sans-serif; color:#1a2433; max-width:860px; }
@@ -268,7 +267,7 @@ Return ONLY the JSON. No explanation. If a field is not visible or legible, use 
         }]
       };
 
-      const res = await pythonAIFetch({
+      const res = await fetch('/api/ai-insight', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
@@ -445,7 +444,7 @@ Return ONLY the JSON. No explanation. If a field is not visible or legible, use 
               onDrop={onDrop}
               onClick={() => fileRef.current?.click()}
             >
-              <div className="ps-zone-icon"></div>
+              <div className="ps-zone-icon">📄</div>
               <div className="ps-zone-txt">Drop a photo or PDF here</div>
               <div className="ps-zone-sub">JPEG, PNG, HEIC or PDF · Max 10MB</div>
               <div className="ps-zone-btns" onClick={e => e.stopPropagation()}>
@@ -511,7 +510,7 @@ Return ONLY the JSON. No explanation. If a field is not visible or legible, use 
           {/* Confidence banner */}
           {extracted.confidence === 'low' ? (
             <div className="ps-review-banner ps-warn-banner">
-              <div className="ps-review-banner-icon"></div>
+              <div className="ps-review-banner-icon">⚠️</div>
               <div>
                 <div className="ps-review-banner-txt">Low confidence extraction</div>
                 <div className="ps-review-banner-sub">Some fields may be inaccurate — please review carefully before saving.</div>
@@ -519,7 +518,7 @@ Return ONLY the JSON. No explanation. If a field is not visible or legible, use 
             </div>
           ) : (
             <div className="ps-review-banner">
-              <div className="ps-review-banner-icon"></div>
+              <div className="ps-review-banner-icon">✓</div>
               <div>
                 <div className="ps-review-banner-txt">Extraction complete — review and confirm</div>
                 <div className="ps-review-banner-sub">Edit any fields that were misread before saving.</div>
@@ -530,7 +529,7 @@ Return ONLY the JSON. No explanation. If a field is not visible or legible, use 
           {/* Asset match */}
           {matchedAsset ? (
             <div className="ps-match found" style={{marginBottom:16}}>
-              <div className="ps-match-icon"></div>
+              <div className="ps-match-icon">✓</div>
               <div>
                 <div className="ps-match-txt">Asset matched: {matchedAsset.asset_name}</div>
                 <div className="ps-match-sub">ID: {matchedAsset.asset_id} · Hours will be updated on this asset</div>
@@ -605,7 +604,7 @@ Return ONLY the JSON. No explanation. If a field is not visible or legible, use 
                   onClick={() => cycleCheck(key)} style={{cursor:'pointer'}}>
                   <div className="ps-check-name">{key.replace(/_/g,' ')}</div>
                   <div className="ps-check-status">
-                    {val === 'ok' ? ' OK' : val === 'fail' ? ' FAIL' : '? Unclear'}
+                    {val === 'ok' ? '✓ OK' : val === 'fail' ? '✗ FAIL' : '? Unclear'}
                   </div>
                 </div>
               ))}
@@ -624,17 +623,17 @@ Return ONLY the JSON. No explanation. If a field is not visible or legible, use 
       {/* ── Done ── */}
       {stage === 'done' && done && (
         <div className="ps-success">
-          <div className="ps-success-icon"></div>
+          <div className="ps-success-icon">✓</div>
           <div className="ps-success-title">Prestart saved successfully</div>
           <div className="ps-success-sub">
             {done.assetName} · {done.hours ? `${done.hours} hrs recorded` : 'Hours not recorded'}
-            {done.failed.length > 0 && <><br/> {done.failed.length} failed items recorded</>}
+            {done.failed.length > 0 && <><br/>⚠️ {done.failed.length} failed items recorded</>}
           </div>
           <div className="ps-success-items">
-            <div className="ps-success-item"> Prestart record created</div>
-            {done.hours && done.matched && <div className="ps-success-item"> Asset hours updated to {done.hours}</div>}
+            <div className="ps-success-item">✓ Prestart record created</div>
+            {done.hours && done.matched && <div className="ps-success-item">✓ Asset hours updated to {done.hours}</div>}
             {done.servicesUpdated.length > 0 && (
-              <div className="ps-success-item"> {done.servicesUpdated.length} service schedule{done.servicesUpdated.length > 1 ? 's' : ''} recalculated</div>
+              <div className="ps-success-item">✓ {done.servicesUpdated.length} service schedule{done.servicesUpdated.length > 1 ? 's' : ''} recalculated</div>
             )}
             {!done.matched && <div style={{padding:'8px 14px', background:'#fffbeb', border:'1px solid #fde68a', borderRadius:5, fontSize:13, color:'#92400e'}}>Asset not matched — link manually in Assets if needed</div>}
           </div>

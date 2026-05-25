@@ -7,8 +7,8 @@ const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS
 // When they do, we store the session ourselves with a 24hr expiry and device fingerprint
 export const supabase = createClient(supabaseUrl, supabaseKey, {
   auth: {
-    persistSession: true,
-    autoRefreshToken: true,
+    persistSession: false,
+    autoRefreshToken: false,
     storage: {
       getItem: (key) => {
         try {
