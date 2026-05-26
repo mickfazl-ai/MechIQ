@@ -1,0 +1,7 @@
+name = "mechiq-daily-report"
+main = "daily-report-worker.js"
+compatibility_date = "2024-01-01"
+account_id = "a2383736780e9e2a31a3f7d7efc401f7"
+
+[triggers]
+crons = ["0 * * * *"]
