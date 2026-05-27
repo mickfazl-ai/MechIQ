@@ -6,133 +6,206 @@ import QRCode from 'qrcode';
 
 // ─── CSS ──────────────────────────────────────────────────────────────────────
 const CSS = `
-  @keyframes fadeUp  { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
-  @keyframes shimmer { 0%{background-position:-200% 0} 100%{background-position:200% 0} }
+  @keyframes fadeUp  { from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none} }
+  @keyframes shimmer { 0%{background-position:-200% 0}100%{background-position:200% 0} }
   @keyframes spin    { to{transform:rotate(360deg)} }
-  @keyframes pulse-amber { 0%,100%{box-shadow:0 0 0 0 rgba(217,119,6,0.25)} 50%{box-shadow:0 0 0 6px transparent} }
 
-  .parts-wrap { animation: fadeUp 0.3s ease; }
+  :root {
+    --p-bg:#F8FAFC; --p-surf:#FFFFFF; --p-s2:#F8FAFC; --p-s3:#F1F5F9;
+    --p-border:#E5E7EB; --p-border2:#CBD5E1;
+    --p-text:#0F172A; --p-text2:#374151; --p-text3:#64748B; --p-text4:#94A3B8;
+    --p-blue:#1976D2; --p-blue-bg:#EBF3FC; --p-blue-bd:#BFDBFE;
+    --p-green:#15803D; --p-green-bg:#F0FDF4; --p-green-bd:#86EFAC;
+    --p-amber:#B45309; --p-amber-bg:#FFFBEB; --p-amber-bd:#FCD34D;
+    --p-red:#B91C1C; --p-red-bg:#FEF2F2; --p-red-bd:#FCA5A5;
+    --p-ai:#6366F1; --p-ai-bg:#EEF2FF; --p-ai-bd:#C7D2FE;
+    --p-sh:0 1px 4px rgba(0,0,0,.05),0 0 0 1px rgba(0,0,0,.02);
+    --p-sh2:0 4px 16px rgba(0,0,0,.08);
+    /* Legacy compat */
+    --accent:var(--p-blue); --red:var(--p-red); --amber:var(--p-amber); --green:var(--p-green);
+    --border:var(--p-border); --surface:var(--p-surf); --surface-2:var(--p-s2); --bg:var(--p-surf);
+    --text-primary:var(--p-text); --text-secondary:var(--p-text2);
+    --text-muted:var(--p-text3); --text-faint:var(--p-text4);
+    --red-bg:var(--p-red-bg); --red-border:var(--p-red-bd);
+    --amber-bg:var(--p-amber-bg); --amber-border:var(--p-amber-bd);
+    --green-bg:var(--p-green-bg); --green-border:var(--p-green-bd);
+    --accent-bg:var(--p-blue-bg); --accent-border:var(--p-blue-bd);
+    --font-mono:'JetBrains Mono',monospace;
+    --font-display:'Inter',sans-serif;
+  }
 
+  /* ── Skeleton ── */
+  .sk-p {
+    background:linear-gradient(90deg,var(--p-s2) 25%,var(--p-border) 50%,var(--p-s2) 75%);
+    background-size:200% 100%; animation:shimmer 1.4s infinite linear;
+    height:13px; border-radius:2px;
+  }
+
+  /* ── Stat card ── */
+  .parts-stat {
+    background:var(--p-surf); border:1px solid var(--p-border);
+    padding:14px 16px; position:relative; overflow:hidden;
+    box-shadow:var(--p-sh); transition:box-shadow .2s,transform .2s; cursor:pointer;
+  }
+  .parts-stat:hover { box-shadow:var(--p-sh2); transform:translateY(-1px); }
+  .parts-stat::after { content:''; position:absolute; bottom:0; left:0; right:0; height:2px; }
+  .parts-stat.s-blue::after  { background:var(--p-blue); }
+  .parts-stat.s-green::after { background:var(--p-green); }
+  .parts-stat.s-amber::after { background:var(--p-amber); }
+  .parts-stat.s-red::after   { background:var(--p-red); }
+  .parts-stat.s-ai::after    { background:var(--p-ai); }
+
+  /* ── Alert banner ── */
+  .low-stock-banner {
+    background:var(--p-amber-bg); border:1px solid var(--p-amber-bd);
+    border-left:3px solid var(--p-amber);
+    padding:10px 14px; margin-bottom:14px;
+    display:flex; align-items:center; gap:10px;
+  }
+
+  /* ── Tab row ── */
+  .tab-row { display:flex; gap:0; border-bottom:1px solid var(--p-border); margin-bottom:14px; }
+  .tab-btn-p {
+    padding:9px 16px; font-size:12px; font-weight:500; color:var(--p-text3);
+    cursor:pointer; border:none; background:none; border-bottom:2px solid transparent;
+    transition:all .1s; font-family:'Inter',sans-serif; white-space:nowrap;
+  }
+  .tab-btn-p:hover { color:var(--p-text2); }
+  .tab-btn-p.active { color:var(--p-blue); border-bottom-color:var(--p-blue); font-weight:600; }
+
+  /* ── Filters ── */
   .parts-filters {
-    display: flex; gap: 8px; flex-wrap: wrap;
-    align-items: center; margin-bottom: 16px;
+    display:flex; gap:6px; margin-bottom:12px; flex-wrap:wrap; align-items:center;
   }
   .parts-filter-input {
-    padding: 8px 12px; border: 1px solid var(--border);
-    border-radius: 8px; background: var(--surface-2);
-    color: var(--text-primary); font-size: 13px;
-    font-family: inherit; outline: none;
-    transition: border-color 0.15s; min-width: 0;
+    padding:7px 10px 7px 30px; border:1px solid var(--p-border);
+    background:var(--p-surf); font-size:12px; font-family:'Inter',sans-serif;
+    color:var(--p-text); outline:none; min-width:180px;
   }
-  .parts-filter-input:focus { border-color: var(--accent); }
+  .parts-filter-input:focus { border-color:var(--p-blue); }
   .parts-filter-select {
-    padding: 8px 12px; border: 1px solid var(--border);
-    border-radius: 8px; background: var(--surface-2);
-    color: var(--text-primary); font-size: 13px;
-    font-family: inherit; outline: none; cursor: pointer;
+    padding:7px 10px; border:1px solid var(--p-border);
+    background:var(--p-surf); font-size:12px; font-family:'Inter',sans-serif;
+    color:var(--p-text2); outline:none; cursor:pointer;
   }
+  .parts-filter-select:focus { border-color:var(--p-blue); }
 
-  .parts-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-  .parts-table { width: 100%; border-collapse: collapse; min-width: 700px; }
+  /* ── Table ── */
+  .parts-table-wrap { overflow-x:auto; }
+  .parts-table { width:100%; border-collapse:collapse; }
   .parts-table th {
-    text-align: left; padding: 0 14px 10px 0;
-    font-size: 10px; font-weight: 700; color: var(--text-muted);
-    text-transform: uppercase; letter-spacing: 0.5px;
-    border-bottom: 1px solid var(--border); white-space: nowrap;
+    background:var(--p-s2); padding:9px 12px;
+    font-size:10px; font-weight:700; color:var(--p-text3);
+    text-align:left; border-bottom:1px solid var(--p-border);
+    text-transform:uppercase; letter-spacing:.4px; white-space:nowrap;
   }
   .parts-table td {
-    padding: 11px 14px 11px 0;
-    font-size: 13px; color: var(--text-secondary);
-    border-bottom: 1px solid var(--border);
-    vertical-align: middle;
+    padding:9px 12px; font-size:12px; color:var(--p-text2);
+    border-bottom:1px solid var(--p-s2);
   }
-  .parts-table tr:last-child td { border-bottom: none; }
-  .parts-table tr:hover td { background: var(--surface-2); }
+  .parts-table tr:hover td { background:var(--p-s2); }
+  .parts-table tr:last-child td { border-bottom:none; }
 
+  /* ── Stock badges ── */
   .stock-badge {
-    display: inline-flex; align-items: center; gap: 5px;
-    padding: 3px 10px; border-radius: 20px;
-    font-size: 12px; font-weight: 700;
+    display:inline-flex; align-items:center; gap:3px;
+    padding:3px 8px; font-size:10px; font-weight:700; border:1px solid;
   }
-  .stock-ok     { background: var(--green-bg);  color: var(--green);  border: 1px solid var(--green-border); }
-  .stock-low    { background: var(--amber-bg);  color: var(--amber);  border: 1px solid var(--amber-border); animation: pulse-amber 2.5s infinite; }
-  .stock-out    { background: var(--red-bg);    color: var(--red);    border: 1px solid var(--red-border); }
+  .stock-badge::before { content:'●'; font-size:7px; }
+  .stock-ok   { background:var(--p-green-bg); color:var(--p-green); border-color:var(--p-green-bd); }
+  .stock-low  { background:var(--p-amber-bg); color:var(--p-amber); border-color:var(--p-amber-bd); }
+  .stock-out  { background:var(--p-red-bg);   color:var(--p-red);   border-color:var(--p-red-bd); }
 
-  .parts-form-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 12px; margin-bottom: 14px;
+  /* ── Buttons ── */
+  .btn-primary {
+    padding:7px 14px; background:var(--p-blue); color:#fff; border:none;
+    font-size:12px; font-weight:600; cursor:pointer; font-family:'Inter',sans-serif;
+    display:inline-flex; align-items:center; gap:5px; transition:background .15s;
   }
-  .parts-input {
-    width: 100%; padding: 9px 12px;
-    border: 1px solid var(--border); border-radius: 8px;
-    background: var(--surface-2); color: var(--text-primary);
-    font-size: 13px; font-family: inherit; outline: none;
-    box-sizing: border-box; transition: border-color 0.15s;
+  .btn-primary:hover { background:var(--p-blue-dark,#1565C0); }
+  .btn-secondary {
+    padding:7px 12px; background:var(--p-surf); color:var(--p-text2);
+    border:1px solid var(--p-border2); font-size:12px; font-weight:500;
+    cursor:pointer; font-family:'Inter',sans-serif;
+    display:inline-flex; align-items:center; gap:5px; transition:all .15s;
   }
-  .parts-input:focus { border-color: var(--accent); }
-  .parts-label {
-    display: block; font-size: 10px; font-weight: 700;
-    color: var(--text-muted); text-transform: uppercase;
-    letter-spacing: 0.5px; margin-bottom: 5px;
+  .btn-secondary:hover { border-color:var(--p-blue); color:var(--p-blue); }
+  .btn-scan {
+    padding:7px 14px; background:#0F172A; color:#fff; border:none;
+    font-size:12px; font-weight:600; cursor:pointer; font-family:'Inter',sans-serif;
+    display:inline-flex; align-items:center; gap:5px;
   }
+  .btn-ai-sm {
+    padding:7px 12px; background:var(--p-ai-bg); color:var(--p-ai);
+    border:1px solid var(--p-ai-bd); font-size:12px; font-weight:600;
+    cursor:pointer; font-family:'Inter',sans-serif;
+    display:inline-flex; align-items:center; gap:5px;
+  }
+
+  /* ── Card ── */
+  .parts-card {
+    background:var(--p-surf); border:1px solid var(--p-border);
+    box-shadow:var(--p-sh); margin-bottom:16px;
+  }
+  .parts-card-hdr {
+    padding:10px 14px; border-bottom:1px solid var(--p-s3);
+    display:flex; align-items:center; justify-content:space-between;
+  }
+  .parts-card-title {
+    font-size:11px; font-weight:700; text-transform:uppercase;
+    letter-spacing:.5px; color:var(--p-text3);
+    display:flex; align-items:center; gap:6px;
+  }
+  .parts-card-title::before { content:''; width:3px; height:12px; background:var(--p-blue); flex-shrink:0; }
+
+  /* ── Section title ── */
   .parts-section-title {
-    font-size: 12px; font-weight: 800; color: var(--text-muted);
-    text-transform: uppercase; letter-spacing: 1px;
-    margin-bottom: 14px; padding-bottom: 8px;
-    border-bottom: 1px solid var(--border);
-    display: flex; align-items: center; gap: 8px;
+    font-size:11px; font-weight:700; text-transform:uppercase;
+    letter-spacing:.5px; color:var(--p-text3); margin-bottom:12px;
+    display:flex; align-items:center; gap:6px;
   }
-  .parts-section-title::before {
-    content: ''; width: 3px; height: 14px;
-    background: var(--accent); border-radius: 2px; flex-shrink: 0;
+  .parts-section-title::before { content:''; width:3px; height:11px; background:var(--p-blue); flex-shrink:0; }
+
+  /* ── Transaction item ── */
+  .tx-item {
+    display:flex; align-items:flex-start; gap:10px;
+    padding:10px 0; border-bottom:1px solid var(--p-s2);
+  }
+  .tx-item:last-child { border-bottom:none; }
+  .tx-dot {
+    width:26px; height:26px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    font-size:11px; font-weight:800; flex-shrink:0; margin-top:2px;
   }
 
-  .ai-drop-zone {
-    border: 2px dashed var(--border); border-radius: 12px;
-    padding: 32px 20px; text-align: center; cursor: pointer;
-    transition: all 0.2s; background: var(--surface-2);
+  /* ── Reorder row ── */
+  .reorder-row {
+    display:flex; align-items:center; gap:0;
+    padding:10px 14px; border-bottom:1px solid var(--p-s2);
+    background:var(--p-surf); transition:background .1s;
   }
-  .ai-drop-zone:hover, .ai-drop-zone.drag-over {
-    border-color: var(--accent); background: var(--accent-light);
-  }
-  .ai-progress {
-    background: var(--surface-2); border-radius: 8px;
-    overflow: hidden; height: 6px; margin-top: 10px;
-  }
-  .ai-progress-bar {
-    height: 100%; background: var(--accent); border-radius: 8px;
-    transition: width 0.4s ease;
+  .reorder-row:last-child { border-bottom:none; }
+  .reorder-row:hover { background:var(--p-s2); }
+
+  /* ── Machine filter highlight ── */
+  .machine-filter-active {
+    border-color:var(--p-blue) !important;
+    color:var(--p-blue) !important;
+    background:var(--p-blue-bg) !important;
+    font-weight:600 !important;
   }
 
-  .parts-action-btn {
-    padding: 6px 12px; border-radius: 7px;
-    font-size: 11px; font-weight: 700; cursor: pointer;
-    border: none; transition: all 0.15s; white-space: nowrap;
-  }
-  .tab-row {
-    display: flex; gap: 3px; background: var(--surface);
-    border: 1px solid var(--border); border-radius: 10px;
-    padding: 4px; width: fit-content; margin-bottom: 20px; flex-wrap: wrap;
-  }
-  .tab-btn-p {
-    padding: 8px 16px; border-radius: 7px; border: none;
-    cursor: pointer; font-size: 13px; font-weight: 600;
-    transition: all 0.15s; font-family: inherit;
-  }
-  .tab-btn-p.active { background: var(--accent); color: #fff; box-shadow: 0 2px 8px rgba(14,165,233,0.3); }
-  .tab-btn-p:not(.active) { background: transparent; color: var(--text-muted); }
-
-  .low-stock-banner {
-    background: var(--amber-bg); border: 1px solid var(--amber-border);
-    border-radius: 10px; padding: 12px 16px; margin-bottom: 16px;
-    display: flex; align-items: center; gap: 10px; animation: fadeUp 0.3s ease;
+  /* ── AI badge ── */
+  .ai-badge-sm {
+    background:var(--p-ai-bg); color:var(--p-ai);
+    border:1px solid var(--p-ai-bd);
+    font-size:9px; font-weight:800; padding:2px 6px; letter-spacing:.3px;
   }
 `;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function Sk({ w = '100%', h = '13px' }) {
-  return <div style={{ width: w, height: h, borderRadius: 6, background: 'linear-gradient(90deg,var(--surface-2) 25%,var(--surface-3) 50%,var(--surface-2) 75%)', backgroundSize: '200% 100%', animation: 'shimmer 1.4s infinite linear', flexShrink: 0 }} />;
+  return <div style={{ width: w, height: h, borderRadius: 2, background: 'linear-gradient(90deg,var(--surface-2) 25%,var(--surface-3) 50%,var(--surface-2) 75%)', backgroundSize: '200% 100%', animation: 'shimmer 1.4s infinite linear', flexShrink: 0 }} />;
 }
 
 const UNITS = ['ea', 'pcs', 'set', 'kg', 'L', 'm', 'box', 'roll', 'pair'];
@@ -289,7 +362,7 @@ function AIImportModal({ userRole, assets, onClose, onImported }) {
 
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 20 }}>
-      <div style={{ background: 'var(--surface)', borderRadius: 16, padding: 28, width: '100%', maxWidth: 600, maxHeight: '85vh', overflow: 'auto', border: '1px solid var(--border)', boxShadow: '0 20px 60px rgba(0,0,0,0.3)', animation: 'fadeUp 0.2s ease' }}>
+      <div style={{ background: 'var(--surface)', borderRadius: 4, padding: 28, width: '100%', maxWidth: 600, maxHeight: '85vh', overflow: 'auto', border: '1px solid var(--border)', boxShadow: '0 20px 60px rgba(0,0,0,0.3)', animation: 'fadeUp 0.2s ease' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
           <div style={{ fontSize: 17, fontWeight: 800, color: 'var(--text-primary)' }}>🤖 AI Parts Import</div>
           <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 18 }}>✕</button>
@@ -309,7 +382,7 @@ function AIImportModal({ userRole, assets, onClose, onImported }) {
             <input ref={fileRef} type="file" accept=".xlsx,.xls,.pdf,image/*" style={{ display: 'none' }} onChange={e => { const f = e.target.files[0]; if (f) processFile(f); }} />
             <div style={{ marginTop: 14, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               {['📊 Excel Spreadsheet', '📄 PDF Parts List', '📷 Photo / Invoice'].map(t => (
-                <span key={t} style={{ padding: '4px 10px', background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 6, fontSize: 12, color: 'var(--text-muted)' }}>{t}</span>
+                <span key={t} style={{ padding: '4px 10px', background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 2, fontSize: 12, color: 'var(--text-muted)' }}>{t}</span>
               ))}
             </div>
           </>
@@ -331,11 +404,11 @@ function AIImportModal({ userRole, assets, onClose, onImported }) {
                 Found <strong style={{ color: 'var(--text-primary)' }}>{preview.length}</strong> parts — select which to import
               </div>
               <div style={{ display: 'flex', gap: 6 }}>
-                <button onClick={() => setSelected(preview.map((_, i) => i))} style={{ fontSize: 11, padding: '4px 10px', background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 6, cursor: 'pointer', color: 'var(--text-secondary)' }}>All</button>
-                <button onClick={() => setSelected([])} style={{ fontSize: 11, padding: '4px 10px', background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 6, cursor: 'pointer', color: 'var(--text-secondary)' }}>None</button>
+                <button onClick={() => setSelected(preview.map((_, i) => i))} style={{ fontSize: 11, padding: '4px 10px', background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 2, cursor: 'pointer', color: 'var(--text-secondary)' }}>All</button>
+                <button onClick={() => setSelected([])} style={{ fontSize: 11, padding: '4px 10px', background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 2, cursor: 'pointer', color: 'var(--text-secondary)' }}>None</button>
               </div>
             </div>
-            <div style={{ maxHeight: 320, overflow: 'auto', border: '1px solid var(--border)', borderRadius: 10, marginBottom: 16 }}>
+            <div style={{ maxHeight: 320, overflow: 'auto', border: '1px solid var(--border)', borderRadius: 3, marginBottom: 16 }}>
               {preview.map((p, i) => (
                 <div key={i} onClick={() => setSelected(s => s.includes(i) ? s.filter(x => x !== i) : [...s, i])}
                   style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', borderBottom: '1px solid var(--border)', cursor: 'pointer', background: selected.includes(i) ? 'var(--accent-light)' : 'transparent', transition: 'background 0.12s' }}>
@@ -353,10 +426,10 @@ function AIImportModal({ userRole, assets, onClose, onImported }) {
             </div>
             <div style={{ display: 'flex', gap: 8 }}>
               <button onClick={importSelected} disabled={selected.length === 0}
-                style={{ flex: 1, padding: '10px', background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: 'pointer', opacity: selected.length === 0 ? 0.4 : 1 }}>
+                style={{ flex: 1, padding: '10px', background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: 3, fontSize: 13, fontWeight: 700, cursor: 'pointer', opacity: selected.length === 0 ? 0.4 : 1 }}>
                 Import {selected.length} Part{selected.length !== 1 ? 's' : ''}
               </button>
-              <button onClick={onClose} style={{ padding: '10px 18px', background: 'var(--surface-2)', color: 'var(--text-secondary)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Cancel</button>
+              <button onClick={onClose} style={{ padding: '10px 18px', background: 'var(--surface-2)', color: 'var(--text-secondary)', border: '1px solid var(--border)', borderRadius: 3, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Cancel</button>
             </div>
           </>
         )}
@@ -396,7 +469,7 @@ function TransactionModal({ part, userRole, assets, workOrders, onClose, onDone 
 
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 20 }}>
-      <div style={{ background: 'var(--surface)', borderRadius: 16, padding: 24, width: '100%', maxWidth: 440, border: '1px solid var(--border)', boxShadow: '0 20px 60px rgba(0,0,0,0.3)', animation: 'fadeUp 0.2s ease' }}>
+      <div style={{ background: 'var(--surface)', borderRadius: 4, padding: 24, width: '100%', maxWidth: 440, border: '1px solid var(--border)', boxShadow: '0 20px 60px rgba(0,0,0,0.3)', animation: 'fadeUp 0.2s ease' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 }}>
           <div>
             <div style={{ fontSize: 15, fontWeight: 800, color: 'var(--text-primary)' }}>Stock Movement</div>
@@ -406,7 +479,7 @@ function TransactionModal({ part, userRole, assets, workOrders, onClose, onDone 
         </div>
         <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
           {[['out','📤 Use / Issue'],['in','📥 Receive'],['adjustment','⚙ Adjust']].map(([v, l]) => (
-            <button key={v} onClick={() => setType(v)} style={{ flex: 1, padding: '8px', border: `1px solid ${type === v ? 'var(--accent)' : 'var(--border)'}`, borderRadius: 8, background: type === v ? 'var(--accent)' : 'var(--surface-2)', color: type === v ? '#fff' : 'var(--text-secondary)', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>{l}</button>
+            <button key={v} onClick={() => setType(v)} style={{ flex: 1, padding: '8px', border: `1px solid ${type === v ? 'var(--accent)' : 'var(--border)'}`, borderRadius: 3, background: type === v ? 'var(--accent)' : 'var(--surface-2)', color: type === v ? '#fff' : 'var(--text-secondary)', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>{l}</button>
           ))}
         </div>
         <div style={{ marginBottom: 12 }}>
@@ -432,10 +505,10 @@ function TransactionModal({ part, userRole, assets, workOrders, onClose, onDone 
           <input className="parts-input" placeholder="Optional notes…" value={notes} onChange={e => setNotes(e.target.value)} />
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
-          <button onClick={save} disabled={saving} style={{ flex: 1, padding: '10px', background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: 'pointer', opacity: saving ? 0.6 : 1 }}>
+          <button onClick={save} disabled={saving} style={{ flex: 1, padding: '10px', background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: 3, fontSize: 13, fontWeight: 700, cursor: 'pointer', opacity: saving ? 0.6 : 1 }}>
             {saving ? 'Saving…' : 'Confirm'}
           </button>
-          <button onClick={onClose} style={{ padding: '10px 18px', background: 'var(--surface-2)', color: 'var(--text-secondary)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Cancel</button>
+          <button onClick={onClose} style={{ padding: '10px 18px', background: 'var(--surface-2)', color: 'var(--text-secondary)', border: '1px solid var(--border)', borderRadius: 3, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Cancel</button>
         </div>
       </div>
     </div>
@@ -461,7 +534,7 @@ function PartForm({ part, assets, onSave, onCancel, userRole }) {
   };
 
   return (
-    <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 14, padding: 22, marginBottom: 20, animation: 'fadeUp 0.2s ease' }}>
+    <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 4, padding: 22, marginBottom: 20, animation: 'fadeUp 0.2s ease' }}>
       <div className="parts-section-title">{part?.id ? 'Edit Part' : 'Add New Part'}</div>
       <div className="parts-form-grid">
         <div><label className="parts-label">Part Name *</label><input className="parts-input" placeholder="e.g. Oil Filter" value={form.name} onChange={e => F('name', e.target.value)} /></div>
@@ -505,17 +578,16 @@ function PartForm({ part, assets, onSave, onCancel, userRole }) {
         <textarea className="parts-input" rows={2} value={form.description} onChange={e => F('description', e.target.value)} style={{ resize: 'vertical' }} />
       </div>
       <div style={{ display: 'flex', gap: 8 }}>
-        <button onClick={save} disabled={saving} style={{ padding: '9px 22px', background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: 'pointer', opacity: saving ? 0.6 : 1 }}>
+        <button onClick={save} disabled={saving} style={{ padding: '9px 22px', background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: 3, fontSize: 13, fontWeight: 700, cursor: 'pointer', opacity: saving ? 0.6 : 1 }}>
           {saving ? 'Saving…' : part?.id ? 'Save Changes' : 'Add Part'}
         </button>
-        <button onClick={onCancel} style={{ padding: '9px 16px', background: 'var(--surface-2)', color: 'var(--text-secondary)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Cancel</button>
+        <button onClick={onCancel} style={{ padding: '9px 16px', background: 'var(--surface-2)', color: 'var(--text-secondary)', border: '1px solid var(--border)', borderRadius: 3, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Cancel</button>
       </div>
     </div>
   );
 }
 
 // ─── Main Parts Component ──────────────────────────────────────────────────────
-export default 
 // ─── AI Smart Match Modal ─────────────────────────────────────────────────────
 function AISmartMatchModal({ parts, assets, userRole, onClose, onApplied }) {
   const [step,       setStep]       = useState('intro'); // intro | running | review | done
@@ -993,24 +1065,24 @@ function Parts({ userRole }) {
             <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--amber)' }}>{lowStockParts.length} part{lowStockParts.length !== 1 ? 's' : ''} low or out of stock</div>
             <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{lowStockParts.slice(0, 3).map(p => p.name).join(', ')}{lowStockParts.length > 3 ? ` +${lowStockParts.length - 3} more` : ''}</div>
           </div>
-          <button onClick={() => { setFilterStock('low'); setTab('parts'); }} style={{ padding: '6px 14px', background: 'var(--amber)', color: '#fff', border: 'none', borderRadius: 7, fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>View All</button>
+          <button onClick={() => { setFilterStock('low'); setTab('parts'); }} style={{ padding: '6px 14px', background: 'var(--amber)', color: '#fff', border: 'none', borderRadius: 2, fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>View All</button>
         </div>
       )}
 
       {/* Action bar */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap', alignItems: 'center' }}>
         <div className="tab-row" style={{ marginBottom: 0 }}>
-          {[['parts','🔩 Parts Register'],['transactions','📋 Stock Log'],['usage','📊 Usage History'],['stocktake','📊 Stocktake'],['reorder','🛒 Reorder List']].map(([v, l]) => (
+          {[['parts','Parts Register'],['transactions','Stock Log'],['usage','Usage History'],['stocktake','Stocktake'],['reorder','Reorder List']].map(([v, l]) => (
             <button key={v} className={`tab-btn-p${tab === v ? ' active' : ''}`} onClick={() => setTab(v)}>{l}</button>
           ))}
         </div>
         <div style={{ marginLeft: 'auto', display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          {isAdmin && <button onClick={() => setShowScan(true)} style={{ padding: '9px 16px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: 'pointer', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 6 }}>📷 Scan Part</button>}
-          {isAdmin && <button onClick={() => setShowQR(true)} style={{ padding: '9px 16px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: 'pointer', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 6 }}>🏷️ QR Stickers</button>}
-          <button onClick={exportParts} style={{ padding: '9px 16px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: 'pointer', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 6 }}>📊 Export</button>
-          {isAdmin && <button onClick={() => setShowAI(true)} style={{ padding: '9px 16px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: 'pointer', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 6 }}>🤖 AI Import</button>}
-          {isAdmin && <button onClick={() => setShowSmartMatch(true)} style={{ padding: '9px 16px', background: 'linear-gradient(135deg,var(--accent),#0090a8)', border: 'none', borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: 'pointer', color: '#fff', display: 'flex', alignItems: 'center', gap: 6, boxShadow: '0 2px 10px rgba(0,194,224,0.25)' }}>✦ Smart Match</button>}
-          {isAdmin && <button onClick={() => { setEditPart(null); setShowForm(s => !s); }} style={{ padding: '9px 16px', background: showForm ? 'var(--surface-2)' : 'var(--accent)', color: showForm ? 'var(--text-secondary)' : '#fff', border: '1px solid ' + (showForm ? 'var(--border)' : 'var(--accent)'), borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+          {isAdmin && <button className="btn-scan" onClick={() => setShowScan(true)}>Scan Part</button>}
+          {isAdmin && <button className="btn-secondary" onClick={() => setShowQR(true)}>QR Labels</button>}
+          <button className="btn-secondary" onClick={exportParts}>Export</button>
+          {isAdmin && <button className="btn-ai-sm" onClick={() => setShowAI(true)}>AI Import</button>}
+          {isAdmin && <button className="btn-ai-sm" onClick={() => setShowSmartMatch(true)}>Smart Match</button>}
+          {isAdmin && <button className="btn-primary" onClick={() => { setEditPart(null); setShowForm(s => !s); }}>
             {showForm ? '✕ Close' : '+ Add Part'}
           </button>}
         </div>
@@ -1035,9 +1107,9 @@ function Parts({ userRole }) {
               <option value="">All Suppliers</option>
               {suppliers.map(s => <option key={s}>{s}</option>)}
             </select>
-            <select className="parts-filter-select" value={filterAsset} onChange={e => setFilterAsset(e.target.value)}>
-              <option value="">All Assets</option>
-              {assets.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+            <select className={`parts-filter-select${filterAsset ? ' machine-filter-active' : ''}`} value={filterAsset} onChange={e => setFilterAsset(e.target.value)}>
+              <option value="">All Machine IDs</option>
+              {assets.map(a => <option key={a.id} value={a.id}>{a.asset_number ? `${a.asset_number} — ${a.name}` : a.name}</option>)}
             </select>
             <select className="parts-filter-select" value={filterStock} onChange={e => setFilterStock(e.target.value)}>
               <option value="">All Stock</option>
@@ -1046,12 +1118,12 @@ function Parts({ userRole }) {
               <option value="out">Out of Stock</option>
             </select>
             {(search || filterCat || filterSupplier || filterAsset || filterStock) && (
-              <button onClick={() => { setSearch(''); setFilterCat(''); setFilterSupplier(''); setFilterAsset(''); setFilterStock(''); }} style={{ padding: '6px 12px', background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 7, fontSize: 12, cursor: 'pointer', color: 'var(--text-muted)', fontWeight: 600 }}>✕ Clear</button>
+              <button onClick={() => { setSearch(''); setFilterCat(''); setFilterSupplier(''); setFilterAsset(''); setFilterStock(''); }} style={{ padding: '6px 12px', background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 2, fontSize: 12, cursor: 'pointer', color: 'var(--text-muted)', fontWeight: 600 }}>✕ Clear</button>
             )}
           </div>
 
           {/* Table */}
-          <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 14, padding: 20 }}>
+          <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 4, padding: 20 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
               <div className="parts-section-title" style={{ marginBottom: 0 }}>Parts Register</div>
               <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{filtered.length} of {parts.length} parts</div>
@@ -1118,7 +1190,7 @@ function Parts({ userRole }) {
                           </td>
                           <td>
                             <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
-                              <button onClick={() => setTxPart(p)} className="parts-action-btn" style={{ background: 'var(--accent-light)', color: 'var(--accent)', border: '1px solid rgba(14,165,233,0.25)' }}>Stock ±</button>
+                              <button onClick={() => setTxPart(p)} className="parts-action-btn" style={{ background: 'var(--accent-light)', color: 'var(--accent)', border: '1px solid rgba(25,118,210,0.25)' }}>Stock ±</button>
                               {isAdmin && <button onClick={() => { setEditPart(p); setShowForm(true); }} className="parts-action-btn" style={{ background: 'var(--surface-2)', color: 'var(--text-secondary)', border: '1px solid var(--border)' }}>Edit</button>}
                               {isAdmin && <button onClick={() => deletePart(p.id)} className="parts-action-btn" style={{ background: 'var(--red-bg)', color: 'var(--red)', border: '1px solid var(--red-border)' }}>Delete</button>}
                             </div>
@@ -1136,7 +1208,7 @@ function Parts({ userRole }) {
 
       {/* Stock Log Tab */}
       {tab === 'transactions' && (
-        <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 14, padding: 20 }}>
+        <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 4, padding: 20 }}>
           <div className="parts-section-title">Stock Movement Log</div>
           {transactions.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-faint)', fontSize: 13 }}>No stock movements yet.</div>
@@ -1170,7 +1242,7 @@ function Parts({ userRole }) {
 
       {/* Reorder List Tab */}
       {tab === 'reorder' && (
-        <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 14, padding: 20 }}>
+        <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 4, padding: 20 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
             <div className="parts-section-title" style={{ marginBottom: 0 }}>Reorder List</div>
             <button onClick={() => {
@@ -1179,7 +1251,7 @@ function Parts({ userRole }) {
               const wb = XLSX.utils.book_new();
               XLSX.utils.book_append_sheet(wb, ws, 'Reorder List');
               XLSX.writeFile(wb, `MechIQ_Reorder_${new Date().toISOString().split('T')[0]}.xlsx`);
-            }} style={{ padding: '7px 16px', background: 'var(--green-bg)', color: 'var(--green)', border: '1px solid var(--green-border)', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
+            }} style={{ padding: '7px 16px', background: 'var(--green-bg)', color: 'var(--green)', border: '1px solid var(--green-border)', borderRadius: 3, fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
               📊 Export Excel
             </button>
           </div>
@@ -1384,18 +1456,18 @@ function AIScanModal({ parts, userRole, onClose, onDone, onSetTx }) {
     <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:300, display:'flex', alignItems:'center', justifyContent:'center', padding:16 }}>
       <div style={{ background:'var(--bg)', borderRadius:16, width:'100%', maxWidth:480, boxShadow:'0 20px 60px rgba(0,0,0,0.3)' }}>
         <div style={{ padding:'18px 20px 14px', borderBottom:'1px solid var(--border)', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-          <div style={{ fontSize:17, fontWeight:800, color:'var(--text-primary)', fontFamily:'var(--font-display)' }}>📷 AI Part Scanner</div>
+          <div style={{ fontSize:17, fontWeight:800, color:'var(--text-primary)', fontFamily:'var(--font-display)' }}>AI Part Scanner</div>
           <button onClick={onClose} style={{ background:'none', border:'none', cursor:'pointer', fontSize:20, color:'var(--text-muted)' }}>✕</button>
         </div>
         <div style={{ padding:20 }}>
           {step === 'capture' && (
             <div style={{ textAlign:'center' }}>
-              {loading ? <div style={{ padding:'40px 0', color:'var(--text-muted)', fontSize:14 }}>🤖 Analysing image…</div> : (
+              {loading ? <div style={{ padding:'40px 0', color:'var(--text-muted)', fontSize:14 }}>Analysing image…</div> : (
                 <>
                   <div style={{ fontSize:14, color:'var(--text-secondary)', marginBottom:20 }}>Take a photo of the part label, description plate, or box. AI will identify and match it to your inventory.</div>
                   {image && <img src={image} alt="scan" style={{ width:'100%', borderRadius:10, marginBottom:16, maxHeight:200, objectFit:'cover' }} />}
                   <input ref={fileRef} type="file" accept="image/*" capture="environment" style={{ display:'none' }} onChange={e => e.target.files[0] && analyseImage(e.target.files[0])} />
-                  <button onClick={() => fileRef.current.click()} style={{ width:'100%', padding:'14px', background:'var(--accent)', color:'#fff', border:'none', borderRadius:10, fontSize:14, fontWeight:700, cursor:'pointer' }}>📷 Take Photo / Choose Image</button>
+                  <button onClick={() => fileRef.current.click()} style={{ width:'100%', padding:'14px', background:'var(--accent)', color:'#fff', border:'none', borderRadius:10, fontSize:14, fontWeight:700, cursor:'pointer' }}>Take Photo / Upload Image</button>
                 </>
               )}
             </div>
@@ -1524,3 +1596,5 @@ function UsageHistoryTab({ parts, assets, transactions, userRole }) {
     </div>
   );
 }
+
+export default Parts;
