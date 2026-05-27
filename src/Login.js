@@ -835,38 +835,299 @@ function Login({ onAuth }) {
   };
   const scroll = (ref) => ref.current?.scrollIntoView({ behavior:'smooth', block:'start' });
 
+  const [activeDemo, setActiveDemo] = useState(null);
+  const [demoStep, setDemoStep] = useState(0);
+  const demoTimerRef = useRef(null);
+
+  const demos = {
+    dashboard: {
+      label: 'Dashboard & fleet overview',
+      sub: 'Live KPIs, AI risk scores and activity feed',
+      color: '#1976D2',
+      steps: [
+        { action: 'move', cx: 22, cy: 28, label: 'Viewing fleet KPIs' },
+        { action: 'click', cx: 72, cy: 28, label: 'Clicking Down card' },
+        { action: 'show', id: 'drill', label: 'Drilldown opens' },
+        { action: 'move', cx: 50, cy: 70, label: 'Reviewing faulted assets' },
+        { action: 'move', cx: 80, cy: 85, label: 'Checking AI risk score' },
+      ]
+    },
+    prestart: {
+      label: 'Prestart inspection',
+      sub: 'Complete form, scan asset, submit defects',
+      color: '#15803D',
+      steps: [
+        { action: 'move', cx: 12, cy: 38, label: 'Starting daily checks' },
+        { action: 'check', cx: 12, cy: 38, id: 'chk0', label: 'Engine oil ✓' },
+        { action: 'check', cx: 12, cy: 48, id: 'chk1', label: 'Coolant ✓' },
+        { action: 'check', cx: 12, cy: 58, id: 'chk2', label: 'Hydraulics ✓' },
+        { action: 'check', cx: 12, cy: 68, id: 'chk3', label: 'Tyres ✓' },
+        { action: 'submit', cx: 88, cy: 88, label: 'Submitting form' },
+      ]
+    },
+    scan: {
+      label: 'Part scanning & lookup',
+      sub: 'Camera scan identifies part from inventory',
+      color: '#6366F1',
+      steps: [
+        { action: 'move', cx: 50, cy: 35, label: 'Opening scanner' },
+        { action: 'scan', cx: 50, cy: 35, label: 'Scanning barcode' },
+        { action: 'show', id: 'scan-result', label: 'Part identified!' },
+        { action: 'move', cx: 30, cy: 72, label: 'Reviewing stock levels' },
+        { action: 'click', cx: 35, cy: 88, label: 'Issuing part to WO' },
+      ]
+    },
+    workorder: {
+      label: 'Work order creation',
+      sub: 'Raise, assign and track maintenance jobs',
+      color: '#B45309',
+      steps: [
+        { action: 'fill', cx: 50, cy: 28, id: 'wo-asset', val: 'TBM-01 — HK-6200', label: 'Selecting asset' },
+        { action: 'fill', cx: 75, cy: 28, id: 'wo-priority', val: 'Critical', label: 'Setting priority' },
+        { action: 'fill', cx: 50, cy: 43, id: 'wo-title', val: 'Hydraulic pressure fault — inspect pump', label: 'Adding title' },
+        { action: 'fill', cx: 50, cy: 60, id: 'wo-desc', val: 'Pressure 8% below nominal on main circuit. Possible seal failure on HPU.', label: 'Adding description' },
+        { action: 'fill', cx: 25, cy: 76, id: 'wo-tech', val: 'J. Dawson', label: 'Assigning technician' },
+        { action: 'submit', cx: 50, cy: 90, label: 'Creating work order' },
+      ]
+    }
+  };
+
+  const runDemo = (id) => {
+    if (demoTimerRef.current) clearTimeout(demoTimerRef.current);
+    setActiveDemo(id);
+    setDemoStep(0);
+    let step = 0;
+    const steps = demos[id].steps;
+    const tick = () => {
+      step++;
+      if (step < steps.length) {
+        setDemoStep(step);
+        demoTimerRef.current = setTimeout(tick, step === 0 ? 800 : 1100);
+      } else {
+        demoTimerRef.current = setTimeout(() => { setDemoStep(0); tick.restart = true; step = 0; tick(); }, 2500);
+      }
+    };
+    demoTimerRef.current = setTimeout(tick, 800);
+  };
+
+  useEffect(() => { return () => { if (demoTimerRef.current) clearTimeout(demoTimerRef.current); }; }, []);
+
+  const DemoScreen = ({ id }) => {
+    const step = demoStep;
+    const demo = demos[id];
+    const curStep = demo.steps[step] || demo.steps[0];
+    const cx = curStep.cx + '%';
+    const cy = curStep.cy + '%';
+
+    const checked = (chkId) => {
+      const idx = demo.steps.findIndex(s => s.id === chkId);
+      return idx >= 0 && step > idx;
+    };
+    const filled = (fId) => {
+      const idx = demo.steps.findIndex(s => s.id === fId);
+      return idx >= 0 && step > idx ? demo.steps[idx].val : '';
+    };
+    const shown = (sId) => {
+      const idx = demo.steps.findIndex(s => s.id === sId);
+      return idx >= 0 && step > idx;
+    };
+    const submitted = demo.steps[step]?.action === 'submit' || (step > 0 && demo.steps.slice(0, step+1).some(s => s.action === 'submit'));
+
+    const C = ({ title, sub, children }) => (
+      <div style={{ position:'absolute', inset:0, background:'#F8FAFC', overflow:'hidden', fontFamily:'Inter,sans-serif' }}>
+        <div style={{ background:'#fff', borderBottom:'1px solid #e5e7eb', padding:'8px 12px', display:'flex', alignItems:'center', gap:8 }}>
+          <div style={{ width:20, height:20, background:'#1976D2', color:'#fff', fontSize:9, fontWeight:700, display:'flex', alignItems:'center', justifyContent:'center' }}>M</div>
+          <span style={{ fontSize:11, fontWeight:700, color:'#0F172A' }}>MechIQ</span>
+          <span style={{ fontSize:9, color:'#94a3b8', marginLeft:4 }}>·</span>
+          <span style={{ fontSize:10, color:'#64748b' }}>{title}</span>
+        </div>
+        <div style={{ padding:'10px 12px', overflow:'hidden', height:'calc(100% - 38px)' }}>{children}</div>
+        {/* Cursor */}
+        <div style={{ position:'absolute', left:cx, top:cy, width:14, height:14, background:demo.color, borderRadius:'50%', transform:'translate(-50%,-50%)', transition:'left 0.5s cubic-bezier(.25,.46,.45,.94),top 0.5s cubic-bezier(.25,.46,.45,.94)', zIndex:100, boxShadow:`0 0 0 3px ${demo.color}30`, pointerEvents:'none' }} />
+        <div style={{ position:'absolute', left:cx, top:'calc(100% - 22px)', transform:'translateX(-50%)', background:'rgba(15,23,42,0.8)', color:'#fff', fontSize:9, padding:'2px 8px', whiteSpace:'nowrap', borderRadius:2, transition:'left 0.5s', pointerEvents:'none', zIndex:101 }}>{curStep.label}</div>
+      </div>
+    );
+
+    const fieldStyle = (fId) => ({
+      width:'100%', padding:'5px 8px', border:`1px solid ${filled(fId)?'#1976D2':'#e5e7eb'}`,
+      background: filled(fId) ? '#EBF3FC' : '#fff', fontSize:10, color:'#0F172A',
+      transition:'all 0.3s', boxSizing:'border-box'
+    });
+
+    if (id === 'dashboard') return (
+      <C title="Dashboard">
+        <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:5, marginBottom:8 }}>
+          {[['Total Fleet','24','#1976D2'],['Running','19','#15803D'],['Down','2','#B91C1C'],['AI Fails','2','#6366F1']].map(([l,v,c],i) => (
+            <div key={i} style={{ background:'#fff', border:'1px solid #e5e7eb', padding:'8px 10px', position:'relative' }}>
+              <div style={{ position:'absolute', bottom:0, left:0, right:0, height:2, background:c }} />
+              <div style={{ fontSize:8, color:'#94a3b8', textTransform:'uppercase', letterSpacing:'.4px', marginBottom:3 }}>{l}</div>
+              <div style={{ fontSize:20, fontWeight:700, color:c }}>{v}</div>
+            </div>
+          ))}
+        </div>
+        <div style={{ display:'grid', gridTemplateColumns:'3fr 2fr', gap:6 }}>
+          <div style={{ background:'#fff', border:'1px solid #e5e7eb' }}>
+            <div style={{ padding:'6px 10px', borderBottom:'1px solid #f1f5f9', fontSize:9, fontWeight:700, color:'#64748b', textTransform:'uppercase' }}>Fleet Register</div>
+            {[['TBM-01','HK-6200','Running','#15803D'],['Loader L-03','KOM-WA500','Down','#B91C1C'],['EX-07','CAT-390F','Running','#15803D'],['Drill Rig A','ATL-PRO4','Maint.','#B45309']].map(([n,id,s,c]) => (
+              <div key={n} style={{ display:'flex', alignItems:'center', gap:6, padding:'5px 10px', borderBottom:'1px solid #f8fafc', fontSize:10 }}>
+                <div style={{ fontWeight:700, flex:1, color:'#0F172A' }}>{n}</div>
+                <div style={{ fontSize:9, color:'#94a3b8', fontFamily:'monospace' }}>{id}</div>
+                <span style={{ fontSize:8, padding:'1px 5px', background:c+'15', color:c, border:`1px solid ${c}40` }}>{s}</span>
+              </div>
+            ))}
+          </div>
+          <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
+            <div style={{ background:'#fff', border:'1px solid #C7D2FE', padding:'8px 10px' }}>
+              <div style={{ fontSize:9, fontWeight:700, color:'#6366F1', textTransform:'uppercase', marginBottom:6 }}>AI Risk Scores</div>
+              {[['TBM-01',91,'#B91C1C'],['L-03',84,'#B91C1C'],['Drill A',62,'#B45309'],['EX-07',41,'#B45309']].map(([n,s,c]) => (
+                <div key={n} style={{ display:'flex', alignItems:'center', gap:5, marginBottom:4 }}>
+                  <span style={{ fontSize:9, flex:1 }}>{n}</span>
+                  <div style={{ width:40, height:3, background:'#f1f5f9' }}><div style={{ height:'100%', width:s+'%', background:c }} /></div>
+                  <span style={{ fontSize:9, fontWeight:700, color:c, width:18 }}>{s}</span>
+                </div>
+              ))}
+            </div>
+            {shown('drill') && (
+              <div style={{ background:'#FEF2F2', border:'1px solid #FCA5A5', borderLeft:'2px solid #B91C1C', padding:'8px 10px', animation:'fadeIn .3s ease' }}>
+                <div style={{ fontSize:9, fontWeight:700, color:'#B91C1C', marginBottom:4 }}>Assets down (2)</div>
+                <div style={{ fontSize:9, color:'#7F1D1D' }}>TBM-01 — Hydraulic fault<br/>Loader L-03 — 500hr overdue</div>
+              </div>
+            )}
+          </div>
+        </div>
+      </C>
+    );
+
+    if (id === 'prestart') return (
+      <C title="Prestart Inspection — TBM-01">
+        <div style={{ background:'#fff', border:'1px solid #e5e7eb' }}>
+          <div style={{ padding:'7px 12px', borderBottom:'1px solid #e5e7eb', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+            <span style={{ fontSize:11, fontWeight:700, color:'#0F172A' }}>TBM-01 Daily Prestart</span>
+            <span style={{ fontSize:8, padding:'2px 6px', background:'#FFFBEB', color:'#B45309', border:'1px solid #FCD34D' }}>In progress</span>
+          </div>
+          <div style={{ padding:'8px 12px' }}>
+            {[['Engine oil level','chk0'],['Coolant level','chk1'],['Hydraulic oil','chk2'],['Tyre condition','chk3'],['Lights & indicators','chk4'],['Fire extinguisher','chk5']].map(([label, chkId]) => (
+              <div key={chkId} style={{ display:'flex', alignItems:'center', gap:8, padding:'6px 0', borderBottom:'1px solid #f8fafc', transition:'all .3s' }}>
+                <div style={{ width:14, height:14, border:`1px solid ${checked(chkId)?'#86EFAC':'#e5e7eb'}`, background:checked(chkId)?'#F0FDF4':'#fff', display:'flex', alignItems:'center', justifyContent:'center', fontSize:9, color:'#15803D', flexShrink:0, transition:'all .3s' }}>{checked(chkId)?'✓':''}</div>
+                <span style={{ fontSize:11, color:'#374151', flex:1 }}>{label}</span>
+                <span style={{ fontSize:9, color:checked(chkId)?'#15803D':'#94a3b8', fontWeight:checked(chkId)?700:400 }}>{checked(chkId)?'Pass':'—'}</span>
+              </div>
+            ))}
+          </div>
+          <div style={{ padding:'8px 12px', borderTop:'1px solid #e5e7eb', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+            <span style={{ fontSize:10, color:'#64748b' }}>{['chk0','chk1','chk2','chk3'].filter(id => checked(id)).length} of 6 checks</span>
+            {submitted
+              ? <div style={{ background:'#F0FDF4', border:'1px solid #86EFAC', padding:'4px 10px', fontSize:10, fontWeight:700, color:'#15803D' }}>Submitted ✓</div>
+              : <div style={{ padding:'5px 12px', background:'#1976D2', color:'#fff', fontSize:10, fontWeight:600 }}>Submit form</div>
+            }
+          </div>
+        </div>
+        {submitted && (
+          <div style={{ marginTop:8, background:'#F0FDF4', border:'1px solid #86EFAC', borderLeft:'2px solid #15803D', padding:'8px 12px', fontSize:10, color:'#166534' }}>
+            Prestart submitted — TBM-01 · J. Dawson · All checks passed
+          </div>
+        )}
+      </C>
+    );
+
+    if (id === 'scan') return (
+      <C title="Part Scanner">
+        <div style={{ background:'#000', height:120, position:'relative', display:'flex', alignItems:'center', justifyContent:'center', marginBottom:8, overflow:'hidden' }}>
+          <div style={{ position:'absolute', inset:16, border:'1.5px solid rgba(255,255,255,0.2)' }}>
+            {[['top-0 left-0','border-top','border-left'],['top-0 right-0','border-top','border-right'],['bottom-0 left-0','border-bottom','border-left'],['bottom-0 right-0','border-bottom','border-right']].map((_, i) => (
+              <div key={i} style={{ position:'absolute', ...[{top:0,left:0},{top:0,right:0},{bottom:0,left:0},{bottom:0,right:0}][i], width:12, height:12, borderWidth:'2.5px', borderStyle:'solid', borderColor:'transparent', ...([{borderTopColor:'#1976D2',borderLeftColor:'#1976D2'},{borderTopColor:'#1976D2',borderRightColor:'#1976D2'},{borderBottomColor:'#1976D2',borderLeftColor:'#1976D2'},{borderBottomColor:'#1976D2',borderRightColor:'#1976D2'}][i]) }} />
+            ))}
+          </div>
+          <div style={{ position:'absolute', left:16, right:16, height:1.5, background:shown('scan-result')?'#15803D':'#1976D2', top:'50%', boxShadow:`0 0 6px ${shown('scan-result')?'#15803D':'#1976D2'}`, animation: shown('scan-result') ? 'none' : 'scanLine 1.2s ease-in-out infinite' }} />
+          <div style={{ color:'rgba(255,255,255,0.4)', fontSize:10, marginTop:60 }}>{shown('scan-result') ? '✓ Identified' : 'Scanning…'}</div>
+        </div>
+        {shown('scan-result') && (
+          <div style={{ background:'#fff', border:'1px solid #e5e7eb', padding:'10px 12px', animation:'slideUp .3s ease' }}>
+            <div style={{ display:'flex', justifyContent:'space-between', marginBottom:8 }}>
+              <span style={{ fontSize:12, fontWeight:700, color:'#0F172A' }}>Hydraulic Filter HPF-450</span>
+              <span style={{ fontSize:9, padding:'2px 6px', background:'#FFFBEB', color:'#B45309', border:'1px solid #FCD34D' }}>Low Stock</span>
+            </div>
+            {[['Part #','PRT-001'],['Supplier','Parker Hannifin'],['Stock','2 units'],['Min','5 units'],['Machine','TBM-01 · HK-6200'],['Location','Shelf B-3']].map(([l,v]) => (
+              <div key={l} style={{ display:'flex', justifyContent:'space-between', padding:'4px 0', borderBottom:'1px solid #f8fafc', fontSize:10 }}>
+                <span style={{ color:'#64748b' }}>{l}</span>
+                <span style={{ fontWeight:600, color:'#0F172A' }}>{v}</span>
+              </div>
+            ))}
+            <div style={{ display:'flex', gap:6, marginTop:8 }}>
+              <div style={{ flex:1, padding:'5px', background:'#1976D2', color:'#fff', fontSize:10, fontWeight:600, textAlign:'center', cursor:'pointer' }}>Issue Part</div>
+              <div style={{ flex:1, padding:'5px', background:'#F8FAFC', color:'#374151', border:'1px solid #e5e7eb', fontSize:10, textAlign:'center', cursor:'pointer' }}>History</div>
+            </div>
+          </div>
+        )}
+      </C>
+    );
+
+    if (id === 'workorder') return (
+      <C title="New Work Order">
+        <div style={{ background:'#fff', border:'1px solid #e5e7eb' }}>
+          <div style={{ padding:'7px 12px', borderBottom:'1px solid #e5e7eb', display:'flex', justifyContent:'space-between' }}>
+            <span style={{ fontSize:11, fontWeight:700 }}>New Work Order</span>
+            <span style={{ fontSize:8, padding:'2px 6px', background: submitted?'#F0FDF4':'#FFFBEB', color: submitted?'#15803D':'#B45309', border: submitted?'1px solid #86EFAC':'1px solid #FCD34D' }}>{submitted?'Created':'Draft'}</span>
+          </div>
+          <div style={{ padding:'8px 12px', display:'grid', gridTemplateColumns:'1fr 1fr', gap:6 }}>
+            <div><div style={{ fontSize:9, color:'#64748b', marginBottom:3 }}>Asset</div><div style={fieldStyle('wo-asset')}>{filled('wo-asset')||<span style={{color:'#94a3b8'}}>Select…</span>}</div></div>
+            <div><div style={{ fontSize:9, color:'#64748b', marginBottom:3 }}>Priority</div><div style={fieldStyle('wo-priority')}>{filled('wo-priority')||<span style={{color:'#94a3b8'}}>Select…</span>}</div></div>
+          </div>
+          <div style={{ padding:'0 12px 6px' }}>
+            <div style={{ fontSize:9, color:'#64748b', marginBottom:3 }}>Title</div>
+            <div style={fieldStyle('wo-title')}>{filled('wo-title')||<span style={{color:'#94a3b8'}}>Work order title…</span>}</div>
+          </div>
+          <div style={{ padding:'0 12px 6px' }}>
+            <div style={{ fontSize:9, color:'#64748b', marginBottom:3 }}>Description</div>
+            <div style={{ ...fieldStyle('wo-desc'), minHeight:36 }}>{filled('wo-desc')||<span style={{color:'#94a3b8'}}>Describe the issue…</span>}</div>
+          </div>
+          <div style={{ padding:'0 12px 8px', display:'grid', gridTemplateColumns:'1fr 1fr', gap:6 }}>
+            <div><div style={{ fontSize:9, color:'#64748b', marginBottom:3 }}>Assign to</div><div style={fieldStyle('wo-tech')}>{filled('wo-tech')||<span style={{color:'#94a3b8'}}>Technician…</span>}</div></div>
+            <div><div style={{ fontSize:9, color:'#64748b', marginBottom:3 }}>Due date</div><div style={fieldStyle('wo-due')}>{filled('wo-due')||<span style={{color:'#94a3b8'}}>Select date…</span>}</div></div>
+          </div>
+          <div style={{ padding:'0 12px 10px' }}>
+            {submitted
+              ? <div style={{ padding:'7px', background:'#F0FDF4', border:'1px solid #86EFAC', color:'#15803D', fontSize:10, fontWeight:700, textAlign:'center' }}>WO #4419 created and assigned to J. Dawson ✓</div>
+              : <div style={{ padding:'7px', background:'#1976D2', color:'#fff', fontSize:10, fontWeight:600, textAlign:'center', cursor:'pointer' }}>Create Work Order</div>
+            }
+          </div>
+        </div>
+      </C>
+    );
+
+    return null;
+  };
+
   return (
     <div className="lp">
+      <style>{`
+        @keyframes fadeIn { from{opacity:0} to{opacity:1} }
+        @keyframes slideUp { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:none} }
+        @keyframes scanLine { 0%{top:20px} 50%{top:calc(100% - 20px)} 100%{top:20px} }
+      `}</style>
 
       {/* ── Stay Signed In ── */}
       {stayPrompt && (
-        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.75)', zIndex:2000, display:'flex', alignItems:'center', justifyContent:'center', padding:20, backdropFilter:'blur(8px)' }}>
-          <div style={{ background:'#FFFFFF', border:'1px solid rgba(25,118,210,0.25)', borderRadius:4, padding:'36px 32px', width:'100%', maxWidth:400, textAlign:'center', boxShadow:'0 0 60px rgba(25,118,210,0.1), 0 32px 80px rgba(0,0,0,0.5)' }}>
-            <div style={{ fontSize:36, marginBottom:12 }}>🔐</div>
-            <div style={{ fontSize:20, fontWeight:700, color:'#fff', marginBottom:8, fontFamily:'Space Grotesk,sans-serif' }}>Stay signed in?</div>
-            <div style={{ fontSize:13, color:'rgba(107,114,128,0.8)', marginBottom:6 }}>Signed in as</div>
-            <div style={{ fontSize:15, fontWeight:700, color:'#1976D2', marginBottom:6 }}>{stayPrompt.name}</div>
-            <div style={{ fontSize:12, color:'rgba(107,114,128,0.5)', marginBottom:24 }}>{stayPrompt.email}</div>
+        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:2000, display:'flex', alignItems:'center', justifyContent:'center', padding:20 }}>
+          <div style={{ background:'#fff', border:'1px solid #e5e7eb', borderTop:'3px solid #1976D2', padding:'32px 28px', width:'100%', maxWidth:380, textAlign:'center', boxShadow:'0 8px 40px rgba(0,0,0,0.15)' }}>
+            <div style={{ fontSize:18, fontWeight:800, color:'#0F172A', marginBottom:6, letterSpacing:'-0.5px' }}>Stay signed in?</div>
+            <div style={{ fontSize:12, color:'#64748b', marginBottom:4 }}>Signed in as</div>
+            <div style={{ fontSize:15, fontWeight:700, color:'#1976D2', marginBottom:4 }}>{stayPrompt.name}</div>
+            <div style={{ fontSize:12, color:'#94a3b8', marginBottom:20 }}>{stayPrompt.email}</div>
             {(() => {
               const ua = navigator.userAgent;
               const isMobile = /iPhone|iPad|Android/i.test(ua);
               const isTablet = /iPad|Android(?!.*Mobile)/i.test(ua);
               const deviceLabel = isTablet ? 'tablet' : isMobile ? 'phone' : 'computer';
-              const deviceIcon = isTablet ? '📱' : isMobile ? '📱' : '💻';
               return (
-                <div style={{ background:'rgba(245,158,11,0.08)', border:'1px solid rgba(245,158,11,0.2)', borderRadius:3, padding:'10px 14px', marginBottom:24, fontSize:12, color:'rgba(251,191,36,0.9)', textAlign:'left' }}>
-                  {deviceIcon} Detected: <strong>{isTablet ? 'Tablet' : isMobile ? 'Mobile' : 'Desktop / Laptop'}</strong>
-                  <div style={{ marginTop:5, color:'rgba(55,65,81,0.6)' }}>⚠ <strong style={{color:'rgba(251,191,36,0.9)'}}>Personal {deviceLabel} only.</strong> Session stays active for 24 hours on this device. On shared devices, select No.</div>
+                <div style={{ background:'#FFFBEB', border:'1px solid #FCD34D', borderLeft:'3px solid #B45309', padding:'8px 12px', marginBottom:20, fontSize:11, color:'#B45309', textAlign:'left' }}>
+                  Personal {deviceLabel} only — session stays active 24 hours. On shared devices select No.
                 </div>
               );
             })()}
             <div style={{ display:'flex', gap:10 }}>
-              <button onClick={handleStayNo} style={{ flex:1, padding:'12px', background:'#f8fafc', border:'1px solid rgba(107,114,128,0.2)', borderRadius:3, fontSize:13, fontWeight:600, color:'rgba(55,65,81,0.7)', cursor:'pointer', fontFamily:'Inter,sans-serif' }}>
-                No, sign out<br/>when I close
-              </button>
-              <button onClick={handleStayYes} style={{ flex:1, padding:'12px', background:'linear-gradient(135deg,#1976D2,#1565C0)', border:'none', borderRadius:3, fontSize:13, fontWeight:700, color:'#fff', cursor:'pointer', fontFamily:'Inter,sans-serif', boxShadow:'0 0 20px rgba(25,118,210,0.3)' }}>
-                Yes, stay signed in<br/>for 24 hours
-              </button>
+              <button onClick={handleStayNo} style={{ flex:1, padding:'11px', background:'#F8FAFC', border:'1px solid #e5e7eb', fontSize:12, fontWeight:600, color:'#64748b', cursor:'pointer', fontFamily:'Inter,sans-serif' }}>No, sign out</button>
+              <button onClick={handleStayYes} style={{ flex:1, padding:'11px', background:'#1976D2', border:'none', fontSize:12, fontWeight:700, color:'#fff', cursor:'pointer', fontFamily:'Inter,sans-serif' }}>Yes, 24 hours</button>
             </div>
           </div>
         </div>
@@ -874,259 +1135,187 @@ function Login({ onAuth }) {
 
       {/* ── Welcome Back ── */}
       {savedUser && !stayPrompt && (
-        <div style={{ minHeight:'100vh', background:'linear-gradient(160deg,#F8FAFC 0%,#FFFFFF 100%)', display:'flex', alignItems:'center', justifyContent:'center', padding:20, position:'relative', overflow:'hidden' }}>
-          <div style={{ position:'absolute', inset:0, backgroundImage:'radial-gradient(rgba(25,118,210,0.1) 1px,transparent 1px)', backgroundSize:'36px 36px', opacity:0.4, pointerEvents:'none' }} />
-          <div style={{ background:'rgba(255,255,255,0.9)', border:'1px solid rgba(25,118,210,0.2)', borderTop:'2px solid #1976D2', borderRadius:4, padding:'48px 40px', width:'100%', maxWidth:380, textAlign:'center', backdropFilter:'blur(20px)', boxShadow:'0 0 60px rgba(25,118,210,0.08), 0 24px 60px rgba(0,0,0,0.5)', position:'relative', zIndex:1 }}>
-            <div style={{ fontFamily:'Space Grotesk,sans-serif', fontSize:20, fontWeight:700, color:'#fff', letterSpacing:'2px', marginBottom:32 }}>MECH<span style={{ color:'#1976D2' }}>IQ</span></div>
-            <div style={{ width:72, height:72, borderRadius:'50%', background:'linear-gradient(135deg,#1976D2,#1565C0)', display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 20px', fontSize:28, fontWeight:700, color:'#fff', boxShadow:'0 0 28px rgba(25,118,210,0.4)', fontFamily:'Space Grotesk,sans-serif' }}>
+        <div style={{ minHeight:'100vh', background:'#F8FAFC', display:'flex', alignItems:'center', justifyContent:'center', padding:20 }}>
+          <div style={{ background:'#fff', border:'1px solid #e5e7eb', borderTop:'3px solid #1976D2', padding:'40px 36px', width:'100%', maxWidth:360, textAlign:'center', boxShadow:'0 4px 24px rgba(0,0,0,0.08)' }}>
+            <div style={{ fontSize:16, fontWeight:900, color:'#0F172A', letterSpacing:'-0.5px', marginBottom:28 }}>MECH<span style={{ color:'#1976D2' }}>IQ</span></div>
+            <div style={{ width:56, height:56, borderRadius:'50%', background:'#1976D2', display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 14px', fontSize:22, fontWeight:700, color:'#fff' }}>
               {(savedUser.name||'?')[0].toUpperCase()}
             </div>
-            <div style={{ fontSize:12, color:'rgba(200,216,232,0.45)', marginBottom:4, letterSpacing:'0.5px' }}>WELCOME BACK</div>
-            <div style={{ fontSize:22, fontWeight:700, color:'#fff', marginBottom:4, fontFamily:'Space Grotesk,sans-serif' }}>{savedUser.name}</div>
-            <div style={{ fontSize:13, color:'rgba(107,114,128,0.6)', marginBottom:36 }}>{savedUser.email}</div>
-            <button onClick={handleContinueAsSaved} style={{ width:'100%', padding:'14px', background:'linear-gradient(135deg,#1976D2,#1565C0)', border:'none', borderRadius:3, fontSize:14, fontWeight:700, color:'#fff', cursor:'pointer', marginBottom:10, fontFamily:'Inter,sans-serif', boxShadow:'0 0 24px rgba(25,118,210,0.3)' }}>Continue →</button>
-            <button onClick={handleSignInAsOther} style={{ width:'100%', padding:'12px', background:'transparent', border:'1px solid rgba(229,231,235,1)', borderRadius:3, fontSize:12, fontWeight:500, color:'rgba(107,114,128,0.8)', cursor:'pointer', fontFamily:'Inter,sans-serif' }}>
-              Sign in as someone else
-            </button>
-            <div style={{ fontSize:10, color:'rgba(107,114,128,0.3)', marginTop:20, lineHeight:1.6 }}>Not your device? Sign in as someone else to protect your account privacy.</div>
+            <div style={{ fontSize:11, color:'#94a3b8', textTransform:'uppercase', letterSpacing:'1px', marginBottom:4 }}>Welcome back</div>
+            <div style={{ fontSize:18, fontWeight:700, color:'#0F172A', marginBottom:3 }}>{savedUser.name}</div>
+            <div style={{ fontSize:12, color:'#64748b', marginBottom:28 }}>{savedUser.email}</div>
+            <button onClick={handleContinueAsSaved} style={{ width:'100%', padding:'12px', background:'#1976D2', border:'none', fontSize:13, fontWeight:700, color:'#fff', cursor:'pointer', marginBottom:8, fontFamily:'Inter,sans-serif' }}>Continue to dashboard →</button>
+            <button onClick={handleSignInAsOther} style={{ width:'100%', padding:'11px', background:'transparent', border:'1px solid #e5e7eb', fontSize:12, fontWeight:500, color:'#64748b', cursor:'pointer', fontFamily:'Inter,sans-serif' }}>Sign in as someone else</button>
+            <div style={{ fontSize:10, color:'#94a3b8', marginTop:16, lineHeight:1.5 }}>Not your device? Sign in as someone else.</div>
           </div>
         </div>
       )}
 
-      {!savedUser && !stayPrompt && <>
+      {!savedUser && !stayPrompt && (
+        <div style={{ minHeight:'100vh', display:'flex', flexDirection:'column', fontFamily:'Inter,sans-serif' }}>
 
-      {/* ── Nav ── */}
-      <nav className="lp-nav">
-        <div className="lp-nav-brand">
-          <div className="lp-nav-logo">MECH<span>IQ</span></div>
-          <div className="lp-nav-sep" />
-          <div className="lp-nav-tag">Fleet Maintenance Management</div>
-        </div>
-        <div className="lp-nav-right">
-          <button className="lp-nav-link" onClick={() => scroll(modulesRef)}>Platform</button>
-          <a href="mailto:info@mechiq.com.au" className="lp-nav-link">Contact</a>
-          <button className="lp-nav-btn" onClick={() => loginRef.current?.scrollIntoView({ behavior:'smooth', block:'center' })}>
-            Client Login
-          </button>
-        </div>
-      </nav>
+          {/* ── Nav ── */}
+          <nav style={{ height:54, background:'#fff', borderBottom:'1px solid #e5e7eb', display:'flex', alignItems:'center', padding:'0 28px', gap:12, zIndex:10, position:'relative' }}>
+            <div style={{ display:'flex', alignItems:'center', gap:10, flex:1 }}>
+              <div style={{ width:28, height:28, background:'#1976D2', display:'flex', alignItems:'center', justifyContent:'center', fontSize:11, fontWeight:900, color:'#fff' }}>M</div>
+              <span style={{ fontSize:15, fontWeight:900, color:'#0F172A', letterSpacing:'-0.5px' }}>MECH<span style={{ color:'#1976D2' }}>IQ</span></span>
+              <span style={{ width:1, height:16, background:'#e5e7eb' }} />
+              <span style={{ fontSize:11, color:'#94a3b8' }}>Fleet Maintenance Management</span>
+            </div>
+            <div style={{ display:'flex', alignItems:'center', gap:4 }}>
+              <button onClick={() => loginRef.current?.scrollIntoView({ behavior:'smooth' })} style={{ padding:'6px 14px', background:'none', border:'1px solid #e5e7eb', fontSize:12, color:'#374151', cursor:'pointer', fontFamily:'inherit' }}>Platform</button>
+              <button onClick={() => loginRef.current?.scrollIntoView({ behavior:'smooth' })} style={{ padding:'6px 14px', background:'none', border:'1px solid #e5e7eb', fontSize:12, color:'#374151', cursor:'pointer', fontFamily:'inherit' }}>Industries</button>
+              <a href="mailto:info@mechiq.com.au" style={{ padding:'6px 14px', background:'none', border:'1px solid #e5e7eb', fontSize:12, color:'#374151', cursor:'pointer', fontFamily:'inherit', textDecoration:'none' }}>Contact</a>
+              <button onClick={() => loginRef.current?.scrollIntoView({ behavior:'smooth' })} style={{ padding:'6px 16px', background:'#1976D2', border:'none', fontSize:12, fontWeight:600, color:'#fff', cursor:'pointer', fontFamily:'inherit' }}>Client login</button>
+            </div>
+          </nav>
 
-      {/* ── Hero ── */}
-      <div className="lp-hero-section">
-        <section className="lp-hero">
-          <div className="lp-hero-left">
-            <div className="lp-hero-eyebrow">Built for Australian Heavy Industry</div>
-            <h1 className="lp-hero-h1">
-              Intelligent<br />Fleet<br /><em>Management</em>
-            </h1>
-            <div className="lp-hero-badges">
-              {['AI-Powered Forms','Real-time Dashboard','Oil Condition Analysis','Calendar Sync','12 Modules'].map(b => (
-                <div key={b} className="lp-hero-badge"><div className="lp-hero-badge-dot" />{b}</div>
-              ))}
-            </div>
-            <p className="lp-hero-sub">
-              A modern CMMS purpose-built for tunnelling, mining, civil infrastructure and heavy equipment operations. Real-time asset visibility, AI-generated maintenance forms and structured field data — in one connected platform built entirely in Australia.
-            </p>
-            <div className="lp-hero-actions">
-              <a href="mailto:info@mechiq.com.au?subject=MechIQ Demo Request" className="lp-btn-primary">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M22 2L11 13M22 2L15 22l-4-9-9-4 20-7z"/></svg>
-                Request a Demo
-              </a>
-              <button className="lp-btn-secondary" onClick={() => scroll(modulesRef)}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
-                Platform Overview
-              </button>
-            </div>
-          </div>
+          {/* ── Hero ── */}
+          <div style={{ display:'flex', flex:1 }}>
 
-          {/* Login card */}
-          <div ref={loginRef} className="lp-card">
-            <div className="lp-card-logo">
-              <div className="wm">MECH<span>IQ</span></div>
-              <div className="tg">Fleet Maintenance Management</div>
-            </div>
-            <div className="lp-tabs">
-              {[['login','Sign In'],['reset','Reset Password']].map(([id,label]) => (
-                <button key={id} className={`lp-tab${tab===id?' on':''}`} onClick={() => { setTab(id); setErr(''); setMsg(''); }}>{label}</button>
-              ))}
-            </div>
-            <div className="lp-field">
-              <label className="lp-lbl">Email Address</label>
-              <input className="lp-inp" type="email" placeholder="you@company.com" value={email} onChange={e => setEmail(e.target.value)} onKeyDown={e => e.key==='Enter' && handle()} autoFocus />
-            </div>
-            {tab === 'login' && (
-              <div className="lp-field">
-                <label className="lp-lbl">Password</label>
-                <input className="lp-inp" type="password" placeholder="••••••••" value={pw} onChange={e => setPw(e.target.value)} onKeyDown={e => e.key==='Enter' && handle()} />
+            {/* LEFT — dark panel */}
+            <div style={{ width:'45%', background:'#0F172A', display:'flex', flexDirection:'column', padding:'40px 36px', position:'relative', overflow:'hidden', minHeight:'calc(100vh - 54px)' }}>
+              <div style={{ position:'absolute', top:-80, right:-80, width:240, height:240, borderRadius:'50%', background:'rgba(25,118,210,0.06)', pointerEvents:'none' }} />
+
+              <div style={{ fontSize:9, fontWeight:600, color:'#1976D2', textTransform:'uppercase', letterSpacing:'1.2px', marginBottom:14, display:'flex', alignItems:'center', gap:8 }}>
+                <span style={{ width:18, height:1, background:'#1976D2', display:'inline-block' }} />
+                Built for Australian heavy industry
               </div>
-            )}
-            {err && <div className="lp-err">{err}</div>}
-            {msg && <div className="lp-ok">{msg}</div>}
-            <button className="lp-go" onClick={handle} disabled={busy}>
-              {busy ? 'Authenticating…' : tab==='login' ? 'Sign In' : 'Send Reset Email'}
-            </button>
-            <div className="lp-card-foot">
-              <div className="lp-card-foot-line">Need access? <a href="mailto:info@mechiq.com.au" style={{ color:'#1976D2', textDecoration:'none' }}>Contact us</a> to establish your company account.</div>
-              <div className="lp-card-foot-line" style={{ marginTop:6 }}>
-                By signing in you agree to our <button className="lp-card-foot-link" onClick={() => setPolicy(true)}>Privacy Policy</button>
+
+              <h1 style={{ fontSize:32, fontWeight:700, color:'#fff', lineHeight:1.2, letterSpacing:'-1px', marginBottom:10 }}>
+                Intelligent fleet<br/>management.<br/><span style={{ color:'#60a5fa' }}>Live. AI-powered.</span>
+              </h1>
+
+              <p style={{ fontSize:12, color:'#64748b', lineHeight:1.7, marginBottom:28, maxWidth:320 }}>
+                A modern CMMS for tunnelling, mining and civil infrastructure. Real-time asset visibility, AI maintenance forms and structured field data — built entirely in Australia.
+              </p>
+
+              {/* Demo buttons */}
+              <div style={{ fontSize:9, fontWeight:600, color:'#334155', textTransform:'uppercase', letterSpacing:'1px', marginBottom:12 }}>
+                Live product demos — click to explore
+              </div>
+
+              <div style={{ display:'flex', flexDirection:'column', gap:8, marginBottom:'auto' }}>
+                {Object.entries(demos).map(([id, demo]) => (
+                  <button key={id} onClick={() => runDemo(id)} style={{
+                    display:'flex', alignItems:'center', gap:12, padding:'11px 14px',
+                    background: activeDemo === id ? 'rgba(25,118,210,0.15)' : 'rgba(255,255,255,0.04)',
+                    border: `1px solid ${activeDemo === id ? 'rgba(25,118,210,0.4)' : 'rgba(255,255,255,0.07)'}`,
+                    cursor:'pointer', textAlign:'left', fontFamily:'inherit', transition:'all .15s',
+                  }}>
+                    <div style={{ width:32, height:32, background:`${demo.color}20`, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                      <div style={{ width:10, height:10, background:demo.color, borderRadius:'50%', opacity: activeDemo === id ? 1 : 0.6 }} />
+                    </div>
+                    <div style={{ flex:1 }}>
+                      <div style={{ fontSize:12, fontWeight:600, color: activeDemo === id ? '#e2e8f0' : '#94a3b8', marginBottom:1 }}>{demo.label}</div>
+                      <div style={{ fontSize:10, color:'#475569' }}>{demo.sub}</div>
+                    </div>
+                    <span style={{ color: activeDemo === id ? '#60a5fa' : '#334155', fontSize:11, transition:'color .15s' }}>▶</span>
+                  </button>
+                ))}
+              </div>
+
+              {/* Footer stats */}
+              <div style={{ borderTop:'1px solid rgba(255,255,255,0.06)', paddingTop:20, marginTop:28, display:'flex', gap:20 }}>
+                {[['12','Modules'],['100%','Cloud-based'],['Live','Real-time data'],['AI','Powered']].map(([v,l]) => (
+                  <div key={l}>
+                    <div style={{ fontSize:16, fontWeight:700, color:'#fff', lineHeight:1 }}>{v}</div>
+                    <div style={{ fontSize:9, color:'#334155', marginTop:2 }}>{l}</div>
+                  </div>
+                ))}
               </div>
             </div>
-          </div>
-        </section>
-      </div>
 
-      {/* ── Stats ── */}
-      <div className="lp-stats">
-        {[['12','Integrated Modules'],['Real-time','Fleet Visibility'],['AI','Forms & Analysis'],['100%','Australian Built']].map(([v,l]) => (
-          <div key={l} className="lp-stat">
-            <div className="lp-stat-n">{v}</div>
-            <div className="lp-stat-l">{l}</div>
-          </div>
-        ))}
-      </div>
+            {/* RIGHT — login or demo */}
+            <div style={{ flex:1, background:'#fff', display:'flex', alignItems:'center', justifyContent:'center', padding:'40px 36px', position:'relative' }}>
 
-      {/* ── Modules Grid ── */}
-      <div className="lp-modules" ref={modulesRef}>
-        <div className="lp-modules-inner">
-          <div className="lp-section-label">Platform Modules</div>
-          <h2 className="lp-section-h">Every module your operation needs.<br/><em>All connected.</em></h2>
-          <p className="lp-section-sub">Data entered at field level flows automatically into the records that supervisors, managers and engineers depend on. No duplicate entry. No paper trail. No gaps.</p>
-          <div className="lp-modules-grid">
-            {MODULES.map(m => (
-              <div key={m.n} className="lp-module-card">
-                <div className="lp-module-icon">{m.icon}</div>
-                <div className="lp-module-n">{m.n}</div>
-                <div className="lp-module-desc">{m.desc}</div>
-                <div className="lp-module-tags">
-                  {m.tags.map(([t,c]) => <span key={t} className={`lp-module-tag${c?' '+c:''}`}>{t}</span>)}
+              {activeDemo ? (
+                /* Demo panel */
+                <div style={{ width:'100%', maxWidth:440 }}>
+                  <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:14 }}>
+                    <div style={{ fontSize:13, fontWeight:700, color:'#0F172A' }}>{demos[activeDemo].label}</div>
+                    <div style={{ display:'flex', alignItems:'center', gap:6 }}>
+                      <span style={{ width:6, height:6, borderRadius:'50%', background:'#15803D', display:'inline-block', animation:'lp-pulse 2s infinite' }} />
+                      <span style={{ fontSize:10, color:'#15803D', fontWeight:600 }}>Live simulation</span>
+                      <button onClick={() => { setActiveDemo(null); if (demoTimerRef.current) clearTimeout(demoTimerRef.current); }} style={{ marginLeft:8, background:'none', border:'1px solid #e5e7eb', padding:'3px 10px', fontSize:10, color:'#64748b', cursor:'pointer', fontFamily:'inherit' }}>← Login</button>
+                    </div>
+                  </div>
+                  <div style={{ height:420, position:'relative', border:'1px solid #e5e7eb', boxShadow:'0 4px 24px rgba(0,0,0,0.08)', overflow:'hidden', background:'#F8FAFC' }}>
+                    <DemoScreen id={activeDemo} />
+                  </div>
+                  <div style={{ marginTop:10, padding:'8px 12px', background:'#F8FAFC', border:'1px solid #e5e7eb', fontSize:11, color:'#64748b', display:'flex', alignItems:'center', gap:6 }}>
+                    <span style={{ width:6, height:6, borderRadius:'50%', background: demos[activeDemo].color, flexShrink:0 }} />
+                    {demos[activeDemo].steps[demoStep]?.label || 'Running demo…'}
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
+              ) : (
+                /* Login form */
+                <div ref={loginRef} style={{ width:'100%', maxWidth:320 }}>
+                  <div style={{ fontSize:18, fontWeight:700, color:'#0F172A', marginBottom:4, letterSpacing:'-0.3px' }}>Welcome back</div>
+                  <div style={{ fontSize:12, color:'#64748b', marginBottom:22 }}>Sign in to your MechIQ account</div>
 
-      {/* ── About ── */}
-      <div className="lp-about">
-        <div style={{ position:'relative', zIndex:1 }}>
-          <div className="lp-section-label">Why MechIQ</div>
-          <h2 className="lp-about-h">Built by engineers,<br /><em>for engineers</em></h2>
-          <div style={{ marginTop:20 }} className="lp-about-body">
-            <p>MechIQ was developed alongside active tunnelling, mining and civil construction operations — not in a boardroom. Every module addresses a specific failure mode that conventional CMMS platforms fail to solve in real field conditions.</p>
-            <p>The platform is designed so that data entered at field level — by operators on tablets, technicians on mobile — flows automatically into the records that supervisors, managers and engineers depend on.</p>
-          </div>
-          <div className="lp-about-points">
-            {[
-              ['📋','Paper prestarts that never get processed','Digital prestart checklists with AI-generated content specific to each machine type. Submitted from any device, defects converted to work orders automatically.'],
-              ['⚙️','Service intervals that drift','Multi-trigger scheduling on hours, kilometres, months or years. Hard-set or calculated next due values. Overdue alerts surface on the dashboard before the interval is missed.'],
-              ['🔬','No visibility of fluid condition','Automatic oil analysis from lab report emails. Claude AI extracts all data fields and classifies condition — results appear within minutes of lab email receipt.'],
-              ['📊','Management with no real fleet visibility','Real-time dashboard pulling live data from every module. Fleet health, overdue services, breakdown counts and parts alerts — in one configurable view.'],
-            ].map(([icon, title, desc]) => (
-              <div key={title} className="lp-about-point">
-                <div className="lp-about-point-icon">{icon}</div>
-                <div className="lp-about-point-text"><strong>{title}</strong>{desc}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-        <div style={{ position:'relative', zIndex:1 }}>
-          <div style={{ background:'rgba(25,118,210,0.04)', border:'1px solid rgba(25,118,210,0.15)', borderRadius:4, padding:'32px 28px' }}>
-            <div className="lp-section-label" style={{ marginBottom:20 }}>Designed for these industries</div>
-            {[
-              ['🏗️','Tunnelling & Underground','TBMs, MSVs, roadheaders, conveyor systems and associated plant equipment.'],
-              ['⛏️','Mining & Resources','Surface and underground mining equipment, processing plant and mobile fleet.'],
-              ['🏛️','Civil Infrastructure','Earthmoving, cranes, piling equipment and civil construction plant.'],
-              ['🔩','Heavy Industrial','Manufacturing plant, generators, compressors and specialist equipment.'],
-            ].map(([icon, title, desc]) => (
-              <div key={title} style={{ display:'flex', gap:14, padding:'16px 0', borderBottom:'1px solid rgba(25,118,210,0.08)' }}>
-                <div style={{ fontSize:22, flexShrink:0 }}>{icon}</div>
-                <div>
-                  <div style={{ fontFamily:'Space Grotesk,sans-serif', fontWeight:600, color:'#fff', fontSize:14, marginBottom:3 }}>{title}</div>
-                  <div style={{ fontSize:12, color:'rgba(107,114,128,0.8)', lineHeight:1.6 }}>{desc}</div>
+                  <div style={{ display:'flex', borderBottom:'1px solid #e5e7eb', marginBottom:20 }}>
+                    {[['login','Sign in'],['reset','Reset password']].map(([id,label]) => (
+                      <button key={id} onClick={() => { setTab(id); setErr(''); setMsg(''); }}
+                        style={{ padding:'8px 14px', fontSize:11, fontWeight:tab===id?600:500, color:tab===id?'#1976D2':'#64748b', background:'none', border:'none', borderBottom:`2px solid ${tab===id?'#1976D2':'transparent'}`, cursor:'pointer', fontFamily:'inherit', transition:'all .1s' }}>
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+
+                  {err && <div style={{ background:'#FEF2F2', border:'1px solid #FCA5A5', borderLeft:'3px solid #B91C1C', padding:'8px 11px', fontSize:11, color:'#B91C1C', marginBottom:12 }}>{err}</div>}
+                  {msg && <div style={{ background:'#F0FDF4', border:'1px solid #86EFAC', borderLeft:'3px solid #15803D', padding:'8px 11px', fontSize:11, color:'#15803D', marginBottom:12 }}>{msg}</div>}
+
+                  <div style={{ marginBottom:13 }}>
+                    <label style={{ display:'block', fontSize:11, fontWeight:500, color:'#374151', marginBottom:5 }}>Email address</label>
+                    <input type="email" value={email} onChange={e => setEmail(e.target.value)}
+                      placeholder="you@company.com.au"
+                      style={{ width:'100%', padding:'9px 11px', border:'1px solid #e5e7eb', background:'#fff', fontSize:12, fontFamily:'inherit', color:'#0F172A', outline:'none', boxSizing:'border-box' }}
+                      onFocus={e=>e.target.style.borderColor='#1976D2'} onBlur={e=>e.target.style.borderColor='#e5e7eb'}
+                      onKeyDown={e => e.key==='Enter' && handle()} />
+                  </div>
+
+                  {tab === 'login' && (
+                    <div style={{ marginBottom:8 }}>
+                      <label style={{ display:'block', fontSize:11, fontWeight:500, color:'#374151', marginBottom:5 }}>Password</label>
+                      <input type="password" value={pw} onChange={e => setPw(e.target.value)}
+                        placeholder="••••••••"
+                        style={{ width:'100%', padding:'9px 11px', border:'1px solid #e5e7eb', background:'#fff', fontSize:12, fontFamily:'inherit', color:'#0F172A', outline:'none', boxSizing:'border-box' }}
+                        onFocus={e=>e.target.style.borderColor='#1976D2'} onBlur={e=>e.target.style.borderColor='#e5e7eb'}
+                        onKeyDown={e => e.key==='Enter' && handle()} />
+                      <div style={{ textAlign:'right', marginTop:5 }}>
+                        <button onClick={() => setTab('reset')} style={{ background:'none', border:'none', fontSize:10, color:'#1976D2', cursor:'pointer', fontFamily:'inherit' }}>Forgot password?</button>
+                      </div>
+                    </div>
+                  )}
+
+                  <button onClick={handle} disabled={busy}
+                    style={{ width:'100%', padding:'10px', background: busy ? '#94a3b8' : '#1976D2', border:'none', fontSize:13, fontWeight:600, color:'#fff', cursor: busy ? 'not-allowed' : 'pointer', fontFamily:'inherit', marginTop:4, marginBottom:14, transition:'background .15s' }}>
+                    {busy ? 'Signing in…' : tab === 'login' ? 'Sign in to MechIQ' : 'Send reset email'}
+                  </button>
+
+                  <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:14 }}>
+                    <div style={{ flex:1, height:1, background:'#e5e7eb' }} />
+                    <span style={{ fontSize:10, color:'#94a3b8' }}>or</span>
+                    <div style={{ flex:1, height:1, background:'#e5e7eb' }} />
+                  </div>
+
+                  <a href="mailto:info@mechiq.com.au?subject=MechIQ Demo Request"
+                    style={{ display:'block', width:'100%', padding:'9px', background:'#F8FAFC', border:'1px solid #e5e7eb', fontSize:11, fontWeight:500, color:'#374151', textAlign:'center', textDecoration:'none', boxSizing:'border-box', transition:'border-color .15s' }}>
+                    Request a demo account ↗
+                  </a>
+
+                  <div style={{ marginTop:18, fontSize:10, color:'#94a3b8', textAlign:'center', lineHeight:1.6 }}>
+                    By signing in you agree to our <a href="#" style={{ color:'#1976D2' }}>Terms</a> and <a href="#" style={{ color:'#1976D2' }}>Privacy Policy</a>.<br/>
+                    Need help? <a href="mailto:info@mechiq.com.au" style={{ color:'#1976D2' }}>info@mechiq.com.au</a>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* ── Full Feature Detail ── */}
-      <div className="lp-feats">
-        <div className="lp-feats-inner">
-          <div className="lp-feats-head">
-            <div>
-              <div className="lp-section-label">Module Detail</div>
-              <h2 className="lp-section-h">Full capability set.<br/><em>Every module.</em></h2>
-            </div>
-            <div className="lp-feats-intro">
-              Select any module to review its complete feature set, AI functionality and how it integrates across the platform. MechIQ is designed as a connected system — data entered in one module automatically flows to where it is needed across all others.
-            </div>
-          </div>
-          <div className="lp-acc">
-            {FEATURES.map(f => <FeatureRow key={f.n} f={f} />)}
-          </div>
-        </div>
-      </div>
-
-      {/* ── CTA ── */}
-      <div className="lp-cta-wrap">
-        <div className="lp-cta">
-          <div className="lp-section-label" style={{ justifyContent:'center', marginBottom:20 }}>Get Started</div>
-          <h2 className="lp-cta-h">Commission your fleet<br />on <em>MechIQ</em></h2>
-          <p className="lp-cta-sub">Contact us to establish your company account. We will onboard your fleet and configure the platform to your operational requirements within 24 hours.</p>
-          <div className="lp-cta-acts">
-            <a href="mailto:info@mechiq.com.au?subject=MechIQ Account Setup" className="lp-btn-primary" style={{ textDecoration:'none' }}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M22 2L11 13M22 2L15 22l-4-9-9-4 20-7z"/></svg>
-              Get Started
-            </a>
-            <button className="lp-btn-secondary" onClick={() => loginRef.current?.scrollIntoView({ behavior:'smooth', block:'center' })}>
-              Client Login
-            </button>
-          </div>
-          <p className="lp-cta-note">Enquiries: <a href="mailto:info@mechiq.com.au">info@mechiq.com.au</a></p>
-        </div>
-      </div>
-
-      {/* ── Footer ── */}
-      <footer className="lp-footer">
-        <div className="lp-footer-logo">MECH<span>IQ</span></div>
-        <div className="lp-footer-links">
-          <button className="lp-footer-link" onClick={() => setPolicy(true)}>Privacy Policy</button>
-          <a href="mailto:info@mechiq.com.au" className="lp-footer-link">info@mechiq.com.au</a>
-        </div>
-        <p className="lp-footer-copy">© 2026 MechIQ · Fleet Maintenance Management · Australia</p>
-      </footer>
-
-      {/* ── Privacy Policy Modal ── */}
-      {policy && (
-        <div className="lp-modal-bg" onClick={e => { if(e.target===e.currentTarget) setPolicy(false); }}>
-          <div className="lp-modal">
-            <div className="lp-modal-head">
-              <div>
-                <div className="lp-modal-title">MECH<span style={{ color:'#1976D2' }}>IQ</span> — Privacy Policy</div>
-                <div className="lp-modal-sub">Effective 24 March 2026 · Version 1.0</div>
-              </div>
-              <button className="lp-modal-close" onClick={() => setPolicy(false)}>✕</button>
-            </div>
-            <div className="lp-modal-body">
-              {POLICY.map(s => (
-                <div key={s.t} className="lp-modal-sec">
-                  <div className="lp-modal-sec-h">{s.t}</div>
-                  <p>{s.b}</p>
-                </div>
-              ))}
-              <div className="lp-modal-note">Full legal document available on request at <a href="mailto:info@mechiq.com.au" style={{ color:'#1976D2' }}>info@mechiq.com.au</a>.</div>
-            </div>
-            <div className="lp-modal-foot">
-              <button className="lp-nav-btn" onClick={() => setPolicy(false)}>Close</button>
+              )}
             </div>
           </div>
         </div>
       )}
-
-      </>}
     </div>
   );
 }
-
 export default Login;
