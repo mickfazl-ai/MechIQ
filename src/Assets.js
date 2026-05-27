@@ -5,73 +5,193 @@ import { QRCodeCanvas } from 'qrcode.react';
 
 // ─── CSS ──────────────────────────────────────────────────────────────────────
 const CSS = `
-  @keyframes shimmer { 0%{background-position:-200% 0} 100%{background-position:200% 0} }
-  @keyframes fadeUp  { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
-  @keyframes toast-in  { from{opacity:0;transform:translateX(20px) scale(0.96)} to{opacity:1;transform:translateX(0) scale(1)} }
-  @keyframes toast-out { from{opacity:1;transform:translateX(0)} to{opacity:0;transform:translateX(20px)} }
-  @keyframes pulse-dot { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(1.5)} }
+  @keyframes fadeUp   { from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none} }
+  @keyframes shimmer  { 0%{background-position:-200% 0}100%{background-position:200% 0} }
+  @keyframes spin     { to{transform:rotate(360deg)} }
+  @keyframes slideIn  { from{transform:translateX(100%)}to{transform:translateX(0)} }
+  @keyframes toast-in { from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:none} }
 
+  :root {
+    --a-bg:#F8FAFC; --a-surf:#FFFFFF; --a-s2:#F8FAFC; --a-s3:#F1F5F9;
+    --a-border:#E5E7EB; --a-border2:#CBD5E1;
+    --a-text:#0F172A; --a-text2:#374151; --a-text3:#64748B; --a-text4:#94A3B8;
+    --a-blue:#1976D2; --a-blue-bg:#EBF3FC; --a-blue-bd:#BFDBFE;
+    --a-green:#15803D; --a-green-bg:#F0FDF4; --a-green-bd:#86EFAC;
+    --a-amber:#B45309; --a-amber-bg:#FFFBEB; --a-amber-bd:#FCD34D;
+    --a-red:#B91C1C; --a-red-bg:#FEF2F2; --a-red-bd:#FCA5A5;
+    --a-ai:#6366F1; --a-ai-bg:#EEF2FF; --a-ai-bd:#C7D2FE;
+    --a-sh:0 1px 4px rgba(0,0,0,.05),0 0 0 1px rgba(0,0,0,.02);
+    --a-sh2:0 4px 16px rgba(0,0,0,.08);
+    --accent:var(--a-blue); --red:var(--a-red); --amber:var(--a-amber); --green:var(--a-green);
+    --border:var(--a-border); --surface:var(--a-surf); --surface-2:var(--a-s2); --surface-3:var(--a-s3);
+    --text-primary:var(--a-text); --text-secondary:var(--a-text2);
+    --text-muted:var(--a-text3); --text-faint:var(--a-text4);
+    --red-bg:var(--a-red-bg); --red-border:var(--a-red-bd);
+    --amber-bg:var(--a-amber-bg); --amber-border:var(--a-amber-bd);
+    --green-bg:var(--a-green-bg); --green-border:var(--a-green-bd);
+    --accent-bg:var(--a-blue-bg); --accent-border:var(--a-blue-bd);
+    --font-mono:'JetBrains Mono',monospace;
+  }
+
+  /* ── Skeleton ── */
+  .sk-a {
+    background:linear-gradient(90deg,var(--a-s2) 25%,var(--a-border) 50%,var(--a-s2) 75%);
+    background-size:200% 100%; animation:shimmer 1.4s infinite linear;
+  }
+
+  /* ── Toast ── */
+  .asset-toast-wrap { position:fixed; bottom:20px; right:20px; z-index:9999; display:flex; flex-direction:column; gap:6px; pointer-events:none; }
+  .asset-toast { display:flex; align-items:center; gap:10px; background:var(--a-surf); border:1px solid var(--a-border); border-left:3px solid var(--a-blue); padding:10px 14px; min-width:240px; box-shadow:var(--a-sh2); pointer-events:auto; animation:toast-in .25s ease; font-size:12px; color:var(--a-text2); font-family:'Inter',sans-serif; }
+
+  /* ── Stat cards ── */
+  .asset-stat {
+    background:var(--a-surf); border:1px solid var(--a-border);
+    padding:14px 16px; position:relative; overflow:hidden;
+    box-shadow:var(--a-sh); transition:box-shadow .2s,transform .2s; cursor:pointer;
+  }
+  .asset-stat:hover { box-shadow:var(--a-sh2); transform:translateY(-1px); }
+  .asset-stat::after { content:''; position:absolute; bottom:0; left:0; right:0; height:3px; }
+  .asset-stat.s-blue::after  { background:var(--a-blue); }
+  .asset-stat.s-green::after { background:var(--a-green); }
+  .asset-stat.s-red::after   { background:var(--a-red); }
+  .asset-stat.s-amber::after { background:var(--a-amber); }
+
+  /* ── Asset card ── */
   .asset-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 14px;
-    overflow: hidden;
-    transition: all 0.2s;
-    cursor: pointer;
-    position: relative;
+    background:var(--a-surf); border:1px solid var(--a-border);
+    box-shadow:var(--a-sh); transition:box-shadow .2s,border-color .15s; cursor:pointer;
+    animation:fadeUp 0.35s ease both;
   }
-  .asset-card::before {
-    content:''; position:absolute; top:0;left:0;right:0; height:1px;
-    background:linear-gradient(90deg,transparent,rgba(0,212,255,0.4),transparent);
-    opacity:0; transition:opacity 0.2s;
-  }
-  .asset-card:hover { box-shadow:0 0 32px rgba(0,212,255,0.12); border-color:rgba(0,180,255,0.25); transform:translateY(-3px); }
-  .asset-card:hover::before { opacity:1; }
-  .asset-card:hover .card-actions { opacity:1 !important; }
-  .card-actions { opacity:0; transition:opacity 0.18s; }
+  .asset-card:hover { box-shadow:var(--a-sh2); border-color:var(--a-border2); }
+  .asset-card .card-actions { opacity:0; transition:opacity .15s; }
+  .asset-card:hover .card-actions { opacity:1; }
 
-  .form-input {
-    width:100%; padding:10px 13px;
-    border:1px solid var(--border) !important;
-    border-radius:8px !important; font-size:13px;
-    color:var(--text-primary) !important;
-    background:var(--surface-2) !important;
-    outline:none; box-sizing:border-box;
-    font-family:var(--font-display) !important;
-    transition:border-color 0.15s, box-shadow 0.15s !important;
+  /* ── Status pill ── */
+  .status-pill {
+    display:inline-flex; align-items:center; gap:4px;
+    padding:3px 9px; font-size:10px; font-weight:700; border:1px solid;
   }
-  .form-input:focus {
-    border-color:var(--accent-dark) !important;
-    box-shadow:0 0 0 3px var(--accent-glow) !important;
+  .status-pill::before { content:'●'; font-size:7px; }
+  .status-running  { background:var(--a-green-bg); color:var(--a-green); border-color:var(--a-green-bd); }
+  .status-down     { background:var(--a-red-bg);   color:var(--a-red);   border-color:var(--a-red-bd); }
+  .status-maintenance { background:var(--a-amber-bg); color:var(--a-amber); border-color:var(--a-amber-bd); }
+  .status-standby  { background:var(--a-s2); color:var(--a-text3); border-color:var(--a-border); }
+
+  /* ── Tab row ── */
+  .assets-tab-row { display:flex; gap:0; border-bottom:1px solid var(--a-border); margin-bottom:16px; }
+  .assets-tab {
+    padding:10px 18px; font-size:12px; font-weight:500; color:var(--a-text3);
+    cursor:pointer; border:none; background:none;
+    border-bottom:2px solid transparent; transition:all .12s; font-family:'Inter',sans-serif;
+    white-space:nowrap;
   }
-  .form-input::placeholder { color:var(--text-faint) !important; }
-  .form-input option { background:var(--surface); color:var(--text-primary); }
+  .assets-tab:hover { color:var(--a-text2); }
+  .assets-tab.active { color:var(--a-blue); border-bottom-color:var(--a-blue); font-weight:600; }
 
-  .step-line { transition:background-color 0.4s ease; }
+  /* ── Owner sub-tab ── */
+  .owner-tabs { display:flex; gap:6px; margin-bottom:14px; }
+  .owner-tab {
+    padding:5px 14px; font-size:11px; font-weight:500; color:var(--a-text3);
+    border:1px solid var(--a-border); background:var(--a-surf); cursor:pointer;
+    font-family:'Inter',sans-serif; transition:all .12s;
+  }
+  .owner-tab.active { background:var(--a-blue); color:#fff; border-color:var(--a-blue); }
 
+  /* ── Filter bar ── */
+  .assets-filter-bar {
+    display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap; align-items:center;
+  }
+  .assets-search {
+    flex:1; min-width:200px; padding:8px 12px 8px 32px;
+    border:1px solid var(--a-border); background:var(--a-surf);
+    font-size:12px; font-family:'Inter',sans-serif;
+    color:var(--a-text); outline:none;
+  }
+  .assets-search:focus { border-color:var(--a-blue); }
+  .assets-select {
+    padding:8px 10px; border:1px solid var(--a-border);
+    background:var(--a-surf); font-size:12px;
+    font-family:'Inter',sans-serif; color:var(--a-text2); outline:none; cursor:pointer;
+  }
+  .assets-select:focus { border-color:var(--a-blue); }
+
+  /* ── Filter pill buttons ── */
+  .filter-pill {
+    padding:6px 14px; font-size:11px; font-weight:500;
+    border:1px solid var(--a-border); background:var(--a-surf);
+    color:var(--a-text3); cursor:pointer; font-family:'Inter',sans-serif; transition:all .12s;
+  }
+  .filter-pill:hover { border-color:var(--a-border2); color:var(--a-text2); }
+  .filter-pill.active { background:var(--a-blue); color:#fff; border-color:var(--a-blue); }
+
+  /* ── Action buttons ── */
   .nav-pill {
-    padding:8px 18px; border-radius:8px;
-    font-size:11px; font-weight:700; cursor:pointer;
-    transition:all 0.15s; font-family:var(--font-display);
-    letter-spacing:1px; text-transform:uppercase; border:none;
+    display:inline-flex; align-items:center; gap:5px;
+    padding:6px 14px; font-size:12px; font-weight:600;
+    border:1px solid var(--a-border); background:var(--a-surf);
+    color:var(--a-text2); cursor:pointer; font-family:'Inter',sans-serif; transition:all .12s;
   }
+  .nav-pill:hover { border-color:var(--a-border2); color:var(--a-text); }
   .nav-pill-primary {
-    background:transparent; color:var(--accent);
-    border:1px solid var(--accent-dark) !important;
+    background:var(--a-blue); color:#fff; border-color:var(--a-blue);
   }
-  .nav-pill-primary:hover { background:var(--accent-glow); box-shadow:0 0 16px var(--accent-glow); color:#fff; }
-  .nav-pill-primary:disabled { opacity:0.3; cursor:default; }
-  .nav-pill-ghost {
-    background:transparent; color:var(--text-muted);
-    border:1px solid var(--border) !important;
+  .nav-pill-primary:hover { background:var(--a-blue-dark,#1565C0); }
+  .nav-pill-danger { color:var(--a-red); border-color:var(--a-red-bd); }
+  .nav-pill-danger:hover { background:var(--a-red-bg); }
+
+  /* ── Asset card grid ── */
+  .asset-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:14px; }
+
+  /* ── Table view ── */
+  .assets-table-wrap { overflow-x:auto; }
+  .assets-table { width:100%; border-collapse:collapse; }
+  .assets-table th {
+    background:var(--a-s2); padding:10px 14px;
+    font-size:10px; font-weight:700; color:var(--a-text3);
+    text-align:left; border-bottom:1px solid var(--a-border);
+    text-transform:uppercase; letter-spacing:.5px; white-space:nowrap;
   }
-  .nav-pill-ghost:hover { border-color:var(--accent-dark) !important; color:var(--accent); }
-  .nav-pill-ghost:disabled { opacity:0.3; cursor:default; }
-  .nav-pill-success {
-    background:transparent; color:var(--green);
-    border:1px solid var(--green-border) !important;
+  .assets-table td {
+    padding:10px 14px; font-size:12px; color:var(--a-text2);
+    border-bottom:1px solid var(--a-s2);
   }
-  .nav-pill-success:hover { background:var(--green-bg); box-shadow:0 0 14px var(--green-bg); }
+  .assets-table tr:hover td { background:var(--a-s2); cursor:pointer; }
+
+  /* ── Quick log modal ── */
+  .quicklog-modal {
+    position:fixed; inset:0; background:rgba(15,23,42,.35);
+    z-index:500; display:flex; align-items:center; justify-content:center; padding:20px;
+    backdrop-filter:blur(2px);
+  }
+  .quicklog-card {
+    background:var(--a-surf); border:1px solid var(--a-border);
+    padding:24px; width:100%; max-width:400px;
+    box-shadow:0 16px 48px rgba(0,0,0,.15);
+  }
+
+  /* ── Edit modal ── */
+  .edit-modal { position:fixed; inset:0; background:rgba(15,23,42,.35); z-index:500; display:flex; align-items:center; justify-content:center; padding:20px; }
+  .edit-card { background:var(--a-surf); border:1px solid var(--a-border); padding:24px; width:100%; max-width:560px; max-height:85vh; overflow-y:auto; box-shadow:0 16px 48px rgba(0,0,0,.15); }
+
+  /* ── Form inputs ── */
+  .asset-input {
+    width:100%; padding:8px 11px; border:1px solid var(--a-border);
+    background:var(--a-s2); color:var(--a-text); font-size:12px;
+    font-family:'Inter',sans-serif; outline:none; box-sizing:border-box;
+  }
+  .asset-input:focus { border-color:var(--a-blue); background:var(--a-surf); }
+  .asset-label { font-size:10px; font-weight:700; color:var(--a-text3); text-transform:uppercase; letter-spacing:.5px; margin-bottom:5px; display:block; }
+
+  /* ── Section title ── */
+  .assets-section-title {
+    font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.6px;
+    color:var(--a-text3); margin-bottom:14px; display:flex; align-items:center; gap:8px;
+  }
+  .assets-section-title::before { content:''; width:3px; height:13px; background:var(--a-blue); flex-shrink:0; }
+
+  /* ── QR modal ── */
+  .qr-modal { position:fixed; inset:0; background:rgba(15,23,42,.5); z-index:600; display:flex; align-items:center; justify-content:center; padding:20px; }
+  .qr-card { background:var(--a-surf); border:1px solid var(--a-border); padding:24px; max-width:340px; width:100%; text-align:center; box-shadow:0 16px 48px rgba(0,0,0,.2); }
 `;
 
 // ─── Status config ─────────────────────────────────────────────────────────────
@@ -199,19 +319,17 @@ function AssetCard({ asset, index, onView, onDelete, onQR, onQuickLog, onEdit, o
   return (
     <div
       className="asset-card"
-      style={{ animation: `fadeUp 0.4s ease ${index * 45}ms both`, borderTop: `2px solid ${s.color}40` }}
+      style={{ animation: `fadeUp 0.4s ease ${index * 45}ms both`, borderLeft: `3px solid ${s.color}` }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
       {/* Card header */}
       <div style={{ padding: '16px 18px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '10px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
-          <div style={{ width: '38px', height: '38px', borderRadius: '10px', background: `${s.color}18`, border: `1px solid ${s.color}30`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', flexShrink: 0 }}>
-            {getIcon(asset.type)}
-          </div>
+
           <div style={{ minWidth: 0 }}>
-            <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{asset.name}</div>
-            <div style={{ fontSize: '11px', color: 'var(--accent)', fontWeight: 700, letterSpacing: '0.5px' }}>{asset.asset_number || '—'}</div>
+            <div style={{ fontSize: '15px', fontWeight: 800, color: 'var(--a-text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', letterSpacing: '-0.3px' }}>{asset.name}</div>
+            <div style={{ fontSize: '11px', color: 'var(--a-blue)', fontWeight: 500, letterSpacing: '0.3px', fontFamily: 'var(--font-mono)' }}>{asset.asset_number || '—'}</div>
           </div>
         </div>
         <StatusPill status={asset.status} />
@@ -251,7 +369,7 @@ function ServiceSheetPickerModal({ asset, templates, onClose, onSelect }) {
   const [selected, setSelected] = useState('');
   return (
     <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:300, display:'flex', alignItems:'center', justifyContent:'center', padding:16 }}>
-      <div style={{ background:'var(--bg)', borderRadius:16, width:'100%', maxWidth:440, boxShadow:'0 20px 60px rgba(0,0,0,0.3)', overflow:'hidden' }}>
+      <div style={{ background:'var(--bg)', borderRadius:4, width:'100%', maxWidth:440, boxShadow:'0 20px 60px rgba(0,0,0,0.3)', overflow:'hidden' }}>
         <div style={{ padding:'18px 20px 14px', borderBottom:'1px solid var(--border)', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
           <div>
             <div style={{ fontSize:16, fontWeight:800, color:'var(--text-primary)', fontFamily:'var(--font-display)' }}>📄 Service Sheet</div>
@@ -270,16 +388,16 @@ function ServiceSheetPickerModal({ asset, templates, onClose, onSelect }) {
               <div style={{ display:'flex', flexDirection:'column', gap:8, marginBottom:16 }}>
                 {templates.map(t => (
                   <div key={t.id} onClick={() => setSelected(t.id)}
-                    style={{ padding:'12px 14px', borderRadius:10, border:`2px solid ${selected===t.id?'var(--accent)':'var(--border)'}`, background:selected===t.id?'var(--accent-light)':'var(--surface)', cursor:'pointer', transition:'all 0.15s' }}>
+                    style={{ padding:'12px 14px', borderRadius:3, border:`2px solid ${selected===t.id?'var(--accent)':'var(--border)'}`, background:selected===t.id?'var(--accent-light)':'var(--surface)', cursor:'pointer', transition:'all 0.15s' }}>
                     <div style={{ fontSize:13, fontWeight:700, color:'var(--text-primary)' }}>{t.name}</div>
                     {t.service_type && <div style={{ fontSize:11, color:'var(--text-muted)', marginTop:2 }}>{t.service_type}</div>}
                   </div>
                 ))}
               </div>
               <div style={{ display:'flex', gap:8 }}>
-                <button onClick={onClose} style={{ flex:1, padding:'10px', background:'var(--surface)', border:'1px solid var(--border)', borderRadius:9, cursor:'pointer', fontSize:13, color:'var(--text-secondary)' }}>Cancel</button>
+                <button onClick={onClose} style={{ flex:1, padding:'10px', background:'var(--surface)', border:'1px solid var(--border)', borderRadius:3, cursor:'pointer', fontSize:13, color:'var(--text-secondary)' }}>Cancel</button>
                 <button onClick={() => { if(selected) { const t=templates.find(x=>x.id===selected); onSelect(selected, t?.name||''); } }} disabled={!selected}
-                  style={{ flex:2, padding:'10px', background:selected?'var(--accent)':'var(--surface-2)', color:selected?'#fff':'var(--text-muted)', border:'none', borderRadius:9, cursor:selected?'pointer':'not-allowed', fontSize:13, fontWeight:700 }}>
+                  style={{ flex:2, padding:'10px', background:selected?'var(--accent)':'var(--surface-2)', color:selected?'#fff':'var(--text-muted)', border:'none', borderRadius:3, cursor:selected?'pointer':'not-allowed', fontSize:13, fontWeight:700 }}>
                   Open Service Sheet →
                 </button>
               </div>
@@ -428,7 +546,7 @@ function UnitsTab({ userRole, onViewAsset, toast }) {
       {/* Edit Asset Modal */}
       {editAsset && (
         <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:1000, padding:20 }}>
-          <div style={{ background:'var(--surface)', borderRadius:16, padding:28, width:'100%', maxWidth:560, maxHeight:'85vh', overflowY:'auto', border:'1px solid var(--border)', boxShadow:'0 20px 60px rgba(0,0,0,0.3)' }}>
+          <div style={{ background:'var(--surface)', borderRadius:4, padding:28, width:'100%', maxWidth:560, maxHeight:'85vh', overflowY:'auto', border:'1px solid var(--border)', boxShadow:'0 20px 60px rgba(0,0,0,0.3)' }}>
             <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:20 }}>
               <div style={{ fontSize:17, fontWeight:800, color:'var(--text-primary)' }}>Edit Asset — {editAsset.asset_number}</div>
               <button onClick={() => setEditAsset(null)} style={{ background:'none', border:'none', color:'var(--text-muted)', cursor:'pointer', fontSize:18 }}>✕</button>
@@ -445,13 +563,13 @@ function UnitsTab({ userRole, onViewAsset, toast }) {
               ].map(([label,key,type]) => (
                 <div key={key}>
                   <div style={{ fontSize:10, fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.5px', marginBottom:5 }}>{label}</div>
-                  <input style={{ width:'100%', padding:'9px 12px', border:'1px solid var(--border)', borderRadius:8, background:'var(--surface-2)', color:'var(--text-primary)', fontSize:13, fontFamily:'inherit', outline:'none', boxSizing:'border-box' }}
+                  <input style={{ width:'100%', padding:'9px 12px', border:'1px solid var(--border)', borderRadius:3, background:'var(--surface-2)', color:'var(--text-primary)', fontSize:13, fontFamily:'inherit', outline:'none', boxSizing:'border-box' }}
                     type={type} value={editAsset[key]||''} onChange={e => setEditAsset(p=>({...p,[key]:e.target.value}))} />
                 </div>
               ))}
               <div>
                 <div style={{ fontSize:10, fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.5px', marginBottom:5 }}>Status</div>
-                <select style={{ width:'100%', padding:'9px 12px', border:'1px solid var(--border)', borderRadius:8, background:'var(--surface-2)', color:'var(--text-primary)', fontSize:13, fontFamily:'inherit', outline:'none', boxSizing:'border-box' }}
+                <select style={{ width:'100%', padding:'9px 12px', border:'1px solid var(--border)', borderRadius:3, background:'var(--surface-2)', color:'var(--text-primary)', fontSize:13, fontFamily:'inherit', outline:'none', boxSizing:'border-box' }}
                   value={editAsset.status||'Running'} onChange={e => setEditAsset(p=>({...p,status:e.target.value}))}>
                   <option>Running</option><option>Down</option><option>Maintenance</option><option>Standby</option>
                 </select>
@@ -459,14 +577,14 @@ function UnitsTab({ userRole, onViewAsset, toast }) {
             </div>
             <div style={{ marginBottom:14 }}>
               <div style={{ fontSize:10, fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.5px', marginBottom:5 }}>Notes</div>
-              <textarea style={{ width:'100%', padding:'9px 12px', border:'1px solid var(--border)', borderRadius:8, background:'var(--surface-2)', color:'var(--text-primary)', fontSize:13, fontFamily:'inherit', outline:'none', boxSizing:'border-box', resize:'vertical', minHeight:70 }}
+              <textarea style={{ width:'100%', padding:'9px 12px', border:'1px solid var(--border)', borderRadius:3, background:'var(--surface-2)', color:'var(--text-primary)', fontSize:13, fontFamily:'inherit', outline:'none', boxSizing:'border-box', resize:'vertical', minHeight:70 }}
                 value={editAsset.notes||''} onChange={e => setEditAsset(p=>({...p,notes:e.target.value}))} />
             </div>
             <div style={{ display:'flex', gap:8 }}>
-              <button onClick={handleEdit} disabled={editSaving} style={{ flex:1, padding:'10px', background:'var(--accent)', color:'#fff', border:'none', borderRadius:8, fontSize:13, fontWeight:700, cursor:'pointer', opacity:editSaving?0.6:1 }}>
+              <button onClick={handleEdit} disabled={editSaving} style={{ flex:1, padding:'10px', background:'var(--accent)', color:'#fff', border:'none', borderRadius:3, fontSize:13, fontWeight:700, cursor:'pointer', opacity:editSaving?0.6:1 }}>
                 {editSaving ? 'Saving…' : 'Save Changes'}
               </button>
-              <button onClick={() => setEditAsset(null)} style={{ padding:'10px 18px', background:'var(--surface-2)', color:'var(--text-secondary)', border:'1px solid var(--border)', borderRadius:8, fontSize:13, cursor:'pointer' }}>Cancel</button>
+              <button onClick={() => setEditAsset(null)} style={{ padding:'10px 18px', background:'var(--surface-2)', color:'var(--text-secondary)', border:'1px solid var(--border)', borderRadius:3, fontSize:13, cursor:'pointer' }}>Cancel</button>
             </div>
           </div>
         </div>
@@ -505,7 +623,7 @@ function UnitsTab({ userRole, onViewAsset, toast }) {
             display:'flex', alignItems:'center', gap:7, fontFamily:'inherit', transition:'all 0.15s',
           }}>
             {label}
-            <span style={{ padding:'1px 7px', borderRadius:10, fontSize:11, fontWeight:700, background:ownerTab===id?'var(--accent-light)':'var(--surface-2)', color:ownerTab===id?'var(--accent)':'var(--text-muted)' }}>{cnt}</span>
+            <span style={{ padding:'1px 7px', borderRadius:3, fontSize:11, fontWeight:700, background:ownerTab===id?'var(--accent-light)':'var(--surface-2)', color:ownerTab===id?'var(--accent)':'var(--text-muted)' }}>{cnt}</span>
           </button>
         ))}
       </div>
@@ -533,7 +651,7 @@ function UnitsTab({ userRole, onViewAsset, toast }) {
         <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
           <div style={{ position: 'relative' }}>
             <span style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', fontSize: '13px', fontWeight: 700 }}>⌕</span>
-            <input className="form-input" value={search} onChange={e => setSearch(e.target.value)} placeholder="Search assets…" style={{ paddingLeft: '32px', width: '200px', background:'var(--surface-2)', color:'var(--text-primary)', border:'1px solid var(--border)', borderRadius:8, fontSize:13, padding:'8px 12px 8px 30px', fontFamily:'var(--font-display)' }} />
+            <input className="form-input" value={search} onChange={e => setSearch(e.target.value)} placeholder="Search assets…" style={{ paddingLeft: '32px', width: '200px', background:'var(--surface-2)', color:'var(--text-primary)', border:'1px solid var(--border)', borderRadius:3, fontSize:13, padding:'8px 12px 8px 30px', fontFamily:'var(--font-display)' }} />
           </div>
           {userRole?.role !== 'technician' && userRole?.role !== 'operator' && (
             <button onClick={() => setShowForm(!showForm)} className="nav-pill nav-pill-primary">Add Asset</button>
@@ -604,10 +722,10 @@ function UnitsTab({ userRole, onViewAsset, toast }) {
         });
 
         if (loading) return (
-          <div style={{ background:'var(--surface)', border:'1px solid var(--border)', borderRadius:12, overflow:'hidden' }}>
+          <div style={{ background:'var(--surface)', border:'1px solid var(--border)', borderRadius:4, overflow:'hidden' }}>
             {[0,1,2,3,4,5].map(i=>(
               <div key={i} style={{ display:'flex', gap:16, padding:'14px 18px', borderBottom:'1px solid var(--border)', alignItems:'center' }}>
-                <div style={{ width:36,height:36,borderRadius:8,background:'var(--surface-2)',flexShrink:0 }} />
+                <div style={{ width:36,height:36,borderRadius:3,background:'var(--surface-2)',flexShrink:0 }} />
                 <div style={{ flex:1 }}><div style={{ width:'40%',height:13,background:'var(--surface-2)',borderRadius:4,marginBottom:6 }}/><div style={{ width:'25%',height:10,background:'var(--surface-2)',borderRadius:4 }}/></div>
                 {[1,2,3,4,5].map(j=><div key={j} style={{ width:'9%',height:12,background:'var(--surface-2)',borderRadius:4 }} />)}
               </div>
@@ -616,7 +734,7 @@ function UnitsTab({ userRole, onViewAsset, toast }) {
         );
 
         if (filtered.length===0) return (
-          <div style={{ textAlign:'center',padding:'64px 20px',background:'var(--surface)',border:'1px solid var(--border)',borderRadius:16 }}>
+          <div style={{ textAlign:'center',padding:'64px 20px',background:'var(--surface)',border:'1px solid var(--border)',borderRadius:4 }}>
             <div style={{ fontSize:48,marginBottom:14 }}>{search||filter!=='All'?'🔍':'⚙️'}</div>
             <div style={{ fontSize:16,fontWeight:700,color:'var(--text-primary)',marginBottom:6 }}>{search?'No assets match your search':filter!=='All'?`No ${filter} assets`:'No assets yet'}</div>
             <div style={{ fontSize:13,color:'var(--text-muted)',maxWidth:280,margin:'0 auto' }}>{search||filter!=='All'?'Try adjusting your filters.':'Add your first asset or use Onboarding.'}</div>
@@ -624,7 +742,7 @@ function UnitsTab({ userRole, onViewAsset, toast }) {
         );
 
         return (
-          <div style={{ background:'var(--surface)', border:'1px solid var(--border)', borderRadius:12, overflow:'hidden' }}>
+          <div style={{ background:'var(--surface)', border:'1px solid var(--border)', borderRadius:4, overflow:'hidden' }}>
             <table style={{ width:'100%', borderCollapse:'collapse', fontSize:13 }}>
               <thead>
                 <tr style={{ background:'var(--surface-2)', borderBottom:'2px solid var(--border)' }}>
@@ -651,7 +769,7 @@ function UnitsTab({ userRole, onViewAsset, toast }) {
                       </td>
                       <td style={{ padding:'12px 14px' }}>
                         <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-                          <div style={{ width:32,height:32,borderRadius:8,background:'var(--surface-2)',border:'1px solid var(--border)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:15,flexShrink:0 }}>{typeIcon(asset.type)}</div>
+                          <div style={{ width:32,height:32,borderRadius:3,background:'var(--surface-2)',border:'1px solid var(--border)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:15,flexShrink:0 }}>{typeIcon(asset.type)}</div>
                           <div>
                             <div style={{ fontWeight:700,color:'var(--text-primary)',fontSize:13 }}>{asset.name}</div>
                             {asset.type&&<div style={{ fontSize:11,color:'var(--text-muted)' }}>{asset.type}</div>}
@@ -997,7 +1115,7 @@ function OnboardingTab({ userRole, onComplete, toast }) {
       <p style={{ fontSize:13, color:'var(--text-muted)', marginBottom:20 }}>Set up maintenance schedules for {form.name}. These will appear on the calendar and asset profile.</p>
       <div style={{ display:'flex', flexDirection:'column', gap:10, marginBottom:20 }}>
         {intervals.map((interval, idx) => (
-          <div key={interval.id} style={{ display:'flex', alignItems:'center', gap:12, padding:'14px 16px', background: interval.enabled ? 'var(--accent-light)' : 'var(--surface-2)', border:`1px solid ${interval.enabled ? 'rgba(14,165,233,0.3)' : 'var(--border)'}`, borderRadius:10, transition:'all 0.15s' }}>
+          <div key={interval.id} style={{ display:'flex', alignItems:'center', gap:12, padding:'14px 16px', background: interval.enabled ? 'var(--accent-light)' : 'var(--surface-2)', border:`1px solid ${interval.enabled ? 'rgba(25,118,210,0.3)' : 'var(--border)'}`, borderRadius:3, transition:'all 0.15s' }}>
             <div onClick={() => setIntervals(prev => prev.map((x,i) => i===idx ? {...x, enabled:!x.enabled} : x))}
               style={{ width:22, height:22, borderRadius:4, border:`2px solid ${interval.enabled ? 'var(--accent)' : 'var(--border)'}`, background: interval.enabled ? 'var(--accent)' : 'transparent', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', flexShrink:0, transition:'all 0.15s' }}>
               {interval.enabled && <span style={{ color:'#fff', fontSize:12, fontWeight:800 }}>✓</span>}
@@ -1028,7 +1146,7 @@ function OnboardingTab({ userRole, onComplete, toast }) {
           </div>
         ))}
       </div>
-      <div style={{ padding:'12px 16px', background:'var(--surface-2)', borderRadius:8, border:'1px solid var(--border)', fontSize:12, color:'var(--text-muted)' }}>
+      <div style={{ padding:'12px 16px', background:'var(--surface-2)', borderRadius:3, border:'1px solid var(--border)', fontSize:12, color:'var(--text-muted)' }}>
         💡 Starting from current hours: <strong style={{ color:'var(--text-primary)' }}>{form.hours || 0} hrs</strong>. You can edit these later from the asset's Service Schedule tab.
       </div>
     </div>
@@ -1113,7 +1231,7 @@ function OnboardingTab({ userRole, onComplete, toast }) {
       {/* Edit Asset Modal */}
       {editAsset && (
         <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:1000, padding:20 }}>
-          <div style={{ background:'var(--surface)', borderRadius:16, padding:28, width:'100%', maxWidth:560, maxHeight:'85vh', overflowY:'auto', border:'1px solid var(--border)', boxShadow:'0 20px 60px rgba(0,0,0,0.3)' }}>
+          <div style={{ background:'var(--surface)', borderRadius:4, padding:28, width:'100%', maxWidth:560, maxHeight:'85vh', overflowY:'auto', border:'1px solid var(--border)', boxShadow:'0 20px 60px rgba(0,0,0,0.3)' }}>
             <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:20 }}>
               <div style={{ fontSize:17, fontWeight:800, color:'var(--text-primary)' }}>Edit Asset — {editAsset.asset_number}</div>
               <button onClick={() => setEditAsset(null)} style={{ background:'none', border:'none', color:'var(--text-muted)', cursor:'pointer', fontSize:18 }}>✕</button>
@@ -1130,13 +1248,13 @@ function OnboardingTab({ userRole, onComplete, toast }) {
               ].map(([label,key,type]) => (
                 <div key={key}>
                   <div style={{ fontSize:10, fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.5px', marginBottom:5 }}>{label}</div>
-                  <input style={{ width:'100%', padding:'9px 12px', border:'1px solid var(--border)', borderRadius:8, background:'var(--surface-2)', color:'var(--text-primary)', fontSize:13, fontFamily:'inherit', outline:'none', boxSizing:'border-box' }}
+                  <input style={{ width:'100%', padding:'9px 12px', border:'1px solid var(--border)', borderRadius:3, background:'var(--surface-2)', color:'var(--text-primary)', fontSize:13, fontFamily:'inherit', outline:'none', boxSizing:'border-box' }}
                     type={type} value={editAsset[key]||''} onChange={e => setEditAsset(p=>({...p,[key]:e.target.value}))} />
                 </div>
               ))}
               <div>
                 <div style={{ fontSize:10, fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.5px', marginBottom:5 }}>Status</div>
-                <select style={{ width:'100%', padding:'9px 12px', border:'1px solid var(--border)', borderRadius:8, background:'var(--surface-2)', color:'var(--text-primary)', fontSize:13, fontFamily:'inherit', outline:'none', boxSizing:'border-box' }}
+                <select style={{ width:'100%', padding:'9px 12px', border:'1px solid var(--border)', borderRadius:3, background:'var(--surface-2)', color:'var(--text-primary)', fontSize:13, fontFamily:'inherit', outline:'none', boxSizing:'border-box' }}
                   value={editAsset.status||'Running'} onChange={e => setEditAsset(p=>({...p,status:e.target.value}))}>
                   <option>Running</option><option>Down</option><option>Maintenance</option><option>Standby</option><option>Active</option>
                 </select>
@@ -1144,14 +1262,14 @@ function OnboardingTab({ userRole, onComplete, toast }) {
             </div>
             <div style={{ marginBottom:14 }}>
               <div style={{ fontSize:10, fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.5px', marginBottom:5 }}>Notes</div>
-              <textarea style={{ width:'100%', padding:'9px 12px', border:'1px solid var(--border)', borderRadius:8, background:'var(--surface-2)', color:'var(--text-primary)', fontSize:13, fontFamily:'inherit', outline:'none', boxSizing:'border-box', resize:'vertical', minHeight:70 }}
+              <textarea style={{ width:'100%', padding:'9px 12px', border:'1px solid var(--border)', borderRadius:3, background:'var(--surface-2)', color:'var(--text-primary)', fontSize:13, fontFamily:'inherit', outline:'none', boxSizing:'border-box', resize:'vertical', minHeight:70 }}
                 value={editAsset.notes||''} onChange={e => setEditAsset(p=>({...p,notes:e.target.value}))} />
             </div>
             <div style={{ display:'flex', gap:8 }}>
-              <button onClick={handleEdit} disabled={editSaving} style={{ flex:1, padding:'10px', background:'var(--accent)', color:'#fff', border:'none', borderRadius:8, fontSize:13, fontWeight:700, cursor:'pointer', opacity:editSaving?0.6:1 }}>
+              <button onClick={handleEdit} disabled={editSaving} style={{ flex:1, padding:'10px', background:'var(--accent)', color:'#fff', border:'none', borderRadius:3, fontSize:13, fontWeight:700, cursor:'pointer', opacity:editSaving?0.6:1 }}>
                 {editSaving ? 'Saving…' : 'Save Changes'}
               </button>
-              <button onClick={() => setEditAsset(null)} style={{ padding:'10px 18px', background:'var(--surface-2)', color:'var(--text-secondary)', border:'1px solid var(--border)', borderRadius:8, fontSize:13, cursor:'pointer' }}>Cancel</button>
+              <button onClick={() => setEditAsset(null)} style={{ padding:'10px 18px', background:'var(--surface-2)', color:'var(--text-secondary)', border:'1px solid var(--border)', borderRadius:3, fontSize:13, cursor:'pointer' }}>Cancel</button>
             </div>
           </div>
         </div>
@@ -1159,7 +1277,7 @@ function OnboardingTab({ userRole, onComplete, toast }) {
 
       {/* Registered assets table */}
       {onboardList.length > 0 && (
-        <div style={{ background:'var(--surface)', border:'1px solid var(--border)', borderRadius:12, marginBottom:24, overflow:'hidden' }}>
+        <div style={{ background:'var(--surface)', border:'1px solid var(--border)', borderRadius:4, marginBottom:24, overflow:'hidden' }}>
           <div onClick={() => setShowList(p=>!p)}
             style={{ padding:'12px 18px', display:'flex', alignItems:'center', justifyContent:'space-between', cursor:'pointer',
               borderBottom: showList ? '1px solid var(--border)' : 'none' }}>
@@ -1309,7 +1427,7 @@ function TrackerPlaceholder({ userRole }) {
     if (withGPS.length === 0) return;
     withGPS.forEach(a => {
       const SC = { Running:'#16a34a', Down:'#dc2626', Maintenance:'#d97706', Active:'#16a34a' };
-      const c = SC[a.status] || '#0ea5e9';
+      const c = SC[a.status] || '#1976D2';
       const num = (a.asset_number||'').replace('AST-','');
       const icon = L.divIcon({
         html: `<div style="position:relative;width:36px;height:42px">
@@ -1343,7 +1461,7 @@ function TrackerPlaceholder({ userRole }) {
         if (mapInst.current && window.L) {
           if (userMarker.current) { try { userMarker.current.remove(); } catch(e){} }
           const icon = window.L.divIcon({
-            html: `<div style="width:18px;height:18px;border-radius:50%;background:#0ea5e9;border:3px solid #fff;box-shadow:0 0 0 6px rgba(14,165,233,0.25)"></div>`,
+            html: `<div style="width:18px;height:18px;border-radius:50%;background:#1976D2;border:3px solid #fff;box-shadow:0 0 0 6px rgba(25,118,210,0.25)"></div>`,
             iconSize:[18,18], iconAnchor:[9,9], className:'',
           });
           userMarker.current = window.L.marker([lat,lng],{icon}).addTo(mapInst.current)
@@ -1393,7 +1511,7 @@ function TrackerPlaceholder({ userRole }) {
           )}
           {gpsError && <span style={{ fontSize:12, color:'var(--red)' }}>⚠ {gpsError}</span>}
           <button onClick={watching ? stopTracking : startTracking}
-            style={{ padding:'9px 18px', borderRadius:8, border: watching ? '1px solid var(--red-border)' : 'none',
+            style={{ padding:'9px 18px', borderRadius:3, border: watching ? '1px solid var(--red-border)' : 'none',
               background: watching ? 'var(--red-bg)' : 'var(--accent)', color: watching ? 'var(--red)' : '#fff',
               fontWeight:700, fontSize:13, cursor:'pointer', fontFamily:'inherit', transition:'all 0.15s' }}>
             {watching ? '⏹ Stop Tracking' : '📡 Track My Location'}
@@ -1421,7 +1539,7 @@ function TrackerPlaceholder({ userRole }) {
       <div style={{ display:'grid', gridTemplateColumns:'minmax(0,290px) 1fr', gap:16, alignItems:'start' }} className="tracker-grid">
 
         {/* Asset list */}
-        <div style={{ background:'var(--surface)', border:'1px solid var(--border)', borderRadius:12, overflow:'hidden', maxHeight:540, display:'flex', flexDirection:'column' }}>
+        <div style={{ background:'var(--surface)', border:'1px solid var(--border)', borderRadius:4, overflow:'hidden', maxHeight:540, display:'flex', flexDirection:'column' }}>
           <div style={{ padding:'10px 14px', borderBottom:'1px solid var(--border)', fontSize:11, fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.8px' }}>
             Fleet Assets · {filtered.length}
           </div>
@@ -1460,7 +1578,7 @@ function TrackerPlaceholder({ userRole }) {
         </div>
 
         {/* Map container */}
-        <div style={{ position:'relative', border:'1px solid var(--border)', borderRadius:12, overflow:'hidden' }}>
+        <div style={{ position:'relative', border:'1px solid var(--border)', borderRadius:4, overflow:'hidden' }}>
           <div ref={mapRef} style={{ height:540, width:'100%', background:'var(--surface-2)' }} />
           {!mapReady && (
             <div style={{ position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center',
@@ -1472,7 +1590,7 @@ function TrackerPlaceholder({ userRole }) {
           {/* Selected asset overlay */}
           {selected && (
             <div style={{ position:'absolute', top:12, right:12, background:'var(--surface)', border:'1px solid var(--border)',
-              borderRadius:10, padding:'12px 16px', boxShadow:'0 4px 20px rgba(0,0,0,0.12)', minWidth:200, zIndex:999 }}>
+              borderRadius:3, padding:'12px 16px', boxShadow:'0 4px 20px rgba(0,0,0,0.12)', minWidth:200, zIndex:999 }}>
               <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:6 }}>
                 <div style={{ fontSize:13, fontWeight:700, color:'var(--text-primary)', lineHeight:1.3 }}>{selected.name}</div>
                 <button onClick={() => setSelected(null)}
@@ -1492,7 +1610,7 @@ function TrackerPlaceholder({ userRole }) {
           )}
           {/* Legend */}
           <div style={{ position:'absolute', bottom:14, left:14, background:'var(--surface)', border:'1px solid var(--border)',
-            borderRadius:8, padding:'7px 12px', fontSize:11, display:'flex', gap:12, zIndex:999,
+            borderRadius:3, padding:'7px 12px', fontSize:11, display:'flex', gap:12, zIndex:999,
             boxShadow:'0 2px 8px rgba(0,0,0,0.1)' }}>
             {[['Running','var(--green)'],['Maintenance','var(--amber)'],['Down','var(--red)']].map(([s,c]) => (
               <div key={s} style={{ display:'flex', alignItems:'center', gap:4 }}>
@@ -1501,7 +1619,7 @@ function TrackerPlaceholder({ userRole }) {
               </div>
             ))}
             <div style={{ display:'flex', alignItems:'center', gap:4 }}>
-              <div style={{ width:10, height:10, borderRadius:'50%', background:'#0ea5e9', border:'2px solid #fff' }} />
+              <div style={{ width:10, height:10, borderRadius:'50%', background:'#1976D2', border:'2px solid #fff' }} />
               <span style={{ color:'var(--text-secondary)' }}>You</span>
             </div>
           </div>
@@ -1510,7 +1628,7 @@ function TrackerPlaceholder({ userRole }) {
 
       {/* No GPS assets — assets without hardware */}
       {withoutGPS.length > 0 && (
-        <div style={{ marginTop:20, background:'var(--surface)', border:'1px solid var(--border)', borderRadius:12, padding:'14px 18px' }}>
+        <div style={{ marginTop:20, background:'var(--surface)', border:'1px solid var(--border)', borderRadius:4, padding:'14px 18px' }}>
           <div style={{ fontSize:13, fontWeight:700, color:'var(--text-primary)', marginBottom:8 }}>
             {withoutGPS.length} asset{withoutGPS.length!==1?'s':''} without GPS signal
           </div>
@@ -1526,7 +1644,7 @@ function TrackerPlaceholder({ userRole }) {
       )}
 
       {/* Hardware recommendations */}
-      <div style={{ marginTop:20, background:'var(--surface)', border:'1px solid var(--border)', borderRadius:12, overflow:'hidden' }}>
+      <div style={{ marginTop:20, background:'var(--surface)', border:'1px solid var(--border)', borderRadius:4, overflow:'hidden' }}>
         <div style={{ padding:'14px 20px', borderBottom:'1px solid var(--border)', display:'flex', alignItems:'center', gap:10 }}>
           <span style={{ fontSize:18 }}>🛰️</span>
           <div>
@@ -1653,7 +1771,7 @@ function DepreciationTab({ userRole }) {
               { label:'Annual Depreciation',    val:`$${totals.annualDepr.toLocaleString()}/yr`, c:'var(--red)' },
               { label:'Assets Tracked',         val:fleetAssets.length,                     c:'var(--green)' },
             ].map(s => (
-              <div key={s.label} style={{ background:'var(--surface)', border:'1px solid var(--border)', borderRadius:10, padding:'14px 18px' }}>
+              <div key={s.label} style={{ background:'var(--surface)', border:'1px solid var(--border)', borderRadius:3, padding:'14px 18px' }}>
                 <div style={{ fontSize:11, fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.5px', marginBottom:5 }}>{s.label}</div>
                 <div style={{ fontSize:20, fontWeight:800, color:s.c }}>{s.val}</div>
               </div>
@@ -1661,7 +1779,7 @@ function DepreciationTab({ userRole }) {
           </div>
 
           {/* Collapsible fleet table */}
-          <div style={{ background:'var(--surface)', border:'1px solid var(--border)', borderRadius:12, overflow:'hidden' }}>
+          <div style={{ background:'var(--surface)', border:'1px solid var(--border)', borderRadius:4, overflow:'hidden' }}>
             <div onClick={() => setExpanded(p=>!p)}
               style={{ padding:'12px 18px', display:'flex', alignItems:'center', justifyContent:'space-between',
                 cursor:'pointer', borderBottom: expanded ? '1px solid var(--border)' : 'none' }}>
@@ -1715,8 +1833,8 @@ function DepreciationTab({ userRole }) {
                           <td style={{ padding:'10px 14px' }}>
                             {snap ? (
                               <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-                                <div style={{ flex:1, height:5, background:'var(--surface-3)', borderRadius:99, overflow:'hidden', minWidth:50 }}>
-                                  <div style={{ width:snap.depreciationRate+'%', height:'100%', borderRadius:99,
+                                <div style={{ flex:1, height:5, background:'var(--surface-3)', borderRadius:39, overflow:'hidden', minWidth:50 }}>
+                                  <div style={{ width:snap.depreciationRate+'%', height:'100%', borderRadius:39,
                                     background: snap.depreciationRate>70?'var(--red)':snap.depreciationRate>40?'var(--amber)':'var(--green)' }} />
                                 </div>
                                 <span style={{ fontSize:12, fontWeight:700, whiteSpace:'nowrap',
@@ -1743,7 +1861,7 @@ function DepreciationTab({ userRole }) {
 
       {!loading && fleetAssets.length === 0 && (
         <div style={{ marginBottom:24, padding:'20px 24px', background:'var(--surface)', border:'1px solid var(--border)',
-          borderRadius:12, fontSize:13, color:'var(--text-muted)', textAlign:'center' }}>
+          borderRadius:4, fontSize:13, color:'var(--text-muted)', textAlign:'center' }}>
           No assets with purchase price data yet. Onboard assets with purchase prices to see fleet depreciation here.
         </div>
       )}
