@@ -889,6 +889,42 @@ function Login({ onAuth }) {
         { action: 'fill', cx: 25, cy: 76, id: 'wo-tech', val: 'J. Dawson', label: 'Assigning technician' },
         { action: 'submit', cx: 50, cy: 90, label: 'Creating work order' },
       ]
+    },
+    assets: {
+      label: 'Asset management',
+      sub: 'Fleet register, status and AI risk scores',
+      color: '#0891b2',
+      steps: [
+        { action: 'move', cx: 25, cy: 35, label: 'Viewing fleet register' },
+        { action: 'click', cx: 25, cy: 35, label: 'Clicking TBM-01' },
+        { action: 'show', id: 'asset-detail', label: 'Asset profile opens' },
+        { action: 'move', cx: 80, cy: 60, label: 'Reviewing AI risk score' },
+        { action: 'move', cx: 80, cy: 80, label: 'Checking service status' },
+      ]
+    },
+    oilsampling: {
+      label: 'Oil sampling & analysis',
+      sub: 'AI-powered condition monitoring',
+      color: '#b45309',
+      steps: [
+        { action: 'move', cx: 50, cy: 25, label: 'Uploading oil report' },
+        { action: 'show', id: 'oil-upload', label: 'Report uploaded' },
+        { action: 'move', cx: 50, cy: 55, label: 'AI analysing results' },
+        { action: 'show', id: 'oil-result', label: 'AI analysis complete' },
+        { action: 'move', cx: 70, cy: 80, label: 'Reviewing recommendations' },
+      ]
+    },
+    reports: {
+      label: 'Reports & analytics',
+      sub: 'Downtime, availability and KPI exports',
+      color: '#7c3aed',
+      steps: [
+        { action: 'move', cx: 25, cy: 30, label: 'Opening downtime report' },
+        { action: 'show', id: 'report-chart', label: 'Chart loads' },
+        { action: 'move', cx: 65, cy: 50, label: 'Reviewing availability' },
+        { action: 'move', cx: 80, cy: 80, label: 'Exporting to PDF' },
+        { action: 'show', id: 'report-export', label: 'PDF exported' },
+      ]
     }
   };
 
@@ -1095,6 +1131,144 @@ function Login({ onAuth }) {
       </C>
     );
 
+    if (id === 'assets') return (
+      <C title="Asset Management">
+        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8, marginBottom:8 }}>
+          {[['Running','19','#15803D'],['Down','2','#B91C1C'],['Maintenance','3','#B45309'],['Total','24','#1976D2']].map(([l,v,col]) => (
+            <div key={l} style={{ background:'#fff', border:'1px solid #e5e7eb', padding:'8px 10px', position:'relative' }}>
+              <div style={{ position:'absolute', bottom:0, left:0, right:0, height:2, background:col }} />
+              <div style={{ fontSize:8, color:'#94a3b8', textTransform:'uppercase', marginBottom:3 }}>{l}</div>
+              <div style={{ fontSize:20, fontWeight:700, color:col }}>{v}</div>
+            </div>
+          ))}
+        </div>
+        <div style={{ display:'grid', gridTemplateColumns: shown('asset-detail') ? '1fr 1fr' : '1fr', gap:8 }}>
+          <div style={{ background:'#fff', border:'1px solid #e5e7eb', overflow:'hidden' }}>
+            {[['TBM-01','HK-6200-0047','Running','#15803D',91],['Excavator EX-07','CAT-390F-0031','Running','#15803D',41],['Loader L-03','KOM-WA500-007','Down','#B91C1C',84],['Drill Rig A','ATL-PRO4-0019','Maint.','#B45309',62],['Conveyor B','FLX-800-0004','Running','#15803D',18]].map(([name,num,status,col,risk]) => (
+              <div key={name} style={{ display:'flex', alignItems:'center', gap:8, padding:'7px 10px', borderBottom:'1px solid #f8fafc', borderLeft:`3px solid ${col}` }}>
+                <div style={{ flex:1, minWidth:0 }}>
+                  <div style={{ fontSize:12, fontWeight:800, color:'#0F172A', letterSpacing:'-0.3px', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{name}</div>
+                  <div style={{ fontSize:9, color:'#1976D2', fontFamily:'monospace' }}>{num}</div>
+                </div>
+                <span style={{ fontSize:8, padding:'2px 5px', background:col+'15', color:col, border:`1px solid ${col}40`, whiteSpace:'nowrap' }}>{status}</span>
+                <div style={{ display:'flex', alignItems:'center', gap:3 }}>
+                  <div style={{ width:30, height:3, background:'#f1f5f9' }}><div style={{ height:'100%', width:risk+'%', background:risk>70?'#B91C1C':risk>40?'#B45309':'#15803D' }} /></div>
+                  <span style={{ fontSize:9, fontWeight:700, color:risk>70?'#B91C1C':risk>40?'#B45309':'#15803D', width:16 }}>{risk}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+          {shown('asset-detail') && (
+            <div style={{ background:'#fff', border:'1px solid #e5e7eb', padding:'12px', animation:'slideUp .3s ease' }}>
+              <div style={{ fontSize:13, fontWeight:800, color:'#0F172A', letterSpacing:'-0.3px', marginBottom:2 }}>TBM-01</div>
+              <div style={{ fontSize:10, color:'#1976D2', fontFamily:'monospace', marginBottom:10 }}>HK-6200-0047</div>
+              <span style={{ fontSize:9, padding:'2px 7px', background:'#F0FDF4', color:'#15803D', border:'1px solid #86EFAC' }}>Running</span>
+              <div style={{ marginTop:10 }}>
+                {[['Type','TBM'],['Hours','14,822'],['Location','Newcastle'],['Next Svc','OVERDUE']].map(([l,v]) => (
+                  <div key={l} style={{ display:'flex', justifyContent:'space-between', padding:'4px 0', borderBottom:'1px solid #f8fafc', fontSize:10 }}>
+                    <span style={{ color:'#64748b' }}>{l}</span>
+                    <span style={{ fontWeight:600, color: l==='Next Svc'?'#B91C1C':'#0F172A' }}>{v}</span>
+                  </div>
+                ))}
+              </div>
+              <div style={{ marginTop:10 }}>
+                <div style={{ fontSize:9, color:'#6366F1', fontWeight:700, marginBottom:4 }}>AI Risk Score</div>
+                <div style={{ display:'flex', alignItems:'center', gap:6 }}>
+                  <div style={{ flex:1, height:4, background:'#f1f5f9' }}><div style={{ height:'100%', width:'91%', background:'#B91C1C' }} /></div>
+                  <span style={{ fontSize:12, fontWeight:700, color:'#B91C1C' }}>91</span>
+                </div>
+                <div style={{ marginTop:6, background:'#FEF2F2', border:'1px solid #FCA5A5', borderLeft:'2px solid #B91C1C', padding:'5px 7px', fontSize:9, color:'#7F1D1D', lineHeight:1.4 }}>Pre-failure risk — hydraulic pressure 8% below nominal. Immediate inspection recommended.</div>
+              </div>
+              <button style={{ width:'100%', marginTop:10, padding:'6px', background:'#1976D2', color:'#fff', border:'none', fontSize:10, fontWeight:600, cursor:'pointer' }}>Raise Work Order</button>
+            </div>
+          )}
+        </div>
+      </C>
+    );
+
+    if (id === 'oilsampling') return (
+      <C title="Oil Sampling & Analysis">
+        <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:6, marginBottom:10 }}>
+          {[['Samples','12','#1976D2'],['AI Alerts','3','#B91C1C'],['Normal','9','#15803D']].map(([l,v,col]) => (
+            <div key={l} style={{ background:'#fff', border:'1px solid #e5e7eb', padding:'8px 10px', position:'relative' }}>
+              <div style={{ position:'absolute', bottom:0, left:0, right:0, height:2, background:col }} />
+              <div style={{ fontSize:8, color:'#94a3b8', textTransform:'uppercase', marginBottom:3 }}>{l}</div>
+              <div style={{ fontSize:18, fontWeight:700, color:col }}>{v}</div>
+            </div>
+          ))}
+        </div>
+        {!shown('oil-upload') ? (
+          <div style={{ border:'2px dashed #e5e7eb', padding:'24px', textAlign:'center', background:'#F8FAFC' }}>
+            <div style={{ fontSize:24, marginBottom:8, opacity:.3 }}>↑</div>
+            <div style={{ fontSize:12, fontWeight:600, color:'#374151', marginBottom:4 }}>Upload oil sample report</div>
+            <div style={{ fontSize:10, color:'#94a3b8' }}>PDF, image or CSV · AI analyses automatically</div>
+          </div>
+        ) : (
+          <div>
+            <div style={{ background:'#F0FDF4', border:'1px solid #86EFAC', borderLeft:'2px solid #15803D', padding:'7px 10px', fontSize:10, color:'#166534', marginBottom:8 }}>Report uploaded — TBM-01 hydraulic oil · 15 May 2026</div>
+            {shown('oil-result') && (
+              <div style={{ background:'#fff', border:'1px solid #C7D2FE', animation:'slideUp .3s ease' }}>
+                <div style={{ padding:'8px 12px', borderBottom:'1px solid #C7D2FE', display:'flex', alignItems:'center', gap:6 }}>
+                  <span style={{ fontSize:9, fontWeight:700, color:'#6366F1', textTransform:'uppercase', letterSpacing:'.4px' }}>AI Analysis — TBM-01 Hydraulic Oil</span>
+                  <span style={{ fontSize:8, padding:'1px 5px', background:'#EEF2FF', color:'#6366F1', border:'1px solid #C7D2FE' }}>AI</span>
+                </div>
+                <div style={{ padding:'10px 12px' }}>
+                  {[['Viscosity','48.2 cSt','Normal','#15803D'],['Metal particles','Fe: 42ppm','Elevated','#B45309'],['Water content','0.08%','Normal','#15803D'],['TAN','1.8 mg KOH/g','High','#B91C1C']].map(([l,v,s,col]) => (
+                    <div key={l} style={{ display:'flex', alignItems:'center', gap:6, padding:'5px 0', borderBottom:'1px solid #f8fafc', fontSize:10 }}>
+                      <span style={{ flex:1, color:'#374151' }}>{l}</span>
+                      <span style={{ fontFamily:'monospace', fontWeight:600, color:'#0F172A' }}>{v}</span>
+                      <span style={{ fontSize:8, padding:'1px 6px', background:col+'15', color:col, border:`1px solid ${col}40` }}>{s}</span>
+                    </div>
+                  ))}
+                  <div style={{ marginTop:8, background:'#FFFBEB', border:'1px solid #FCD34D', borderLeft:'2px solid #B45309', padding:'6px 8px', fontSize:10, color:'#78350F', lineHeight:1.4 }}>Recommendation: High iron particle count and TAN suggest increased wear. Schedule oil change within 100 operating hours.</div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </C>
+    );
+
+    if (id === 'reports') return (
+      <C title="Reports & Analytics">
+        <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:5, marginBottom:10 }}>
+          {[['Availability','87%','#1976D2'],['Downtime','48hr','#B91C1C'],['MTBF','312hr','#15803D'],['Compliance','94%','#15803D']].map(([l,v,col]) => (
+            <div key={l} style={{ background:'#fff', border:'1px solid #e5e7eb', padding:'7px 8px', position:'relative' }}>
+              <div style={{ position:'absolute', bottom:0, left:0, right:0, height:2, background:col }} />
+              <div style={{ fontSize:7, color:'#94a3b8', textTransform:'uppercase', marginBottom:2 }}>{l}</div>
+              <div style={{ fontSize:16, fontWeight:700, color:col }}>{v}</div>
+            </div>
+          ))}
+        </div>
+        {shown('report-chart') && (
+          <div style={{ background:'#fff', border:'1px solid #e5e7eb', padding:'10px 12px', marginBottom:8, animation:'fadeIn .4s ease' }}>
+            <div style={{ fontSize:9, fontWeight:700, color:'#64748b', textTransform:'uppercase', marginBottom:8 }}>Downtime by Asset — Last 30 days</div>
+            <div style={{ display:'flex', flexDirection:'column', gap:5 }}>
+              {[['TBM-01',72,'#B91C1C'],['Loader L-03',48,'#B91C1C'],['Drill Rig A',24,'#B45309'],['EX-07',12,'#B45309'],['Conveyor B',4,'#15803D']].map(([name,hrs,col]) => (
+                <div key={name} style={{ display:'flex', alignItems:'center', gap:8 }}>
+                  <div style={{ fontSize:9, color:'#374151', width:80, flexShrink:0 }}>{name}</div>
+                  <div style={{ flex:1, height:14, background:'#f8fafc', position:'relative', overflow:'hidden' }}>
+                    <div style={{ position:'absolute', left:0, top:0, bottom:0, width:(hrs/80*100)+'%', background:col+'30', borderRight:`2px solid ${col}`, transition:'width 1s ease' }} />
+                  </div>
+                  <div style={{ fontSize:9, fontWeight:700, color:col, width:28, textAlign:'right' }}>{hrs}hr</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        {shown('report-export') ? (
+          <div style={{ background:'#F0FDF4', border:'1px solid #86EFAC', borderLeft:'2px solid #15803D', padding:'8px 12px', fontSize:10, color:'#166534', display:'flex', alignItems:'center', gap:6 }}>
+            ✓ Report exported — MechIQ_Downtime_Report_May2026.pdf
+          </div>
+        ) : (
+          <div style={{ display:'flex', gap:6 }}>
+            <div style={{ flex:1, padding:'7px', background:'#1976D2', color:'#fff', fontSize:10, fontWeight:600, textAlign:'center', cursor:'pointer' }}>Export PDF</div>
+            <div style={{ flex:1, padding:'7px', background:'#F8FAFC', color:'#374151', border:'1px solid #e5e7eb', fontSize:10, textAlign:'center', cursor:'pointer' }}>Export Excel</div>
+          </div>
+        )}
+      </C>
+    );
+
     return null;
   };
 
@@ -1227,24 +1401,24 @@ function Login({ onAuth }) {
             </div>
 
             {/* RIGHT — login or demo */}
-            <div style={{ flex:1, background:'#fff', display:'flex', alignItems:'center', justifyContent:'center', padding:'40px 36px', position:'relative' }}>
+            <div style={{ flex:1, background:'#fff', display:'flex', alignItems: activeDemo ? 'stretch' : 'center', justifyContent:'center', padding: activeDemo ? '24px' : '40px 36px', position:'relative' }}>
 
               {activeDemo ? (
                 /* Demo panel */
-                <div style={{ width:'100%', maxWidth:440 }}>
-                  <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:14 }}>
-                    <div style={{ fontSize:13, fontWeight:700, color:'#0F172A' }}>{demos[activeDemo].label}</div>
-                    <div style={{ display:'flex', alignItems:'center', gap:6 }}>
-                      <span style={{ width:6, height:6, borderRadius:'50%', background:'#15803D', display:'inline-block', animation:'lp-pulse 2s infinite' }} />
+                <div style={{ width:'100%', height:'100%', display:'flex', flexDirection:'column' }}>
+                  <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:12, flexShrink:0 }}>
+                    <div style={{ fontSize:14, fontWeight:700, color:'#0F172A' }}>{demos[activeDemo].label}</div>
+                    <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                      <span style={{ width:6, height:6, borderRadius:'50%', background:'#15803D', display:'inline-block' }} />
                       <span style={{ fontSize:10, color:'#15803D', fontWeight:600 }}>Live simulation</span>
-                      <button onClick={() => { setActiveDemo(null); if (demoTimerRef.current) clearTimeout(demoTimerRef.current); }} style={{ marginLeft:8, background:'none', border:'1px solid #e5e7eb', padding:'3px 10px', fontSize:10, color:'#64748b', cursor:'pointer', fontFamily:'inherit' }}>← Login</button>
+                      <button onClick={() => { setActiveDemo(null); if (demoTimerRef.current) clearTimeout(demoTimerRef.current); }} style={{ background:'none', border:'1px solid #e5e7eb', padding:'4px 12px', fontSize:11, color:'#64748b', cursor:'pointer', fontFamily:'inherit' }}>← Login</button>
                     </div>
                   </div>
-                  <div style={{ height:420, position:'relative', border:'1px solid #e5e7eb', boxShadow:'0 4px 24px rgba(0,0,0,0.08)', overflow:'hidden', background:'#F8FAFC' }}>
+                  <div style={{ flex:1, position:'relative', border:'1px solid #e5e7eb', overflow:'hidden', background:'#F8FAFC', minHeight:0 }}>
                     <DemoScreen id={activeDemo} />
                   </div>
-                  <div style={{ marginTop:10, padding:'8px 12px', background:'#F8FAFC', border:'1px solid #e5e7eb', fontSize:11, color:'#64748b', display:'flex', alignItems:'center', gap:6 }}>
-                    <span style={{ width:6, height:6, borderRadius:'50%', background: demos[activeDemo].color, flexShrink:0 }} />
+                  <div style={{ marginTop:8, padding:'7px 12px', background:'#F8FAFC', border:'1px solid #e5e7eb', fontSize:10, color:'#64748b', display:'flex', alignItems:'center', gap:6, flexShrink:0 }}>
+                    <span style={{ width:5, height:5, borderRadius:'50%', background: demos[activeDemo].color, flexShrink:0 }} />
                     {demos[activeDemo].steps[demoStep]?.label || 'Running demo…'}
                   </div>
                 </div>
