@@ -120,7 +120,7 @@ const CSS = `
     cursor: pointer; font-size: 13px; font-weight: 600;
     transition: all 0.15s; font-family: inherit;
   }
-  .tab-btn-p.active { background: var(--accent); color: #fff; box-shadow: 0 2px 8px rgba(14,165,233,0.3); }
+  .tab-btn-p.active { background: var(--accent); color: #fff; box-shadow: 0 2px 8px rgba(25,118,210,0.3); }
   .tab-btn-p:not(.active) { background: transparent; color: var(--text-muted); }
 
   .low-stock-banner {
@@ -346,7 +346,7 @@ function AIImportModal({ userRole, assets, onClose, onImported }) {
             <div style={{ maxHeight: 320, overflow: 'auto', border: '1px solid var(--border)', borderRadius: 3, marginBottom: 16 }}>
               {preview.map((p, i) => (
                 <div key={i} onClick={() => setSelected(s => s.includes(i) ? s.filter(x => x !== i) : [...s, i])}
-                  style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', borderBottom: '1px solid var(--border)', cursor: 'pointer', background: selected.includes(i) ? 'var(--p-blue-bg)' : 'transparent', transition: 'background 0.12s' }}>
+                  style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', borderBottom: '1px solid var(--border)', cursor: 'pointer', background: selected.includes(i) ? 'var(--accent-light)' : 'transparent', transition: 'background 0.12s' }}>
                   <div style={{ width: 18, height: 18, borderRadius: 4, border: `2px solid ${selected.includes(i) ? 'var(--accent)' : 'var(--border)'}`, background: selected.includes(i) ? 'var(--accent)' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                     {selected.includes(i) && <span style={{ color: '#fff', fontSize: 11, lineHeight: 1 }}>✓</span>}
                   </div>
@@ -425,7 +425,7 @@ function TransactionModal({ part, userRole, assets, workOrders, onClose, onDone 
           <label className="parts-label">Asset (optional)</label>
           <select className="parts-input" value={asset} onChange={e => setAsset(e.target.value)}>
             <option value="">Select asset…</option>
-            {assets.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+            {assets.map(a => <option key={a.id} value={String(a.id)}>{a.asset_number ? `${a.asset_number} — ${a.name}` : a.name}</option>)}
           </select>
         </div>
         <div style={{ marginBottom: 12 }}>
@@ -487,12 +487,12 @@ function PartForm({ part, assets, onSave, onCancel, userRole }) {
         <div><label className="parts-label">Storage Location</label><input className="parts-input" placeholder="e.g. Shelf A3, Workshop" value={form.location} onChange={e => F('location', e.target.value)} /></div>
         <div style={{ gridColumn: 'span 2' }}>
           <label className="parts-label">Compatible Assets (select all that use this part)</label>
-          <div style={{ display:'flex', flexWrap:'wrap', gap:6, padding:'8px 10px', border:'1px solid var(--border)', borderRadius:8, background:'var(--surface-2)', minHeight:40, cursor:'pointer' }}
+          <div style={{ display:'flex', flexWrap:'wrap', gap:6, padding:'8px 10px', border:'1px solid var(--border)', borderRadius:3, background:'var(--surface-2)', minHeight:40, cursor:'pointer' }}
             onClick={e => e.stopPropagation()}>
             {assets.map(a => {
               const checked = (form.compatible_asset_ids||[]).includes(a.id);
               return (
-                <label key={a.id} style={{ display:'flex', alignItems:'center', gap:5, padding:'3px 10px', borderRadius:20, fontSize:12, fontWeight:600, cursor:'pointer', background: checked ? 'var(--p-blue-bg)' : 'var(--surface)', border: `1px solid ${checked ? 'rgba(0,194,224,0.35)' : 'var(--border)'}`, color: checked ? 'var(--accent)' : 'var(--text-muted)', userSelect:'none', transition:'all 0.12s' }}>
+                <label key={a.id} style={{ display:'flex', alignItems:'center', gap:5, padding:'3px 10px', borderRadius:20, fontSize:12, fontWeight:600, cursor:'pointer', background: checked ? 'var(--accent-light)' : 'var(--surface)', border: `1px solid ${checked ? 'rgba(0,194,224,0.35)' : 'var(--border)'}`, color: checked ? 'var(--accent)' : 'var(--text-muted)', userSelect:'none', transition:'all 0.12s' }}>
                   <input type="checkbox" style={{ display:'none' }} checked={checked}
                     onChange={() => {
                       const ids = form.compatible_asset_ids || [];
@@ -627,11 +627,11 @@ Return a JSON array where each item is:
     onApplied();
   };
 
-  const CONF_COLORS = { high: 'var(--green)', medium: 'var(--amber)', low: 'var(--p-red)' };
+  const CONF_COLORS = { high: 'var(--green)', medium: 'var(--amber)', low: 'var(--red)' };
 
   return (
     <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.6)', zIndex:400, display:'flex', alignItems:'center', justifyContent:'center', padding:20, backdropFilter:'blur(4px)' }}>
-      <div style={{ background:'var(--surface)', border:'1px solid var(--border)', borderRadius:16, width:'100%', maxWidth:720, maxHeight:'85vh', display:'flex', flexDirection:'column', boxShadow:'0 24px 60px rgba(0,0,0,0.3)' }}>
+      <div style={{ background:'var(--surface)', border:'1px solid var(--border)', borderRadius:4, width:'100%', maxWidth:720, maxHeight:'85vh', display:'flex', flexDirection:'column', boxShadow:'0 24px 60px rgba(0,0,0,0.3)' }}>
         
         {/* Header */}
         <div style={{ padding:'20px 24px 16px', borderBottom:'1px solid var(--border)', display:'flex', justifyContent:'space-between', alignItems:'center', flexShrink:0 }}>
@@ -648,7 +648,7 @@ Return a JSON array where each item is:
           {/* Intro */}
           {step === 'intro' && (
             <div>
-              <div style={{ background:'var(--p-blue-bg)', border:'1px solid rgba(0,194,224,0.2)', borderRadius:10, padding:'16px 18px', marginBottom:20 }}>
+              <div style={{ background:'var(--accent-light)', border:'1px solid rgba(0,194,224,0.2)', borderRadius:3, padding:'16px 18px', marginBottom:20 }}>
                 <div style={{ fontWeight:700, color:'var(--accent)', marginBottom:6 }}>How it works</div>
                 <div style={{ fontSize:13, color:'var(--text-secondary)', lineHeight:1.7 }}>
                   AI analyses every part's name, part number, category and description against your fleet's make, model, type and engine details. It suggests which assets each part is compatible with — you review and approve before anything is saved.
@@ -660,17 +660,17 @@ Return a JSON array where each item is:
                   ['🚛', 'Assets in fleet', `${assets.length} assets`],
                   ['🎯', 'Already matched', `${(parts||[]).filter(p=>Array.isArray(p.compatible_asset_ids)&&p.compatible_asset_ids.length>0).length} parts`],
                 ].map(([icon,lbl,val])=>(
-                  <div key={lbl} style={{ padding:'14px 16px', background:'var(--surface-2)', borderRadius:9, border:'1px solid var(--border)', textAlign:'center' }}>
+                  <div key={lbl} style={{ padding:'14px 16px', background:'var(--surface-2)', borderRadius:3, border:'1px solid var(--border)', textAlign:'center' }}>
                     <div style={{ fontSize:22, marginBottom:4 }}>{icon}</div>
                     <div style={{ fontSize:18, fontWeight:800, color:'var(--text-primary)' }}>{val}</div>
                     <div style={{ fontSize:11, color:'var(--text-muted)', marginTop:2 }}>{lbl}</div>
                   </div>
                 ))}
               </div>
-              <div style={{ fontSize:12, color:'var(--text-muted)', marginBottom:20, padding:'10px 14px', background:'var(--surface-2)', borderRadius:8, border:'1px solid var(--border)' }}>
+              <div style={{ fontSize:12, color:'var(--text-muted)', marginBottom:20, padding:'10px 14px', background:'var(--surface-2)', borderRadius:3, border:'1px solid var(--border)' }}>
                 ⚠️ This will only update parts you approve. Existing assignments are kept unless you change them.
               </div>
-              <button onClick={run} style={{ padding:'12px 28px', background:'linear-gradient(135deg,var(--accent),#0090a8)', color:'#fff', border:'none', borderRadius:9, fontSize:14, fontWeight:700, cursor:'pointer', boxShadow:'0 4px 14px rgba(0,194,224,0.3)' }}>
+              <button onClick={run} style={{ padding:'12px 28px', background:'linear-gradient(135deg,var(--accent),#0090a8)', color:'#fff', border:'none', borderRadius:3, fontSize:14, fontWeight:700, cursor:'pointer', boxShadow:'0 4px 14px rgba(0,194,224,0.3)' }}>
                 ✦ Run AI Smart Match
               </button>
             </div>
@@ -698,7 +698,7 @@ Return a JSON array where each item is:
                 </div>
                 <div style={{ display:'flex', gap:8 }}>
                   <button onClick={()=>setAccepted(Object.fromEntries(matches.map(m=>[m.partId,true])))}
-                    style={{ padding:'5px 12px', background:'var(--p-blue-bg)', color:'var(--accent)', border:'1px solid rgba(0,194,224,0.3)', borderRadius:6, fontSize:12, fontWeight:700, cursor:'pointer' }}>
+                    style={{ padding:'5px 12px', background:'var(--accent-light)', color:'var(--accent)', border:'1px solid rgba(0,194,224,0.3)', borderRadius:6, fontSize:12, fontWeight:700, cursor:'pointer' }}>
                     Accept All
                   </button>
                   <button onClick={()=>setAccepted(Object.fromEntries(matches.map(m=>[m.partId,false])))}
@@ -714,7 +714,7 @@ Return a JSON array where each item is:
                 const acc = accepted[m.partId] !== false;
                 return (
                   <div key={m.partId} onClick={()=>setAccepted(p=>({...p,[m.partId]:!acc}))}
-                    style={{ padding:'12px 16px', borderRadius:10, border:`1px solid ${acc?'rgba(0,194,224,0.3)':'var(--border)'}`, background:acc?'var(--p-blue-bg)':'var(--surface-2)', marginBottom:8, cursor:'pointer', transition:'all 0.15s', userSelect:'none' }}>
+                    style={{ padding:'12px 16px', borderRadius:3, border:`1px solid ${acc?'rgba(0,194,224,0.3)':'var(--border)'}`, background:acc?'var(--accent-light)':'var(--surface-2)', marginBottom:8, cursor:'pointer', transition:'all 0.15s', userSelect:'none' }}>
                     <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', gap:12 }}>
                       <div style={{ flex:1 }}>
                         <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:4 }}>
@@ -750,7 +750,7 @@ Return a JSON array where each item is:
               <div style={{ fontSize:13, color:'var(--text-muted)', marginBottom:24 }}>
                 {Object.values(accepted).filter(Boolean).length} parts have been updated with compatible asset assignments.
               </div>
-              <button onClick={onClose} style={{ padding:'10px 24px', background:'var(--accent)', color:'#fff', border:'none', borderRadius:8, fontSize:14, fontWeight:700, cursor:'pointer' }}>
+              <button onClick={onClose} style={{ padding:'10px 24px', background:'var(--accent)', color:'#fff', border:'none', borderRadius:3, fontSize:14, fontWeight:700, cursor:'pointer' }}>
                 Done
               </button>
             </div>
@@ -764,9 +764,9 @@ Return a JSON array where each item is:
               <strong style={{ color:'var(--accent)' }}>{Object.values(accepted).filter(Boolean).length}</strong> of {matches.length} matches accepted
             </div>
             <div style={{ display:'flex', gap:8 }}>
-              <button onClick={onClose} style={{ padding:'9px 18px', background:'var(--surface-2)', color:'var(--text-secondary)', border:'1px solid var(--border)', borderRadius:8, fontSize:13, cursor:'pointer' }}>Cancel</button>
+              <button onClick={onClose} style={{ padding:'9px 18px', background:'var(--surface-2)', color:'var(--text-secondary)', border:'1px solid var(--border)', borderRadius:3, fontSize:13, cursor:'pointer' }}>Cancel</button>
               <button onClick={apply} disabled={saving || Object.values(accepted).every(v=>!v)}
-                style={{ padding:'9px 22px', background:'var(--accent)', color:'#fff', border:'none', borderRadius:8, fontSize:13, fontWeight:700, cursor:'pointer', opacity: saving||Object.values(accepted).every(v=>!v)?0.5:1 }}>
+                style={{ padding:'9px 22px', background:'var(--accent)', color:'#fff', border:'none', borderRadius:3, fontSize:13, fontWeight:700, cursor:'pointer', opacity: saving||Object.values(accepted).every(v=>!v)?0.5:1 }}>
                 {saving ? 'Applying…' : `Apply ${Object.values(accepted).filter(Boolean).length} Match${Object.values(accepted).filter(Boolean).length!==1?'es':''}`}
               </button>
             </div>
@@ -791,7 +791,7 @@ function Parts({ userRole }) {
   const [showSmartMatch, setShowSmartMatch] = useState(false);
   const [showQR, setShowQR]         = useState(false);
   const [showScan, setShowScan]     = useState(false);
-  const [activeAssetFilter, setActiveAssetFilter] = useState('all'); // 'all' | 'general' | asset id
+  const [activeAssetFilter, setActiveAssetFilter] = useState('all'); // 'general' | asset id | custom page id
   const [customPages, setCustomPages] = useState([]);
   const [showPageForm, setShowPageForm] = useState(false);
   const [newPageName, setNewPageName] = useState('');
@@ -950,7 +950,8 @@ function Parts({ userRole }) {
 
   return (
     <div className="parts-wrap">
-      <div style={{ flex:1, minWidth:0 }}>
+      {/* Pages sidebar + main content layout */}
+              <div style={{ flex:1, minWidth:0 }}>
 
       {/* Low stock banner */}
       {!loading && lowStockParts.length > 0 && (
@@ -967,16 +968,16 @@ function Parts({ userRole }) {
       {/* Action bar */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap', alignItems: 'center' }}>
         <div className="tab-row" style={{ marginBottom: 0 }}>
-          {[['parts','🔩 Parts Register'],['transactions','📋 Stock Log'],['usage','📊 Usage History'],['stocktake','📊 Stocktake'],['reorder','🛒 Reorder List']].map(([v, l]) => (
+          {[['parts','Parts Register'],['transactions','Stock Log'],['usage','Usage History'],['stocktake','Stocktake'],['reorder','Reorder List']].map(([v, l]) => (
             <button key={v} className={`tab-btn-p${tab === v ? ' active' : ''}`} onClick={() => setTab(v)}>{l}</button>
           ))}
         </div>
         <div style={{ marginLeft: 'auto', display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          {isAdmin && <button onClick={() => setShowScan(true)} style={{ padding: '9px 16px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 3, fontSize: 13, fontWeight: 600, cursor: 'pointer', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 6 }}>📷 Scan Part</button>}
-          {isAdmin && <button onClick={() => setShowQR(true)} style={{ padding: '9px 16px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 3, fontSize: 13, fontWeight: 600, cursor: 'pointer', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 6 }}>🏷️ QR Stickers</button>}
-          <button onClick={exportParts} style={{ padding: '9px 16px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 3, fontSize: 13, fontWeight: 600, cursor: 'pointer', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 6 }}>📊 Export</button>
-          {isAdmin && <button onClick={() => setShowAI(true)} style={{ padding: '9px 16px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 3, fontSize: 13, fontWeight: 600, cursor: 'pointer', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 6 }}>🤖 AI Import</button>}
-          {isAdmin && <button onClick={() => setShowSmartMatch(true)} style={{ padding: '9px 16px', background: 'linear-gradient(135deg,var(--accent),#0090a8)', border: 'none', borderRadius: 3, fontSize: 13, fontWeight: 700, cursor: 'pointer', color: '#fff', display: 'flex', alignItems: 'center', gap: 6, boxShadow: '0 2px 10px rgba(25,118,210,0.2)' }}>✦ Smart Match</button>}
+          {isAdmin && <button onClick={() => setShowScan(true)} style={{ padding: '9px 16px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 3, fontSize: 13, fontWeight: 600, cursor: 'pointer', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 6 }}>Scan Part</button>}
+          {isAdmin && <button onClick={() => setShowQR(true)} style={{ padding: '9px 16px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 3, fontSize: 13, fontWeight: 600, cursor: 'pointer', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 6 }}>QR Labels</button>}
+          <button onClick={exportParts} style={{ padding: '9px 16px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 3, fontSize: 13, fontWeight: 600, cursor: 'pointer', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 6 }}>Export</button>
+          {isAdmin && <button onClick={() => setShowAI(true)} style={{ padding: '9px 16px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 3, fontSize: 13, fontWeight: 600, cursor: 'pointer', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 6 }}>AI Import</button>}
+          {isAdmin && <button onClick={() => setShowSmartMatch(true)} style={{ padding: '9px 16px', background: 'linear-gradient(135deg,var(--accent),#0090a8)', border: 'none', borderRadius: 3, fontSize: 13, fontWeight: 700, cursor: 'pointer', color: '#fff', display: 'flex', alignItems: 'center', gap: 6, boxShadow: '0 2px 10px rgba(0,194,224,0.25)' }}>Smart Match</button>}
           {isAdmin && <button onClick={() => { setEditPart(null); setShowForm(s => !s); }} style={{ padding: '9px 16px', background: showForm ? 'var(--surface-2)' : 'var(--accent)', color: showForm ? 'var(--text-secondary)' : '#fff', border: '1px solid ' + (showForm ? 'var(--border)' : 'var(--accent)'), borderRadius: 3, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
             {showForm ? '✕ Close' : '+ Add Part'}
           </button>}
@@ -1002,11 +1003,8 @@ function Parts({ userRole }) {
               <option value="">All Suppliers</option>
               {suppliers.map(s => <option key={s}>{s}</option>)}
             </select>
-            <select className={`parts-filter-select${activeAssetFilter !== 'all' ? ' machine-filter-active' : ''}`}
-              value={activeAssetFilter === 'all' ? '' : activeAssetFilter}
-              onChange={e => { setActiveAssetFilter(e.target.value || 'all'); setFilterAsset(e.target.value); }}>
-              <option value="">All Machine IDs</option>
-              <option value="general">General Stock</option>
+            <select className="parts-filter-select" value={activeAssetFilter === 'all' ? '' : activeAssetFilter} onChange={e => { setActiveAssetFilter(e.target.value || 'all'); setFilterAsset(e.target.value); }}>
+              <option value="">All Assets</option>
               {assets.map(a => <option key={a.id} value={String(a.id)}>{a.asset_number ? `${a.asset_number} — ${a.name}` : a.name}</option>)}
             </select>
             <select className="parts-filter-select" value={filterStock} onChange={e => setFilterStock(e.target.value)}>
@@ -1071,13 +1069,13 @@ function Parts({ userRole }) {
                               const compat = (Array.isArray(p.compatible_asset_ids) ? p.compatible_asset_ids : []).map(id => (assets||[]).find(a => a.id === id)).filter(Boolean);
                               if (compat.length === 0) {
                                 const linked = assets.find(a => a.id === p.linked_asset_id);
-                                if (linked) return <span style={{ fontSize:11, fontWeight:600, padding:'2px 8px', borderRadius:20, background:'var(--p-blue-bg)', color:'var(--accent)', border:'1px solid rgba(25,118,210,0.2)' }}>{linked.name}</span>;
+                                if (linked) return <span style={{ fontSize:11, fontWeight:600, padding:'2px 8px', borderRadius:20, background:'var(--accent-light)', color:'var(--accent)', border:'1px solid rgba(0,194,224,0.25)' }}>{linked.name}</span>;
                                 return <span style={{ fontSize:11, color:'var(--text-faint)', fontStyle:'italic' }}>General stock</span>;
                               }
                               return (
                                 <div style={{ display:'flex', flexWrap:'wrap', gap:3 }}>
                                   {compat.slice(0,3).map(a => (
-                                    <span key={a.id} style={{ fontSize:10, fontWeight:700, padding:'2px 7px', borderRadius:20, background:'var(--p-blue-bg)', color:'var(--accent)', border:'1px solid rgba(25,118,210,0.2)', whiteSpace:'nowrap' }}>
+                                    <span key={a.id} style={{ fontSize:10, fontWeight:700, padding:'2px 7px', borderRadius:20, background:'var(--accent-light)', color:'var(--accent)', border:'1px solid rgba(0,194,224,0.25)', whiteSpace:'nowrap' }}>
                                       {a.asset_number||a.name}
                                     </span>
                                   ))}
@@ -1088,33 +1086,32 @@ function Parts({ userRole }) {
                           </td>
                           <td>
                             <div style={{ position:'relative' }}>
-                              <button
-                                onClick={() => setOpenMenuId(openMenuId === p.id ? null : p.id)}
-                                style={{ padding:'5px 14px', background:'var(--p-surf)', border:'1px solid var(--p-border2)', color:'var(--p-text2)', fontSize:11, fontWeight:600, cursor:'pointer', fontFamily:'inherit', display:'flex', alignItems:'center', gap:4 }}>
+                              <button onClick={() => setOpenMenuId(openMenuId === p.id ? null : p.id)}
+                                style={{ padding:'5px 12px', background:'var(--p-surf)', border:'1px solid var(--p-border2)', color:'var(--p-text2)', fontSize:11, fontWeight:600, cursor:'pointer', fontFamily:'inherit', display:'flex', alignItems:'center', gap:4 }}>
                                 Edit <span style={{ fontSize:9, opacity:.6 }}>▾</span>
                               </button>
                               {openMenuId === p.id && (
                                 <>
                                   <div onClick={() => setOpenMenuId(null)} style={{ position:'fixed', inset:0, zIndex:49 }} />
-                                  <div style={{ position:'absolute', right:0, top:'100%', marginTop:2, background:'var(--p-surf)', border:'1px solid var(--p-border)', boxShadow:'var(--p-sh2)', zIndex:50, minWidth:140, overflow:'hidden' }}>
+                                  <div style={{ position:'absolute', right:0, top:'100%', marginTop:2, background:'var(--p-surf)', border:'1px solid var(--p-border)', boxShadow:'var(--p-sh2)', zIndex:50, minWidth:140 }}>
                                     <div onClick={() => { setTxPart(p); setOpenMenuId(null); }}
-                                      style={{ padding:'10px 14px', fontSize:12, fontWeight:500, color:'var(--p-text)', cursor:'pointer', borderBottom:'1px solid var(--p-s2)', display:'flex', alignItems:'center', gap:8 }}
+                                      style={{ padding:'9px 14px', fontSize:12, fontWeight:500, color:'var(--p-text)', cursor:'pointer', borderBottom:'1px solid var(--p-s2)' }}
                                       onMouseEnter={e=>e.currentTarget.style.background='var(--p-s2)'}
                                       onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
-                                      <span style={{ fontSize:13 }}>±</span> Quantity
+                                      ± Quantity
                                     </div>
                                     <div onClick={() => { setEditPart(p); setShowForm(true); setOpenMenuId(null); }}
-                                      style={{ padding:'10px 14px', fontSize:12, fontWeight:500, color:'var(--p-text)', cursor:'pointer', borderBottom:'1px solid var(--p-s2)', display:'flex', alignItems:'center', gap:8 }}
+                                      style={{ padding:'9px 14px', fontSize:12, fontWeight:500, color:'var(--p-text)', cursor:'pointer', borderBottom:'1px solid var(--p-s2)' }}
                                       onMouseEnter={e=>e.currentTarget.style.background='var(--p-s2)'}
                                       onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
-                                      <span style={{ fontSize:13 }}>✎</span> Details
+                                      ✎ Details
                                     </div>
                                     {isAdmin && (
                                       <div onClick={() => { deletePart(p.id); setOpenMenuId(null); }}
-                                        style={{ padding:'10px 14px', fontSize:12, fontWeight:500, color:'var(--p-red)', cursor:'pointer', display:'flex', alignItems:'center', gap:8 }}
+                                        style={{ padding:'9px 14px', fontSize:12, fontWeight:500, color:'var(--p-red)', cursor:'pointer' }}
                                         onMouseEnter={e=>e.currentTarget.style.background='var(--p-red-bg)'}
                                         onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
-                                        <span style={{ fontSize:13 }}>✕</span> Delete
+                                        ✕ Delete
                                       </div>
                                     )}
                                   </div>
@@ -1145,7 +1142,7 @@ function Parts({ userRole }) {
                 <thead><tr>{['Part','Type','Qty','Asset','Work Order','By','When','Notes'].map(h => <th key={h}>{h}</th>)}</tr></thead>
                 <tbody>
                   {transactions.map((t, i) => {
-                    const typeMap = { out: ['📤 Used', 'var(--p-red)', 'var(--p-red-bg)'], in: ['📥 Received', 'var(--green)', 'var(--green-bg)'], adjustment: ['⚙ Adjusted', 'var(--accent)', 'var(--p-blue-bg)'] };
+                    const typeMap = { out: ['📤 Used', 'var(--red)', 'var(--red-bg)'], in: ['📥 Received', 'var(--green)', 'var(--green-bg)'], adjustment: ['⚙ Adjusted', 'var(--accent)', 'var(--accent-light)'] };
                     const [label, color, bg] = typeMap[t.type] || ['—', 'var(--text-muted)', 'var(--surface-2)'];
                     return (
                       <tr key={t.id} style={{ opacity: 0, animation: `fadeUp 0.25s ease ${i * 20}ms forwards` }}>
@@ -1231,7 +1228,7 @@ function Parts({ userRole }) {
 
       {/* Stocktake Tab */}
       {tab === 'stocktake' && (
-        <div style={{ background:'var(--surface)', border:'1px solid var(--border)', borderRadius:14, padding:20 }}>
+        <div style={{ background:'var(--surface)', border:'1px solid var(--border)', borderRadius:4, padding:20 }}>
           <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:16 }}>
             <div className="parts-section-title" style={{ marginBottom:0 }}>Stocktake</div>
             <button onClick={async () => {
@@ -1247,7 +1244,7 @@ function Parts({ userRole }) {
                 }
               }
               setStocktakeCounts({}); load(); alert('✓ Stocktake submitted!');
-            }} style={{ padding:'8px 18px', background:'var(--accent)', color:'#fff', border:'none', borderRadius:9, fontSize:13, fontWeight:700, cursor:'pointer' }}>✓ Submit Stocktake</button>
+            }} style={{ padding:'8px 18px', background:'var(--accent)', color:'#fff', border:'none', borderRadius:3, fontSize:13, fontWeight:700, cursor:'pointer' }}>✓ Submit Stocktake</button>
           </div>
           <div style={{ fontSize:12, color:'var(--text-muted)', marginBottom:16 }}>Enter actual counts. Leave blank to keep current. Changes are logged as adjustments.</div>
           <div className="parts-table-wrap">
@@ -1264,8 +1261,8 @@ function Parts({ userRole }) {
                       <td>{p.category || '—'}</td>
                       <td><span className={`stock-badge stock-${p.quantity === 0 ? 'out' : p.quantity <= p.min_quantity ? 'low' : 'ok'}`}>{p.quantity} {p.unit}</span></td>
                       <td><input type="number" min="0" placeholder={String(p.quantity)} value={stocktakeCounts[p.id] ?? ''} onChange={e => setStocktakeCounts(c => ({ ...c, [p.id]: e.target.value }))}
-                        style={{ width:80, padding:'5px 8px', borderRadius:7, border:`1px solid ${variance !== null && variance !== 0 ? (variance < 0 ? 'var(--p-red)' : 'var(--green)') : 'var(--border)'}`, background:'var(--bg)', color:'var(--text-primary)', fontSize:13, fontWeight:600 }} /></td>
-                      <td style={{ fontWeight:700, color: variance === null ? 'var(--text-faint)' : variance === 0 ? 'var(--green)' : variance < 0 ? 'var(--p-red)' : 'var(--green)' }}>
+                        style={{ width:80, padding:'5px 8px', borderRadius:2, border:`1px solid ${variance !== null && variance !== 0 ? (variance < 0 ? 'var(--red)' : 'var(--green)') : 'var(--border)'}`, background:'var(--bg)', color:'var(--text-primary)', fontSize:13, fontWeight:600 }} /></td>
+                      <td style={{ fontWeight:700, color: variance === null ? 'var(--text-faint)' : variance === 0 ? 'var(--green)' : variance < 0 ? 'var(--red)' : 'var(--green)' }}>
                         {variance === null ? '—' : variance === 0 ? '✓ Match' : (variance > 0 ? '+' : '') + variance}
                       </td>
                     </tr>
@@ -1297,7 +1294,7 @@ function QRStickerModal({ parts, onClose, onPrint }) {
   const toggleAll = () => setSelected(s => s.size === parts.length ? new Set() : new Set(parts.map(p => p.id)));
   return (
     <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:300, display:'flex', alignItems:'center', justifyContent:'center', padding:16 }}>
-      <div style={{ background:'var(--bg)', borderRadius:16, width:'100%', maxWidth:520, maxHeight:'85vh', display:'flex', flexDirection:'column', boxShadow:'0 20px 60px rgba(0,0,0,0.3)' }}>
+      <div style={{ background:'var(--bg)', borderRadius:4, width:'100%', maxWidth:520, maxHeight:'85vh', display:'flex', flexDirection:'column', boxShadow:'0 20px 60px rgba(0,0,0,0.3)' }}>
         <div style={{ padding:'18px 20px 14px', borderBottom:'1px solid var(--border)', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
           <div style={{ fontSize:17, fontWeight:800, color:'var(--text-primary)', fontFamily:'var(--font-display)' }}>🏷️ QR Sticker PDF</div>
           <button onClick={onClose} style={{ background:'none', border:'none', cursor:'pointer', fontSize:20, color:'var(--text-muted)' }}>✕</button>
@@ -1310,7 +1307,7 @@ function QRStickerModal({ parts, onClose, onPrint }) {
           </div>
           {parts.map(p => (
             <div key={p.id} onClick={() => setSelected(s => { const n = new Set(s); n.has(p.id) ? n.delete(p.id) : n.add(p.id); return n; })}
-              style={{ display:'flex', alignItems:'center', gap:10, padding:'8px 12px', borderRadius:9, border:`1px solid ${selected.has(p.id) ? 'var(--accent)' : 'var(--border)'}`, background: selected.has(p.id) ? 'var(--p-blue-bg)' : 'var(--surface)', marginBottom:6, cursor:'pointer' }}>
+              style={{ display:'flex', alignItems:'center', gap:10, padding:'8px 12px', borderRadius:3, border:`1px solid ${selected.has(p.id) ? 'var(--accent)' : 'var(--border)'}`, background: selected.has(p.id) ? 'var(--accent-light)' : 'var(--surface)', marginBottom:6, cursor:'pointer' }}>
               <div style={{ width:18, height:18, borderRadius:4, border:`2px solid ${selected.has(p.id) ? 'var(--accent)' : 'var(--border)'}`, background: selected.has(p.id) ? 'var(--accent)' : 'transparent', display:'flex', alignItems:'center', justifyContent:'center', fontSize:11, color:'#fff', flexShrink:0 }}>{selected.has(p.id) ? '✓' : ''}</div>
               <div style={{ flex:1, minWidth:0 }}>
                 <div style={{ fontSize:13, fontWeight:700, color:'var(--text-primary)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{p.name}</div>
@@ -1320,9 +1317,9 @@ function QRStickerModal({ parts, onClose, onPrint }) {
           ))}
         </div>
         <div style={{ padding:'14px 20px', borderTop:'1px solid var(--border)', display:'flex', gap:10 }}>
-          <button onClick={onClose} style={{ flex:1, padding:'10px', background:'var(--surface)', border:'1px solid var(--border)', borderRadius:9, cursor:'pointer', fontSize:13, fontWeight:600, color:'var(--text-secondary)' }}>Cancel</button>
+          <button onClick={onClose} style={{ flex:1, padding:'10px', background:'var(--surface)', border:'1px solid var(--border)', borderRadius:3, cursor:'pointer', fontSize:13, fontWeight:600, color:'var(--text-secondary)' }}>Cancel</button>
           <button disabled={selected.size === 0 || printing} onClick={async () => { setPrinting(true); await onPrint(parts.filter(p => selected.has(p.id))); setPrinting(false); }}
-            style={{ flex:2, padding:'10px', background:'var(--accent)', color:'#fff', border:'none', borderRadius:9, cursor:'pointer', fontSize:13, fontWeight:700, opacity: selected.size === 0 || printing ? 0.6 : 1 }}>
+            style={{ flex:2, padding:'10px', background:'var(--accent)', color:'#fff', border:'none', borderRadius:3, cursor:'pointer', fontSize:13, fontWeight:700, opacity: selected.size === 0 || printing ? 0.6 : 1 }}>
             {printing ? '⏳ Generating PDF…' : `📥 Download PDF (${selected.size} stickers)`}
           </button>
         </div>
@@ -1381,7 +1378,7 @@ function AIScanModal({ parts, userRole, onClose, onDone, onSetTx }) {
 
   return (
     <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:300, display:'flex', alignItems:'center', justifyContent:'center', padding:16 }}>
-      <div style={{ background:'var(--bg)', borderRadius:16, width:'100%', maxWidth:480, boxShadow:'0 20px 60px rgba(0,0,0,0.3)' }}>
+      <div style={{ background:'var(--bg)', borderRadius:4, width:'100%', maxWidth:480, boxShadow:'0 20px 60px rgba(0,0,0,0.3)' }}>
         <div style={{ padding:'18px 20px 14px', borderBottom:'1px solid var(--border)', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
           <div style={{ fontSize:17, fontWeight:800, color:'var(--text-primary)', fontFamily:'var(--font-display)' }}>📷 AI Part Scanner</div>
           <button onClick={onClose} style={{ background:'none', border:'none', cursor:'pointer', fontSize:20, color:'var(--text-muted)' }}>✕</button>
@@ -1392,17 +1389,17 @@ function AIScanModal({ parts, userRole, onClose, onDone, onSetTx }) {
               {loading ? <div style={{ padding:'40px 0', color:'var(--text-muted)', fontSize:14 }}>🤖 Analysing image…</div> : (
                 <>
                   <div style={{ fontSize:14, color:'var(--text-secondary)', marginBottom:20 }}>Take a photo of the part label, description plate, or box. AI will identify and match it to your inventory.</div>
-                  {image && <img src={image} alt="scan" style={{ width:'100%', borderRadius:10, marginBottom:16, maxHeight:200, objectFit:'cover' }} />}
+                  {image && <img src={image} alt="scan" style={{ width:'100%', borderRadius:3, marginBottom:16, maxHeight:200, objectFit:'cover' }} />}
                   <input ref={fileRef} type="file" accept="image/*" capture="environment" style={{ display:'none' }} onChange={e => e.target.files[0] && analyseImage(e.target.files[0])} />
-                  <button onClick={() => fileRef.current.click()} style={{ width:'100%', padding:'14px', background:'var(--accent)', color:'#fff', border:'none', borderRadius:10, fontSize:14, fontWeight:700, cursor:'pointer' }}>📷 Take Photo / Choose Image</button>
+                  <button onClick={() => fileRef.current.click()} style={{ width:'100%', padding:'14px', background:'var(--accent)', color:'#fff', border:'none', borderRadius:3, fontSize:14, fontWeight:700, cursor:'pointer' }}>📷 Take Photo / Choose Image</button>
                 </>
               )}
             </div>
           )}
           {step === 'result' && result && (
             <div>
-              {image && <img src={image} alt="scan" style={{ width:'100%', borderRadius:10, marginBottom:14, maxHeight:160, objectFit:'cover' }} />}
-              <div style={{ background:'var(--surface)', borderRadius:10, padding:14, marginBottom:14 }}>
+              {image && <img src={image} alt="scan" style={{ width:'100%', borderRadius:3, marginBottom:14, maxHeight:160, objectFit:'cover' }} />}
+              <div style={{ background:'var(--surface)', borderRadius:3, padding:14, marginBottom:14 }}>
                 <div style={{ fontSize:11, fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.5px', marginBottom:6 }}>AI Detected</div>
                 <div style={{ fontSize:15, fontWeight:800, color:'var(--text-primary)' }}>{result.name || 'Unknown part'}</div>
                 {result.part_number && <div style={{ fontSize:12, color:'var(--accent)', fontFamily:'var(--font-mono)' }}>#{result.part_number}</div>}
@@ -1411,19 +1408,19 @@ function AIScanModal({ parts, userRole, onClose, onDone, onSetTx }) {
               </div>
               {matched ? (
                 <div>
-                  <div style={{ background:'rgba(34,197,94,0.1)', border:'1px solid rgba(34,197,94,0.3)', borderRadius:10, padding:14, marginBottom:14 }}>
+                  <div style={{ background:'rgba(34,197,94,0.1)', border:'1px solid rgba(34,197,94,0.3)', borderRadius:3, padding:14, marginBottom:14 }}>
                     <div style={{ fontSize:11, fontWeight:700, color:'var(--green)', textTransform:'uppercase', marginBottom:4 }}>✓ Matched in Inventory</div>
                     <div style={{ fontSize:14, fontWeight:700, color:'var(--text-primary)' }}>{matched.name}</div>
                     <div style={{ fontSize:12, color:'var(--text-muted)' }}>Stock: {matched.quantity} {matched.unit} · Location: {matched.location || '—'}</div>
                   </div>
                   <div style={{ display:'flex', gap:8 }}>
-                    <button onClick={() => onSetTx(matched)} style={{ flex:1, padding:'10px', background:'var(--accent)', color:'#fff', border:'none', borderRadius:9, cursor:'pointer', fontSize:13, fontWeight:700 }}>Adjust Stock</button>
-                    <button onClick={onClose} style={{ flex:1, padding:'10px', background:'var(--surface)', border:'1px solid var(--border)', borderRadius:9, cursor:'pointer', fontSize:13, color:'var(--text-secondary)' }}>Done</button>
+                    <button onClick={() => onSetTx(matched)} style={{ flex:1, padding:'10px', background:'var(--accent)', color:'#fff', border:'none', borderRadius:3, cursor:'pointer', fontSize:13, fontWeight:700 }}>Adjust Stock</button>
+                    <button onClick={onClose} style={{ flex:1, padding:'10px', background:'var(--surface)', border:'1px solid var(--border)', borderRadius:3, cursor:'pointer', fontSize:13, color:'var(--text-secondary)' }}>Done</button>
                   </div>
                 </div>
               ) : (
                 <div>
-                  <div style={{ background:'rgba(245,158,11,0.1)', border:'1px solid rgba(245,158,11,0.3)', borderRadius:10, padding:14, marginBottom:14 }}>
+                  <div style={{ background:'rgba(245,158,11,0.1)', border:'1px solid rgba(245,158,11,0.3)', borderRadius:3, padding:14, marginBottom:14 }}>
                     <div style={{ fontSize:11, fontWeight:700, color:'var(--amber)', textTransform:'uppercase', marginBottom:4 }}>⚠ Not found in inventory</div>
                     <div style={{ fontSize:13, color:'var(--text-secondary)' }}>Create a new part record?</div>
                   </div>
@@ -1431,12 +1428,12 @@ function AIScanModal({ parts, userRole, onClose, onDone, onSetTx }) {
                     <div key={f} style={{ marginBottom:8 }}>
                       <label style={{ fontSize:11, fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', display:'block', marginBottom:3 }}>{f.replace('_',' ')}</label>
                       <input value={newPart[f] || ''} onChange={e => setNewPart(p => ({...p, [f]: e.target.value}))}
-                        style={{ width:'100%', padding:'7px 10px', borderRadius:7, border:'1px solid var(--border)', background:'var(--bg)', color:'var(--text-primary)', fontSize:13, boxSizing:'border-box' }} />
+                        style={{ width:'100%', padding:'7px 10px', borderRadius:2, border:'1px solid var(--border)', background:'var(--bg)', color:'var(--text-primary)', fontSize:13, boxSizing:'border-box' }} />
                     </div>
                   ))}
                   <div style={{ display:'flex', gap:8, marginTop:8 }}>
-                    <button onClick={createPart} style={{ flex:2, padding:'10px', background:'var(--accent)', color:'#fff', border:'none', borderRadius:9, cursor:'pointer', fontSize:13, fontWeight:700 }}>+ Create Part</button>
-                    <button onClick={() => setStep('capture')} style={{ flex:1, padding:'10px', background:'var(--surface)', border:'1px solid var(--border)', borderRadius:9, cursor:'pointer', fontSize:13, color:'var(--text-secondary)' }}>Rescan</button>
+                    <button onClick={createPart} style={{ flex:2, padding:'10px', background:'var(--accent)', color:'#fff', border:'none', borderRadius:3, cursor:'pointer', fontSize:13, fontWeight:700 }}>+ Create Part</button>
+                    <button onClick={() => setStep('capture')} style={{ flex:1, padding:'10px', background:'var(--surface)', border:'1px solid var(--border)', borderRadius:3, cursor:'pointer', fontSize:13, color:'var(--text-secondary)' }}>Rescan</button>
                   </div>
                 </div>
               )}
@@ -1476,15 +1473,15 @@ function UsageHistoryTab({ parts, assets, transactions, userRole }) {
   const months = [...new Set(usageTransactions.map(t => t.created_at?.slice(0,7)).filter(Boolean))].sort().reverse();
 
   return (
-    <div style={{ background:'var(--surface)', border:'1px solid var(--border)', borderRadius:14, padding:20 }}>
+    <div style={{ background:'var(--surface)', border:'1px solid var(--border)', borderRadius:4, padding:20 }}>
       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:16, flexWrap:'wrap', gap:10 }}>
         <div className="parts-section-title" style={{ marginBottom:0 }}>Parts Usage History</div>
         <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
-          <select value={filterAsset} onChange={e => setFilterAsset(e.target.value)} style={{ padding:'7px 12px', borderRadius:8, border:'1px solid var(--border)', background:'var(--bg)', color:'var(--text-primary)', fontSize:12 }}>
+          <select value={activeAssetFilter === 'all' ? '' : activeAssetFilter} onChange={e => { setActiveAssetFilter(e.target.value || 'all'); setFilterAsset(e.target.value); }} style={{ padding:'7px 12px', borderRadius:3, border:'1px solid var(--border)', background:'var(--bg)', color:'var(--text-primary)', fontSize:12 }}>
             <option value="">All Assets</option>
             {assets.map(a => <option key={a.id} value={String(a.id)}>{a.name}</option>)}
           </select>
-          <select value={filterMonth} onChange={e => setFilterMonth(e.target.value)} style={{ padding:'7px 12px', borderRadius:8, border:'1px solid var(--border)', background:'var(--bg)', color:'var(--text-primary)', fontSize:12 }}>
+          <select value={filterMonth} onChange={e => setFilterMonth(e.target.value)} style={{ padding:'7px 12px', borderRadius:3, border:'1px solid var(--border)', background:'var(--bg)', color:'var(--text-primary)', fontSize:12 }}>
             <option value="">All Time</option>
             {months.map(m => <option key={m} value={m}>{new Date(m+'-01').toLocaleString('default',{month:'long',year:'numeric'})}</option>)}
           </select>
@@ -1508,7 +1505,7 @@ function UsageHistoryTab({ parts, assets, transactions, userRole }) {
                     <tr key={t.id} style={{ opacity:0, animation:`fadeUp 0.2s ease ${i*15}ms forwards` }}>
                       <td style={{ fontWeight:600, color:'var(--text-primary)' }}>{t.partName}</td>
                       <td style={{ fontFamily:'var(--font-mono)', fontSize:11, color:'var(--accent)' }}>{t.partNumber || '—'}</td>
-                      <td><span style={{ fontWeight:700, color:'var(--p-red)' }}>-{t.quantity}</span></td>
+                      <td><span style={{ fontWeight:700, color:'var(--red)' }}>-{t.quantity}</span></td>
                       <td style={{ fontSize:12, color:'var(--text-muted)' }}>{t.performed_by || '—'}</td>
                       <td style={{ fontSize:12, color:'var(--text-muted)' }}>{t.created_at ? new Date(t.created_at).toLocaleDateString('en-AU') : '—'}</td>
                       <td style={{ fontSize:12, color:'var(--text-faint)', maxWidth:200, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{t.notes || '—'}</td>
