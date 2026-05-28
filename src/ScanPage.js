@@ -92,44 +92,50 @@ function PrestartForm({ asset, company, template, onClose, accentColor }) {
 
   const submit = async () => {
     setBusy(true);
-    const failedItems = Object.entries(issues).filter(([,v])=>v).map(([k])=>k);
-    const payload = {
-      company_id:         asset.company_id,
-      template_id:        template?.id || null,
-      asset:              asset.name,
-      operator_name:      operator,
-      hrs_start:          parseFloat(hours) || null,
-      date:               new Date().toISOString().split('T')[0],
-      notes,
-      responses,
-      defects_found:      failedItems.length > 0,
-      operator_signature: null,
-      site_area:          asset.location || '',
-    };
-    const { error: psErr } = await supabase.from('form_submissions').insert([payload]);
-    if (psErr) { alert('Submit failed: ' + psErr.message); setBusy(false); return; }
-    // Update asset hours
-    if (hours && parseFloat(hours) > 0) {
-      await supabase.from('assets').update({ hours: parseFloat(hours) }).eq('id', asset.id);
-      await supabase.from('asset_hours_log').insert({
-        company_id: asset.company_id, asset_id: asset.id, asset_name: asset.name,
-        hours: parseFloat(hours), source: 'prestart', recorded_by: operator,
-        notes: 'Prestart via QR scan ' + new Date().toLocaleDateString('en-AU'),
-      }).catch(()=>{});
+    try {
+      const failedItems = Object.entries(issues).filter(([,v])=>v).map(([k])=>k);
+      const payload = {
+        company_id:         asset.company_id,
+        template_id:        template?.id || null,
+        asset:              asset.name,
+        operator_name:      operator,
+        hrs_start:          parseFloat(hours) || null,
+        date:               new Date().toISOString().split('T')[0],
+        notes,
+        responses,
+        defects_found:      failedItems.length > 0,
+        operator_signature: null,
+        site_area:          asset.location || '',
+      };
+      const { error: psErr } = await supabase.from('form_submissions').insert([payload]);
+      if (psErr) { alert('Submit failed: ' + psErr.message); return; }
+      // Update asset hours
+      if (hours && parseFloat(hours) > 0) {
+        await supabase.from('assets').update({ hours: parseFloat(hours) }).eq('id', asset.id).catch(()=>{});
+        await supabase.from('asset_hours_log').insert({
+          company_id: asset.company_id, asset_id: asset.id, asset_name: asset.name,
+          hours: parseFloat(hours), source: 'prestart', recorded_by: operator,
+          notes: 'Prestart via QR scan ' + new Date().toLocaleDateString('en-AU'),
+        }).catch(()=>{});
+      }
+      if (failedItems.length > 0) {
+        await supabase.from('work_orders').insert([{
+          company_id:  asset.company_id,
+          asset_id:    asset.id,
+          asset:       asset.name,
+          title:       `Prestart defects — ${asset.name}`,
+          description: 'Items flagged: ' + failedItems.join(', '),
+          priority:    'High',
+          status:      'open',
+          created_at:  new Date().toISOString(),
+        }]).catch(()=>{});
+      }
+      setDone(true);
+    } catch (err) {
+      alert('Submit failed: ' + (err?.message || 'Unknown error'));
+    } finally {
+      setBusy(false);
     }
-    if (failedItems.length > 0) {
-      await supabase.from('work_orders').insert([{
-        company_id:  asset.company_id,
-        asset_id:    asset.id,
-        asset_name:  asset.name,
-        title:       `Prestart defects — ${asset.name}`,
-        description: 'Items flagged: ' + failedItems.join(', '),
-        priority:    'High',
-        status:      'open',
-        created_at:  new Date().toISOString(),
-      }]);
-    }
-    setBusy(false); setDone(true);
   };
 
   if (done) return (
@@ -243,28 +249,34 @@ function ServiceForm({ asset, company, template, onClose, accentColor }) {
 
   const submit = async () => {
     setBusy(true);
-    const { error: ssErr } = await supabase.from('service_sheet_submissions').insert([{
-      company_id:         asset.company_id,
-      template_id:        template?.id || null,
-      asset:              asset.name,
-      asset_id:           asset.id,
-      technician:         tech,
-      date:               new Date().toISOString().split('T')[0],
-      service_type:       template?.service_type || '',
-      responses,
-      notes,
-      parts:              parts.filter(p=>p.used).map(p=>({ name:p.description, qty:p.qty, cost:0, part_id:null })),
-      labour:             template?.labour_items?.map(l=>({ description:l.description, hours:l.estimated_hours })) || [],
-      total_parts_cost:   0,
-      total_labour_hours: (template?.labour_items||[]).reduce((s,l)=>s+(parseFloat(l.estimated_hours)||0),0),
-      operator_signature: null,
-    }]);
-    if (ssErr) { alert('Submit failed: ' + ssErr.message); setBusy(false); return; }
-    // Update asset hours
-    if (hours && parseFloat(hours) > 0) {
-      await supabase.from('assets').update({ hours: parseFloat(hours) }).eq('id', asset.id);
+    try {
+      const { error: ssErr } = await supabase.from('service_sheet_submissions').insert([{
+        company_id:         asset.company_id,
+        template_id:        template?.id || null,
+        asset:              asset.name,
+        asset_id:           asset.id,
+        technician:         tech,
+        date:               new Date().toISOString().split('T')[0],
+        service_type:       template?.service_type || '',
+        responses,
+        notes,
+        parts:              parts.filter(p=>p.used).map(p=>({ name:p.description, qty:p.qty, cost:0, part_id:null })),
+        labour:             template?.labour_items?.map(l=>({ description:l.description, hours:l.estimated_hours })) || [],
+        total_parts_cost:   0,
+        total_labour_hours: (template?.labour_items||[]).reduce((s,l)=>s+(parseFloat(l.estimated_hours)||0),0),
+        operator_signature: null,
+      }]);
+      if (ssErr) { alert('Submit failed: ' + ssErr.message); return; }
+      // Update asset hours
+      if (hours && parseFloat(hours) > 0) {
+        await supabase.from('assets').update({ hours: parseFloat(hours) }).eq('id', asset.id).catch(()=>{});
+      }
+      setDone(true);
+    } catch (err) {
+      alert('Submit failed: ' + (err?.message || 'Unknown error'));
+    } finally {
+      setBusy(false);
     }
-    setBusy(false); setDone(true);
   };
 
   if (done) return (
