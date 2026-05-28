@@ -1045,7 +1045,7 @@ Notes: ${s.notes||'—'}`);
       )}
 
       {/* Schedules sub-tab */}
-      {serviceSubTab === 'schedules' && <>
+      {serviceSubTab === 'schedules' && <div>
 
       {/* Service Schedule Modal */}
       {showModal && (
@@ -1267,7 +1267,7 @@ Notes: ${s.notes||'—'}`);
           </div>
         );
       })()}
-    </>
+      </div>}
     </div>
   );
 }
