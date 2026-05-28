@@ -111,24 +111,28 @@ function PrestartForm({ asset, company, template, onClose, accentColor }) {
       if (psErr) { alert('Submit failed: ' + psErr.message); return; }
       // Update asset hours
       if (hours && parseFloat(hours) > 0) {
-        await supabase.from('assets').update({ hours: parseFloat(hours) }).eq('id', asset.id).catch(()=>{});
-        await supabase.from('asset_hours_log').insert({
-          company_id: asset.company_id, asset_id: asset.id, asset_name: asset.name,
-          hours: parseFloat(hours), source: 'prestart', recorded_by: operator,
-          notes: 'Prestart via QR scan ' + new Date().toLocaleDateString('en-AU'),
-        }).catch(()=>{});
+        try { await supabase.from('assets').update({ hours: parseFloat(hours) }).eq('id', asset.id); } catch(e) {}
+        try {
+          await supabase.from('asset_hours_log').insert({
+            company_id: asset.company_id, asset_id: asset.id, asset_name: asset.name,
+            hours: parseFloat(hours), source: 'prestart', recorded_by: operator,
+            notes: 'Prestart via QR scan ' + new Date().toLocaleDateString('en-AU'),
+          });
+        } catch(e) {}
       }
       if (failedItems.length > 0) {
-        await supabase.from('work_orders').insert([{
-          company_id:  asset.company_id,
-          asset_id:    asset.id,
-          asset:       asset.name,
-          title:       `Prestart defects — ${asset.name}`,
-          description: 'Items flagged: ' + failedItems.join(', '),
-          priority:    'High',
-          status:      'open',
-          created_at:  new Date().toISOString(),
-        }]).catch(()=>{});
+        try {
+          await supabase.from('work_orders').insert([{
+            company_id:  asset.company_id,
+            asset_id:    asset.id,
+            asset:       asset.name,
+            title:       `Prestart defects — ${asset.name}`,
+            description: 'Items flagged: ' + failedItems.join(', '),
+            priority:    'High',
+            status:      'open',
+            created_at:  new Date().toISOString(),
+          }]);
+        } catch(e) {}
       }
       setDone(true);
     } catch (err) {
@@ -269,7 +273,7 @@ function ServiceForm({ asset, company, template, onClose, accentColor }) {
       if (ssErr) { alert('Submit failed: ' + ssErr.message); return; }
       // Update asset hours
       if (hours && parseFloat(hours) > 0) {
-        await supabase.from('assets').update({ hours: parseFloat(hours) }).eq('id', asset.id).catch(()=>{});
+        try { await supabase.from('assets').update({ hours: parseFloat(hours) }).eq('id', asset.id); } catch(e) {}
       }
       setDone(true);
     } catch (err) {
