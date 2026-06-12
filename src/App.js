@@ -17,6 +17,7 @@ import Settings from './Settings';
 import Chat from './Chat';
 import Parts from './Parts';
 import OilSampling from './OilSampling';
+import CutterTracker from './CutterTracker';
 import ScanPage from './ScanPage';
 import ForcePasswordChange from './ForcePasswordChange';
 import { supabase } from './supabase';
@@ -434,6 +435,8 @@ function App() {
         return <Settings userRole={effectiveUserRole} initialTab={currentSubPage || 'format'} key={currentSubPage} personalMode />;
       case 'oil_sampling':
         return <OilSampling userRole={effectiveUserRole} />;
+      case 'cutter_tracker':
+        return <CutterTracker userRole={effectiveUserRole?.role || effectiveUserRole} />;
       case 'parts':
         return <Parts userRole={effectiveUserRole} />;
       case 'chat':

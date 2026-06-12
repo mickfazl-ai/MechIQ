@@ -61,6 +61,7 @@ const NAV_STRUCTURE = [
   { id: 'chat',         label: 'Messages',     ik: 'chat',         roles: ['admin','supervisor','technician','operator'], feature: null },
   { id: 'parts',        label: 'Parts',        ik: 'parts',        roles: ['admin','supervisor','technician'], feature: null },
   { id: 'oil_sampling', label: 'Oil Sampling', ik: 'oil_sampling', roles: ['admin','supervisor'], feature: 'oil_sampling' },
+  { id: 'cutter_tracker', label: 'Cutter Tracker', ik: 'oil_sampling', roles: ['admin','supervisor'], feature: null },
   { id: 'reports',      label: 'Reports',      ik: 'reports',      roles: ['admin','supervisor'], feature: 'reports',
     children: [
       { id: 'reports', subPage: 'downtime-log',  label: 'Downtime Log',      roles: ['admin','supervisor'] },
