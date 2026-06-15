@@ -436,7 +436,7 @@ function App() {
       case 'oil_sampling':
         return <OilSampling userRole={effectiveUserRole} />;
       case 'cutter_tracker':
-        return <CutterTracker userRole={effectiveUserRole?.role || effectiveUserRole} />;
+        return <CutterTracker userRole={effectiveUserRole} />;
       case 'parts':
         return <Parts userRole={effectiveUserRole} />;
       case 'chat':
