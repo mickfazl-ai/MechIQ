@@ -519,27 +519,13 @@ function CutterTracker({ userRole }) {
   const [showLog, setShowLog] = useState(false);
   const [showAdvance, setShowAdvance] = useState(false);
   const [filterPos, setFilterPos] = useState('');
-  const isAdmin = userRole === 'admin';
+  const isAdmin = (typeof userRole === 'object' ? userRole?.role : userRole) === 'admin';
 
-  // ── Resolve company ───────────────────────────────────────────────────────
+  // ── Company from userRole prop (same as every other page) ─────────────────
   useEffect(() => {
-    (async () => {
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          try {
-            const { data: prof } = await supabase.from('profiles').select('company_id').eq('id', user.id).maybeSingle();
-            if (prof?.company_id) { setCompanyId(prof.company_id); return; }
-          } catch (e) {}
-          try {
-            const { data: prof2 } = await supabase.from('users').select('company_id').eq('id', user.id).maybeSingle();
-            if (prof2?.company_id) { setCompanyId(prof2.company_id); return; }
-          } catch (e) {}
-        }
-      } catch (e) {}
-      setCompanyId(null);
-    })();
-  }, []);
+    const cid = (userRole && typeof userRole === 'object') ? userRole.company_id : null;
+    setCompanyId(cid || null);
+  }, [userRole]);
 
   // ── Load TBM machines ───────────────────────────────────────────────────────
   const loadMachines = useCallback(async () => {
