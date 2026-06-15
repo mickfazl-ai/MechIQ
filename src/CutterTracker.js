@@ -358,16 +358,44 @@ function TBMSettingsModal({ companyId, positions, onClose, onSaved }) {
       }
 
       setDrawingMsg('AI is reading the drawing\u2026 20\u201340s for a large GA.');
-      const base64 = await new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result.split(',')[1]); r.onerror = rej; r.readAsDataURL(file); });
       const isPdf = file.type === 'application/pdf';
+      let base64, sendMedia = file.type;
+      if (isPdf) {
+        base64 = await new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result.split(',')[1]); r.onerror = rej; r.readAsDataURL(file); });
+      } else {
+        // Downscale large images to keep the request under HTTP2/body limits
+        base64 = await new Promise((res, rej) => {
+          const r = new FileReader();
+          r.onload = () => {
+            const img = new Image();
+            img.onload = () => {
+              const maxW = 1800;
+              const scale = img.width > maxW ? maxW / img.width : 1;
+              const cw = Math.round(img.width * scale), ch = Math.round(img.height * scale);
+              const cv = document.createElement('canvas');
+              cv.width = cw; cv.height = ch;
+              const ctx = cv.getContext('2d');
+              ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, cw, ch);
+              ctx.drawImage(img, 0, 0, cw, ch);
+              sendMedia = 'image/jpeg';
+              res(cv.toDataURL('image/jpeg', 0.85).split(',')[1]);
+            };
+            img.onerror = rej;
+            img.src = r.result;
+          };
+          r.onerror = rej;
+          r.readAsDataURL(file);
+        });
+      }
       const prompt = 'You are reading a TBM cutterhead General Arrangement engineering drawing. Find the "CUTTER PROFILE" view listing every cutter position from centre to gauge with its radius from head centre in mm. Extract EVERY position. Return ONLY JSON, no markdown: {"bore_mm":<number or 0>,"default_size_in":<inches e.g. 19>,"positions":[{"position_no":"1","track_radius_mm":80,"zone":"Centre"}]}. zone is one of Centre (innermost), Face (middle), Gauge (outer). position_no may include letters like 37A/37B \u2014 keep exactly. Order smallest to largest radius. Use 0 if unreadable.';
       const content = isPdf
         ? [{ type:'document', source:{ type:'base64', media_type:'application/pdf', data: base64 } }, { type:'text', text: prompt }]
-        : [{ type:'image', source:{ type:'base64', media_type: file.type, data: base64 } }, { type:'text', text: prompt }];
+        : [{ type:'image', source:{ type:'base64', media_type: sendMedia, data: base64 } }, { type:'text', text: prompt }];
 
       const { data: { session } } = await supabase.auth.getSession();
       const token = session?.access_token;
       const resp = await pythonAIFetch({ method:'POST', headers: token ? { Authorization:`Bearer ${token}` } : {}, body: JSON.stringify({ model:'claude-sonnet-4-5', max_tokens:4000, messages:[{ role:'user', content }] }) });
+      if (!resp.ok) { const t = await resp.text().catch(()=> ''); setDrawingMsg(`AI service error ${resp.status}. ${t.slice(0,120)} \u2014 try a smaller PDF/PNG, or add positions manually.`); return; }
       const data = await resp.json();
       let text = '';
       if (typeof data === 'string') text = data;
