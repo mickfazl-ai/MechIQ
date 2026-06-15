@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from './supabase';
+import { pythonAIFetch } from './pythonApi';
 
 const CSS = `
   @keyframes ctFadeUp { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:none} }
@@ -291,11 +292,223 @@ function AdvanceModal({ tbm, latest, companyId, onClose, onSaved }) {
   );
 }
 
+// ─── TBM Settings Modal (add/remove machines + upload head drawing) ───────────
+function TBMSettingsModal({ companyId, positions, onClose, onSaved }) {
+  const [machines, setMachines] = useState([]);
+  const [newName, setNewName] = useState('');
+  const [bore, setBore] = useState('7010');
+  const [busy, setBusy] = useState(false);
+  const [drawingMsg, setDrawingMsg] = useState('');
+  const [uploading, setUploading] = useState(false);
+
+  const loadM = async () => {
+    try {
+      let q = supabase.from('tbm_machines').select('*').order('sort_order');
+      if (companyId) q = q.or(`company_id.eq.${companyId},company_id.is.null`);
+      const { data } = await q;
+      setMachines(data || []);
+    } catch (e) {}
+  };
+  useEffect(() => { loadM(); }, []);
+
+  const addMachine = async () => {
+    if (!newName.trim()) { alert('Enter a TBM name'); return; }
+    setBusy(true);
+    try {
+      const { error } = await supabase.from('tbm_machines').insert([{
+        company_id: companyId, name: newName.trim(),
+        head_profile_id: 'a0000000-0000-0000-0000-000000006644',
+        bore_diameter_mm: parseFloat(bore) || null,
+        status: 'active', sort_order: machines.length + 1,
+      }]);
+      if (error) { alert('Add failed: ' + error.message); return; }
+      setNewName(''); await loadM(); onSaved();
+    } catch (e) { alert('Add failed: ' + (e?.message || 'Unknown')); }
+    finally { setBusy(false); }
+  };
+
+  const archiveMachine = async (m) => {
+    if (!window.confirm(`Remove ${m.name}? Its logged data is kept but it won't show in the tracker.`)) return;
+    try {
+      await supabase.from('tbm_machines').update({ status: 'archived' }).eq('id', m.id);
+      await loadM(); onSaved();
+    } catch (e) { alert('Remove failed: ' + (e?.message || 'Unknown')); }
+  };
+
+  const [scanned, setScanned] = useState(null);
+  const [scanMeta, setScanMeta] = useState({ bore: '', size: 19 });
+  const [drawingUrl, setDrawingUrl] = useState('');
+
+  const uploadDrawing = async (file) => {
+    if (!file) return;
+    setUploading(true); setDrawingMsg(''); setScanned(null);
+    try {
+      const ext = (file.name.split('.').pop() || 'png').toLowerCase();
+      const path = `${companyId || 'shared'}/head-${Date.now()}.${ext}`;
+      let publicUrl = '';
+      try {
+        const { error: upErr } = await supabase.storage.from('cutter-drawings').upload(path, file, { upsert: true });
+        if (!upErr) { const { data: pub } = supabase.storage.from('cutter-drawings').getPublicUrl(path); publicUrl = pub.publicUrl; setDrawingUrl(publicUrl); }
+      } catch (e) {}
+
+      const sendable = ['application/pdf','image/png','image/jpeg','image/jpg','image/webp'];
+      if (!sendable.includes(file.type)) {
+        setDrawingMsg('Drawing saved. ' + ext.toUpperCase() + ' cannot be read by AI directly \u2014 re-upload as PDF, PNG or JPG to auto-extract, or add positions manually below.');
+        return;
+      }
+
+      setDrawingMsg('AI is reading the drawing\u2026 20\u201340s for a large GA.');
+      const base64 = await new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result.split(',')[1]); r.onerror = rej; r.readAsDataURL(file); });
+      const isPdf = file.type === 'application/pdf';
+      const prompt = 'You are reading a TBM cutterhead General Arrangement engineering drawing. Find the "CUTTER PROFILE" view listing every cutter position from centre to gauge with its radius from head centre in mm. Extract EVERY position. Return ONLY JSON, no markdown: {"bore_mm":<number or 0>,"default_size_in":<inches e.g. 19>,"positions":[{"position_no":"1","track_radius_mm":80,"zone":"Centre"}]}. zone is one of Centre (innermost), Face (middle), Gauge (outer). position_no may include letters like 37A/37B \u2014 keep exactly. Order smallest to largest radius. Use 0 if unreadable.';
+      const content = isPdf
+        ? [{ type:'document', source:{ type:'base64', media_type:'application/pdf', data: base64 } }, { type:'text', text: prompt }]
+        : [{ type:'image', source:{ type:'base64', media_type: file.type, data: base64 } }, { type:'text', text: prompt }];
+
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      const resp = await pythonAIFetch({ method:'POST', headers: token ? { Authorization:`Bearer ${token}` } : {}, body: JSON.stringify({ model:'claude-sonnet-4-5', max_tokens:4000, messages:[{ role:'user', content }] }) });
+      const data = await resp.json();
+      let text = '';
+      if (typeof data === 'string') text = data;
+      else if (data.content && Array.isArray(data.content)) text = data.content.filter(b => b.type === 'text').map(b => b.text).join('');
+      else text = data.text || data.reply || data.message || JSON.stringify(data);
+      text = text.replace(/```json|```/g, '').trim();
+      const parsed = JSON.parse(text);
+      const pos = (parsed.positions || []).filter(p => p.position_no);
+      if (!pos.length) { setDrawingMsg('AI could not find a cutter profile. Add positions manually below or try a clearer image of the CUTTER PROFILE view.'); return; }
+      setScanned(pos);
+      setScanMeta({ bore: parsed.bore_mm || '', size: parsed.default_size_in || 19 });
+      setDrawingMsg('AI found ' + pos.length + ' positions \u2014 review and edit below, then Save.');
+    } catch (e) {
+      setDrawingMsg('Read failed: ' + (e?.message || 'Unknown') + '. You can still add positions manually.');
+    } finally { setUploading(false); }
+  };
+
+  const editScanned = (i, key, val) => setScanned(s => s.map((p, idx) => idx === i ? { ...p, [key]: val } : p));
+  const removeScanned = (i) => setScanned(s => s.filter((_, idx) => idx !== i));
+  const addScannedRow = () => setScanned(s => [...(s || []), { position_no:'', track_radius_mm:0, zone:'Face' }]);
+
+  const saveScanned = async () => {
+    if (!scanned || !scanned.length) return;
+    setBusy(true);
+    try {
+      await supabase.from('tbm_cutter_positions').delete().eq('head_profile_id', 'a0000000-0000-0000-0000-000000006644');
+      const rows = scanned.filter(p => String(p.position_no).trim()).map(p => ({
+        head_profile_id: 'a0000000-0000-0000-0000-000000006644',
+        position_no: String(p.position_no).trim(),
+        zone: p.zone || 'Face',
+        track_radius_mm: parseFloat(p.track_radius_mm) || 0,
+        cutter_size_in: parseFloat(scanMeta.size) || 19,
+      }));
+      for (let i = 0; i < rows.length; i += 100) {
+        const { error } = await supabase.from('tbm_cutter_positions').insert(rows.slice(i, i + 100));
+        if (error) { alert('Save failed: ' + error.message); return; }
+      }
+      if (scanMeta.bore) { try { await supabase.from('tbm_head_profiles').update({ bore_diameter_mm: parseFloat(scanMeta.bore), drawing_url: drawingUrl || undefined }).eq('id', 'a0000000-0000-0000-0000-000000006644'); } catch (e) {} }
+      setDrawingMsg('Saved \u2713 ' + rows.length + ' positions written. Wear map and record sheet now match the drawing.');
+      setScanned(null);
+      onSaved();
+    } catch (e) { alert('Save failed: ' + (e?.message || 'Unknown')); }
+    finally { setBusy(false); }
+  };
+
+  return (
+    <div className="ct-modal" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="ct-modal-card">
+        <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--text-primary,#0F172A)', marginBottom: 2, letterSpacing: '-0.3px' }}>Manage TBMs</div>
+        <div style={{ fontSize: 11, color: 'var(--text-muted,#64748B)', marginBottom: 18 }}>Add or remove machines and upload the cutterhead drawing</div>
+
+        {/* Machine list */}
+        <div style={{ marginBottom: 8, fontSize: 10, fontWeight: 700, color: 'var(--text-muted,#64748B)', textTransform: 'uppercase', letterSpacing: '.5px' }}>Active machines</div>
+        <div style={{ border: '1px solid var(--border,#E5E7EB)', marginBottom: 14 }}>
+          {machines.filter(m => m.status === 'active').length === 0 && (
+            <div style={{ padding: 16, fontSize: 12, color: 'var(--text-faint,#94A3B8)', textAlign: 'center' }}>No machines yet — add one below.</div>
+          )}
+          {machines.filter(m => m.status === 'active').map(m => (
+            <div key={m.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '9px 12px', borderBottom: '1px solid var(--surface-2,#F1F5F9)' }}>
+              <div>
+                <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary,#0F172A)' }}>{m.name}</span>
+                {m.bore_diameter_mm && <span style={{ fontSize: 10, color: 'var(--text-muted,#64748B)', marginLeft: 8 }}>Ø{Number(m.bore_diameter_mm).toLocaleString()}mm</span>}
+              </div>
+              <button className="ct-btn2" style={{ padding: '4px 10px', color: '#B91C1C', borderColor: '#FCA5A5' }} onClick={() => archiveMachine(m)}>Remove</button>
+            </div>
+          ))}
+        </div>
+
+        {/* Add machine */}
+        <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end', marginBottom: 20 }}>
+          <div style={{ flex: 1 }}><label className="ct-label">New TBM name</label><input className="ct-input" value={newName} onChange={e => setNewName(e.target.value)} placeholder="e.g. TBM 5" /></div>
+          <div style={{ width: 110 }}><label className="ct-label">Bore (mm)</label><input className="ct-input" type="number" value={bore} onChange={e => setBore(e.target.value)} /></div>
+          <button className="ct-btn" onClick={addMachine} disabled={busy}>{busy ? 'Adding…' : 'Add TBM'}</button>
+        </div>
+
+        {/* Drawing upload */}
+        <div style={{ marginBottom: 8, fontSize: 10, fontWeight: 700, color: 'var(--text-muted,#64748B)', textTransform: 'uppercase', letterSpacing: '.5px' }}>Cutterhead drawing</div>
+        <div style={{ border: '2px dashed var(--border,#E5E7EB)', padding: 18, textAlign: 'center', background: 'var(--surface-2,#F8FAFC)', marginBottom: 8 }}>
+          <input id="ct-drawing-input" type="file" accept=".pdf,.png,.jpg,.jpeg,.tif,.tiff" style={{ display: 'none' }} onChange={e => uploadDrawing(e.target.files[0])} />
+          <div style={{ fontSize: 24, marginBottom: 6, opacity: .3 }}>↑</div>
+          <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary,#374151)', marginBottom: 4 }}>Upload head GA drawing — AI reads positions</div>
+          <div style={{ fontSize: 10, color: 'var(--text-faint,#94A3B8)', marginBottom: 10 }}>PDF, PNG or JPG · AI extracts every cutter position for review</div>
+          <button className="ct-btn2" onClick={() => document.getElementById('ct-drawing-input').click()} disabled={uploading}>{uploading ? 'Uploading…' : 'Choose file'}</button>
+        </div>
+        {drawingMsg && <div style={{ fontSize: 11, color: drawingMsg.includes('✓') ? '#15803D' : '#B91C1C', marginBottom: 12, lineHeight: 1.5 }}>{drawingMsg}</div>}
+        {scanned && (
+          <div style={{ border: '1px solid var(--border,#E5E7EB)', marginTop: 4, marginBottom: 12 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, padding: '8px 12px', background: 'var(--surface-2,#F8FAFC)', borderBottom: '1px solid var(--border,#E5E7EB)' }}>
+              <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-muted,#64748B)', textTransform: 'uppercase', letterSpacing: '.5px' }}>Review extracted positions ({scanned.length})</span>
+              <span style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                <span style={{ fontSize: 10, color: 'var(--text-muted,#64748B)' }}>Bore</span>
+                <input className="ct-input" style={{ width: 80, padding: '4px 6px' }} value={scanMeta.bore} onChange={e => setScanMeta(m => ({ ...m, bore: e.target.value }))} placeholder="mm" />
+                <span style={{ fontSize: 10, color: 'var(--text-muted,#64748B)' }}>Size</span>
+                <select className="ct-input" style={{ width: 64, padding: '4px 6px' }} value={scanMeta.size} onChange={e => setScanMeta(m => ({ ...m, size: e.target.value }))}>
+                  <option value="17">17"</option><option value="18">18"</option><option value="19">19"</option><option value="20">20"</option>
+                </select>
+              </span>
+            </div>
+            <div style={{ maxHeight: 260, overflowY: 'auto' }}>
+              <table className="ct-tbl">
+                <thead><tr><th>Position</th><th>Zone</th><th>Track radius (mm)</th><th></th></tr></thead>
+                <tbody>
+                  {scanned.map((p, i) => (
+                    <tr key={i}>
+                      <td><input className="ct-input" style={{ padding: '4px 6px', width: 70 }} value={p.position_no} onChange={e => editScanned(i, 'position_no', e.target.value)} /></td>
+                      <td>
+                        <select className="ct-input" style={{ padding: '4px 6px', width: 90 }} value={p.zone} onChange={e => editScanned(i, 'zone', e.target.value)}>
+                          <option>Centre</option><option>Face</option><option>Gauge</option>
+                        </select>
+                      </td>
+                      <td><input className="ct-input" type="number" step="0.01" style={{ padding: '4px 6px', width: 100 }} value={p.track_radius_mm} onChange={e => editScanned(i, 'track_radius_mm', e.target.value)} /></td>
+                      <td><button className="ct-btn2" style={{ padding: '3px 9px', color: '#B91C1C', borderColor: '#FCA5A5' }} onClick={() => removeScanned(i)}>Remove</button></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 12px', borderTop: '1px solid var(--border,#E5E7EB)' }}>
+              <button className="ct-btn2" onClick={addScannedRow}>+ Add position</button>
+              <span style={{ display: 'flex', gap: 6 }}>
+                <button className="ct-btn2" onClick={() => setScanned(null)}>Discard</button>
+                <button className="ct-btn" onClick={saveScanned} disabled={busy}>{busy ? 'Saving\u2026' : `Save ${scanned.length} positions`}</button>
+              </span>
+            </div>
+          </div>
+        )}
+
+        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+          <button className="ct-btn" onClick={onClose}>Done</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Main ─────────────────────────────────────────────────────────────────────
 function CutterTracker({ userRole }) {
   const [companyId, setCompanyId] = useState(null);
-  const [tbms, setTbms] = useState(['TBM 3', 'TBM 4']);
-  const [tbm, setTbm] = useState('TBM 3');
+  const [tbms, setTbms] = useState([]);
+  const [tbm, setTbm] = useState(null);
+  const [showSettings, setShowSettings] = useState(false);
   const [tab, setTab] = useState('overview');
   const [positions, setPositions] = useState([]);
   const [changes, setChanges] = useState([]);
@@ -328,8 +541,25 @@ function CutterTracker({ userRole }) {
     })();
   }, []);
 
+  // ── Load TBM machines ───────────────────────────────────────────────────────
+  const loadMachines = useCallback(async () => {
+    try {
+      let q = supabase.from('tbm_machines').select('*').eq('status', 'active').order('sort_order');
+      if (companyId) q = q.or(`company_id.eq.${companyId},company_id.is.null`);
+      const { data } = await q;
+      const names = (data && data.length) ? data.map(m => m.name) : ['TBM 3', 'TBM 4'];
+      setTbms(names);
+      setTbm(prev => prev && names.includes(prev) ? prev : names[0]);
+    } catch (e) {
+      setTbms(['TBM 3', 'TBM 4']); setTbm(p => p || 'TBM 3');
+    }
+  }, [companyId]);
+
+  useEffect(() => { loadMachines(); }, [loadMachines]);
+
   // ── Load data ─────────────────────────────────────────────────────────────
   const load = useCallback(async () => {
+    if (!tbm) { setLoading(false); return; }
     setLoading(true);
     try {
       const { data: pos } = await supabase.from('tbm_cutter_positions').select('*').eq('head_profile_id', HEAD_PROFILE_ID).order('track_radius_mm');
@@ -426,6 +656,7 @@ function CutterTracker({ userRole }) {
 
       {showLog && <LogChangeModal tbm={tbm} positions={positions} latest={latest} companyId={companyId} prefillPos={selectedPos} onClose={() => setShowLog(false)} onSaved={load} />}
       {showAdvance && <AdvanceModal tbm={tbm} latest={latest} companyId={companyId} onClose={() => setShowAdvance(false)} onSaved={load} />}
+      {showSettings && <TBMSettingsModal companyId={companyId} positions={positions} onClose={() => setShowSettings(false)} onSaved={() => { loadMachines(); load(); }} />}
 
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 14, flexWrap: 'wrap', gap: 10 }}>
@@ -435,6 +666,7 @@ function CutterTracker({ userRole }) {
         </div>
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
           {tbms.map(t => <button key={t} className={`ct-tbm-btn${tbm === t ? ' on' : ''}`} onClick={() => { setTbm(t); setSelectedPos(null); }}>{t}</button>)}
+          <button className="ct-btn2" onClick={() => setShowSettings(true)}>Manage TBMs</button>
           <button className="ct-btn2" onClick={() => setShowAdvance(true)}>Update advance</button>
           <button className="ct-btn" onClick={() => setShowLog(true)}>+ Log cutter change</button>
         </div>
