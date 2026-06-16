@@ -18,6 +18,7 @@ import Chat from './Chat';
 import Parts from './Parts';
 import OilSampling from './OilSampling';
 import CutterTracker from './CutterTracker';
+import Deliveries from './Deliveries';
 import ScanPage from './ScanPage';
 import ForcePasswordChange from './ForcePasswordChange';
 import { supabase } from './supabase';
@@ -437,6 +438,8 @@ function App() {
         return <OilSampling userRole={effectiveUserRole} />;
       case 'cutter_tracker':
         return <CutterTracker userRole={effectiveUserRole} />;
+      case 'deliveries':
+        return <Deliveries userRole={effectiveUserRole} />;
       case 'parts':
         return <Parts userRole={effectiveUserRole} />;
       case 'chat':
