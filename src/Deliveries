@@ -139,6 +139,9 @@ function Deliveries({ userRole }) {
   const [paste, setPaste] = useState('');
   const [parsing, setParsing] = useState(false);
   const [pasteMsg, setPasteMsg] = useState('');
+  const [waImporting, setWaImporting] = useState(false);
+  const [waMsg, setWaMsg] = useState('');
+  const [waReview, setWaReview] = useState(null);   // array of parsed deliveries for review
 
   useEffect(() => {
     const cid = (userRole && typeof userRole === 'object') ? userRole.company_id : null;
@@ -188,6 +191,66 @@ function Deliveries({ userRole }) {
       }
       load();
     } catch (e) { alert('Update failed: ' + (e?.message || 'Unknown')); }
+  };
+
+  const importWhatsApp = async (file) => {
+    if (!file) return;
+    setWaImporting(true); setWaMsg('Reading chat export\u2026');
+    try {
+      const raw = await file.text();
+      // WhatsApp exports get large; only send the most recent ~1500 lines to stay under limits
+      const lines = raw.split('\n');
+      const recent = lines.slice(-1500).join('\n');
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      const prompt = `This is an exported WhatsApp chat. Find EVERY message that refers to a delivery, order, dispatch, or goods arriving. For each, extract a delivery. Return ONLY a JSON array, no markdown: [{"supplier":"","po_number":"","docket_number":"","carrier":"","eta":"YYYY-MM-DD or empty","status":"ordered|expected|in_transit|arrived|received","items":[{"description":"","quantity":1,"unit":"ea"}],"notes":"date or sender context"}]. Infer status from wording. Ignore non-delivery chatter. If none found return []. Chat:\n${recent}`;
+      const resp = await pythonAIFetch({
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        body: JSON.stringify({ model: 'claude-sonnet-4-5', max_tokens: 4000, messages: [{ role: 'user', content: prompt }] }),
+      });
+      if (!resp.ok) { setWaMsg('AI service error ' + resp.status + ' \u2014 try a smaller export.'); return; }
+      const data = await resp.json();
+      let text = '';
+      if (typeof data === 'string') text = data;
+      else if (data.content && Array.isArray(data.content)) text = data.content.filter(b => b.type === 'text').map(b => b.text).join('');
+      else text = data.text || data.reply || JSON.stringify(data);
+      const parsed = JSON.parse(text.replace(/```json|```/g, '').trim());
+      if (!Array.isArray(parsed) || parsed.length === 0) { setWaMsg('No deliveries found in this chat export.'); return; }
+      setWaReview(parsed);
+      setWaMsg(parsed.length + ' deliveries found \u2014 review and import below.');
+    } catch (e) { setWaMsg('Could not read export: ' + (e?.message || 'Unknown')); }
+    finally { setWaImporting(false); }
+  };
+
+  const importReviewed = async () => {
+    if (!waReview || !waReview.length) return;
+    setWaImporting(true);
+    try {
+      // Dedupe against existing PO numbers
+      const existingPOs = new Set(deliveries.map(d => (d.po_number || '').toLowerCase()).filter(Boolean));
+      let added = 0, skipped = 0;
+      for (const d of waReview) {
+        const po = (d.po_number || '').toLowerCase();
+        if (po && existingPOs.has(po)) { skipped++; continue; }
+        const { data: ins, error } = await supabase.from('deliveries').insert([{
+          company_id: companyId, supplier: d.supplier || null, po_number: d.po_number || null,
+          docket_number: d.docket_number || null, carrier: d.carrier || null,
+          status: d.status || 'expected', eta: /^\d{4}-\d{2}-\d{2}$/.test(d.eta) ? d.eta : null,
+          notes: d.notes || null, source: 'whatsapp',
+        }]).select().single();
+        if (!error && ins) {
+          const items = (d.items || []).filter(it => it.description).map(it => ({ delivery_id: ins.id, description: it.description, quantity: it.quantity || 1, unit: it.unit || 'ea' }));
+          if (items.length) await supabase.from('delivery_items').insert(items);
+          if (po) existingPOs.add(po);
+          added++;
+        }
+      }
+      setWaMsg(`Imported ${added} deliveries${skipped ? `, skipped ${skipped} duplicates` : ''}.`);
+      setWaReview(null);
+      load();
+    } catch (e) { setWaMsg('Import failed: ' + (e?.message || 'Unknown')); }
+    finally { setWaImporting(false); }
   };
 
   const parsePaste = async () => {
@@ -251,6 +314,41 @@ function Deliveries({ userRole }) {
             <button className="dl-btn" style={{ flexShrink: 0 }} onClick={parsePaste} disabled={parsing}>{parsing ? 'Reading…' : 'Parse'}</button>
           </div>
           {pasteMsg && <div style={{ fontSize: 11, color: '#B91C1C', marginTop: 8 }}>{pasteMsg}</div>}
+        </div>
+      </div>
+
+      {/* WhatsApp import */}
+      <div style={{ background: 'var(--surface,#fff)', border: '1px solid var(--border,#E5E7EB)', marginBottom: 14 }}>
+        <div className="dl-card-h">Import WhatsApp export</div>
+        <div style={{ padding: 12 }}>
+          <div style={{ fontSize: 11, color: 'var(--text-muted,#64748B)', lineHeight: 1.5, marginBottom: 10 }}>
+            In WhatsApp: open the supplier/driver chat → ⋮ menu → More → Export chat → <strong>Without media</strong>. Upload the .txt here and Claude pulls every delivery out of the conversation.
+          </div>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <input id="dl-wa-input" type="file" accept=".txt" style={{ display: 'none' }} onChange={e => importWhatsApp(e.target.files[0])} />
+            <button className="dl-btn2" onClick={() => document.getElementById('dl-wa-input').click()} disabled={waImporting}>{waImporting ? 'Reading…' : 'Choose chat export (.txt)'}</button>
+            {waMsg && <span style={{ fontSize: 11, color: waMsg.includes('Imported') || waMsg.includes('found') ? '#15803D' : '#B91C1C' }}>{waMsg}</span>}
+          </div>
+
+          {waReview && (
+            <div style={{ border: '1px solid var(--border,#E5E7EB)', marginTop: 10 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', background: 'var(--surface-2,#F8FAFC)', borderBottom: '1px solid var(--border,#E5E7EB)' }}>
+                <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-muted,#64748B)', textTransform: 'uppercase', letterSpacing: '.5px' }}>Review ({waReview.length})</span>
+                <span style={{ display: 'flex', gap: 6 }}>
+                  <button className="dl-btn2" onClick={() => setWaReview(null)}>Discard</button>
+                  <button className="dl-btn" onClick={importReviewed} disabled={waImporting}>{waImporting ? 'Importing…' : `Import all ${waReview.length}`}</button>
+                </span>
+              </div>
+              <div style={{ maxHeight: 220, overflowY: 'auto' }}>
+                {waReview.map((d, i) => (
+                  <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '7px 12px', borderBottom: i < waReview.length - 1 ? '1px solid var(--surface-2,#F1F5F9)' : 'none', fontSize: 11 }}>
+                    <span style={{ color: 'var(--text-primary,#0F172A)', fontWeight: 600 }}>{d.supplier || 'Unknown'}{d.po_number ? ` · ${d.po_number}` : ''}</span>
+                    <span style={{ color: 'var(--text-muted,#64748B)' }}>{(d.items || []).map(it => it.description).slice(0, 2).join(', ') || '—'} · {d.status}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
