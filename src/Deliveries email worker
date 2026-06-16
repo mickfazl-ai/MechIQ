@@ -1,0 +1,132 @@
+/**
+ * MechIQ — Deliveries Email Ingest Worker (Cloudflare Email Worker)
+ * ═══════════════════════════════════════════════════════════════════════════
+ * Receives mail forwarded to e.g. deliveries@mechiq.com.au, asks Claude to
+ * extract the delivery details, dedupes on PO number, and inserts into Supabase.
+ *
+ * SETUP (in your Cloudflare dashboard):
+ *  1. Workers & Pages → Create → paste this file
+ *  2. Settings → Variables, add (encrypt the secrets):
+ *       SUPABASE_URL            = https://mrnrnlhdjdanchzwafwl.supabase.co
+ *       SUPABASE_SERVICE_KEY    = <your service_role key>   [secret]
+ *       ANTHROPIC_API_KEY       = <your Anthropic key>      [secret]
+ *       COMPANY_ID              = <your company_id>
+ *  3. Email → Email Routing → enable on mechiq.com.au
+ *  4. Routing rule: deliveries@mechiq.com.au → "Send to a Worker" → this worker
+ *  5. Forward supplier delivery emails to deliveries@mechiq.com.au
+ *     (or set a filter in your inbox to auto-forward anything matching "delivery"/"dispatch"/"PO")
+ * ═══════════════════════════════════════════════════════════════════════════
+ */
+
+export default {
+  async email(message, env, ctx) {
+    try {
+      const from = message.from || '';
+      const subject = message.headers.get('subject') || '';
+      const raw = await streamToText(message.raw);
+      const body = extractPlainText(raw).slice(0, 8000);
+
+      const prompt = `Extract delivery details from this email. Return ONLY JSON, no markdown:
+{"supplier":"","po_number":"","docket_number":"","carrier":"","eta":"YYYY-MM-DD or empty","status":"ordered|expected|in_transit|arrived|received","items":[{"description":"","quantity":1,"unit":"ea"}],"notes":""}
+Infer status from wording. If not a delivery email, return {"supplier":""} with empty fields.
+From: ${from}
+Subject: ${subject}
+Body: ${body}`;
+
+      const aiResp = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': env.ANTHROPIC_API_KEY,
+          'anthropic-version': '2023-06-01',
+        },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-5',
+          max_tokens: 1500,
+          messages: [{ role: 'user', content: prompt }],
+        }),
+      });
+      const ai = await aiResp.json();
+      const text = (ai.content || []).filter(b => b.type === 'text').map(b => b.text).join('');
+      const parsed = JSON.parse(text.replace(/```json|```/g, '').trim());
+
+      // Not a delivery → ignore quietly
+      if (!parsed.supplier && !parsed.po_number) return;
+
+      const headers = {
+        'Content-Type': 'application/json',
+        'apikey': env.SUPABASE_SERVICE_KEY,
+        'Authorization': `Bearer ${env.SUPABASE_SERVICE_KEY}`,
+      };
+
+      // Dedupe on PO number for this company
+      if (parsed.po_number) {
+        const check = await fetch(
+          `${env.SUPABASE_URL}/rest/v1/deliveries?company_id=eq.${env.COMPANY_ID}&po_number=eq.${encodeURIComponent(parsed.po_number)}&select=id`,
+          { headers }
+        );
+        const existing = await check.json();
+        if (Array.isArray(existing) && existing.length > 0) return; // already have it
+      }
+
+      // Insert delivery
+      const insResp = await fetch(`${env.SUPABASE_URL}/rest/v1/deliveries`, {
+        method: 'POST',
+        headers: { ...headers, 'Prefer': 'return=representation' },
+        body: JSON.stringify([{
+          company_id: env.COMPANY_ID,
+          supplier: parsed.supplier || null,
+          po_number: parsed.po_number || null,
+          docket_number: parsed.docket_number || null,
+          carrier: parsed.carrier || null,
+          status: parsed.status || 'expected',
+          eta: /^\d{4}-\d{2}-\d{2}$/.test(parsed.eta) ? parsed.eta : null,
+          notes: parsed.notes || null,
+          source: 'email',
+          raw_message: `From: ${from}\nSubject: ${subject}`,
+        }]),
+      });
+      const [delivery] = await insResp.json();
+
+      // Insert items
+      if (delivery && Array.isArray(parsed.items) && parsed.items.length) {
+        await fetch(`${env.SUPABASE_URL}/rest/v1/delivery_items`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify(parsed.items.filter(it => it.description).map(it => ({
+            delivery_id: delivery.id,
+            description: it.description,
+            quantity: it.quantity || 1,
+            unit: it.unit || 'ea',
+          }))),
+        });
+      }
+    } catch (err) {
+      // Swallow errors so mail routing doesn't bounce; check worker logs to debug
+      console.error('Delivery ingest failed:', err);
+    }
+  },
+};
+
+async function streamToText(stream) {
+  const reader = stream.getReader();
+  const chunks = [];
+  let done, value;
+  while (({ done, value } = await reader.read()), !done) chunks.push(value);
+  return new TextDecoder().decode(concat(chunks));
+}
+function concat(arrays) {
+  const total = arrays.reduce((n, a) => n + a.length, 0);
+  const out = new Uint8Array(total);
+  let off = 0;
+  for (const a of arrays) { out.set(a, off); off += a.length; }
+  return out;
+}
+function extractPlainText(raw) {
+  // crude: strip headers, prefer text/plain section
+  const idx = raw.indexOf('\r\n\r\n');
+  let body = idx > -1 ? raw.slice(idx + 4) : raw;
+  body = body.replace(/<[^>]+>/g, ' ');           // strip any HTML tags
+  body = body.replace(/=\r?\n/g, '').replace(/=([0-9A-F]{2})/g, (_, h) => String.fromCharCode(parseInt(h, 16))); // quoted-printable
+  return body.replace(/\s+/g, ' ').trim();
+}
