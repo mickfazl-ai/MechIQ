@@ -18,7 +18,7 @@ import Chat from './Chat';
 import Parts from './Parts';
 import OilSampling from './OilSampling';
 import CutterTracker from './CutterTracker';
-import Deliveries from './Deliveries';
+// import Deliveries from './Deliveries';
 import ScanPage from './ScanPage';
 import ForcePasswordChange from './ForcePasswordChange';
 import { supabase } from './supabase';
