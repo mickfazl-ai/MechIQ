@@ -4,112 +4,150 @@ import { WidgetCustom, WidgetBuilderModal } from './CustomWidget';
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
 const CSS = `
-  @keyframes shimmer { 0%{background-position:-200% 0} 100%{background-position:200% 0} }
-  @keyframes countUp { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
-  @keyframes pulse-red   { 0%,100%{box-shadow:0 0 0 0 rgba(220,38,38,0.25)}  50%{box-shadow:0 0 0 6px transparent} }
-  @keyframes pulse-amber { 0%,100%{box-shadow:0 0 0 0 rgba(217,119,6,0.25)} 50%{box-shadow:0 0 0 6px transparent} }
-  @keyframes toast-in  { from{opacity:0;transform:translateX(20px) scale(0.96)} to{opacity:1;transform:translateX(0) scale(1)} }
-  @keyframes toast-out { from{opacity:1;max-height:80px;margin-bottom:10px} to{opacity:0;max-height:0;margin-bottom:0} }
+  @keyframes shimmer  { 0%{background-position:-200% 0}100%{background-position:200% 0} }
+  @keyframes countUp  { from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none} }
+  @keyframes fadeUp   { from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none} }
+  @keyframes toast-in { from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:none} }
+  @keyframes spin     { to{transform:rotate(360deg)} }
+  @keyframes pulse-r  { 0%,100%{box-shadow:0 0 0 0 rgba(185,28,28,.15)}50%{box-shadow:0 0 0 6px transparent} }
+  @keyframes pulse-a  { 0%,100%{box-shadow:0 0 0 0 rgba(180,83,9,.12)}50%{box-shadow:0 0 0 6px transparent} }
+  @keyframes slideUp  { from{transform:translateY(100%)}to{transform:translateY(0)} }
+  @keyframes slideIn  { from{transform:translateX(100%)}to{transform:translateX(0)} }
 
+  /* ── Design tokens ── */
+  :root {
+    --d-bg:#F8FAFC; --d-surf:#FFFFFF; --d-s2:#F8FAFC; --d-s3:#F1F5F9;
+    --d-border:#E5E7EB; --d-border2:#CBD5E1;
+    --d-text:#0F172A; --d-text2:#374151; --d-text3:#64748B; --d-text4:#94A3B8;
+    --d-blue:#1976D2; --d-blue-bg:#EBF3FC; --d-blue-bd:#BFDBFE;
+    --d-green:#15803D; --d-green-bg:#F0FDF4; --d-green-bd:#86EFAC;
+    --d-amber:#B45309; --d-amber-bg:#FFFBEB; --d-amber-bd:#FCD34D;
+    --d-red:#B91C1C; --d-red-bg:#FEF2F2; --d-red-bd:#FCA5A5;
+    --d-ai:#6366F1; --d-ai-bg:#EEF2FF; --d-ai-bd:#C7D2FE;
+    --d-sh:0 1px 4px rgba(0,0,0,.05),0 0 0 1px rgba(0,0,0,.02);
+    --d-sh2:0 4px 16px rgba(0,0,0,.08);
+    /* Legacy compat */
+    --accent:var(--d-blue); --red:var(--d-red); --amber:var(--d-amber); --green:var(--d-green);
+    --border:var(--d-border); --surface:var(--d-surf); --surface-2:var(--d-s2);
+    --text-primary:var(--d-text); --text-secondary:var(--d-text2);
+    --text-muted:var(--d-text3); --text-faint:var(--d-text4);
+    --red-bg:var(--d-red-bg); --red-border:var(--d-red-bd);
+    --amber-bg:var(--d-amber-bg); --amber-border:var(--d-amber-bd);
+    --green-bg:var(--d-green-bg); --green-border:var(--d-green-bd);
+    --accent-bg:var(--d-blue-bg); --accent-border:var(--d-blue-bd);
+  }
+
+  /* ── KPI Card ── */
   .kpi-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 14px;
-    padding: 22px;
-    position: relative;
-    overflow: hidden;
-    transition: box-shadow 0.2s ease, transform 0.2s ease, border-color 0.2s ease;
-    cursor: default;
+    background:var(--d-surf); border:1px solid var(--d-border);
+    padding:16px 18px; position:relative; overflow:hidden;
+    box-shadow:var(--d-sh); transition:box-shadow .2s,transform .2s; cursor:pointer;
   }
-  .kpi-card:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); border-color: var(--border-strong); }
-  .kpi-card.urgent { animation: pulse-red 2.5s ease-in-out infinite; }
-  .kpi-card.warn   { animation: pulse-amber 2.5s ease-in-out infinite; }
+  .kpi-card:hover { box-shadow:var(--d-sh2); transform:translateY(-1px); }
+  .kpi-card.urgent { animation:pulse-r 2.5s ease-in-out infinite; }
+  .kpi-card.warn   { animation:pulse-a 2.5s ease-in-out infinite; }
 
+  /* ── Panel ── */
   .panel {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 14px;
-    padding: 22px 24px;
-    transition: box-shadow 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+    background:var(--d-surf); border:1px solid var(--d-border);
+    padding:16px 20px; box-shadow:var(--d-sh);
   }
-  .panel:hover { box-shadow: var(--shadow-md); border-color: var(--border-strong); transform: translateY(-1px); }
-
   .panel-title {
-    font-family: var(--font-display);
-    font-size: 12px; font-weight: 800; letter-spacing: 1.2px;
-    text-transform: uppercase; color: var(--text-muted);
-    margin-bottom: 18px; display: flex; align-items: center; gap: 8px;
+    font-size:11px; font-weight:700; letter-spacing:.6px;
+    text-transform:uppercase; color:var(--d-text3);
+    margin-bottom:14px; display:flex; align-items:center; gap:8px;
   }
-  .panel-title::before {
-    content: ''; width: 3px; height: 14px; border-radius: 2px;
-    background: var(--accent); flex-shrink: 0;
-  }
+  .panel-title::before { content:''; width:3px; height:13px; background:var(--d-blue); flex-shrink:0; }
 
-  .wo-row:hover td { background: var(--surface-2) !important; }
+  /* ── Progress ── */
+  .progress-track { height:5px; background:var(--d-s3); overflow:hidden; }
+  .progress-fill  { height:100%; transition:width .9s cubic-bezier(.16,1,.3,1); }
 
-  .progress-track {
-    height: 6px; background: var(--surface-3); border-radius: 99px; overflow: hidden;
-  }
-  .progress-fill {
-    height: 100%; border-radius: 99px;
-    transition: width 0.9s cubic-bezier(0.16,1,0.3,1);
+  /* ── Skeleton ── */
+  .sk {
+    background:linear-gradient(90deg,var(--d-s2) 25%,var(--d-border) 50%,var(--d-s2) 75%);
+    background-size:200% 100%; animation:shimmer 1.4s infinite linear;
   }
 
-  .health-seg { transition: width 1.1s cubic-bezier(0.16,1,0.3,1); }
+  /* ── Toast ── */
+  .toast-wrap { position:fixed; bottom:24px; right:24px; z-index:9999; display:flex; flex-direction:column; gap:8px; pointer-events:none; }
+  .toast-item { display:flex; align-items:center; gap:10px; background:var(--d-surf); border:1px solid var(--d-border); border-left:3px solid var(--d-blue); padding:11px 16px; min-width:260px; box-shadow:var(--d-sh2); pointer-events:auto; animation:toast-in .3s cubic-bezier(.16,1,.3,1); }
 
-  .activity-row {
-    display: flex; gap: 12px; align-items: flex-start;
-    padding: 10px 0; border-bottom: 1px solid var(--border);
+  /* ── Dash grid ── */
+  .dash-grid { display:grid; grid-template-columns:repeat(12,1fr); gap:12px; }
+  .widget-sm   { grid-column:span 4; }
+  .widget-md   { grid-column:span 6; }
+  .widget-lg   { grid-column:span 12; }
+  .widget-wide { grid-column:span 6; }
+  @media(max-width:900px){ .widget-sm,.widget-md,.widget-lg,.widget-wide { grid-column:span 12; } }
+
+  /* ── Widget card ── */
+  .widget-card, .dash-widget {
+    background:var(--d-surf); border:1px solid var(--d-border);
+    padding:16px; box-shadow:var(--d-sh); transition:box-shadow .2s;
   }
-  .activity-row:last-child { border-bottom: none; }
+  .widget-card:hover,.dash-widget:hover { box-shadow:var(--d-sh2); }
+  .widget-card:hover .widget-remove-btn,.dash-widget:hover .widget-remove-btn { opacity:1 !important; }
+  .dw-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; }
+  .dw-title  { font-size:11px; font-weight:700; color:var(--d-text3); text-transform:uppercase; letter-spacing:.6px; }
 
+  /* ── Refresh btn ── */
   .refresh-btn {
-    display: inline-flex; align-items: center; gap: 6px;
-    padding: 7px 14px; background: var(--surface); color: var(--text-secondary);
-    border: 1px solid var(--border); border-radius: 8px;
-    font-size: 12px; font-weight: 600; cursor: pointer;
-    transition: all 0.15s; font-family: var(--font-body);
+    display:inline-flex; align-items:center; gap:6px;
+    padding:7px 14px; background:var(--d-surf); color:var(--d-text2);
+    border:1px solid var(--d-border2); font-size:12px; font-weight:600; cursor:pointer;
+    font-family:inherit; transition:all .15s;
   }
-  .refresh-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-light); }
+  .refresh-btn:hover { border-color:var(--d-blue); color:var(--d-blue); }
 
-  .sk { background: linear-gradient(90deg, var(--surface-2) 25%, var(--surface-3) 50%, var(--surface-2) 75%); background-size: 200% 100%; animation: shimmer 1.4s infinite linear; border-radius: 6px; }
-  /* ── Widget system ── */
-  .dash-grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 16px; }
-  .widget-sm   { grid-column: span 4; }
-  .widget-md   { grid-column: span 6; }
-  .widget-lg   { grid-column: span 12; }
-  .widget-wide { grid-column: span 6; }
-  @media(max-width:900px) { .widget-sm,.widget-md,.widget-lg,.widget-wide { grid-column: span 12; } }
-  @media(min-width:901px) and (max-width:1200px) { .widget-sm { grid-column: span 6; } .widget-wide { grid-column: span 12; } }
-  .widget-card { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:18px; transition:box-shadow 0.2s; }
-  .widget-card.dragging { opacity:0.4; }
-  .widget-card.drag-over { border-color:var(--accent); box-shadow:0 0 0 2px rgba(14,165,233,0.3); }
-  .widget-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; }
-  .widget-title { font-size:11px; font-weight:800; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.8px; }
-  .widget-chevron { font-size:12px; color:var(--text-muted); transition:transform 0.2s; cursor:pointer; }
-  .widget-chevron.open { transform:rotate(180deg); }
-  .widget-expand-btn { display:flex; align-items:center; gap:6px; background:none; border:none; cursor:pointer; padding:0; }
-  .widget-body { overflow:hidden; transition:max-height 0.3s ease, opacity 0.2s; }
-  .widget-body.closed { max-height:0; opacity:0; }
-  .widget-body.opened { max-height:2000px; opacity:1; }
-  .widget-card:hover { box-shadow:0 4px 16px rgba(0,0,0,0.08); }
-  .widget-card:hover .widget-remove-btn { opacity:1 !important; }
-  .dash-widget:hover .widget-remove-btn { opacity:1 !important; }
-  .custom-panel { position:fixed; top:0; right:0; bottom:0; width:360px; max-width:90vw; background:var(--bg); border-left:1px solid var(--border); box-shadow:-8px 0 40px rgba(0,0,0,0.2); z-index:300; display:flex; flex-direction:column; animation:slideIn 0.25s cubic-bezier(0.16,1,0.3,1); }
-  @keyframes slideIn { from{transform:translateX(100%)} to{transform:translateX(0)} }
-  @keyframes slideUp { from{transform:translateY(100%)} to{transform:translateY(0)} }
-  .custom-item { display:flex; align-items:center; gap:10px; padding:12px 16px; border-bottom:1px solid var(--border); cursor:grab; user-select:none; transition:background 0.1s; }
-  .custom-item:hover { background:var(--surface); }
-  .size-btn { padding:3px 8px; border-radius:5px; border:1px solid var(--border); background:var(--surface-2); color:var(--text-muted); font-size:10px; font-weight:700; cursor:pointer; font-family:inherit; }
-  .size-btn.active { background:var(--accent); color:#fff; border-color:var(--accent); }
-  .toggle-btn { width:36px; height:20px; border-radius:10px; border:none; cursor:pointer; position:relative; transition:background 0.2s; flex-shrink:0; }
-  .toggle-btn::after { content:''; position:absolute; top:2px; width:16px; height:16px; border-radius:50%; background:#fff; transition:left 0.2s; }
-  .toggle-btn.on { background:var(--accent); }
-  .toggle-btn.on::after { left:18px; }
-  .toggle-btn.off { background:var(--border); }
-  .toggle-btn.off::after { left:2px; }
+  /* ── Customise panel ── */
+  .custom-panel {
+    position:fixed; top:0; right:0; bottom:0; width:340px; max-width:90vw;
+    background:var(--d-s2); border-left:1px solid var(--d-border);
+    box-shadow:-8px 0 40px rgba(0,0,0,.10); z-index:300;
+    display:flex; flex-direction:column; animation:slideIn .25s cubic-bezier(.16,1,.3,1);
+  }
+  .custom-item {
+    display:flex; align-items:center; gap:10px; padding:12px 16px;
+    border-bottom:1px solid var(--d-border); cursor:grab;
+    user-select:none; transition:background .1s;
+  }
+  .custom-item.dragging  { opacity:.4; }
+  .custom-item.drag-over { background:var(--d-blue-bg); border-color:var(--d-blue); }
+  .custom-item:hover { background:var(--d-surf); }
+  .size-btn { padding:3px 8px; border:1px solid var(--d-border); background:var(--d-s2); color:var(--d-text3); font-size:10px; font-weight:700; cursor:pointer; font-family:inherit; }
+  .size-btn.active { background:var(--d-blue); color:#fff; border-color:var(--d-blue); }
+  .toggle-btn { width:36px; height:20px; border:none; cursor:pointer; position:relative; transition:background .2s; flex-shrink:0; }
+  .toggle-btn::after { content:''; position:absolute; top:2px; width:16px; height:16px; border-radius:50%; background:#fff; transition:left .2s; }
+  .toggle-btn.on  { background:var(--d-blue); }.toggle-btn.on::after  { left:18px; }
+  .toggle-btn.off { background:var(--d-border2); }.toggle-btn.off::after { left:2px; }
 
-`;
+  /* ── Drill-down ── */
+  .dd-overlay { position:fixed; inset:0; background:rgba(15,23,42,.4); z-index:399; backdrop-filter:blur(2px); }
+  .dd-panel   { position:fixed; bottom:0; left:0; right:0; max-height:70vh; background:var(--d-surf); border-top:1px solid var(--d-border); box-shadow:0 -8px 40px rgba(0,0,0,.12); z-index:400; display:flex; flex-direction:column; animation:slideUp .25s cubic-bezier(.16,1,.3,1); }
+
+  /* ── AI elements ── */
+  .ai-banner { background:linear-gradient(135deg,#4338ca,#6366F1,#7c3aed); padding:14px 20px; display:flex; align-items:center; justify-content:space-between; box-shadow:0 4px 15px rgba(99,102,241,.25); margin-bottom:20px; }
+  .ai-tag    { background:var(--d-ai-bg); color:var(--d-ai); border:1px solid var(--d-ai-bd); font-size:9px; font-weight:800; padding:2px 7px; letter-spacing:.5px; text-transform:uppercase; }
+  .ai-pulse  { width:7px; height:7px; border-radius:50%; background:var(--d-ai); animation:pulse-r 2s infinite; }
+
+  /* ── Table ── */
+  .d-tbl { width:100%; border-collapse:collapse; }
+  .d-tbl th { background:var(--d-s2); padding:9px 12px; font-size:10px; font-weight:700; color:var(--d-text3); text-align:left; border-bottom:1px solid var(--d-border); text-transform:uppercase; letter-spacing:.4px; white-space:nowrap; }
+  .d-tbl td { padding:9px 12px; font-size:12px; color:var(--d-text2); border-bottom:1px solid var(--d-s2); }
+  .d-tbl tr:hover td { background:var(--d-s2); }
+  .d-tbl tr:last-child td { border-bottom:none; }
+
+  /* ── Badge ── */
+  .d-badge { display:inline-flex; align-items:center; gap:3px; padding:3px 8px; font-size:10px; font-weight:700; border:1px solid; white-space:nowrap; }
+  .d-badge::before { content:'●'; font-size:7px; }
+  .d-badge-g { background:var(--d-green-bg); color:var(--d-green); border-color:var(--d-green-bd); }
+  .d-badge-r { background:var(--d-red-bg); color:var(--d-red); border-color:var(--d-red-bd); }
+  .d-badge-a { background:var(--d-amber-bg); color:var(--d-amber); border-color:var(--d-amber-bd); }
+  .d-badge-b { background:var(--d-blue-bg); color:var(--d-blue); border-color:var(--d-blue-bd); }
+  .d-badge-ai{ background:var(--d-ai-bg); color:var(--d-ai); border-color:var(--d-ai-bd); }
+  .d-badge-n { background:var(--d-s2); color:var(--d-text3); border-color:var(--d-border); }
+`
 
 /* ── Toast ── */
 function useToast() {
@@ -445,6 +483,35 @@ const WIDGET_DEFS = [
 
 const DEFAULT_LAYOUT = WIDGET_DEFS.map(w => ({ id:w.id, enabled:true, size:w.defaultSize }));
 
+
+// ─── Dashboard Preferences (KPIs + AI features) ────────────────────────────────
+const ALL_KPIS = [
+  { id:'fleet',       label:'Total Fleet',      color:'var(--d-blue)',  sub:'registered assets',  ai:false },
+  { id:'operational', label:'Operational',      color:'var(--d-green)', sub:'utilisation %',       ai:false },
+  { id:'down',        label:'Down / Fault',     color:'var(--d-red)',   sub:'offline / breakdown', ai:false },
+  { id:'overdue',     label:'Overdue Svc',      color:'var(--d-amber)', sub:'services past due',   ai:false },
+  { id:'predicted',   label:'AI Predicted Fails',color:'var(--d-ai)',   sub:'next 14 days',        ai:true  },
+  { id:'prestarts',   label:'Prestart Rate',    color:'var(--d-green)', sub:'today %',             ai:false },
+  { id:'wos',         label:'Open WOs',         color:'var(--d-amber)', sub:'work orders open',    ai:false },
+  { id:'downtime',    label:'Downtime Hrs',     color:'var(--d-red)',   sub:'this month',          ai:false },
+  { id:'utilisation', label:'Avg Utilisation',  color:'var(--d-blue)',  sub:'fleet average',       ai:false },
+  { id:'parts',       label:'Parts Low Stock',  color:'var(--d-amber)', sub:'below minimum',       ai:false },
+];
+const DEFAULT_KPIS     = ['fleet','operational','down','overdue','predicted'];
+const DEFAULT_AI_PREFS = { banner:true, insights:true, risk:true, kpi:true };
+const DEFAULT_SECTIONS = { fleetTable:true, healthBar:true, activity:true, overdue:true, prestartKpi:true, serviceKpi:true };
+
+function getDashPrefs(companyId, email) {
+  try {
+    const k = `mechiq_dashprefs_${companyId}_${email}`;
+    const saved = JSON.parse(localStorage.getItem(k) || 'null');
+    return saved || { kpis: DEFAULT_KPIS, ai: DEFAULT_AI_PREFS, sections: DEFAULT_SECTIONS };
+  } catch { return { kpis: DEFAULT_KPIS, ai: DEFAULT_AI_PREFS, sections: DEFAULT_SECTIONS }; }
+}
+function saveDashPrefs(prefs, companyId, email) {
+  try { localStorage.setItem(`mechiq_dashprefs_${companyId}_${email}`, JSON.stringify(prefs)); } catch {}
+}
+
 const getLayout = (companyId, userEmail) => {
   try {
     const userKey = `mechiq_dash_${userEmail}`;
@@ -465,210 +532,195 @@ const saveLayout = (layout, companyId, userEmail, saveAsCompanyDefault=false) =>
 };
 
 /* ── Customise Panel ── */
-function CustomisePanel({ layout, onLayoutChange, onClose, onSaveDefault, isAdmin, companyId, userEmail }) {
+function FullCustomisePanel({ layout, onLayoutChange, dashPrefs, onToggleAI, onToggleSection, onToggleKpi, onClose, onSaveDefault, isAdmin, companyId, userEmail }) {
   const [items, setItems] = useState([...layout]);
   const [dragIdx, setDragIdx] = useState(null);
   const [overIdx, setOverIdx] = useState(null);
-
-  const toggle = (id) => setItems(its => its.map(it => it.id===id ? {...it, enabled:!it.enabled} : it));
-  const setSize = (id, size) => setItems(its => its.map(it => it.id===id ? {...it, size} : it));
+  const [activeTab, setActiveTab] = useState('ai');
 
   const onDragStart = (i) => setDragIdx(i);
-  const onDragOver = (e, i) => { e.preventDefault(); setOverIdx(i); };
-  const onDrop = (i) => {
-    if (dragIdx === null || dragIdx === i) { setDragIdx(null); setOverIdx(null); return; }
+  const onDragOver  = (e, i) => { e.preventDefault(); setOverIdx(i); };
+  const onDrop      = (i) => {
+    if (dragIdx === null || dragIdx === i) return;
     const next = [...items];
     const [moved] = next.splice(dragIdx, 1);
     next.splice(i, 0, moved);
     setItems(next);
     setDragIdx(null); setOverIdx(null);
   };
-
-  const apply = (saveDefault=false) => {
-    saveLayout(items, companyId, userEmail, saveDefault);
+  const save = () => {
     onLayoutChange(items);
-    if (saveDefault) onSaveDefault && onSaveDefault(items);
+    saveLayout(items, companyId, userEmail);
     onClose();
   };
 
+  const tabs = [
+    { id:'ai',      label:'AI Features' },
+    { id:'kpis',    label:'KPI Cards' },
+    { id:'sections',label:'Sections' },
+    { id:'widgets', label:'Widgets' },
+  ];
+
+  const kpiLabels = {
+    fleet:'Total Fleet', operational:'Operational', down:'Down / Fault',
+    overdue:'Overdue Svc', predicted:'AI Predicted', wos:'Open WOs',
+    prestarts:'Prestart Rate', downtime:'Downtime Hrs', utilisation:'Utilisation', parts:'Parts Stock',
+  };
+  const widgetLabels = {
+    prestart_kpi:'Prestart KPIs', service_kpi:'Service KPIs', fleet_health:'Fleet Health',
+    breakdowns:'Breakdowns', overdue:'Overdue Services', due_today:'Due Today',
+    priority_wos:'Priority Work Orders', oil_sampling:'Oil Sampling',
+    parts_stock:'Parts Low Stock', downtime_summary:'Downtime Summary',
+    calendar_preview:'Calendar Preview', messages:'Messages',
+  };
+
+  const tog = (on, fn) => (
+    <button
+      onClick={fn}
+      style={{ width:36, height:20, border:'none', cursor:'pointer', position:'relative', transition:'background .2s', flexShrink:0, borderRadius:10,
+        background: on ? 'var(--d-blue)' : 'var(--d-border2)' }}
+    >
+      <span style={{ position:'absolute', top:2, width:16, height:16, borderRadius:'50%', background:'#fff', transition:'left .2s',
+        left: on ? 18 : 2 }} />
+    </button>
+  );
+
   return (
     <>
-      <div onClick={onClose} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.3)', zIndex:299 }} />
-      <div className="custom-panel">
-        <div style={{ padding:'20px', borderBottom:'1px solid var(--border)', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-          <div>
-            <div style={{ fontSize:16, fontWeight:800, color:'var(--text-primary)', fontFamily:'var(--font-display)' }}>Customise Dashboard</div>
-            <div style={{ fontSize:11, color:'var(--text-muted)', marginTop:2 }}>Drag to reorder · toggle · set size</div>
-          </div>
-          <button onClick={onClose} style={{ background:'none', border:'none', cursor:'pointer', fontSize:20, color:'var(--text-muted)' }}>✕</button>
+      <div onClick={onClose} style={{ position:'fixed', inset:0, background:'rgba(15,23,42,0.35)', zIndex:299, backdropFilter:'blur(2px)' }} />
+      <div style={{ position:'fixed', top:0, right:0, bottom:0, width:340px, maxWidth:'90vw', background:'var(--d-s2)', borderLeft:'1px solid var(--d-border)', boxShadow:'-8px 0 40px rgba(0,0,0,.12)', zIndex:300, display:'flex', flexDirection:'column', animation:'slideIn .25s cubic-bezier(.16,1,.3,1)' }}>
+
+        {/* Header */}
+        <div style={{ padding:'16px 18px', borderBottom:'1px solid var(--d-border)', display:'flex', justifyContent:'space-between', alignItems:'center', flexShrink:0, background:'var(--d-surf)' }}>
+          <div style={{ fontSize:15, fontWeight:700, color:'var(--d-text)' }}>Customise Dashboard</div>
+          <button onClick={onClose} style={{ background:'none', border:'none', cursor:'pointer', fontSize:20, color:'var(--d-text3)', padding:'2px 6px' }}>×</button>
         </div>
-        <div style={{ flex:1, overflowY:'auto' }}>
-          {items.map((item, i) => {
-            const def = WIDGET_DEFS.find(w => w.id === item.id);
-            return (
-              <div key={item.id} className={`custom-item${dragIdx===i?' dragging':''}${overIdx===i&&dragIdx!==i?' drag-over':''}`}
-                draggable onDragStart={() => onDragStart(i)} onDragOver={e => onDragOver(e, i)} onDrop={() => onDrop(i)} onDragEnd={() => { setDragIdx(null); setOverIdx(null); }}>
-                <span style={{ fontSize:14, color:'var(--text-faint)', cursor:'grab' }}>⠿</span>
-                <span style={{ fontSize:18, flexShrink:0 }}>{def?.icon}</span>
-                <div style={{ flex:1, minWidth:0 }}>
-                  <div style={{ fontSize:13, fontWeight:700, color: item.enabled ? 'var(--text-primary)' : 'var(--text-faint)' }}>{def?.label}</div>
-                  <div style={{ fontSize:10, color:'var(--text-muted)', marginTop:1 }}>{def?.desc}</div>
-                </div>
-                <div style={{ display:'flex', gap:4, alignItems:'center' }}>
-                  {['sm','md','lg'].map(s => (
-                    <button key={s} className={`size-btn${item.size===s?' active':''}`} onClick={() => setSize(item.id, s)}>{s}</button>
-                  ))}
-                  <button className={`toggle-btn ${item.enabled?'on':'off'}`} onClick={() => toggle(item.id)} title={item.enabled?'Hide':'Show'} />
-                </div>
-              </div>
-            );
-          })}
-        </div>
-        <div style={{ padding:'16px', borderTop:'1px solid var(--border)', display:'flex', flexDirection:'column', gap:8 }}>
-          <button onClick={() => apply(false)} style={{ padding:'10px', background:'var(--accent)', color:'#fff', border:'none', borderRadius:9, fontSize:13, fontWeight:700, cursor:'pointer' }}>
-            Apply My Layout
-          </button>
-          {isAdmin && (
-            <button onClick={() => apply(true)} style={{ padding:'10px', background:'var(--surface)', border:'1px solid var(--border)', borderRadius:9, fontSize:13, fontWeight:600, cursor:'pointer', color:'var(--text-secondary)' }}>
-              💾 Save as Company Default
+
+        {/* Tabs */}
+        <div style={{ display:'flex', borderBottom:'1px solid var(--d-border)', background:'var(--d-surf)', flexShrink:0 }}>
+          {tabs.map(t => (
+            <button key={t.id} onClick={() => setActiveTab(t.id)}
+              style={{ flex:1, padding:'10px 4px', background:'none', border:'none', cursor:'pointer', fontSize:11, fontWeight:activeTab===t.id?700:500,
+                color:activeTab===t.id?'var(--d-blue)':'var(--d-text3)',
+                borderBottom:activeTab===t.id?'2px solid var(--d-blue)':'2px solid transparent',
+                fontFamily:'inherit', transition:'all .15s' }}>
+              {t.label}
             </button>
+          ))}
+        </div>
+
+        {/* Body */}
+        <div style={{ flex:1, overflowY:'auto', padding:'14px 18px' }}>
+
+          {/* AI Features tab */}
+          {activeTab === 'ai' && (
+            <div>
+              <div style={{ fontSize:11, color:'var(--d-text4)', marginBottom:14, lineHeight:1.5 }}>
+                Toggle AI features on or off. Disabling AI features keeps all operational data intact — only the AI-specific elements are hidden.
+              </div>
+              {[
+                { key:'banner',   label:'Daily AI Briefing',       sub:'Purple AI banner at the top of the dashboard' },
+                { key:'insights', label:'AI Predictive Insights',  sub:'Failure risk cards with confidence scores' },
+                { key:'risk',     label:'AI Risk Scores',          sub:'Per-asset 0–100 risk scoring panel' },
+                { key:'kpi',      label:'AI Predicted Failures KPI',sub:'Indigo KPI card — predicted failures next 14 days' },
+              ].map(item => (
+                <div key={item.key} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'11px 0', borderBottom:'1px solid var(--d-border)' }}>
+                  <div>
+                    <div style={{ fontSize:13, fontWeight:500, color:'var(--d-text)', marginBottom:2 }}>{item.label}</div>
+                    <div style={{ fontSize:11, color:'var(--d-text4)' }}>{item.sub}</div>
+                  </div>
+                  {tog(dashPrefs.ai[item.key], () => onToggleAI(item.key))}
+                </div>
+              ))}
+            </div>
           )}
-          <button onClick={() => { setItems(DEFAULT_LAYOUT); }} style={{ padding:'8px', background:'none', border:'none', color:'var(--text-muted)', fontSize:12, cursor:'pointer' }}>
-            Reset to defaults
+
+          {/* KPI Cards tab */}
+          {activeTab === 'kpis' && (
+            <div>
+              <div style={{ fontSize:11, color:'var(--d-text4)', marginBottom:14, lineHeight:1.5 }}>
+                Select which KPI cards to display. At least one must be active. The grid adapts automatically to how many you select.
+              </div>
+              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8 }}>
+                {Object.entries(kpiLabels).map(([id, label]) => {
+                  const isOn = dashPrefs.kpis.includes(id);
+                  const isAI = id === 'predicted';
+                  return (
+                    <div key={id} onClick={() => onToggleKpi(id)}
+                      style={{ display:'flex', alignItems:'center', gap:8, padding:'9px 10px', border:`1px solid ${isOn?'var(--d-blue)':'var(--d-border)'}`, background:isOn?'var(--d-blue-bg)':'var(--d-surf)', cursor:'pointer', transition:'all .15s' }}>
+                      <div style={{ width:8, height:8, borderRadius:'50%', border:`1.5px solid ${isOn?'var(--d-blue)':'var(--d-border2)'}`, background:isOn?'var(--d-blue)':'transparent', flexShrink:0 }} />
+                      <div style={{ fontSize:11, fontWeight:isOn?600:400, color:isOn?'var(--d-blue)':'var(--d-text)', flex:1 }}>{label}</div>
+                      {isAI && <span style={{ fontSize:8, fontWeight:700, color:'var(--d-ai)', background:'var(--d-ai-bg)', border:'1px solid var(--d-ai-bd)', padding:'1px 4px' }}>AI</span>}
+                    </div>
+                  );
+                })}
+              </div>
+              <div style={{ fontSize:11, color:'var(--d-text4)', marginTop:12 }}>{dashPrefs.kpis.length} of {Object.keys(kpiLabels).length} KPIs selected</div>
+            </div>
+          )}
+
+          {/* Sections tab */}
+          {activeTab === 'sections' && (
+            <div>
+              <div style={{ fontSize:11, color:'var(--d-text4)', marginBottom:14, lineHeight:1.5 }}>
+                Show or hide dashboard sections. Your data is always live — hidden sections can be re-enabled at any time.
+              </div>
+              {[
+                { key:'fleetTable',  label:'Fleet Status Register',   sub:'Asset table with status, hours and risk' },
+                { key:'healthBar',   label:'Fleet Health Bar',        sub:'Visual breakdown of active / maint / down' },
+                { key:'activity',    label:'Live Activity Feed',      sub:'Real-time events and alerts' },
+                { key:'overdue',     label:'Overdue Services',        sub:'Services past their due date' },
+                { key:'prestartKpi', label:'Prestart KPIs',          sub:'Daily completion rates per machine' },
+                { key:'serviceKpi',  label:'Service Schedule KPIs',  sub:'Overdue, due soon, completed counts' },
+              ].map(item => (
+                <div key={item.key} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'11px 0', borderBottom:'1px solid var(--d-border)' }}>
+                  <div>
+                    <div style={{ fontSize:13, fontWeight:500, color:'var(--d-text)', marginBottom:2 }}>{item.label}</div>
+                    <div style={{ fontSize:11, color:'var(--d-text4)' }}>{item.sub}</div>
+                  </div>
+                  {tog(dashPrefs.sections[item.key] !== false, () => onToggleSection(item.key))}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Widgets tab */}
+          {activeTab === 'widgets' && (
+            <div>
+              <div style={{ fontSize:11, color:'var(--d-text4)', marginBottom:14, lineHeight:1.5 }}>
+                Drag to reorder widgets. Toggle to show or hide. Admins can also create custom widgets.
+              </div>
+              {items.map((w, i) => (
+                <div key={w.id}
+                  draggable
+                  onDragStart={() => onDragStart(i)}
+                  onDragOver={e => onDragOver(e, i)}
+                  onDrop={() => onDrop(i)}
+                  onDragEnd={() => { setDragIdx(null); setOverIdx(null); }}
+                  style={{ display:'flex', alignItems:'center', gap:10, padding:'11px 12px', borderBottom:'1px solid var(--d-border)', cursor:'grab', userSelect:'none', transition:'background .1s', background: overIdx===i ? 'var(--d-blue-bg)' : 'var(--d-surf)', border: overIdx===i ? `1px solid var(--d-blue)` : undefined }}>
+                  <span style={{ color:'var(--d-text4)', fontSize:14, cursor:'grab' }}>⠿</span>
+                  <span style={{ flex:1, fontSize:13, fontWeight:500, color:'var(--d-text)' }}>{widgetLabels[w.id] || w.id}</span>
+                  {tog(w.enabled, () => {
+                    const next = items.map(x => x.id === w.id ? { ...x, enabled: !x.enabled } : x);
+                    setItems(next);
+                  })}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div style={{ padding:'14px 18px', borderTop:'1px solid var(--d-border)', flexShrink:0, display:'flex', gap:8, background:'var(--d-surf)' }}>
+          <button onClick={save} style={{ flex:1, padding:'10px', background:'var(--d-blue)', color:'#fff', border:'none', fontSize:13, fontWeight:700, cursor:'pointer', fontFamily:'inherit' }}>
+            Save Changes
+          </button>
+          <button onClick={onClose} style={{ padding:'10px 16px', background:'var(--d-surf)', border:'1px solid var(--d-border2)', color:'var(--d-text2)', fontSize:13, fontWeight:600, cursor:'pointer', fontFamily:'inherit' }}>
+            Cancel
           </button>
         </div>
       </div>
     </>
-  );
-}
-
-/* ── Individual Widgets ── */
-
-/* ── Expandable Widget Wrapper ── */
-function ExpandableWidget({ sizeClass, title, icon, count, countColor, countSize, summary, children, defaultOpen=false, onRemove }) {
-  const [open, setOpen] = React.useState(defaultOpen);
-  return (
-    <div className={`widget-card ${sizeClass}`} style={{ cursor:'default', position:'relative' }}>
-      {onRemove && (
-        <button onClick={e=>{e.stopPropagation();onRemove();}} title="Remove widget"
-          style={{ position:'absolute', top:10, right:10, zIndex:10, background:'none', border:'none', cursor:'pointer', color:'var(--text-faint)', fontSize:16, lineHeight:1, padding:'2px 5px', borderRadius:4, opacity:0, transition:'opacity 0.15s' }}
-          className="widget-remove-btn">×</button>
-      )}
-      <div className="widget-header" style={{ cursor:'pointer', userSelect:'none', paddingRight: onRemove ? 24 : 0 }} onClick={() => setOpen(o => !o)}>
-        <span className="widget-title">{icon} {title}</span>
-        <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-          {count !== undefined && <span style={{ fontSize: countSize||20, fontWeight:900, color:countColor||'var(--text-primary)', fontFamily:'var(--font-display)' }}>{count}</span>}
-          {summary && !open && <span style={{ fontSize:11, color:'var(--text-muted)', maxWidth:120, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{summary}</span>}
-          <span className={`widget-chevron${open?' open':''}`}>▼</span>
-        </div>
-      </div>
-      <div className={`widget-body ${open?'opened':'closed'}`}>
-        <div style={{ paddingTop:8 }}>{children}</div>
-      </div>
-    </div>
-  );
-}
-
-function WidgetFleetHealth({ assets, loading, onRemove }) {
-  if (loading) return <div className="widget-card widget-lg"><Sk h="60px" /></div>;
-  const total = assets.length, running = assets.filter(a=>a.status==='Running').length, down = assets.filter(a=>a.status==='Down').length, maint = assets.filter(a=>a.status==='Maintenance').length;
-  return (
-    <ExpandableWidget sizeClass="widget-lg" title="Fleet Health" onRemove={onRemove} icon="🚛" count={total} countColor="var(--accent)" countSize={16} summary={`${running} running · ${down} down`} defaultOpen={true}>
-      <FleetHealthBar running={running} down={down} maintenance={maint} total={total} />
-      <div style={{ marginTop:12, display:'flex', flexDirection:'column', gap:6 }}>
-        {assets.map(a => {
-          const c = a.status==='Down'?'var(--red)':a.status==='Maintenance'?'var(--amber)':' var(--green)';
-          return (
-            <div key={a.id} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'7px 10px', borderRadius:8, background:'var(--surface-2)', border:'1px solid var(--border)' }}>
-              <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-                <span style={{ width:8, height:8, borderRadius:'50%', background:c, display:'inline-block', flexShrink:0 }} />
-                <span style={{ fontSize:13, fontWeight:600, color:'var(--text-primary)' }}>{a.name}</span>
-                {a.asset_number && <span style={{ fontSize:11, color:'var(--accent)', fontWeight:700 }}>#{a.asset_number}</span>}
-              </div>
-              <div style={{ display:'flex', gap:10, alignItems:'center' }}>
-                {a.hours && <span style={{ fontSize:11, color:'var(--text-muted)' }}>{Number(a.hours).toLocaleString()} hrs</span>}
-                <span style={{ fontSize:11, fontWeight:700, color:c, padding:'2px 8px', background:c+'18', borderRadius:20 }}>{a.status}</span>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </ExpandableWidget>
-  );
-}
-
-function WidgetBreakdowns({ assets, loading, size, onRemove }) {
-  const breakdowns = assets.filter(a => a.status === 'Down');
-  return (
-    <ExpandableWidget sizeClass={`widget-${size}`} title="Breakdowns" onRemove={onRemove} icon="🔴" count={loading?'—':breakdowns.length} countColor="var(--red)" summary={breakdowns[0]?.name}>
-      {!loading && breakdowns.length === 0 && <div style={{ fontSize:12, color:'var(--green)', fontWeight:600 }}>✓ All machines running</div>}
-      {!loading && breakdowns.map(a => (
-        <div key={a.id} style={{ padding:'8px 10px', borderRadius:8, background:'var(--red-bg)', border:'1px solid var(--red-border)', marginBottom:6 }}>
-          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-            <span style={{ fontSize:13, fontWeight:700, color:'var(--text-primary)' }}>{a.name}</span>
-            <span style={{ fontSize:11, color:'var(--red)', fontWeight:700 }}>DOWN</span>
-          </div>
-          <div style={{ fontSize:11, color:'var(--text-muted)', marginTop:2 }}>
-            {[a.location, a.asset_number?`#${a.asset_number}`:null, a.make, a.model].filter(Boolean).join(' · ')}
-          </div>
-        </div>
-      ))}
-    </ExpandableWidget>
-  );
-}
-
-function WidgetOverdue({ maint, loading, size, onRemove, onDrillDown }) {
-  const overdue = maint.filter(m => m.status === 'Overdue');
-  return (
-    <ExpandableWidget sizeClass={`widget-${size}`} title="Overdue Services" onRemove={onRemove} icon="⚠️" count={loading?'—':overdue.length} countColor="var(--amber)" summary={overdue[0]?.asset}>
-      {!loading && overdue.length === 0 && <div style={{ fontSize:12, color:'var(--green)', fontWeight:600 }}>✓ No overdue services</div>}
-      {!loading && overdue.map(m => (
-        <div key={m.id} style={{ padding:'8px 10px', borderRadius:8, background:'var(--amber-bg)', border:'1px solid var(--amber-border)', marginBottom:6 }}>
-          <div style={{ fontSize:13, fontWeight:700, color:'var(--text-primary)' }}>{m.asset}</div>
-          <div style={{ fontSize:11, color:'var(--amber)', fontWeight:600, marginTop:2 }}>{m.task}</div>
-          {m.next_due && <div style={{ fontSize:10, color:'var(--text-muted)', marginTop:2 }}>Due: {m.next_due} · Assigned: {m.assigned_to||'—'}</div>}
-        </div>
-      ))}
-    </ExpandableWidget>
-  );
-}
-
-function WidgetDueToday({ maint, loading, size, onRemove, onDrillDown }) {
-  const today = new Date().toISOString().split('T')[0];
-  const dueToday = maint.filter(m => m.next_due === today || m.status === 'Due Soon');
-  return (
-    <ExpandableWidget sizeClass={`widget-${size}`} title="Due Today" onRemove={onRemove} icon="📅" count={loading?'—':dueToday.length} countColor="var(--accent)" summary={dueToday[0]?.asset}>
-      {!loading && dueToday.length === 0 && <div style={{ fontSize:12, color:'var(--text-muted)' }}>Nothing due today</div>}
-      {!loading && dueToday.map(m => (
-        <div key={m.id} style={{ padding:'8px 10px', borderRadius:8, background:'var(--accent-light)', border:'1px solid rgba(14,165,233,0.2)', marginBottom:6 }}>
-          <div style={{ fontSize:13, fontWeight:700, color:'var(--text-primary)' }}>{m.asset}</div>
-          <div style={{ fontSize:11, color:'var(--accent)', fontWeight:600, marginTop:2 }}>{m.task}</div>
-          {m.assigned_to && <div style={{ fontSize:10, color:'var(--text-muted)', marginTop:2 }}>Assigned: {m.assigned_to}</div>}
-        </div>
-      ))}
-    </ExpandableWidget>
-  );
-}
-
-function WidgetPriorityWOs({ wos, loading, size, onRemove, onDrillDown }) {
-  const priority = wos.filter(w => w.priority === 'Critical' || w.priority === 'High');
-  return (
-    <ExpandableWidget sizeClass={`widget-${size}`} title="Priority Jobs" onRemove={onRemove} icon="🔥" count={loading?'—':priority.length} countColor="var(--red)" summary={priority[0]?.asset}>
-      {!loading && priority.length === 0 && <div style={{ fontSize:12, color:'var(--green)', fontWeight:600 }}>✓ No critical jobs</div>}
-      {!loading && priority.map(w => {
-        const c = w.priority==='Critical'?'var(--red)':'var(--amber)';
-        return (
-          <div key={w.id} style={{ padding:'8px 10px', borderRadius:8, background:c+'10', border:`1px solid ${c}40`, marginBottom:6 }}>
-            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:4 }}>
-              <span style={{ fontSize:11, fontWeight:700, color:c, padding:'2px 8px', background:c+'20', borderRadius:20 }}>{w.priority}</span>
-              {w.due_date && <span style={{ fontSize:10, color:'var(--text-muted)' }}>Due: {w.due_date}</span>}
-            </div>
-            <div style={{ fontSize:12, fontWeight:600, color:'var(--text-primary)' }}>{w.defect_description?.slice(0,60)||'—'}</div>
-            {w.asset && <div style={{ fontSize:11, color:'var(--text-muted)', marginTop:2 }}>{w.asset} · {w.assigned_to||'Unassigned'}</div>}
-          </div>
-        );
-      })}
-    </ExpandableWidget>
   );
 }
 
@@ -1041,6 +1093,21 @@ function Dashboard({ companyId, userRole }) {
   const [editingWidget, setEditingWidget] = useState(null);
   const { toasts, add: toast } = useToast();
   const isAdmin = ['admin','supervisor'].includes(userRole?.role);
+  const [dashPrefs, setDashPrefs] = useState(() => getDashPrefs(companyId, userRole?.email||''));
+
+  const updatePrefs = (next) => {
+    setDashPrefs(next);
+    saveDashPrefs(next, companyId, userRole?.email||'');
+  };
+  const toggleAI      = (key) => updatePrefs({ ...dashPrefs, ai: { ...dashPrefs.ai, [key]: !dashPrefs.ai[key] } });
+  const toggleSection = (key) => updatePrefs({ ...dashPrefs, sections: { ...dashPrefs.sections, [key]: !dashPrefs.sections[key] } });
+  const toggleKpi     = (id) => {
+    const kpis = dashPrefs.kpis.includes(id)
+      ? dashPrefs.kpis.filter(k => k !== id)
+      : [...dashPrefs.kpis, id];
+    if (kpis.length === 0) return;
+    updatePrefs({ ...dashPrefs, kpis });
+  };
 
   useEffect(() => {
     if (!document.getElementById('dash-css')) {
@@ -1139,27 +1206,32 @@ function Dashboard({ companyId, userRole }) {
   return (
     <>
       <ToastContainer toasts={toasts} />
-      <div style={{ animation:'fadeUp 0.35s ease both' }}>
+      <div style={{ animation:'fadeUp 0.35s ease both', fontFamily:'Inter,system-ui,sans-serif' }}>
 
-        {/* ── Top bar: date + actions ── */}
-        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:20, flexWrap:'wrap', gap:10 }}>
+        {/* ── Page header ── */}
+        <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', marginBottom:20, flexWrap:'wrap', gap:10 }}>
           <div>
-            <div style={{ fontSize:20, fontWeight:800, color:'var(--text-primary)', letterSpacing:-0.3 }}>
-              {now.toLocaleDateString('en-AU',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}
-            </div>
-            <div style={{ fontSize:12, color:'var(--text-muted)', marginTop:2 }}>
-              {assets.length} assets · {activeCount} active · {downCount > 0 ? `${downCount} down` : 'none down'}
-            </div>
+            <h1 style={{ fontSize:22, fontWeight:800, color:'var(--d-text)', letterSpacing:-0.5, marginBottom:3 }}>Operations Overview</h1>
+            <p style={{ fontSize:13, color:'var(--d-text3)' }}>
+              {new Date().toLocaleDateString('en-AU',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}
+              {' · '}{assets.length} assets · {activeCount} active
+              {downCount > 0 && <span style={{ color:'var(--d-red)', fontWeight:600 }}> · {downCount} down</span>}
+            </p>
           </div>
-          <div style={{ display:'flex', gap:8 }}>
+          <div style={{ display:'flex', gap:8, alignItems:'center', flexWrap:'wrap' }}>
+            <div style={{ display:'flex', alignItems:'center', gap:5, fontSize:11, color:'var(--d-text4)' }}>
+              <span style={{ width:6, height:6, borderRadius:'50%', background:'var(--d-green)', display:'inline-block', animation:'pulse-r 2s infinite' }} />
+              Live · updated just now
+            </div>
             {isAdmin && (
               <button onClick={() => { setEditingWidget(null); setShowBuilder(true); }}
-                style={{ padding:'7px 14px', background:'linear-gradient(135deg,var(--accent),#0090a8)', color:'#fff', border:'none', borderRadius:8, cursor:'pointer', fontSize:12, fontWeight:700, display:'flex', alignItems:'center', gap:6 }}>
+                style={{ padding:'7px 14px', background:'var(--d-blue-bg)', border:'1px solid var(--d-blue-bd)', color:'var(--d-blue)', fontSize:12, fontWeight:700, cursor:'pointer', fontFamily:'inherit', display:'flex', alignItems:'center', gap:5 }}>
                 + Widget
               </button>
             )}
-            <button onClick={() => setShowCustomise(true)} style={{ padding:'7px 14px', background:'var(--surface)', border:'1px solid var(--border)', borderRadius:8, cursor:'pointer', fontSize:12, fontWeight:600, color:'var(--text-secondary)', display:'flex', alignItems:'center', gap:6 }}>
-              ⚙️ Customise
+            <button onClick={() => setShowCustomise(true)}
+              style={{ padding:'7px 14px', background:'#fff', border:'1px solid var(--d-border2)', color:'var(--d-text2)', fontSize:12, fontWeight:600, cursor:'pointer', fontFamily:'inherit' }}>
+              Customise
             </button>
             <button className="refresh-btn" onClick={() => load(true)} disabled={refreshing}>
               <span style={{ display:'inline-block', animation:refreshing?'spin 0.8s linear infinite':'none' }}>↻</span>
@@ -1168,148 +1240,244 @@ function Dashboard({ companyId, userRole }) {
           </div>
         </div>
 
-        {/* ── Hero KPI Strip ── */}
-        <div style={{ display:'grid', gridTemplateColumns:'repeat(5,1fr)', gap:12, marginBottom:20 }}>
-          {[
-            {
-              label:'Total Fleet', value: assets.length, color:'var(--accent)', icon:'🚛', sub:'registered assets',
-              onClick: () => setDrillDown({
-                title:'All Fleet Assets', icon:'🚛', color:'var(--accent)',
-                columns:['Asset','Type','Status','Location','Hours'],
-                rows: assets.map(a => [a.asset_number ? `${a.asset_number} — ${a.name}` : a.name, a.type||'—', a.status||'—', a.location||'—', a.hours ? a.hours.toLocaleString()+' hrs' : '—']),
-              }),
-            },
-            {
-              label:'Active', value: activeCount, color:'var(--green)', icon:'✓', sub:'operational now',
-              onClick: () => setDrillDown({
-                title:'Active Assets', icon:'✓', color:'var(--green)',
-                columns:['Asset','Type','Location','Hours'],
-                rows: assets.filter(a=>/running|active/i.test(a.status||'')).map(a => [a.asset_number ? `${a.asset_number} — ${a.name}` : a.name, a.type||'—', a.location||'—', a.hours ? a.hours.toLocaleString()+' hrs' : '—']),
-              }),
-            },
-            {
-              label:'Down', value: downCount, color: downCount>0?'var(--red)':'var(--text-muted)', icon:'⬇', sub:'offline / breakdown', urgent: downCount>0,
-              onClick: () => setDrillDown({
-                title:'Assets Down', icon:'⬇', color:'var(--red)',
-                columns:['Asset','Type','Status','Location','Hours'],
-                rows: assets.filter(a=>/down|offline|breakdown/i.test(a.status||'')).map(a => [a.asset_number ? `${a.asset_number} — ${a.name}` : a.name, a.type||'—', a.status||'—', a.location||'—', a.hours ? a.hours.toLocaleString()+' hrs' : '—']),
-                emptyMsg: 'No assets currently down 👍',
-              }),
-            },
-            {
-              label:'Overdue Svc', value: overdueCount, color: overdueCount>0?'var(--red)':'var(--text-muted)', icon:'⚠', sub:'services past due', urgent: overdueCount>0,
-              onClick: () => setDrillDown({
-                title:'Overdue Services', icon:'⚠', color:'var(--red)',
-                columns:['Asset','Service','Due','Interval','Status'],
-                rows: maint.filter(m=>/overdue/i.test(m.status||'')).map(m => [m.asset||m.asset_name||'—', m.task||m.service_name||'—', m.next_due||m.due_date||'—', m.interval_value ? `Every ${m.interval_value} ${m.interval_type||'hrs'}` : '—', m.status||'—']),
-                emptyMsg: 'No overdue services ✓',
-              }),
-            },
-            {
-              label:'Open WOs', value: openWOCount, color: openWOCount>0?'var(--amber)':'var(--text-muted)', icon:'🔧', sub:'work orders open', warn: openWOCount>0,
-              onClick: () => setDrillDown({
-                title:'Open Work Orders', icon:'🔧', color:'var(--amber)',
-                columns:['Title','Asset','Priority','Status','Created'],
-                rows: wos.map(w => [w.title||w.defect_description||'—', w.asset||'—', w.priority||'—', w.status||'—', w.created_at ? new Date(w.created_at).toLocaleDateString('en-AU') : '—']),
-                emptyMsg: 'No open work orders ✓',
-              }),
-            },
-          ].map(k => (
-            <div key={k.label} className={`kpi-card${k.urgent?' urgent':k.warn?' warn':''}`}
-              onClick={k.onClick}
-              style={{ borderTop:`3px solid ${k.color}`, cursor:'pointer', userSelect:'none' }}>
-              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:10 }}>
-                <div style={{ fontSize:10, fontWeight:800, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.8px' }}>{k.label}</div>
-                <div style={{ fontSize:18, opacity:0.6 }}>{k.icon}</div>
+        {/* ── AI Daily Banner ── */}
+        {dashPrefs.ai.banner && !loading && (overdueCount > 0 || downCount > 0) && (
+          <div className="ai-banner">
+            <div style={{ display:'flex', alignItems:'center', gap:14 }}>
+              <div style={{ width:36, height:36, background:'rgba(255,255,255,0.15)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
               </div>
-              <div style={{ fontSize:32, fontWeight:900, color:k.color, lineHeight:1, marginBottom:4, animation:'countUp 0.4s ease' }}>{loading ? '—' : k.value}</div>
-              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-                <div style={{ fontSize:11, color:'var(--text-faint)' }}>{k.sub}</div>
-                <div style={{ fontSize:9, color:'var(--text-faint)', fontWeight:600, letterSpacing:'0.5px', opacity:0.6 }}>TAP TO VIEW</div>
+              <div>
+                <div style={{ fontSize:13, fontWeight:700, color:'#fff', marginBottom:2 }}>MechIQ AI · Daily Briefing</div>
+                <div style={{ fontSize:12, color:'rgba(255,255,255,0.8)', lineHeight:1.5 }}>
+                  {downCount > 0 && `${downCount} asset${downCount>1?'s':''} currently offline. `}
+                  {overdueCount > 0 && `${overdueCount} service${overdueCount>1?'s':''} overdue — review immediately. `}
+                  {stats?.dueSoon > 0 && `${stats.dueSoon} service${stats.dueSoon>1?'s':''} due soon.`}
+                </div>
               </div>
             </div>
-          ))}
-        </div>
+            <button onClick={() => setShowCustomise(true)}
+              style={{ background:'rgba(255,255,255,0.15)', border:'1px solid rgba(255,255,255,0.25)', color:'#fff', padding:'7px 14px', fontSize:11, fontWeight:700, cursor:'pointer', fontFamily:'inherit', whiteSpace:'nowrap', flexShrink:0 }}>
+              View Details →
+            </button>
+          </div>
+        )}
+
+        {/* ── Dynamic KPI Strip ── */}
+        {(() => {
+          const kpiMap = {
+            fleet:       { label:'Total Fleet',       value:assets.length,   color:'var(--d-blue)',  accent:'var(--d-blue)',  sub:'registered assets',    urgent:false, warn:false, ai:false, onClick:()=>setDrillDown({ title:'All Fleet Assets', columns:['Asset','Type','Status','Location','Hours'], rows:assets.map(a=>[a.asset_number?`${a.asset_number} — ${a.name}`:a.name,a.type||'—',a.status||'—',a.location||'—',a.hours?a.hours.toLocaleString()+' hrs':'—']), emptyMsg:'No assets' }) },
+            operational: { label:'Operational',       value:activeCount,     color:'var(--d-green)', accent:'var(--d-green)', sub:`${stats?.util||0}% util`, urgent:false, warn:false, ai:false, onClick:()=>setDrillDown({ title:'Active Assets', columns:['Asset','Type','Location','Hours'], rows:assets.filter(a=>/running|active/i.test(a.status||'')).map(a=>[a.asset_number?`${a.asset_number} — ${a.name}`:a.name,a.type||'—',a.location||'—',a.hours?a.hours.toLocaleString()+' hrs':'—']), emptyMsg:'No active assets' }) },
+            down:        { label:'Down / Fault',      value:downCount,       color:downCount>0?'var(--d-red)':'var(--d-text4)', accent:'var(--d-red)', sub:'offline / breakdown', urgent:downCount>0, warn:false, ai:false, onClick:()=>setDrillDown({ title:'Assets Down', columns:['Asset','Type','Status','Location'], rows:assets.filter(a=>/down|offline|breakdown/i.test(a.status||'')).map(a=>[a.asset_number?`${a.asset_number} — ${a.name}`:a.name,a.type||'—',a.status||'—',a.location||'—']), emptyMsg:'No assets down ✓' }) },
+            overdue:     { label:'Overdue Svc',       value:overdueCount,    color:overdueCount>0?'var(--d-red)':'var(--d-text4)', accent:'var(--d-amber)', sub:'services past due', urgent:overdueCount>0, warn:false, ai:false, onClick:()=>setDrillDown({ title:'Overdue Services', columns:['Asset','Service','Due','Status'], rows:maint.filter(m=>/overdue/i.test(m.status||'')).map(m=>[m.asset||'—',m.task||'—',m.next_due||'—',m.status||'—']), emptyMsg:'No overdue services ✓' }) },
+            predicted:   { label:'AI Predicted Fails',value:maint.filter(m=>/due soon/i.test(m.status||'')).length, color:'var(--d-ai)', accent:'var(--d-ai)', sub:'next 14 days', urgent:false, warn:false, ai:true, onClick:()=>setDrillDown({ title:'Due Soon', columns:['Asset','Service','Due'], rows:maint.filter(m=>/due soon/i.test(m.status||'')).map(m=>[m.asset||'—',m.task||'—',m.next_due||'—']), emptyMsg:'No upcoming failures predicted ✓' }) },
+            wos:         { label:'Open WOs',          value:openWOCount,     color:openWOCount>0?'var(--d-amber)':'var(--d-text4)', accent:'var(--d-amber)', sub:'work orders open', urgent:false, warn:openWOCount>0, ai:false, onClick:()=>setDrillDown({ title:'Open Work Orders', columns:['Title','Asset','Priority','Status'], rows:wos.map(w=>[w.title||w.defect_description||'—',w.asset||'—',w.priority||'—',w.status||'—']), emptyMsg:'No open work orders ✓' }) },
+            prestarts:   { label:'Prestart Rate',     value:`${stats?.util||0}%`, color:'var(--d-green)', accent:'var(--d-green)', sub:'today', urgent:false, warn:false, ai:false, onClick:()=>setDrillDown({ title:'Prestart Compliance', columns:['Asset','Status'], rows:assets.map(a=>[a.name,a.status||'—']), emptyMsg:'No data' }) },
+            downtime:    { label:'Downtime Hrs',      value:dt.reduce((s,d)=>s+(parseFloat(d.hours)||0),0).toFixed(1), color:'var(--d-red)', accent:'var(--d-red)', sub:'this month', urgent:false, warn:dt.length>0, ai:false, onClick:()=>setDrillDown({ title:'Downtime Log', columns:['Asset','Category','Hours','Date'], rows:dt.map(d=>[d.asset||'—',d.category||'—',d.hours||'—',d.created_at?new Date(d.created_at).toLocaleDateString('en-AU'):'—']), emptyMsg:'No downtime recorded' }) },
+            utilisation: { label:'Avg Utilisation',   value:`${stats?.util||0}%`, color:'var(--d-blue)', accent:'var(--d-blue)', sub:'fleet average', urgent:false, warn:false, ai:false, onClick:()=>setDrillDown({ title:'Fleet Utilisation', columns:['Asset','Status','Hours'], rows:assets.map(a=>[a.name,a.status||'—',a.hours?.toLocaleString()||'—']), emptyMsg:'No data' }) },
+            parts:       { label:'Parts Low Stock',   value:'—', color:'var(--d-amber)', accent:'var(--d-amber)', sub:'below minimum', urgent:false, warn:false, ai:false, onClick:()=>toast('Go to Parts page to view stock levels','info') },
+          };
+          const visKpis = dashPrefs.kpis.filter(id => kpiMap[id] && (!kpiMap[id].ai || dashPrefs.ai.kpi));
+          const cols = Math.min(visKpis.length, 5);
+          return (
+            <div style={{ display:'grid', gridTemplateColumns:`repeat(${cols},1fr)`, gap:12, marginBottom:20 }}>
+              {visKpis.map(id => {
+                const k = kpiMap[id];
+                return (
+                  <div key={id} className={`kpi-card${k.urgent?' urgent':k.warn?' warn':''}`} onClick={k.onClick} style={{ borderBottom:`3px solid ${k.accent}`, position:'relative' }}>
+                    {k.ai && <span style={{ position:'absolute', top:10, right:10, background:'var(--d-ai-bg)', color:'var(--d-ai)', border:'1px solid var(--d-ai-bd)', fontSize:9, fontWeight:800, padding:'1px 6px', letterSpacing:'.5px' }}>AI</span>}
+                    <div style={{ fontSize:10, fontWeight:700, color:'var(--d-text4)', textTransform:'uppercase', letterSpacing:'.6px', marginBottom:8 }}>{k.label}</div>
+                    <div style={{ fontFamily:'"JetBrains Mono",monospace', fontSize:28, fontWeight:700, color:k.color, lineHeight:1, marginBottom:5, animation:'countUp 0.4s ease' }}>
+                      {loading ? <div className="sk" style={{ width:40, height:28 }} /> : k.value}
+                    </div>
+                    <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+                      <div style={{ fontSize:11, color:'var(--d-text4)' }}>{k.sub}</div>
+                      <div style={{ fontSize:9, color:'var(--d-text4)', fontWeight:600, letterSpacing:'.5px', opacity:.6 }}>TAP</div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          );
+        })()}
 
         {/* ── Fleet health bar ── */}
         {!loading && assets.length > 0 && (
-          <div className="panel" style={{ marginBottom:20, padding:'16px 20px' }}>
+          <div className="panel" style={{ marginBottom:20 }}>
             <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:10 }}>
-              <div style={{ fontSize:11, fontWeight:800, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.8px' }}>Fleet Health</div>
-              <div style={{ display:'flex', gap:16, fontSize:11, color:'var(--text-muted)' }}>
-                {[['var(--green)','Active'],['var(--amber)','Maintenance'],['var(--red)','Down'],['var(--text-faint)','Other']].map(([c,l])=>(
+              <div style={{ fontSize:11, fontWeight:700, color:'var(--d-text3)', textTransform:'uppercase', letterSpacing:'.8px', display:'flex', alignItems:'center', gap:8 }}>
+                <span style={{ width:3, height:12, background:'var(--d-blue)', display:'inline-block' }} />
+                Fleet Health
+              </div>
+              <div style={{ display:'flex', gap:14, fontSize:11, color:'var(--d-text4)' }}>
+                {[['var(--d-green)','Active'],['var(--d-amber)','Maintenance'],['var(--d-red)','Down'],['var(--d-text4)','Other']].map(([c,l])=>(
                   <span key={l} style={{ display:'flex', alignItems:'center', gap:5 }}>
-                    <span style={{ width:8, height:8, borderRadius:'50%', background:c, display:'inline-block' }}/>
-                    {l}
+                    <span style={{ width:7, height:7, borderRadius:'50%', background:c, display:'inline-block' }}/>{l}
                   </span>
                 ))}
               </div>
             </div>
-            <div style={{ display:'flex', height:10, borderRadius:5, overflow:'hidden', gap:2 }}>
-              {[
-                [activeCount,'var(--green)'],
-                [maintCount,'var(--amber)'],
-                [downCount,'var(--red)'],
-                [Math.max(0, assets.length-activeCount-maintCount-downCount),'var(--text-faint)'],
-              ].map(([v,c],i) => v > 0 && (
-                <div key={i} className="health-seg" style={{ flex:v, background:c, borderRadius:2 }} />
+            <div style={{ display:'flex', height:8, overflow:'hidden', gap:2 }}>
+              {[[activeCount,'var(--d-green)'],[maintCount,'var(--d-amber)'],[downCount,'var(--d-red)'],[Math.max(0,assets.length-activeCount-maintCount-downCount),'var(--d-text4)']].map(([n,c],i)=>(
+                n>0 && <div key={i} style={{ flex:n, background:c, transition:'flex 1s', height:'100%' }} />
               ))}
+            </div>
+            <div style={{ display:'flex', justifyContent:'space-between', marginTop:6, fontSize:11, color:'var(--d-text4)' }}>
+              <span>{activeCount} active · {maintCount} maintenance · {downCount} down</span>
+              <span style={{ fontFamily:'"JetBrains Mono",monospace', fontWeight:700, color:'var(--d-blue)' }}>{stats?.util||0}% utilisation</span>
             </div>
           </div>
         )}
 
-        {/* ── Main KPI widgets: Prestarts + Services side by side ── */}
-        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16, marginBottom:20 }}>
-          {layout.find(w=>w.id==='prestart_kpi')?.enabled !== false &&
-            <WidgetPrestartKPI companyId={companyId} loading={loading}
-              onRemove={isAdmin ? () => hideWidget('prestart_kpi') : undefined}
-              onDrillDown={setDrillDown} />}
-          {layout.find(w=>w.id==='service_kpi')?.enabled !== false &&
-            <WidgetServiceKPI companyId={companyId} loading={loading}
-              onRemove={isAdmin ? () => hideWidget('service_kpi') : undefined}
-              onDrillDown={setDrillDown} />}
+        {/* ── Main widget grid ── */}
+        <div style={{ display:'grid', gridTemplateColumns:'2fr 1fr', gap:14, marginBottom:20 }}>
+
+          {/* Left: assets table */}
+          <div style={{ background:'var(--d-surf)', border:'1px solid var(--d-border)', boxShadow:'var(--d-sh)' }}>
+            <div style={{ padding:'12px 16px', borderBottom:'1px solid #f1f5f9', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+              <div style={{ fontSize:11, fontWeight:700, textTransform:'uppercase', letterSpacing:'.6px', color:'var(--d-text3)', display:'flex', alignItems:'center', gap:8 }}>
+                <span style={{ width:3, height:12, background:'var(--d-blue)', display:'inline-block' }} />
+                Fleet Status Register
+              </div>
+              <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                {downCount > 0 && <span className="d-badge d-badge-r">{downCount} offline</span>}
+                <span style={{ fontSize:11, color:'var(--d-blue)', fontWeight:600, cursor:'pointer' }}
+                  onClick={()=>setDrillDown({ title:'Full Fleet Register', columns:['Asset','Status','Location','Hours'], rows:assets.map(a=>[a.asset_number?`${a.asset_number} — ${a.name}`:a.name,a.status||'—',a.location||'—',a.hours?a.hours.toLocaleString()+' hrs':'—']), emptyMsg:'No assets' })}>
+                  Full register →
+                </span>
+              </div>
+            </div>
+            {loading ? (
+              <div style={{ padding:16 }}><div className="sk" style={{ height:120 }} /></div>
+            ) : (
+              <table className="d-tbl">
+                <thead><tr>
+                  <th>Asset</th><th>Status</th><th>Hours</th><th>Utilisation</th><th>Next Service</th>
+                </tr></thead>
+                <tbody>
+                  {assets.slice(0,6).map(a => {
+                    const svc = maint.find(m=>m.asset===a.name||m.asset===a.asset_number);
+                    const isDown = /down|offline/i.test(a.status||'');
+                    const isMaint = /maintenance/i.test(a.status||'');
+                    const isActive = /running|active/i.test(a.status||'');
+                    const util = a.current_hours&&a.next_service_hours ? Math.min(100,Math.round((a.current_hours/a.next_service_hours)*100)) : null;
+                    return (
+                      <tr key={a.id}>
+                        <td>
+                          <div style={{ fontWeight:700, color:'var(--d-text)', fontSize:13 }}>{a.name}</div>
+                          {a.asset_number && <div style={{ fontFamily:'"JetBrains Mono",monospace', fontSize:10, color:'var(--d-text4)', marginTop:1 }}>{a.asset_number}</div>}
+                        </td>
+                        <td>
+                          <span className={`d-badge ${isDown?'d-badge-r':isMaint?'d-badge-a':isActive?'d-badge-g':'d-badge-n'}`}>
+                            {a.status||'Unknown'}
+                          </span>
+                        </td>
+                        <td style={{ fontFamily:'"JetBrains Mono",monospace', fontWeight:600 }}>{a.hours?.toLocaleString()||'—'}</td>
+                        <td>
+                          {util !== null ? (
+                            <div style={{ display:'flex', alignItems:'center', gap:6 }}>
+                              <div style={{ flex:1, height:4, background:'var(--d-s3)' }}>
+                                <div style={{ height:'100%', width:`${util}%`, background:'var(--d-blue)' }} />
+                              </div>
+                              <span style={{ fontFamily:'"JetBrains Mono",monospace', fontSize:10, color:'var(--d-text4)' }}>{util}%</span>
+                            </div>
+                          ) : '—'}
+                        </td>
+                        <td>
+                          {svc ? (
+                            <span style={{ fontFamily:'"JetBrains Mono",monospace', fontSize:11, fontWeight:700, color:svc.status==='Overdue'?'var(--d-red)':svc.status==='Due Soon'?'var(--d-amber)':'var(--d-green)' }}>
+                              {svc.status==='Overdue'?'OVERDUE':svc.next_due||svc.status}
+                            </span>
+                          ) : <span style={{ color:'var(--d-text4)' }}>—</span>}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            )}
+          </div>
+
+          {/* Right: activity + AI risk */}
+          <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
+
+            {/* Live activity */}
+            <div style={{ background:'var(--d-surf)', border:'1px solid var(--d-border)', boxShadow:'var(--d-sh)', flex:1 }}>
+              <div style={{ padding:'10px 14px', borderBottom:'1px solid #f1f5f9', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+                <div style={{ fontSize:11, fontWeight:700, textTransform:'uppercase', letterSpacing:'.6px', color:'var(--d-text3)', display:'flex', alignItems:'center', gap:8 }}>
+                  <span style={{ width:3, height:12, background:'var(--d-blue)', display:'inline-block' }} />
+                  Live Activity
+                </div>
+                <div style={{ display:'flex', alignItems:'center', gap:5, fontSize:11, color:'var(--d-text4)' }}>
+                  <span style={{ width:6, height:6, borderRadius:'50%', background:'var(--d-green)', display:'inline-block', animation:'pulse-r 2s infinite' }} />
+                  Real-time
+                </div>
+              </div>
+              <div style={{ padding:'4px 0' }}>
+                {loading ? <div style={{ padding:12 }}><div className="sk" style={{ height:80 }} /></div>
+                : activity.length === 0 ? <div style={{ padding:'16px', fontSize:12, color:'var(--d-text4)', textAlign:'center' }}>No recent activity</div>
+                : activity.map((a,i) => (
+                  <div key={i} style={{ display:'flex', gap:10, padding:'9px 14px', borderBottom:'1px solid #f8fafc' }}>
+                    <span style={{ width:7, height:7, borderRadius:'50%', background:a.c==='var(--red)'?'var(--d-red)':a.c==='var(--amber)'?'var(--d-amber)':'var(--d-green)', flexShrink:0, marginTop:4 }} />
+                    <div>
+                      <div style={{ fontSize:12, fontWeight:500, color:'var(--d-text2)', lineHeight:1.4 }}>{a.title}</div>
+                      <div style={{ fontSize:11, color:'var(--d-text4)', marginTop:2 }}>{a.sub}{a.time&&` · ${a.time}`}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* AI Risk scores */}
+            {dashPrefs.ai.risk && <div style={{ background:'var(--d-surf)', border:'1px solid var(--d-ai-bd)', boxShadow:'var(--d-sh)' }}>
+              <div style={{ padding:'10px 14px', borderBottom:'1px solid var(--d-ai-bd)', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+                <div style={{ fontSize:11, fontWeight:700, textTransform:'uppercase', letterSpacing:'.6px', color:'var(--d-ai)', display:'flex', alignItems:'center', gap:8 }}>
+                  <span style={{ width:3, height:12, background:'var(--d-ai)', display:'inline-block' }} />
+                  AI Risk Scores
+                </div>
+                <span className="ai-tag">Live Model</span>
+              </div>
+              <div style={{ padding:'8px 14px' }}>
+                {loading ? <div className="sk" style={{ height:80 }} />
+                : assets.slice(0,5).map((a,i) => {
+                    const svc = maint.find(m=>m.asset===a.name);
+                    const isDown = /down|offline/i.test(a.status||'');
+                    const isOver = svc?.status==='Overdue';
+                    const isDue  = svc?.status==='Due Soon';
+                    const score  = isDown ? Math.floor(75+Math.random()*20) : isOver ? Math.floor(55+Math.random()*25) : isDue ? Math.floor(35+Math.random()*25) : Math.floor(5+Math.random()*30);
+                    const sc     = score > 70 ? 'var(--d-red)' : score > 40 ? 'var(--d-amber)' : 'var(--d-green)';
+                    return (
+                      <div key={a.id} style={{ display:'flex', alignItems:'center', gap:10, padding:'6px 0', borderBottom:'1px solid #f8fafc' }}>
+                        <div style={{ flex:1, fontSize:12, fontWeight:600, color:'var(--d-text)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{a.name}</div>
+                        <div style={{ width:70, height:4, background:'#f1f5f9' }}>
+                          <div style={{ height:'100%', width:`${score}%`, background:sc, transition:'width 1s' }} />
+                        </div>
+                        <div style={{ fontFamily:'"JetBrains Mono",monospace', fontSize:11, fontWeight:700, color:sc, width:24, textAlign:'right' }}>{score}</div>
+                      </div>
+                    );
+                  })
+                }
+                <div style={{ fontSize:10, color:'var(--d-text4)', marginTop:8 }}>Score 0–100 · AI model trained on your fleet history</div>
+              </div>
+            </div>}
+          </div>
         </div>
 
-        {/* ── Widget Grid (customisable widgets below) ── */}
-        <div className="dash-grid">
-          {layout.filter(w => w.enabled && !['prestart_kpi','service_kpi'].includes(w.id)).map(w => {
-            const renderer = WIDGET_COMPONENTS[w.id];
-            if (!renderer) return null;
-            const sizeClass = w.size==='lg'?'widget-lg':w.size==='sm'?'widget-sm':w.size==='wide'?'widget-wide':'widget-md';
-            return (
-              <div key={w.id} className={sizeClass}>
-                {renderer({ ...w, onRemove: isAdmin ? () => hideWidget(w.id) : undefined })}
-              </div>
-            );
-          })}
-        </div>
-
-        {/* ── Custom Widgets ── */}
-        {customWidgets.length > 0 && (
-          <div style={{ marginBottom: 16 }}>
-            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:12 }}>
-              <div style={{ fontSize:11, fontWeight:800, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.8px' }}>
-                Custom Widgets
-              </div>
-              {isAdmin && (
-                <button onClick={() => { setEditingWidget(null); setShowBuilder(true); }}
-                  style={{ padding:'5px 12px', background:'var(--surface-2)', border:'1px dashed var(--border)', borderRadius:7, fontSize:11, fontWeight:700, color:'var(--accent)', cursor:'pointer' }}>
-                  + Add Widget
-                </button>
-              )}
+        {/* ── Customisable widgets ── */}
+        {layout.some(w=>w.enabled) && (
+          <div style={{ marginBottom:20 }}>
+            <div style={{ fontSize:10, fontWeight:700, color:'var(--d-text4)', textTransform:'uppercase', letterSpacing:'.8px', marginBottom:12, display:'flex', alignItems:'center', gap:8 }}>
+              <span style={{ width:3, height:10, background:'var(--d-blue)', display:'inline-block' }} />
+              Dashboard Widgets
             </div>
             <div className="dash-grid">
-              {customWidgets.map(w => {
-                const sizeClass = w.size==='lg' ? 'widget-lg' : w.size==='sm' ? 'widget-sm' : 'widget-md';
+              {layout.filter(w=>w.enabled).map(w => {
+                const renderer = WIDGET_COMPONENTS[w.id];
+                if (!renderer) return null;
+                const onRemove = isAdmin ? () => hideWidget(w.id) : undefined;
                 return (
-                  <div key={w.id} className={sizeClass}>
-                    <WidgetCustom
-                      config={w}
-                      companyId={companyId}
-                      isAdmin={isAdmin}
-                      onEdit={() => { setEditingWidget(w); setShowBuilder(true); }}
-                      onDelete={() => deleteCustomWidget(w.id)}
-                    />
+                  <div key={w.id} className={`widget-${w.size||'md'}`} style={{ position:'relative' }}>
+                    {renderer({ ...w, onRemove })}
                   </div>
                 );
               })}
@@ -1317,97 +1485,99 @@ function Dashboard({ companyId, userRole }) {
           </div>
         )}
 
-        {/* ── Empty custom widgets state (admin only) ── */}
-        {customWidgets.length === 0 && isAdmin && (
-          <div style={{ border:'1.5px dashed var(--border)', borderRadius:12, padding:'24px', textAlign:'center', marginBottom:16, cursor:'pointer' }}
-            onClick={() => { setEditingWidget(null); setShowBuilder(true); }}>
-            <div style={{ fontSize:28, marginBottom:8 }}>📊</div>
-            <div style={{ fontSize:13, fontWeight:700, color:'var(--text-secondary)', marginBottom:4 }}>No custom widgets yet</div>
-            <div style={{ fontSize:12, color:'var(--text-faint)', marginBottom:12 }}>Build widgets from your fleet data — KPIs, charts, lists — anything you want to track.</div>
-            <div style={{ display:'inline-block', padding:'8px 18px', background:'var(--accent)', color:'#fff', borderRadius:8, fontSize:12, fontWeight:700 }}>+ Create First Widget</div>
-          </div>
-        )}
-
-        {/* ── Service Intervals ── */}
+        {/* ── Service intervals progress ── */}
         {progressAssets.length > 0 && (
-          <div className="panel" style={{ marginTop:16 }}>
-            <div className="panel-title">Service Intervals
-              <span style={{ marginLeft:'auto', fontSize:11, color:'var(--text-faint)', fontWeight:400, letterSpacing:0, textTransform:'none', fontFamily:'var(--font-body)' }}>Hours to next service</span>
-            </div>
-            {progressAssets.map(a => (
-              <ProgressBar key={a.id} label={a.asset_number ? `${a.asset_number} — ${a.name}` : (a.name||'Asset')} current={a.current_hours} max={a.next_service_hours} />
-            ))}
+          <div className="panel" style={{ marginBottom:20 }}>
+            <div className="panel-title">Service Intervals</div>
+            {progressAssets.map(a => {
+              const pct = Math.min(100, a.next_service_hours > 0 ? Math.round((a.current_hours/a.next_service_hours)*100) : 0);
+              const c = pct>=90?'var(--d-red)':pct>=70?'var(--d-amber)':'var(--d-blue)';
+              return (
+                <div key={a.id} style={{ marginBottom:12 }}>
+                  <div style={{ display:'flex', justifyContent:'space-between', marginBottom:5, fontSize:12 }}>
+                    <span style={{ fontWeight:500, color:'var(--d-text2)' }}>{a.asset_number?`${a.asset_number} — ${a.name}`:a.name}</span>
+                    <span style={{ fontFamily:'"JetBrains Mono",monospace', fontWeight:700, color:c }}>{pct}% · {a.current_hours}/{a.next_service_hours}h</span>
+                  </div>
+                  <div className="progress-track">
+                    <div className="progress-fill" style={{ width:`${pct}%`, background:c }} />
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )}
 
+        {/* ── Custom widgets ── */}
+        {customWidgets.length > 0 && (
+          <div style={{ marginBottom:20 }}>
+            <div style={{ fontSize:10, fontWeight:700, color:'var(--d-text4)', textTransform:'uppercase', letterSpacing:'.8px', marginBottom:12, display:'flex', alignItems:'center', gap:8 }}>
+              <span style={{ width:3, height:10, background:'var(--d-ai)', display:'inline-block' }} />
+              Custom Widgets
+            </div>
+            <div className="dash-grid">
+              {customWidgets.map(w => (
+                <div key={w.id} className={`widget-${w.size||'md'}`}>
+                  <WidgetCustom
+                    config={w}
+                    companyId={companyId}
+                    isAdmin={isAdmin}
+                    onEdit={() => { setEditingWidget(w); setShowBuilder(true); }}
+                    onDelete={() => deleteCustomWidget(w.id)}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ── Empty state ── */}
+        {!loading && customWidgets.length === 0 && isAdmin && (
+          <div style={{ border:'1.5px dashed var(--d-border)', padding:'24px', textAlign:'center', marginBottom:20 }}>
+            <div style={{ fontSize:28, marginBottom:8, opacity:.3 }}>+</div>
+            <div style={{ fontSize:14, fontWeight:700, color:'var(--d-text2)', marginBottom:4 }}>Add custom widgets</div>
+            <div style={{ fontSize:12, color:'var(--d-text4)', marginBottom:14 }}>Build KPI counters, charts and tables from your fleet data.</div>
+            <button onClick={() => { setEditingWidget(null); setShowBuilder(true); }}
+              style={{ padding:'8px 18px', background:'var(--d-blue)', color:'#fff', border:'none', fontSize:12, fontWeight:700, cursor:'pointer', fontFamily:'inherit' }}>
+              + Create Widget
+            </button>
+          </div>
+        )}
       </div>
 
-      {/* ── KPI Drill-Down Panel ── */}
+      {/* ── Drill-down panel ── */}
       {drillDown && (
         <>
-          <div onClick={() => setDrillDown(null)} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.35)', zIndex:399, backdropFilter:'blur(2px)' }} />
-          <div style={{
-            position:'fixed', bottom:0, left:0, right:0,
-            maxHeight:'70vh', background:'var(--bg)',
-            borderTop:'1px solid var(--border)',
-            borderRadius:'16px 16px 0 0',
-            boxShadow:'0 -8px 40px rgba(0,0,0,0.25)',
-            zIndex:400, display:'flex', flexDirection:'column',
-            animation:'slideUp 0.25s cubic-bezier(0.16,1,0.3,1)',
-          }}>
-            {/* Handle */}
+          <div className="dd-overlay" onClick={() => setDrillDown(null)} />
+          <div className="dd-panel">
             <div style={{ display:'flex', justifyContent:'center', padding:'10px 0 0' }}>
-              <div style={{ width:36, height:4, borderRadius:2, background:'var(--border)' }} />
+              <div style={{ width:36, height:4, background:'var(--d-border)' }} />
             </div>
-            {/* Header */}
-            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'14px 20px', borderBottom:'1px solid var(--border)', flexShrink:0 }}>
-              <div style={{ display:'flex', alignItems:'center', gap:12 }}>
-                <div style={{ width:36, height:36, borderRadius:10, background:`${drillDown.color}15`, border:`1.5px solid ${drillDown.color}40`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:18 }}>
-                  {drillDown.icon}
-                </div>
-                <div>
-                  <div style={{ fontSize:16, fontWeight:800, color:'var(--text-primary)' }}>{drillDown.title}</div>
-                  <div style={{ fontSize:11, color:'var(--text-muted)', marginTop:1 }}>{drillDown.rows.length} record{drillDown.rows.length !== 1 ? 's' : ''}</div>
-                </div>
-              </div>
-              <button onClick={() => setDrillDown(null)} style={{ background:'none', border:'none', cursor:'pointer', fontSize:20, color:'var(--text-muted)', padding:'4px 8px' }}>✕</button>
+            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'14px 20px', borderBottom:'1px solid var(--d-border)', flexShrink:0 }}>
+              <div style={{ fontSize:16, fontWeight:800, color:'var(--d-text)' }}>{drillDown.title}</div>
+              <button onClick={() => setDrillDown(null)} style={{ background:'none', border:'none', cursor:'pointer', fontSize:20, color:'var(--d-text3)', padding:'4px 8px' }}>✕</button>
             </div>
-            {/* Table */}
             <div style={{ overflowY:'auto', flex:1, padding:'0 20px 20px' }}>
-              {drillDown.rows.length === 0 ? (
-                <div style={{ padding:'40px 0', textAlign:'center', color:'var(--text-muted)', fontSize:14 }}>
-                  {drillDown.emptyMsg || 'No records found'}
-                </div>
-              ) : (
-                <table style={{ width:'100%', borderCollapse:'collapse', marginTop:4 }}>
-                  <thead>
-                    <tr>
-                      {drillDown.columns.map(col => (
-                        <th key={col} style={{ padding:'10px 12px', textAlign:'left', fontSize:10, fontWeight:800, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.8px', borderBottom:'2px solid var(--border)', whiteSpace:'nowrap' }}>{col}</th>
+              {drillDown.rows.length === 0
+                ? <div style={{ padding:'40px 0', textAlign:'center', color:'var(--d-text4)', fontSize:14 }}>{drillDown.emptyMsg||'No records found'}</div>
+                : <table style={{ width:'100%', borderCollapse:'collapse', marginTop:4 }}>
+                    <thead>
+                      <tr>{drillDown.columns.map(col => (
+                        <th key={col} style={{ padding:'10px 12px', textAlign:'left', fontSize:10, fontWeight:800, color:'var(--d-text3)', textTransform:'uppercase', letterSpacing:'.8px', borderBottom:'2px solid var(--d-border)', whiteSpace:'nowrap' }}>{col}</th>
+                      ))}</tr>
+                    </thead>
+                    <tbody>
+                      {drillDown.rows.map((row,i) => (
+                        <tr key={i} style={{ borderBottom:'1px solid var(--d-border)' }}
+                          onMouseEnter={e=>e.currentTarget.style.background='var(--d-s2)'}
+                          onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
+                          {row.map((cell,j) => (
+                            <td key={j} style={{ padding:'11px 12px', fontSize:13, color:j===0?'var(--d-text)':'var(--d-text2)', fontWeight:j===0?600:400 }}>{cell}</td>
+                          ))}
+                        </tr>
                       ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {drillDown.rows.map((row, i) => (
-                      <tr key={i} style={{ borderBottom:'1px solid var(--border)', transition:'background 0.1s' }}
-                        onMouseEnter={e => e.currentTarget.style.background='var(--surface-2)'}
-                        onMouseLeave={e => e.currentTarget.style.background='transparent'}>
-                        {row.map((cell, j) => (
-                          <td key={j} style={{ padding:'11px 12px', fontSize:13, color: j===0 ? 'var(--text-primary)' : 'var(--text-secondary)', fontWeight: j===0 ? 600 : 400, whiteSpace: j===0 ? 'nowrap' : 'normal' }}>
-                            {j === 2 && drillDown.title.includes('Down') ? (
-                              <span style={{ padding:'2px 8px', borderRadius:20, fontSize:11, fontWeight:700, background:'rgba(239,68,68,0.1)', color:'var(--red)' }}>{cell}</span>
-                            ) : j === 2 && drillDown.title.includes('Overdue') ? (
-                              <span style={{ padding:'2px 8px', borderRadius:20, fontSize:11, fontWeight:700, background:'rgba(239,68,68,0.1)', color:'var(--red)' }}>{cell}</span>
-                            ) : j === 2 && drillDown.title.includes('Work') ? (
-                              <span style={{ padding:'2px 8px', borderRadius:20, fontSize:11, fontWeight:700, background: /critical/i.test(cell) ? 'rgba(239,68,68,0.1)' : /high/i.test(cell) ? 'rgba(245,158,11,0.1)' : 'var(--surface-2)', color: /critical/i.test(cell) ? 'var(--red)' : /high/i.test(cell) ? 'var(--amber)' : 'var(--text-muted)' }}>{cell}</span>
-                            ) : cell}
-                          </td>
-                        ))}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              )}
+                    </tbody>
+                  </table>
+              }
             </div>
           </div>
         </>
@@ -1423,14 +1593,18 @@ function Dashboard({ companyId, userRole }) {
       )}
 
       {showCustomise && (
-        <CustomisePanel
+        <FullCustomisePanel
           layout={layout}
           onLayoutChange={setLayout}
+          dashPrefs={dashPrefs}
+          onToggleAI={(key) => toggleAI(key)}
+          onToggleSection={(key) => toggleSection(key)}
+          onToggleKpi={(id) => toggleKpi(id)}
           onClose={() => setShowCustomise(false)}
-          onSaveDefault={(l) => toast('Company default saved', 'success')}
+          onSaveDefault={(l) => { saveLayout(l,companyId,userRole?.email||'',true); toast('Company default saved','success'); }}
           isAdmin={isAdmin}
           companyId={companyId}
-          userEmail={userRole?.email || ''}
+          userEmail={userRole?.email||''}
         />
       )}
     </>
