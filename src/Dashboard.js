@@ -1182,11 +1182,6 @@ function Dashboard({ companyId, userRole }) {
   const A = { cyan:'var(--accent)', red:'var(--red)', amber:'var(--amber)', green:'var(--green)' };
 
   const WIDGET_COMPONENTS = {
-    fleet_health:     (w) => <WidgetFleetHealth key={w.id} assets={assets} loading={loading} onRemove={w.onRemove} />,
-    breakdowns:       (w) => <WidgetBreakdowns key={w.id} assets={assets} loading={loading} size={w.size} onRemove={w.onRemove} />,
-    overdue:          (w) => <WidgetOverdue key={w.id} maint={maint} loading={loading} size={w.size} onRemove={w.onRemove} onDrillDown={setDrillDown} />,
-    due_today:        (w) => <WidgetDueToday key={w.id} maint={maint} loading={loading} size={w.size} onRemove={w.onRemove} onDrillDown={setDrillDown} />,
-    priority_wos:     (w) => <WidgetPriorityWOs key={w.id} wos={wos} loading={loading} size={w.size} onRemove={w.onRemove} onDrillDown={setDrillDown} />,
     oil_sampling:     (w) => <WidgetOilSampling key={w.id} companyId={companyId} size={w.size} onRemove={w.onRemove} />,
     parts_stock:      (w) => <WidgetPartsStock key={w.id} companyId={companyId} size={w.size} onRemove={w.onRemove} />,
     downtime_summary: (w) => <WidgetDowntimeSummary key={w.id} companyId={companyId} size={w.size} onRemove={w.onRemove} />,
