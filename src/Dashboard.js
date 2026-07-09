@@ -724,6 +724,40 @@ function FullCustomisePanel({ layout, onLayoutChange, dashPrefs, onToggleAI, onT
   );
 }
 
+function ExpandableWidget({ sizeClass, title, icon, count, countColor='var(--accent)', countSize=28, summary, onRemove, children }) {
+  const [open, setOpen] = React.useState(false);
+  return (
+    <div className={sizeClass} style={{
+      background:'var(--surface)', border:'1px solid var(--border)', borderRadius:14,
+      overflow:'hidden', boxShadow: open ? 'var(--shadow-md)' : 'var(--shadow-xs)',
+      transition:'border-color .2s, box-shadow .2s', position:'relative',
+    }}>
+      <button onClick={() => setOpen(o=>!o)} style={{
+        width:'100%', display:'flex', alignItems:'center', gap:12, padding:'14px 16px',
+        background:'none', border:'none', cursor:'pointer', textAlign:'left',
+      }}>
+        {icon && <div style={{ width:36, height:36, borderRadius:9, background:'var(--surface-2,#F8FAFC)', border:'1px solid var(--border)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:16, flexShrink:0 }}>{icon}</div>}
+        <div style={{ flex:1, minWidth:0 }}>
+          <div style={{ fontSize:13, fontWeight:600, color:'var(--text-secondary)', marginBottom:2 }}>{title}</div>
+          {summary && !open && <div style={{ fontSize:11, color:'var(--text-muted)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{summary}</div>}
+        </div>
+        {count !== undefined && count !== null && (
+          <div style={{ fontSize:countSize, fontWeight:900, color:countColor, lineHeight:1, fontFamily:'var(--font-display,inherit)', flexShrink:0 }}>{count}</div>
+        )}
+        <div style={{ fontSize:16, color:'var(--text-faint,#94A3B8)', transform: open?'rotate(180deg)':'none', transition:'transform .2s', flexShrink:0, marginLeft:4 }}>▾</div>
+      </button>
+      {open && (
+        <div style={{ borderTop:'1px solid var(--border)', padding:'12px 16px 14px' }}>
+          {children}
+        </div>
+      )}
+      {onRemove && open && (
+        <button onClick={onRemove} style={{ position:'absolute', top:10, right:12, fontSize:11, color:'var(--text-faint,#94A3B8)', background:'none', border:'none', cursor:'pointer' }} title="Remove widget">✕</button>
+      )}
+    </div>
+  );
+}
+
 function WidgetOilSampling({ companyId, size, onRemove }) {
   const [samples, setSamples] = useState([]);
   const [loading, setLoading] = useState(true);
