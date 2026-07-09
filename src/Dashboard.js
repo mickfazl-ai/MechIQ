@@ -588,7 +588,7 @@ function FullCustomisePanel({ layout, onLayoutChange, dashPrefs, onToggleAI, onT
   return (
     <>
       <div onClick={onClose} style={{ position:'fixed', inset:0, background:'rgba(15,23,42,0.35)', zIndex:299, backdropFilter:'blur(2px)' }} />
-      <div style={{ position:'fixed', top:0, right:0, bottom:0, width:340px, maxWidth:'90vw', background:'var(--d-s2)', borderLeft:'1px solid var(--d-border)', boxShadow:'-8px 0 40px rgba(0,0,0,.12)', zIndex:300, display:'flex', flexDirection:'column', animation:'slideIn .25s cubic-bezier(.16,1,.3,1)' }}>
+      <div style={{ position:'fixed', top:0, right:0, bottom:0, width:'340px', maxWidth:'90vw', background:'var(--d-s2)', borderLeft:'1px solid var(--d-border)', boxShadow:'-8px 0 40px rgba(0,0,0,.12)', zIndex:300, display:'flex', flexDirection:'column', animation:'slideIn .25s cubic-bezier(.16,1,.3,1)' }}>
 
         {/* Header */}
         <div style={{ padding:'16px 18px', borderBottom:'1px solid var(--d-border)', display:'flex', justifyContent:'space-between', alignItems:'center', flexShrink:0, background:'var(--d-surf)' }}>
